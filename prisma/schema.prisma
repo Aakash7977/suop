@@ -761,3 +761,340 @@ model OrganizationTreeNode {
   @@index([hierarchyLevel], map: "idx_otn_level")
   @@index([entityType, status], map: "idx_otn_type_status")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// AUTHORIZATION PLATFORM — Sprint 5
+// Epics 1-8: Roles, Permissions, User Groups, Menus,
+//            Approval Authority, Security Policies, Feature Flags
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Roles (Epic 1) ───────────────────────────────────────────
+model Role {
+  id              String   @id @default(uuid()) @db.Uuid
+  roleCode        String   @unique @map("role_code")
+  roleName        String   @map("role_name")
+  roleDescription String?  @map("role_description")
+  roleType        String   @default("CUSTOM") @map("role_type") // SYSTEM, BUILTIN, CUSTOM, TEMPLATE
+  roleCategory    String   @default("OTHER") @map("role_category") // EXECUTIVE, MANAGEMENT, MANAGER, SUPERVISOR, OPERATOR, CLERK, TECHNICIAN, EXTERNAL_USER, SYSTEM, OTHER
+  isSystemRole    Boolean  @default(false) @map("is_system_role")
+  parentRoleId    String?  @db.Uuid @map("parent_role_id") // Role hierarchy
+  companyId       String?  @db.Uuid @map("company_id") // NULL = enterprise-wide
+  accessLevel     String   @default("BRANCH") @map("access_level") // ENTERPRISE, COMPANY, BUSINESS_UNIT, BRANCH, DEPARTMENT, SELF
+  requiresMfa     Boolean  @default(false) @map("requires_mfa")
+  maxSessionMinutes Int    @default(480) @map("max_session_minutes")
+  concurrentSessions Int   @default(3) @map("concurrent_sessions")
+  priority        Int      @default(100)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  parent          Role?         @relation("RoleHierarchy", fields: [parentRoleId], references: [id])
+  children        Role[]        @relation("RoleHierarchy")
+  rolePermissions RolePermission[]
+  roleAssignments RoleAssignment[]
+  groupRoles      GroupRole[]
+
+  @@map("roles")
+  @@index([companyId, status], map: "idx_role_company_status")
+  @@index([roleType, isSystemRole], map: "idx_role_type_system")
+  @@index([parentRoleId], map: "idx_role_parent")
+}
+
+// ─── Permissions (Epic 2) ─────────────────────────────────────
+model Permission {
+  id                  String   @id @default(uuid()) @db.Uuid
+  permissionCode      String   @unique @map("permission_code") // e.g., INVENTORY:PRODUCT:CREATE
+  permissionName      String   @map("permission_name")
+  permissionDescription String? @map("permission_description")
+  module              String   // PLATFORM, ORGANIZATION, INVENTORY, WAREHOUSE, MANUFACTURING, FINANCE, HR, MAINTENANCE, REPORTS, SETTINGS
+  resource            String   // PRODUCT, INVOICE, WORK_ORDER, etc.
+  action              String   // CREATE, READ, UPDATE, DELETE, APPROVE, REJECT, EXPORT, IMPORT, PRINT, EXECUTE, CANCEL, REVERSE, CLOSE, ARCHIVE
+  permissionGroupId   String?  @db.Uuid @map("permission_group_id")
+  permissionType      String   @default("ACTION") @map("permission_type") // ACTION, FIELD_LEVEL, RECORD_LEVEL, WILDCARD
+  isDangerous         Boolean  @default(false) @map("is_dangerous")
+  isSystemPermission  Boolean  @default(false) @map("is_system_permission")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  permissionGroup     PermissionGroup? @relation(fields: [permissionGroupId], references: [id])
+  rolePermissions     RolePermission[]
+
+  @@map("permissions")
+  @@index([module, resource, action], map: "idx_perm_module_resource_action")
+  @@index([permissionType, status], map: "idx_perm_type_status")
+  @@index([permissionGroupId], map: "idx_perm_group")
+}
+
+model PermissionGroup {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupCode       String   @unique @map("group_code")
+  groupName       String   @map("group_name")
+  module          String   // Same as Permission.module
+  description     String?
+  displayOrder    Int      @default(100) @map("display_order")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  permissions     Permission[]
+
+  @@map("permission_groups")
+  @@index([module, status], map: "idx_pg_module_status")
+}
+
+// ─── Role-Permission Mapping ──────────────────────────────────
+model RolePermission {
+  id            String   @id @default(uuid()) @db.Uuid
+  roleId        String   @db.Uuid @map("role_id")
+  permissionId  String   @db.Uuid @map("permission_id")
+  grantedBy     String?  @db.Uuid @map("granted_by")
+  grantedAt     DateTime @default(now()) @map("granted_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId], map: "role_permission_unique")
+  @@map("role_permissions")
+  @@index([roleId], map: "idx_rp_role")
+  @@index([permissionId], map: "idx_rp_permission")
+}
+
+// ─── Role Assignments (User-Role mapping) ─────────────────────
+model RoleAssignment {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid @map("user_id")
+  roleId          String   @db.Uuid @map("role_id")
+  companyId       String?  @db.Uuid @map("company_id") // Scope to company
+  branchId        String?  @db.Uuid @map("branch_id") // Scope to branch
+  assignedBy      String?  @db.Uuid @map("assigned_by")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  expiresAt       DateTime? @map("expires_at")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  role            Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, branchId], map: "role_assignment_unique")
+  @@map("role_assignments")
+  @@index([userId, status], map: "idx_ra_user_status")
+  @@index([roleId, status], map: "idx_ra_role_status")
+}
+
+// ─── User Groups (Epic 3) ─────────────────────────────────────
+model UserGroup {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupCode       String   @unique @map("group_code")
+  groupName       String   @map("group_name")
+  groupDescription String? @map("group_description")
+  groupType       String   @default("TEAM") @map("group_type") // TEAM, DEPARTMENT, FUNCTIONAL, PROJECT
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  members         GroupMember[]
+  groupRoles      GroupRole[]
+
+  @@map("user_groups")
+  @@index([companyId, status], map: "idx_ug_company_status")
+  @@index([groupType, status], map: "idx_ug_type_status")
+}
+
+model GroupMember {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  userId          String   @db.Uuid @map("user_id")
+  role            String   @default("MEMBER") // MEMBER, ADMIN, OWNER
+  addedBy         String?  @db.Uuid @map("added_by")
+  addedAt         DateTime @default(now()) @map("added_at")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  userGroup       UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId], map: "group_member_unique")
+  @@map("group_members")
+  @@index([groupId, status], map: "idx_gm_group_status")
+  @@index([userId, status], map: "idx_gm_user_status")
+}
+
+model GroupRole {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  roleId          String   @db.Uuid @map("role_id")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  userGroup       UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  role            Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, roleId], map: "group_role_unique")
+  @@map("group_roles")
+  @@index([groupId, status], map: "idx_gr_group_status")
+}
+
+// ─── Menus (Epic 4 & 9 — Dynamic Navigation) ──────────────────
+model Menu {
+  id              String   @id @default(uuid()) @db.Uuid
+  menuCode        String   @unique @map("menu_code")
+  menuLabel       String   @map("menu_label")
+  menuIcon        String?  @map("menu_icon") // Lucide icon name
+  menuType        String   @default("ITEM") @map("menu_type") // GROUP, ITEM, SEPARATOR, LINK
+  moduleId        String?  @map("module_id") // PLT, ORG, INV, WMS, MES, FIN, HR, EAM, RTL, RST, AI
+  route           String?  // Frontend route: /inventory/products
+  externalUrl     String?  @map("external_url")
+  parentMenuId    String?  @db.Uuid @map("parent_menu_id")
+  displayOrder    Int      @default(100) @map("display_order")
+  isVisible       Boolean  @default(true) @map("is_visible")
+  isPinnable      Boolean  @default(true) @map("is_pinnable")
+  badgeType       String?  @map("badge_type") // COUNT, ALERT, NEW
+  badgeSource     String?  @map("badge_source") // API endpoint for badge count
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  parent          Menu?     @relation("MenuHierarchy", fields: [parentMenuId], references: [id])
+  children        Menu[]    @relation("MenuHierarchy")
+  menuPermissions MenuPermission[]
+
+  @@map("menus")
+  @@index([parentMenuId, displayOrder], map: "idx_menu_parent_order")
+  @@index([moduleId, status], map: "idx_menu_module_status")
+  @@index([isVisible, status], map: "idx_menu_visible_status")
+}
+
+model MenuPermission {
+  id              String   @id @default(uuid()) @db.Uuid
+  menuId          String   @db.Uuid @map("menu_id")
+  permissionId    String   @db.Uuid @map("permission_id")
+  required        Boolean  @default(true) // If true, permission is required to see menu; if false, it's optional
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  menu            Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  permission      Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([menuId, permissionId], map: "menu_permission_unique")
+  @@map("menu_permissions")
+  @@index([menuId], map: "idx_mp_menu")
+  @@index([permissionId], map: "idx_mp_permission")
+}
+
+// ─── Approval Authority (Epic 6) ──────────────────────────────
+model ApprovalLevel {
+  id              String   @id @default(uuid()) @db.Uuid
+  levelCode       String   @unique @map("level_code")
+  levelName       String   @map("level_name")
+  companyId       String?  @db.Uuid @map("company_id")
+  module          String   // PROCUREMENT, FINANCE, HR, MAINTENANCE, MANUFACTURING
+  documentType    String   @map("document_type") // PURCHASE_ORDER, EXPENSE, LEAVE, WORK_ORDER, etc.
+  levelNumber     Int      @map("level_number") // 1, 2, 3, 4
+  roleName        String   @map("role_name") // DEPT_HEAD, FINANCE_MANAGER, DIRECTOR, CEO
+  minAmount       Decimal  @default(0) @map("min_amount") @db.Decimal(18, 4)
+  maxAmount       Decimal? @map("max_amount") @db.Decimal(18, 4) // NULL = unlimited
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  requiresDualApproval Boolean @default(false) @map("requires_dual_approval")
+  slaHours        Int      @default(48) @map("sla_hours")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("approval_levels")
+  @@index([companyId, module, documentType], map: "idx_al_company_module_doc")
+  @@index([levelNumber, status], map: "idx_al_level_status")
+}
+
+model ApprovalLimit {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid @map("user_id")
+  companyId       String   @db.Uuid @map("company_id")
+  module          String   // PROCUREMENT, FINANCE, HR, MAINTENANCE
+  documentType    String   @map("document_type")
+  maxAmount       Decimal  @map("max_amount") @db.Decimal(18, 4)
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  dailyLimit      Decimal? @map("daily_limit") @db.Decimal(18, 4)
+  monthlyLimit    Decimal? @map("monthly_limit") @db.Decimal(18, 4)
+  effectiveFrom   DateTime @default(now()) @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("approval_limits")
+  @@index([userId, module, documentType, status], map: "idx_appr_user_module_doc")
+  @@index([companyId, status], map: "idx_appr_company_status")
+}
+
+// ─── Security Policies (Epic 7) ───────────────────────────────
+model SecurityPolicy {
+  id              String   @id @default(uuid()) @db.Uuid
+  policyCode      String   @unique @map("policy_code")
+  policyName      String   @map("policy_name")
+  policyDescription String? @map("policy_description")
+  policyType      String   @map("policy_type") // WORKING_HOURS, IP_RESTRICTION, COUNTRY_RESTRICTION, DEVICE_RESTRICTION, PASSWORD_POLICY, SESSION_TIMEOUT, CONCURRENT_SESSIONS
+  companyId       String?  @db.Uuid @map("company_id") // NULL = enterprise-wide
+  branchId        String?  @db.Uuid @map("branch_id") // NULL = all branches
+  roleIds         String[] @default([]) @map("role_ids") // Specific roles
+  conditions      Json     @default("{}") // Policy conditions (hours, IPs, countries, etc.)
+  action          String   @default("DENY") // DENY, ALLOW_WITH_WARNING, REQUIRE_MFA, REQUIRE_APPROVAL
+  priority        Int      @default(100)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("security_policies")
+  @@index([policyType, status], map: "idx_sp_type_status")
+  @@index([companyId, branchId, status], map: "idx_sp_company_branch_status")
+}
+
+// ─── Feature Flags (Epic 8) ───────────────────────────────────
+model FeatureFlag {
+  id                  String   @id @default(uuid()) @db.Uuid
+  flagKey             String   @unique @map("flag_key")
+  flagName            String   @map("flag_name")
+  flagDescription     String?  @map("flag_description")
+  flagType            String   @default("BOOLEAN") @map("flag_type") // BOOLEAN, STRING, INTEGER, JSON
+  defaultState        String   @default("DISABLED") @map("default_state") // ENABLED, DISABLED
+  currentState        String   @default("DISABLED") @map("current_state") // ENABLED, DISABLED, BETA, PILOT, GRADUAL_ROLLOUT
+  rolloutPercentage   Decimal  @default(0) @map("rollout_percentage") @db.Decimal(5, 2)
+  killSwitchEnabled   Boolean  @default(false) @map("kill_switch_enabled")
+  killSwitchReason    String?  @map("kill_switch_reason")
+  ownerUserId         String?  @db.Uuid @map("owner_user_id")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  assignments         FeatureAssignment[]
+
+  @@map("feature_flags")
+  @@index([currentState, status], map: "idx_ff_state_status")
+  @@index([killSwitchEnabled], map: "idx_ff_kill_switch")
+}
+
+model FeatureAssignment {
+  id              String   @id @default(uuid()) @db.Uuid
+  flagId          String   @db.Uuid @map("flag_id")
+  targetType      String   @map("target_type") // COMPANY, BRANCH, ROLE, USER, ENVIRONMENT
+  targetId        String   @db.Uuid @map("target_id") // Company ID, Branch ID, Role ID, User ID
+  isEnabled       Boolean  @default(false) @map("is_enabled")
+  conditions      Json?    @default("{}") // Additional conditions
+  assignedBy      String?  @db.Uuid @map("assigned_by")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  featureFlag     FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
+  @@unique([flagId, targetType, targetId], map: "feature_assignment_unique")
+  @@map("feature_assignments")
+  @@index([flagId, status], map: "idx_fa_flag_status")
+  @@index([targetType, targetId, status], map: "idx_fa_target_status")
+}

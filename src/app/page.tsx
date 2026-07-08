@@ -7,7 +7,9 @@ import {
   Building2, ChevronRight, ChevronDown, Plus, Search,
   Factory, Warehouse, Store, UtensilsCrossed, DollarSign,
   Users, Wrench, BarChart3, Brain, Settings, Network,
-  Layers, MapPin, Calendar, Package, Box
+  Layers, MapPin, Calendar, Package, Box,
+  CheckCircle2, ToggleLeft, ToggleRight, ShieldCheck,
+  UserCog, Flag, Menu as MenuIcon, AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -16,141 +18,75 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
-import { useOrgContextStore } from '@/stores/org-context-store'
 import { cn } from '@/lib/utils'
 
-// ─── Organization Tree Data ─────────────────────────────
-interface OrgNode {
-  id: string
-  type: 'ENTERPRISE' | 'COMPANY' | 'BU' | 'BRANCH' | 'PLANT' | 'WAREHOUSE' | 'DEPARTMENT' | 'COST_CENTER'
-  code: string
-  name: string
-  status: string
-  children?: OrgNode[]
-}
-
-const SAMPLE_TREE: OrgNode[] = [
-  {
-    id: 'ent-1', type: 'ENTERPRISE', code: 'SUDHASTAR', name: 'Sudhastar Group', status: 'ACTIVE',
-    children: [
-      {
-        id: 'cmp-1', type: 'COMPANY', code: 'SFL', name: 'Sudhastar Foods Ltd.', status: 'ACTIVE',
-        children: [
-          {
-            id: 'bu-1', type: 'BU', code: 'MFG-BU', name: 'Manufacturing BU', status: 'ACTIVE',
-            children: [
-              {
-                id: 'br-1', type: 'BRANCH', code: 'MUM-PLT', name: 'Mumbai Plant', status: 'ACTIVE',
-                children: [
-                  { id: 'pl-1', type: 'PLANT', code: 'MUM-P1', name: 'Production Line 1', status: 'ACTIVE' },
-                  { id: 'wh-1', type: 'WAREHOUSE', code: 'MUM-WH-RM', name: 'Raw Material Warehouse', status: 'ACTIVE' },
-                  { id: 'wh-2', type: 'WAREHOUSE', code: 'MUM-WH-FG', name: 'Finished Goods Warehouse', status: 'ACTIVE' },
-                ]
-              },
-              {
-                id: 'br-2', type: 'BRANCH', code: 'PUN-PLT', name: 'Pune Plant', status: 'ACTIVE',
-                children: [
-                  { id: 'pl-2', type: 'PLANT', code: 'PUN-P1', name: 'Production Line 1', status: 'ACTIVE' },
-                  { id: 'wh-3', type: 'WAREHOUSE', code: 'PUN-WH-RM', name: 'Raw Material Warehouse', status: 'ACTIVE' },
-                ]
-              }
-            ]
-          },
-          {
-            id: 'bu-2', type: 'BU', code: 'RTL-BU', name: 'Retail BU', status: 'ACTIVE',
-            children: [
-              { id: 'br-3', type: 'BRANCH', code: 'MUM-STR-01', name: 'Mumbai Store 01', status: 'ACTIVE' },
-              { id: 'br-4', type: 'BRANCH', code: 'MUM-STR-02', name: 'Mumbai Store 02', status: 'ACTIVE' },
-              { id: 'br-5', type: 'BRANCH', code: 'PUN-STR-01', name: 'Pune Store 01', status: 'ACTIVE' },
-            ]
-          },
-          {
-            id: 'bu-3', type: 'BU', code: 'RST-BU', name: 'Restaurant BU', status: 'ACTIVE',
-            children: [
-              { id: 'br-6', type: 'BRANCH', code: 'MUM-RST-01', name: 'Mumbai Restaurant 01', status: 'ACTIVE' },
-              { id: 'br-7', type: 'BRANCH', code: 'PUN-RST-01', name: 'Pune Restaurant 01', status: 'ACTIVE' },
-            ]
-          },
-        ]
-      },
-      {
-        id: 'cmp-2', type: 'COMPANY', code: 'SLL', name: 'Sudhastar Logistics Ltd.', status: 'ACTIVE',
-        children: [
-          {
-            id: 'bu-4', type: 'BU', code: 'DIST-BU', name: 'Distribution BU', status: 'ACTIVE',
-            children: [
-              { id: 'br-8', type: 'BRANCH', code: 'MUM-DC', name: 'Mumbai Distribution Center', status: 'ACTIVE' },
-              { id: 'wh-4', type: 'WAREHOUSE', code: 'MUM-DC-WH', name: 'DC Warehouse', status: 'ACTIVE' },
-            ]
-          }
-        ]
-      }
-    ]
-  }
+// ─── RBAC Data ──────────────────────────────────────────
+const ROLES = [
+  { code: 'SUPER_ADMIN', name: 'Super Administrator', category: 'EXECUTIVE', type: 'SYSTEM', users: 1, permissions: 250 },
+  { code: 'ENT_ADMIN', name: 'Enterprise Administrator', category: 'EXECUTIVE', type: 'BUILTIN', users: 2, permissions: 200 },
+  { code: 'CMP_ADMIN', name: 'Company Administrator', category: 'EXECUTIVE', type: 'BUILTIN', users: 5, permissions: 180 },
+  { code: 'FIN_MGR', name: 'Finance Manager', category: 'MANAGEMENT', type: 'BUILTIN', users: 3, permissions: 85 },
+  { code: 'HR_MGR', name: 'HR Manager', category: 'MANAGEMENT', type: 'BUILTIN', users: 2, permissions: 75 },
+  { code: 'PURCH_MGR', name: 'Purchase Manager', category: 'MANAGEMENT', type: 'BUILTIN', users: 4, permissions: 60 },
+  { code: 'WH_MGR', name: 'Warehouse Manager', category: 'MANAGER', type: 'BUILTIN', users: 6, permissions: 55 },
+  { code: 'PROD_MGR', name: 'Production Manager', category: 'MANAGER', type: 'BUILTIN', users: 4, permissions: 50 },
+  { code: 'QUAL_MGR', name: 'Quality Manager', category: 'MANAGER', type: 'BUILTIN', users: 3, permissions: 45 },
+  { code: 'MAINT_MGR', name: 'Maintenance Manager', category: 'MANAGER', type: 'BUILTIN', users: 2, permissions: 40 },
+  { code: 'RTL_MGR', name: 'Retail Manager', category: 'MANAGER', type: 'BUILTIN', users: 8, permissions: 35 },
+  { code: 'RST_MGR', name: 'Restaurant Manager', category: 'MANAGER', type: 'BUILTIN', users: 5, permissions: 35 },
+  { code: 'CASHIER', name: 'Cashier', category: 'OPERATOR', type: 'BUILTIN', users: 25, permissions: 15 },
+  { code: 'AUDITOR', name: 'Auditor', category: 'CLERK', type: 'BUILTIN', users: 2, permissions: 30 },
+  { code: 'VIEWER', name: 'Viewer', category: 'CLERK', type: 'BUILTIN', users: 10, permissions: 20 },
 ]
 
-const NODE_ICONS: Record<string, React.ReactNode> = {
-  ENTERPRISE: <Network className="h-4 w-4 text-blue-600" />,
-  COMPANY: <Building2 className="h-4 w-4 text-purple-600" />,
-  BU: <Layers className="h-4 w-4 text-indigo-600" />,
-  BRANCH: <MapPin className="h-4 w-4 text-emerald-600" />,
-  PLANT: <Factory className="h-4 w-4 text-orange-600" />,
-  WAREHOUSE: <Warehouse className="h-4 w-4 text-amber-600" />,
-  DEPARTMENT: <Users className="h-4 w-4 text-cyan-600" />,
-  COST_CENTER: <DollarSign className="h-4 w-4 text-green-600" />,
-}
+const PERMISSION_MODULES = [
+  { module: 'PLATFORM', label: 'Platform', permissions: 45, color: 'text-blue-600' },
+  { module: 'ORGANIZATION', label: 'Organization', permissions: 30, color: 'text-purple-600' },
+  { module: 'INVENTORY', label: 'Inventory', permissions: 25, color: 'text-indigo-600' },
+  { module: 'WAREHOUSE', label: 'Warehouse', permissions: 35, color: 'text-amber-600' },
+  { module: 'MANUFACTURING', label: 'Manufacturing', permissions: 40, color: 'text-orange-600' },
+  { module: 'FINANCE', label: 'Finance', permissions: 50, color: 'text-green-600' },
+  { module: 'HR', label: 'Workforce', permissions: 45, color: 'text-cyan-600' },
+  { module: 'MAINTENANCE', label: 'Maintenance', permissions: 30, color: 'text-red-600' },
+  { module: 'REPORTS', label: 'Reports', permissions: 15, color: 'text-slate-600' },
+  { module: 'SETTINGS', label: 'Settings', permissions: 10, color: 'text-muted-foreground' },
+]
 
-const NODE_LABELS: Record<string, string> = {
-  ENTERPRISE: 'Enterprise', COMPANY: 'Company', BU: 'Business Unit',
-  BRANCH: 'Branch', PLANT: 'Plant', WAREHOUSE: 'Warehouse',
-  DEPARTMENT: 'Department', COST_CENTER: 'Cost Center',
-}
+const FEATURE_FLAGS = [
+  { key: 'ai_copilot', name: 'AI Copilot', state: 'PILOT', targets: ['Corporate'], killSwitch: false },
+  { key: 'ai_agents', name: 'AI Agents', state: 'DISABLED', targets: [], killSwitch: false },
+  { key: 'digital_twin', name: 'Digital Twin', state: 'BETA', targets: ['Mumbai Plant'], killSwitch: false },
+  { key: 'offline_pos', name: 'Offline POS', state: 'ENABLED', targets: ['All Stores'], killSwitch: false },
+  { key: 'multi_currency', name: 'Multi-Currency', state: 'ENABLED', targets: ['All'], killSwitch: false },
+  { key: 'predictive_maintenance', name: 'Predictive Maintenance', state: 'DISABLED', targets: [], killSwitch: false },
+  { key: 'auto_reorder', name: 'Auto Reorder', state: 'GRADUAL_ROLLOUT', targets: ['50% rollout'], killSwitch: false },
+  { key: 'voice_commands', name: 'Voice Commands', state: 'DISABLED', targets: [], killSwitch: true },
+]
 
-// ─── Tree Node Component ────────────────────────────────
-function TreeNode({ node, depth, onSelect, selectedId }: {
-  node: OrgNode, depth: number, onSelect: (n: OrgNode) => void, selectedId?: string
-}) {
-  const [expanded, setExpanded] = useState(depth < 2)
-  const hasChildren = node.children && node.children.length > 0
+const APPROVAL_LEVELS = [
+  { level: 1, role: 'Department Head', min: 0, max: 25000, currency: 'INR', sla: 24 },
+  { level: 2, role: 'Finance Manager', min: 25000, max: 200000, currency: 'INR', sla: 48 },
+  { level: 3, role: 'Director', min: 200000, max: 1000000, currency: 'INR', sla: 72 },
+  { level: 4, role: 'CEO', min: 1000000, max: null, currency: 'INR', sla: 96 },
+]
 
-  return (
-    <div>
-      <div
-        className={cn(
-          'flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted/50 transition-colors',
-          selectedId === node.id && 'bg-primary/10 border border-primary/20'
-        )}
-        style={{ paddingLeft: `${depth * 20 + 8}px` }}
-        onClick={() => onSelect(node)}
-      >
-        {hasChildren ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}
-            className="flex-shrink-0"
-          >
-            {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          </button>
-        ) : (
-          <div className="w-3" />
-        )}
-        {NODE_ICONS[node.type]}
-        <span className="text-sm font-medium flex-1 truncate">{node.name}</span>
-        <Badge variant="outline" className="text-xs font-mono">{node.code}</Badge>
-        <Badge variant={node.status === 'ACTIVE' ? 'default' : 'secondary'}
-          className={node.status === 'ACTIVE' ? 'text-xs bg-emerald-600 hover:bg-emerald-600 text-white' : 'text-xs'}>
-          {node.status}
-        </Badge>
-      </div>
-      {expanded && hasChildren && (
-        <div>
-          {node.children!.map(child => (
-            <TreeNode key={child.id} node={child} depth={depth + 1} onSelect={onSelect} selectedId={selectedId} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
+const SECURITY_POLICIES = [
+  { code: 'WH_WORKING_HOURS', name: 'Warehouse Working Hours', type: 'WORKING_HOURS', scope: 'Warehouse roles', action: 'DENY', status: 'ACTIVE' },
+  { code: 'OFFICE_IP_ONLY', name: 'Office IP Restriction', type: 'IP_RESTRICTION', scope: 'Finance roles', action: 'DENY', status: 'ACTIVE' },
+  { code: 'INDIA_ONLY', name: 'India Country Restriction', type: 'COUNTRY_RESTRICTION', scope: 'All roles', action: 'DENY', status: 'ACTIVE' },
+  { code: 'MAX_3_SESSIONS', name: 'Max Concurrent Sessions', type: 'CONCURRENT_SESSIONS', scope: 'All roles', action: 'DENY', status: 'ACTIVE' },
+  { code: 'PWD_EXPIRY_90', name: 'Password Expiry 90 Days', type: 'PASSWORD_POLICY', scope: 'All roles', action: 'REQUIRE_MFA', status: 'ACTIVE' },
+]
+
+const STATE_COLORS: Record<string, string> = {
+  ENABLED: 'bg-emerald-600 hover:bg-emerald-600 text-white',
+  DISABLED: 'bg-muted text-muted-foreground',
+  BETA: 'bg-blue-600 hover:bg-blue-600 text-white',
+  PILOT: 'bg-purple-600 hover:bg-purple-600 text-white',
+  GRADUAL_ROLLOUT: 'bg-amber-500 hover:bg-amber-500 text-white',
 }
 
 // ─── Login Screen ───────────────────────────────────────
@@ -161,18 +97,12 @@ function LoginScreen({ onLogin }: { onLogin: (email: string, password: string, r
   const [remember, setRemember] = useState(false)
   const [capsLockOn, setCapsLockOn] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
     setLoading(true)
     await onLogin(email, password, remember)
     setLoading(false)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    setCapsLockOn(!!(e.getModifierState && e.getModifierState('CapsLock')))
   }
 
   return (
@@ -188,105 +118,73 @@ function LoginScreen({ onLogin }: { onLogin: (email: string, password: string, r
             <Shield className="mr-1 h-3 w-3" /> Enterprise Identity Platform
           </Badge>
         </div>
-
         <Card className="p-6 bg-slate-900/80 backdrop-blur border-slate-700">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-200">Email Address</Label>
+              <Label className="text-slate-200">Email Address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input id="email" type="email" placeholder="admin@sudhastar.com" value={email}
-                  onChange={(e) => setEmail(e.target.value)} onKeyDown={handleKeyDown} required
-                  className="pl-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                <Input type="email" placeholder="admin@sudhastar.com" value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => setCapsLockOn(!!(e.getModifierState && e.getModifierState('CapsLock')))}
+                  required className="pl-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
               </div>
             </div>
-
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-slate-200">Password</Label>
-              </div>
+              <Label className="text-slate-200">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••••••"
-                  value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={handleKeyDown} required
+                <Input type={showPassword ? 'text' : 'password'} placeholder="••••••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)} required
+                  onKeyDown={(e) => setCapsLockOn(!!(e.getModifierState && e.getModifierState('CapsLock')))}
                   className="pl-10 pr-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {capsLockOn && (
-                <div className="flex items-center gap-1 text-xs text-amber-400">
-                  <Keyboard className="h-3 w-3" /> Caps Lock is on
-                </div>
-              )}
+              {capsLockOn && <div className="flex items-center gap-1 text-xs text-amber-400"><Keyboard className="h-3 w-3" /> Caps Lock is on</div>}
             </div>
-
             <div className="flex items-center space-x-2">
-              <input id="remember" type="checkbox" checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
+              <input id="remember" type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-primary" />
               <Label htmlFor="remember" className="text-sm text-slate-300 cursor-pointer">Remember me for 30 days</Label>
             </div>
-
-            {error && (
-              <div className="flex items-start gap-2 rounded-lg bg-red-950/50 border border-red-800 p-3">
-                <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-red-200">{error}</p>
-              </div>
-            )}
-
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</>) : (<>Sign In<ArrowRight className="ml-2 h-4 w-4" /></>)}
             </Button>
           </form>
           <Separator className="bg-slate-700 mt-6" />
-          <p className="text-center text-xs text-slate-500 mt-4">Sprint 4 — Organization Platform</p>
+          <p className="text-center text-xs text-slate-500 mt-4">Sprint 5 — Authorization Platform</p>
         </Card>
       </div>
     </div>
   )
 }
 
-// ─── Organization Dashboard Screen ──────────────────────
-function OrgDashboard({ onLogout }: { onLogout: () => void }) {
-  const [selectedNode, setSelectedNode] = useState<OrgNode | null>(null)
-  const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'tree' | 'enterprise' | 'company' | 'branch' | 'plant' | 'warehouse' | 'department' | 'costcenter'>('tree')
-  const orgContext = useOrgContextStore()
+// ─── RBAC Management Screen ─────────────────────────────
+function RBACDashboard({ onLogout }: { onLogout: () => void }) {
+  const [activeTab, setActiveTab] = useState('roles')
 
-  const breadcrumb = orgContext.getBreadcrumb()
-
-  const sidebarSections = [
-    { label: 'Operations', items: [
-      { name: 'Dashboard', icon: <BarChart3 className="h-4 w-4" />, tab: 'tree' as const },
+  const sidebarItems = [
+    { section: 'Operations', items: [
+      { name: 'Dashboard', icon: <BarChart3 className="h-4 w-4" />, tab: 'dashboard' },
       { name: 'Inventory', icon: <Box className="h-4 w-4" /> },
       { name: 'Warehouse', icon: <Warehouse className="h-4 w-4" /> },
-      { name: 'Manufacturing', icon: <Factory className="h-4 w-4" /> },
-      { name: 'Quality', icon: <Shield className="h-4 w-4" /> },
     ]},
-    { label: 'Organization', items: [
-      { name: 'Enterprise', icon: <Network className="h-4 w-4" />, tab: 'enterprise' as const },
-      { name: 'Companies', icon: <Building2 className="h-4 w-4" />, tab: 'company' as const },
-      { name: 'Branches', icon: <MapPin className="h-4 w-4" />, tab: 'branch' as const },
-      { name: 'Plants', icon: <Factory className="h-4 w-4" />, tab: 'plant' as const },
-      { name: 'Warehouses', icon: <Warehouse className="h-4 w-4" />, tab: 'warehouse' as const },
-      { name: 'Departments', icon: <Users className="h-4 w-4" />, tab: 'department' as const },
-      { name: 'Cost Centers', icon: <DollarSign className="h-4 w-4" />, tab: 'costcenter' as const },
+    { section: 'Administration', items: [
+      { name: 'Roles', icon: <Shield className="h-4 w-4" />, tab: 'roles' },
+      { name: 'Permissions', icon: <ShieldCheck className="h-4 w-4" />, tab: 'permissions' },
+      { name: 'User Groups', icon: <Users className="h-4 w-4" />, tab: 'groups' },
+      { name: 'Feature Flags', icon: <Flag className="h-4 w-4" />, tab: 'flags' },
+      { name: 'Approval Matrix', icon: <CheckCircle2 className="h-4 w-4" />, tab: 'approvals' },
+      { name: 'Security Policies', icon: <AlertTriangle className="h-4 w-4" />, tab: 'policies' },
+      { name: 'Menu Builder', icon: <MenuIcon className="h-4 w-4" />, tab: 'menus' },
     ]},
-    { label: 'Business', items: [
-      { name: 'Procurement', icon: <Package className="h-4 w-4" /> },
-      { name: 'Finance', icon: <DollarSign className="h-4 w-4" /> },
-      { name: 'Workforce', icon: <Users className="h-4 w-4" /> },
-      { name: 'Maintenance', icon: <Wrench className="h-4 w-4" /> },
-    ]},
-    { label: 'Channels', items: [
-      { name: 'Retail POS', icon: <Store className="h-4 w-4" /> },
-      { name: 'Restaurant POS', icon: <UtensilsCrossed className="h-4 w-4" /> },
-    ]},
-    { label: 'Intelligence', items: [
-      { name: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
-      { name: 'AI Copilot', icon: <Brain className="h-4 w-4" /> },
+    { section: 'Organization', items: [
+      { name: 'Enterprise', icon: <Network className="h-4 w-4" /> },
+      { name: 'Companies', icon: <Building2 className="h-4 w-4" /> },
+      { name: 'Branches', icon: <MapPin className="h-4 w-4" /> },
     ]},
   ]
 
@@ -303,9 +201,9 @@ function OrgDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
         <ScrollArea className="flex-1 px-3 py-4">
           <nav className="space-y-6">
-            {sidebarSections.map(section => (
-              <div key={section.label}>
-                <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.label}</p>
+            {sidebarItems.map(section => (
+              <div key={section.section}>
+                <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.section}</p>
                 <div className="space-y-1">
                   {section.items.map(item => (
                     <button key={item.name}
@@ -317,8 +215,7 @@ function OrgDashboard({ onLogout }: { onLogout: () => void }) {
                       )}
                       onClick={() => 'tab' in item && setActiveTab(item.tab)}
                     >
-                      {item.icon}
-                      {item.name}
+                      {item.icon}{item.name}
                     </button>
                   ))}
                 </div>
@@ -333,157 +230,242 @@ function OrgDashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header with Global Context Breadcrumb */}
         <header className="flex h-16 items-center gap-4 border-b px-6">
-          <h1 className="text-lg font-semibold capitalize">{activeTab === 'tree' ? 'Organization Tree' : activeTab}</h1>
-          {breadcrumb.length > 0 && (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              {breadcrumb.map((c, i) => (
-                <span key={i} className="flex items-center gap-1">
-                  {i > 0 && <ChevronRight className="h-3 w-3" />}
-                  <Badge variant="outline" className="text-xs">{c.level}: {c.name}</Badge>
-                </span>
-              ))}
-            </div>
-          )}
+          <h1 className="text-lg font-semibold capitalize">{activeTab === 'dashboard' ? 'Dashboard' : activeTab}</h1>
           <div className="flex-1" />
           <Badge variant="outline">
             <Calendar className="mr-1 h-3 w-3" />
-            Sprint 4 — Organization Platform
+            Sprint 5 — Authorization Platform
           </Badge>
         </header>
 
-        {/* Content */}
         <ScrollArea className="flex-1">
           <main className="p-6 space-y-6 max-w-[1600px] mx-auto">
-            {activeTab === 'tree' && (
+            {/* Dashboard */}
+            {activeTab === 'dashboard' && (
               <>
-                {/* Welcome */}
                 <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
-                  <h2 className="text-2xl font-bold mb-1">Enterprise Organization Platform</h2>
+                  <h2 className="text-2xl font-bold mb-1">🎉 Platform Foundation Complete</h2>
                   <p className="text-slate-300 text-sm">
-                    Complete organizational hierarchy: Enterprise → Company → Business Unit → Branch → Plant → Warehouse → Department.
-                    Every module in SUOP references these entities.
+                    Sprint 5 completes the Platform Foundation. Sprints 1-5 have built: Project Bootstrap,
+                    Core Infrastructure, Identity Platform, Organization Platform, and Authorization Platform.
+                    Next: Enterprise Master Data Platform (Part 2).
                   </p>
                 </Card>
-
-                {/* Stats */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {[
-                    { label: 'Enterprises', value: 1, icon: <Network className="h-5 w-5 text-blue-600" /> },
-                    { label: 'Companies', value: 2, icon: <Building2 className="h-5 w-5 text-purple-600" /> },
-                    { label: 'Branches', value: 8, icon: <MapPin className="h-5 w-5 text-emerald-600" /> },
-                    { label: 'Warehouses', value: 4, icon: <Warehouse className="h-5 w-5 text-amber-600" /> },
+                    { label: 'Roles', value: ROLES.length, icon: <Shield className="h-5 w-5 text-blue-600" /> },
+                    { label: 'Permission Modules', value: PERMISSION_MODULES.length, icon: <ShieldCheck className="h-5 w-5 text-emerald-600" /> },
+                    { label: 'Feature Flags', value: FEATURE_FLAGS.length, icon: <Flag className="h-5 w-5 text-amber-600" /> },
+                    { label: 'Security Policies', value: SECURITY_POLICIES.length, icon: <AlertTriangle className="h-5 w-5 text-red-600" /> },
                   ].map(s => (
                     <Card key={s.label} className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-muted-foreground">{s.label}</p>
-                        {s.icon}
+                        <p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}
                       </div>
                       <p className="text-2xl font-bold">{s.value}</p>
                     </Card>
                   ))}
                 </div>
-
-                {/* Tree View */}
-                <Card className="p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Network className="h-5 w-5 text-muted-foreground" />
-                      Organization Tree
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search..." value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          className="pl-8 w-48 h-8 text-sm" />
+                <Card className="p-6">
+                  <h3 className="font-semibold mb-4">Platform Foundation Progress</h3>
+                  <div className="space-y-3">
+                    {[
+                      { sprint: 'Sprint 1', name: 'Project Bootstrap', status: 'done' },
+                      { sprint: 'Sprint 2', name: 'Core Infrastructure', status: 'done' },
+                      { sprint: 'Sprint 3', name: 'Identity Platform', status: 'done' },
+                      { sprint: 'Sprint 4', name: 'Organization Platform', status: 'done' },
+                      { sprint: 'Sprint 5', name: 'Authorization Platform', status: 'done' },
+                    ].map(s => (
+                      <div key={s.sprint} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <Badge variant="outline" className="font-mono">{s.sprint}</Badge>
+                        <span className="flex-1">{s.name}</span>
+                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">Complete</Badge>
                       </div>
-                      <Button size="sm" variant="outline">
-                        <Plus className="mr-1 h-3 w-3" /> Add Entity
-                      </Button>
-                    </div>
-                  </div>
-                  <ScrollArea className="h-[500px]">
-                    {SAMPLE_TREE.map(node => (
-                      <TreeNode key={node.id} node={node} depth={0}
-                        onSelect={setSelectedNode} selectedId={selectedNode?.id} />
                     ))}
-                  </ScrollArea>
+                  </div>
+                  <Separator className="my-4" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Phase 1: Platform Foundation</span>
+                    <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">
+                      <CheckCircle2 className="mr-1 h-3 w-3" />100% COMPLETE
+                    </Badge>
+                  </div>
                 </Card>
-
-                {/* Selected Node Details */}
-                {selectedNode && (
-                  <Card className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      {NODE_ICONS[selectedNode.type]}
-                      <div>
-                        <h3 className="font-semibold text-lg">{selectedNode.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {NODE_LABELS[selectedNode.type]} · {selectedNode.code}
-                        </p>
-                      </div>
-                      <div className="flex-1" />
-                      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">{selectedNode.status}</Badge>
-                    </div>
-                    <Separator className="mb-4" />
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Entity Type</p>
-                        <p className="text-sm font-medium">{NODE_LABELS[selectedNode.type]}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Code</p>
-                        <p className="text-sm font-medium font-mono">{selectedNode.code}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Status</p>
-                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">{selectedNode.status}</Badge>
-                      </div>
-                    </div>
-                    {selectedNode.children && selectedNode.children.length > 0 && (
-                      <>
-                        <Separator className="my-4" />
-                        <p className="text-xs text-muted-foreground mb-2">Child Entities ({selectedNode.children.length})</p>
-                        <div className="space-y-1">
-                          {selectedNode.children.map(child => (
-                            <div key={child.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer"
-                              onClick={() => setSelectedNode(child)}>
-                              {NODE_ICONS[child.type]}
-                              <span className="text-sm flex-1">{child.name}</span>
-                              <Badge variant="outline" className="text-xs font-mono">{child.code}</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </Card>
-                )}
               </>
             )}
 
-            {activeTab !== 'tree' && (
-              <Card className="p-12 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                    {activeTab === 'enterprise' && <Network className="h-8 w-8 text-muted-foreground" />}
-                    {activeTab === 'company' && <Building2 className="h-8 w-8 text-muted-foreground" />}
-                    {activeTab === 'branch' && <MapPin className="h-8 w-8 text-muted-foreground" />}
-                    {activeTab === 'plant' && <Factory className="h-8 w-8 text-muted-foreground" />}
-                    {activeTab === 'warehouse' && <Warehouse className="h-8 w-8 text-muted-foreground" />}
-                    {activeTab === 'department' && <Users className="h-8 w-8 text-muted-foreground" />}
-                    {activeTab === 'costcenter' && <DollarSign className="h-8 w-8 text-muted-foreground" />}
+            {/* Roles */}
+            {activeTab === 'roles' && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold flex items-center gap-2"><Shield className="h-5 w-5" /> Role Management</h3>
+                  <Button size="sm"><Plus className="mr-1 h-3 w-3" /> Create Role</Button>
+                </div>
+                <div className="rounded-lg border">
+                  <div className="grid grid-cols-6 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
+                    <span>Role Code</span><span>Role Name</span><span>Category</span><span>Type</span><span>Users</span><span>Permissions</span>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-lg capitalize">{activeTab} Management</h3>
-                    <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                      CRUD interface for {activeTab}s will be implemented with data table, search, filters, and form modals.
-                    </p>
+                  {ROLES.map(role => (
+                    <div key={role.code} className="grid grid-cols-6 gap-2 px-4 py-3 border-t text-sm hover:bg-muted/30">
+                      <span className="font-mono text-xs">{role.code}</span>
+                      <span className="font-medium">{role.name}</span>
+                      <Badge variant="outline" className="text-xs w-fit">{role.category}</Badge>
+                      <Badge variant={role.type === 'SYSTEM' ? 'default' : 'secondary'} className="text-xs w-fit">{role.type}</Badge>
+                      <span>{role.users}</span>
+                      <span>{role.permissions}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Permissions */}
+            {activeTab === 'permissions' && (
+              <Card className="p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-4"><ShieldCheck className="h-5 w-5" /> Permission Matrix by Module</h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {PERMISSION_MODULES.map(m => (
+                    <Card key={m.module} className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {m.label === 'Platform' && <Settings className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Organization' && <Network className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Inventory' && <Box className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Warehouse' && <Warehouse className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Manufacturing' && <Factory className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Finance' && <DollarSign className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Workforce' && <Users className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Maintenance' && <Wrench className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Reports' && <BarChart3 className={cn('h-4 w-4', m.color)} />}
+                        {m.label === 'Settings' && <Settings className={cn('h-4 w-4', m.color)} />}
+                        <span className="text-sm font-medium">{m.label}</span>
+                      </div>
+                      <p className="text-2xl font-bold">{m.permissions}</p>
+                      <p className="text-xs text-muted-foreground">permissions</p>
+                      <Separator className="my-2" />
+                      <div className="flex flex-wrap gap-1">
+                        {['CREATE','READ','UPDATE','DELETE','APPROVE','EXPORT'].map(a => (
+                          <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
+                        ))}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Feature Flags */}
+            {activeTab === 'flags' && (
+              <Card className="p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-4"><Flag className="h-5 w-5" /> Feature Flag Management</h3>
+                <div className="space-y-2">
+                  {FEATURE_FLAGS.map(f => (
+                    <div key={f.key} className="flex items-center gap-4 p-3 rounded-lg border">
+                      <Switch checked={f.state === 'ENABLED' || f.state === 'BETA' || f.state === 'PILOT' || f.state === 'GRADUAL_ROLLOUT'} />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{f.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{f.key}</p>
+                      </div>
+                      {f.targets.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          {f.targets.map(t => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
+                        </div>
+                      )}
+                      <Badge className={cn('text-xs', STATE_COLORS[f.state] || 'bg-muted')}>{f.state}</Badge>
+                      {f.killSwitch && <Badge variant="destructive" className="text-xs">KILL SWITCH</Badge>}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Approval Matrix */}
+            {activeTab === 'approvals' && (
+              <Card className="p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-4"><CheckCircle2 className="h-5 w-5" /> Approval Authority Matrix</h3>
+                <p className="text-sm text-muted-foreground mb-4">Purchase Order approval levels by amount</p>
+                <div className="rounded-lg border">
+                  <div className="grid grid-cols-5 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
+                    <span>Level</span><span>Approver Role</span><span>Min Amount</span><span>Max Amount</span><span>SLA (hours)</span>
                   </div>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create {activeTab}
-                  </Button>
+                  {APPROVAL_LEVELS.map(l => (
+                    <div key={l.level} className="grid grid-cols-5 gap-2 px-4 py-3 border-t text-sm">
+                      <Badge variant="outline">Level {l.level}</Badge>
+                      <span className="font-medium">{l.role}</span>
+                      <span className="font-mono">₹{l.min.toLocaleString('en-IN')}</span>
+                      <span className="font-mono">{l.max ? `₹${l.max.toLocaleString('en-IN')}` : 'Unlimited'}</span>
+                      <span>{l.sla}h</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Security Policies */}
+            {activeTab === 'policies' && (
+              <Card className="p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-4"><AlertTriangle className="h-5 w-5" /> Security Policies</h3>
+                <div className="space-y-2">
+                  {SECURITY_POLICIES.map(p => (
+                    <div key={p.code} className="flex items-center gap-4 p-3 rounded-lg border">
+                      <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{p.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{p.code}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">{p.type.replace(/_/g, ' ')}</Badge>
+                      <Badge variant="outline" className="text-xs">{p.scope}</Badge>
+                      <Badge variant={p.action === 'DENY' ? 'destructive' : 'default'} className="text-xs">{p.action}</Badge>
+                      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-xs">ACTIVE</Badge>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* User Groups */}
+            {activeTab === 'groups' && (
+              <Card className="p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-4"><Users className="h-5 w-5" /> User Groups</h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {['Finance Team','Warehouse Team','Production Team','Restaurant Team','Retail Team','Corporate Team','Auditors','IT Team'].map(g => (
+                    <Card key={g} className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
+                          <Users className="h-4 w-4" />
+                        </div>
+                        <span className="text-sm font-medium">{g}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{Math.floor(Math.random() * 20) + 3} members</p>
+                    </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Menu Builder */}
+            {activeTab === 'menus' && (
+              <Card className="p-4">
+                <h3 className="font-semibold flex items-center gap-2 mb-4"><MenuIcon className="h-5 w-5" /> Dynamic Menu Builder</h3>
+                <p className="text-sm text-muted-foreground mb-4">Menus are generated dynamically based on user permissions. Each menu item requires one or more permissions to be visible.</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Card className="p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Warehouse Manager Menu</p>
+                    <div className="space-y-1">
+                      {['Dashboard','Inventory','Warehouse','Inbound','Outbound','Reports'].map(m => (
+                        <div key={m} className="flex items-center gap-2 py-1 text-sm"><ChevronRight className="h-3 w-3" />{m}</div>
+                      ))}
+                    </div>
+                  </Card>
+                  <Card className="p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Cashier Menu</p>
+                    <div className="space-y-1">
+                      {['Billing','Sales','Customers','Returns','Cash Drawer'].map(m => (
+                        <div key={m} className="flex items-center gap-2 py-1 text-sm"><ChevronRight className="h-3 w-3" />{m}</div>
+                      ))}
+                    </div>
+                  </Card>
                 </div>
               </Card>
             )}
@@ -491,7 +473,7 @@ function OrgDashboard({ onLogout }: { onLogout: () => void }) {
             {/* Footer */}
             <div className="text-center text-xs text-muted-foreground py-4">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Volume 1 — Enterprise Development Blueprint · Sprint 4 — Organization Platform</p>
+              <p className="mt-1">Volume 1 — Enterprise Development Blueprint · Sprint 5 — Authorization Platform · Phase 1 COMPLETE</p>
             </div>
           </main>
         </ScrollArea>
@@ -524,5 +506,5 @@ export default function Home() {
     return <LoginScreen onLogin={async (email, password, remember) => { await login(email, password) }} />
   }
 
-  return <OrgDashboard onLogout={logout} />
+  return <RBACDashboard onLogout={logout} />
 }
