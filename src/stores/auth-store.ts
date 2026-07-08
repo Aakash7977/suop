@@ -44,7 +44,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   session: null,
-  isLoading: true,
+  isLoading: false,  // ← Changed: start as false so login screen renders immediately on SSR
   isAuthenticated: false,
   error: null,
   isDemoMode: false,
