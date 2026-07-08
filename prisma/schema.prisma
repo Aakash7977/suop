@@ -4574,3 +4574,263 @@ model BinTransfer {
   @@index([fromBin, toBin], map: "idx_bt_bins")
   @@index([status], map: "idx_bt_status")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 16 — INVENTORY ADJUSTMENT, RECONCILIATION & WRITE-OFF
+// Stock corrections, damage, expiry, write-offs, root cause analysis
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Inventory Adjustment Document ──────────────
+model InventoryAdjustment {
+  id              String   @id @default(uuid()) @db.Uuid
+  adjustmentNumber String  @unique @map("adjustment_number")
+  adjustmentDate  DateTime @map("adjustment_date")
+  // ─── Type ───
+  adjustmentType  String   @map("adjustment_type") // STOCK_GAIN, STOCK_LOSS, DAMAGE, EXPIRY, SHRINKAGE, THEFT, PRODUCTION_VARIANCE, PACKING_VARIANCE, SUPPLIER_SHORTAGE, CUSTOMER_RETURN_CORRECTION, BARCODE_CORRECTION, OPENING_BALANCE_CORRECTION, FINANCIAL_RECONCILIATION
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Reason ───
+  adjustmentReasonId String? @db.Uuid @map("adjustment_reason_id")
+  reason          String?
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, SUBMITTED, PENDING_APPROVAL, APPROVED, POSTED, REJECTED, CANCELLED
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  totalAdjustmentQty Decimal @db.Decimal(18, 4) @default(0) @map("total_adjustment_qty")
+  totalAdjustmentValue Decimal @db.Decimal(18, 2) @default(0) @map("total_adjustment_value")
+  // ─── Workflow ───
+  submittedAt     DateTime? @map("submitted_at")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  postedAt        DateTime? @map("posted_at")
+  // ─── Inventory ───
+  inventoryPosted Boolean  @default(false) @map("inventory_posted")
+  inventoryTransactionId String? @db.Uuid @map("inventory_transaction_id")
+  // ─── Finance ───
+  financePosted   Boolean  @default(false) @map("finance_posted")
+  glEntryNumber   String?  @map("gl_entry_number")
+  // ─── Write-off ───
+  isWriteOff      Boolean  @default(false) @map("is_write_off")
+  writeOffApprovedById String? @db.Uuid @map("write_off_approved_by_id")
+  writeOffApprovedAt DateTime? @map("write_off_approved_at")
+  // ─── Evidence ───
+  photoRequired   Boolean  @default(false) @map("photo_required")
+  photoAttached   Boolean  @default(false) @map("photo_attached")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  requestedById   String?  @db.Uuid @map("requested_by_id")
+  requestedByName String?  @map("requested_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           InventoryAdjustmentLine[]
+
+  @@map("inventory_adjustments")
+  @@index([adjustmentType, status], map: "idx_ia_type_status")
+  @@index([warehouseId, adjustmentDate], map: "idx_ia_warehouse_date")
+  @@index([status, adjustmentDate], map: "idx_ia_status_date")
+  @@index([isWriteOff], map: "idx_ia_writeoff")
+}
+
+model InventoryAdjustmentLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  inventoryAdjustmentId String @db.Uuid @map("inventory_adjustment_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantities ───
+  systemQuantity  Decimal  @db.Decimal(18, 4) @map("system_quantity")
+  physicalQuantity Decimal @db.Decimal(18, 4) @map("physical_quantity")
+  differenceQty   Decimal  @db.Decimal(18, 4) @default(0) @map("difference_qty")
+  adjustmentQty   Decimal  @db.Decimal(18, 4) @default(0) @map("adjustment_qty")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  adjustmentValue Decimal  @db.Decimal(18, 2) @default(0) @map("adjustment_value")
+  // ─── Location ───
+  locationId      String?  @db.Uuid @map("location_id")
+  bin             String?
+  // ─── Root cause ───
+  rootCauseCategory String? @map("root_cause_category") // RECEIVING, STORAGE, PRODUCTION, PACKING, PICKING, DISPATCH, TRANSPORT, RETAIL, RESTAURANT, SYSTEM_ERROR, HUMAN_ERROR
+  rootCauseDetail String?  @map("root_cause_detail")
+  correctiveAction String? @map("corrective_action")
+  // ─── Reason ───
+  reason          String?
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  inventoryAdjustment InventoryAdjustment @relation(fields: [inventoryAdjustmentId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_adjustment_lines")
+  @@index([inventoryAdjustmentId, lineOrder], map: "idx_ial_ia_order")
+  @@index([productId, batchId], map: "idx_ial_product_batch")
+  @@index([rootCauseCategory], map: "idx_ial_root_cause")
+}
+
+// ─── Epic 2: Adjustment Reasons ─────────────────────────
+model AdjustmentReason {
+  id              String   @id @default(uuid()) @db.Uuid
+  reasonCode      String   @unique @map("reason_code")
+  reasonName      String   @map("reason_name")
+  description     String?
+  // ─── Behavior ───
+  effectType      String   @map("effect_type") // INCREASE, DECREASE, NEUTRAL
+  requiresPhoto   Boolean  @default(false) @map("requires_photo")
+  requiresApproval Boolean @default(true) @map("requires_approval")
+  approvalLevel   String   @default("SUPERVISOR") @map("approval_level") // SUPERVISOR, WAREHOUSE_MANAGER, FINANCE, MANAGEMENT
+  isWriteOff      Boolean  @default(false) @map("is_write_off")
+  // ─── Display ───
+  displayOrder    Int      @default(100) @map("display_order")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("adjustment_reasons")
+  @@index([effectType, status], map: "idx_ar_effect_status")
+  @@index([requiresApproval], map: "idx_ar_approval")
+}
+
+// ─── Epic 4: Damage Reports ─────────────────────────────
+model DamageReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  damageReportNumber String @unique @map("damage_report_number")
+  reportDate      DateTime @map("report_date")
+  // ─── Type ───
+  damageType      String   @map("damage_type") // FOOD_DAMAGE, TRANSPORT_DAMAGE, WAREHOUSE_DAMAGE, PRODUCTION_DAMAGE, STORAGE_DAMAGE, HANDLING_DAMAGE
+  damageSeverity  String   @map("damage_severity") // MINOR, MODERATE, SEVERE, TOTAL_LOSS
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  damagedQty      Decimal  @db.Decimal(18, 4) @map("damaged_qty")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalDamageValue Decimal @db.Decimal(18, 2) @default(0) @map("total_damage_value")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Evidence ───
+  photoUrls       String[] @default([]) @map("photo_urls")
+  photoCount      Int      @default(0) @map("photo_count")
+  // ─── Disposition ───
+  disposition     String   @default("PENDING_REVIEW") @map("disposition") // PENDING_REVIEW, SCRAP, REPAIRABLE, DONATE, RETURN_TO_SUPPLIER, WRITE_OFF, REPACK
+  // ─── Status ───
+  status          String   @default("REPORTED") // REPORTED, UNDER_REVIEW, APPROVED, POSTED, DISPOSED, CANCELLED
+  // ─── Approval ───
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Link to adjustment ───
+  adjustmentId    String?  @db.Uuid @map("adjustment_id")
+  // ─── Remarks ───
+  damageDescription String? @map("damage_description")
+  remarks         String?
+  // ─── Audit ───
+  reportedById    String?  @db.Uuid @map("reported_by_id")
+  reportedByName  String?  @map("reported_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("damage_reports_s16")
+  @@index([damageType, status], map: "idx_dr16_type_status")
+  @@index([productId], map: "idx_dr16_product")
+  @@index([status], map: "idx_dr16_status")
+  @@index([damageSeverity], map: "idx_dr16_severity")
+}
+
+// ─── Epic 5: Expiry Adjustments ─────────────────────────
+model ExpiryAdjustment {
+  id              String   @id @default(uuid()) @db.Uuid
+  expiryAdjustmentNumber String @unique @map("expiry_adjustment_number")
+  adjustmentDate  DateTime @map("adjustment_date")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  expiredQty      Decimal  @db.Decimal(18, 4) @map("expired_qty")
+  // ─── Dates ───
+  expiryDate      DateTime @map("expiry_date")
+  manufacturingDate DateTime? @map("manufacturing_date")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_value")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Disposition ───
+  disposition     String   @default("PENDING") @map("disposition") // PENDING, DESTROYED, DONATED, RETURNED_TO_SUPPLIER, ANIMAL_FEED, SOLD_AS_SCRAP
+  disposalDate    DateTime? @map("disposal_date")
+  disposalWitnessId String? @db.Uuid @map("disposal_witness_id")
+  disposalWitnessName String? @map("disposal_witness_name")
+  // ─── Status ───
+  status          String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, POSTED, DISPOSED, CANCELLED
+  // ─── Category ───
+  expiryCategory  String   @map("expiry_category") // EXPIRED, NEAR_EXPIRY, BLOCKED
+  daysBeforeExpiry Int?    @map("days_before_expiry") // negative = already expired
+  // ─── Approval ───
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("expiry_adjustments")
+  @@index([expiryCategory, status], map: "idx_ea_category_status")
+  @@index([productId, batchId], map: "idx_ea_product_batch")
+  @@index([expiryDate], map: "idx_ea_expiry_date")
+  @@index([status], map: "idx_ea_status")
+}
+
+// ─── Epic 8: Root Cause Analysis ────────────────────────
+model AdjustmentRootCause {
+  id              String   @id @default(uuid()) @db.Uuid
+  adjustmentId    String?  @db.Uuid @map("adjustment_id")
+  adjustmentNumber String?  @map("adjustment_number")
+  // ─── Category ───
+  rootCauseCategory String  @map("root_cause_category") // RECEIVING, STORAGE, PRODUCTION, PACKING, PICKING, DISPATCH, TRANSPORT, RETAIL, RESTAURANT, SYSTEM_ERROR, HUMAN_ERROR
+  // ─── Details ───
+  rootCauseDetail String   @map("root_cause_detail")
+  // ─── Impact ───
+  affectedQty     Decimal  @db.Decimal(18, 4) @map("affected_qty")
+  affectedValue   Decimal  @db.Decimal(18, 2) @default(0) @map("affected_value")
+  // ─── Corrective action ───
+  correctiveAction String?  @map("corrective_action")
+  preventiveAction String?  @map("preventive_action")
+  actionOwner     String?  @map("action_owner")
+  actionDueDate   DateTime? @map("action_due_date")
+  actionStatus    String   @default("OPEN") @map("action_status") // OPEN, IN_PROGRESS, COMPLETED, OVERDUE
+  // ─── Recurrence ───
+  isRecurring     Boolean  @default(false) @map("is_recurring")
+  recurrenceCount Int      @default(0) @map("recurrence_count")
+  // ─── Audit ───
+  analyzedById    String?  @db.Uuid @map("analyzed_by_id")
+  analyzedAt      DateTime @default(now()) @map("analyzed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("adjustment_root_causes")
+  @@index([rootCauseCategory], map: "idx_arc_category")
+  @@index([adjustmentId], map: "idx_arc_adjustment")
+  @@index([actionStatus], map: "idx_arc_action_status")
+  @@index([isRecurring], map: "idx_arc_recurring")
+}

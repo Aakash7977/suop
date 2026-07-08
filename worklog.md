@@ -1419,3 +1419,30 @@ Stage Summary:
 - Frontend: New StockTransferModule with 4 tabs
 - Architecture: Full transfer workflow: Request → Approve → Dispatch → In Transit → Receive → Complete. Source ≠ Destination enforced. In-transit inventory tracked separately (not available at either location).
 - Next: Sprint 16 — Inventory Adjustment, Stock Correction & Reconciliation Engine
+Task ID: SPRINT-16
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 16 — Inventory Adjustment, Damage, Expiry & Root Cause Reconciliation Engine
+
+Work Log:
+- Sprint 16 schema already added (6 new tables, total now 155):
+  - InventoryAdjustment (13 adjustment types: STOCK_GAIN, STOCK_LOSS, DAMAGE, EXPIRY, SHRINKAGE, THEFT, PRODUCTION_VARIANCE, PACKING_VARIANCE, SUPPLIER_SHORTAGE, CUSTOMER_RETURN_CORRECTION, BARCODE_CORRECTION, OPENING_BALANCE_CORRECTION, FINANCIAL_RECONCILIATION; 7 statuses: DRAFT/SUBMITTED/PENDING_APPROVAL/APPROVED/POSTED/REJECTED/CANCELLED; write-off flag, inventory+finance posting flags, photo evidence)
+  - InventoryAdjustmentLine (per-line system_qty vs physical_qty vs difference; root cause category, corrective action; product/batch/lot/serial tracking; cost + adjustment value)
+  - AdjustmentReason (10 reasons with effect INCREASE/DECREASE/NEUTRAL; requiresPhoto, requiresApproval, approvalLevel SUPERVISOR/WAREHOUSE_MANAGER/FINANCE/MANAGEMENT; isWriteOff flag)
+  - DamageReport (6 damage types: FOOD/TRANSPORT/WAREHOUSE/PRODUCTION/STORAGE/HANDLING; 4 severities: MINOR/MODERATE/SEVERE/TOTAL_LOSS; 7 dispositions: PENDING_REVIEW/SCRAP/REPAIRABLE/DONATE/RETURN_TO_SUPPLIER/WRITE_OFF/REPACK; photo URLs array)
+  - ExpiryAdjustment (3 categories: EXPIRED/NEAR_EXPIRY/BLOCKED; daysBeforeExpiry signed integer; 6 dispositions incl. DESTROYED/DONATED/RETURNED_TO_SUPPLIER/ANIMAL_FEED/SOLD_AS_SCRAP; disposal witness tracking)
+  - AdjustmentRootCause (11 categories: RECEIVING/STORAGE/PRODUCTION/PACKING/PICKING/DISPATCH/TRANSPORT/RETAIL/RESTAURANT/SYSTEM_ERROR/HUMAN_ERROR; corrective + preventive actions; recurrence flag + count; action owner + due date)
+- Updated backend: ADJ_DATA seed (8 adjustments spanning all 8 primary types, 10 reasons, 4 damage reports with all 4 severities, 3 expiry adjustments covering EXPIRED/NEAR_EXPIRY/BLOCKED, 5 root cause records across 5 categories with 2 recurring). Added 8 endpoints: GET/POST /api/inventory-adjustments, POST /:id/approve, GET /api/inventory-adjustments/reasons, GET /api/damage-reports-s16, GET /api/expiry-adjustments, GET /api/inventory-adjustments/root-causes, GET /api/inventory-adjustments/dashboard, GET /api/inventory-adjustments/info. Backend version 16.0.0. Added ADJ module (active, 6 entities, sprint 16) to /api/modules list.
+- Updated frontend: Added AdjustmentModule with 4 tabs (Overview, Adjustments, Damage, Root Causes). Overview shows 8 stat cards (Total Adjustments, Pending Approval, Damage Reports, Expiry Adjustments, Write-Off Value, Root Causes, Recurring Issues, Reasons Configured) + 7-step workflow diagram (Identify → Capture → Submit → Approve → Post Inventory → Post GL → RCA). Adjustments tab shows table with 13 type color codes, system_qty vs physical_qty vs difference (color-coded green/red), value column, status badges, and flags column (posted ✓, write-off 🗑, photo 🛡). Damage tab shows severity-colored cards with damage type, photo count indicator, disposition badge, linked adjustment number. Root Causes tab shows category-coded cards with corrective + preventive action panels, recurrence badge, owner/due date, and Mark Complete button.
+- Updated sidebar: "Adjustments" (ShieldAlert icon) added to Operations section, available=true.
+- Updated Dashboard: 155 tables, 16 sprints, "Sprint 16 of 21" in hero card, sprintData includes Sprint 16 entry.
+- Updated all text references: header badge "Sprint 16 · 155 Tables · Part 3", login screen "Sprints 1-16", footer "155 Database Tables".
+- Added 'adjustment' to ModuleKey type and moduleNames ('Adjustments & Write-Off').
+- Verified: npx tsc --noEmit clean (no src/app/ errors). npx next build succeeds. bun build index.ts --target=bun succeeds (44 modules bundled). Server running on port 3000.
+
+Stage Summary:
+- Database: 155 tables (Sprint 16 added 6)
+- Backend: 8 new endpoints under /api/inventory-adjustments/*, /api/damage-reports-s16, /api/expiry-adjustments
+- Frontend: New AdjustmentModule with 4 tabs
+- Architecture: Full reconciliation workflow: Identify Discrepancy → Capture Evidence (photo required for DAMAGE/EXPIRY/THEFT) → Submit for Approval (routed by reason approvalLevel) → Approve/Reject (write-offs require FINANCE/MANAGEMENT) → Post to Inventory (ledger updated) → Post to Finance (GL journalized to loss/shrinkage account) → Root Cause Analysis (corrective + preventive actions with recurrence detection).
+- Next: Sprint 17 — Warehouse Management System (zones, bins, racks, capacity planning, slotting)
+---

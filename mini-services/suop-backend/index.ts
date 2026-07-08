@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "15.0.0"
+const VERSION = "16.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -735,6 +735,50 @@ const ST_DATA = {
   ],
 }
 
+// ─── Sprint 16: Adjustment & Reconciliation Seed Data ────
+const ADJ_DATA = {
+  adjustments: [
+    { id: 'adj-001', adjustmentNumber: 'ADJ-2026-0101', adjustmentDate: '2026-07-09', adjustmentType: 'STOCK_GAIN', warehouseName: 'Mumbai DC', reason: 'FOUND', status: 'POSTED', totalLines: 2, totalAdjustmentQty: 18, totalAdjustmentValue: 5400, requestedByName: 'Ramesh Yadav', approvedByName: 'Anita Desai', approvedAt: '2026-07-09', postedAt: '2026-07-09', inventoryPosted: true, financePosted: true, isWriteOff: false, photoAttached: true, remarks: 'Stock found during cycle count in Zone B — verified against last count.' },
+    { id: 'adj-002', adjustmentNumber: 'ADJ-2026-0102', adjustmentDate: '2026-07-09', adjustmentType: 'STOCK_LOSS', warehouseName: 'Mumbai Plant Warehouse', reason: 'COUNTING_ERROR', status: 'PENDING_APPROVAL', totalLines: 1, totalAdjustmentQty: -6, totalAdjustmentValue: -1800, requestedByName: 'Sandeep Kumar', approvedByName: null, approvedAt: null, postedAt: null, inventoryPosted: false, financePosted: false, isWriteOff: false, photoAttached: false, remarks: 'Physical count short by 6 units during cycle count.' },
+    { id: 'adj-003', adjustmentNumber: 'ADJ-2026-0103', adjustmentDate: '2026-07-08', adjustmentType: 'DAMAGE', warehouseName: 'Mumbai DC', reason: 'DAMAGE', status: 'APPROVED', totalLines: 1, totalAdjustmentQty: -12, totalAdjustmentValue: -7200, requestedByName: 'Suresh Patil', approvedByName: 'Anita Desai', approvedAt: '2026-07-08', postedAt: null, inventoryPosted: false, financePosted: false, isWriteOff: true, photoAttached: true, remarks: '12 units crushed during forklift handling — damage report DR-2026-0901 attached.' },
+    { id: 'adj-004', adjustmentNumber: 'ADJ-2026-0104', adjustmentDate: '2026-07-07', adjustmentType: 'EXPIRY', warehouseName: 'Mumbai Retail Store 01', reason: 'EXPIRY', status: 'POSTED', totalLines: 1, totalAdjustmentQty: -24, totalAdjustmentValue: -4800, requestedByName: 'Vikram Iyer', approvedByName: 'Anita Desai', approvedAt: '2026-07-07', postedAt: '2026-07-07', inventoryPosted: true, financePosted: true, isWriteOff: true, photoAttached: true, remarks: 'Expired batch disposed via expiry adjustment EXA-2026-001.' },
+    { id: 'adj-005', adjustmentNumber: 'ADJ-2026-0105', adjustmentDate: '2026-07-09', adjustmentType: 'SHRINKAGE', warehouseName: 'Mumbai Retail Store 01', reason: 'LOST', status: 'SUBMITTED', totalLines: 3, totalAdjustmentQty: -9, totalAdjustmentValue: -2700, requestedByName: 'Vikram Iyer', approvedByName: null, approvedAt: null, postedAt: null, inventoryPosted: false, financePosted: false, isWriteOff: false, photoAttached: false, remarks: 'Retail shrinkage from monthly stock-take — 3 SKUs short.' },
+    { id: 'adj-006', adjustmentNumber: 'ADJ-2026-0106', adjustmentDate: '2026-07-06', adjustmentType: 'THEFT', warehouseName: 'Mumbai DC', reason: 'THEFT', status: 'REJECTED', totalLines: 1, totalAdjustmentQty: -4, totalAdjustmentValue: -16000, requestedByName: 'Suresh Patil', approvedByName: 'Anita Desai', approvedAt: '2026-07-06', postedAt: null, inventoryPosted: false, financePosted: false, isWriteOff: false, photoAttached: true, remarks: 'Suspected theft of premium SKU — police FIR filed. Rejected pending investigation report.' },
+    { id: 'adj-007', adjustmentNumber: 'ADJ-2026-0107', adjustmentDate: '2026-07-09', adjustmentType: 'PRODUCTION_VARIANCE', warehouseName: 'Mumbai Plant Warehouse', reason: 'PRODUCTION_LOSS', status: 'PENDING_APPROVAL', totalLines: 2, totalAdjustmentQty: -15, totalAdjustmentValue: -9750, requestedByName: 'Chef Rajesh', approvedByName: null, approvedAt: null, postedAt: null, inventoryPosted: false, financePosted: false, isWriteOff: false, photoAttached: true, remarks: 'Production variance: actual yield 4% below BOM standard for Kaju Katli batch KK-2607-08.' },
+    { id: 'adj-008', adjustmentNumber: 'ADJ-2026-0108', adjustmentDate: '2026-07-09', adjustmentType: 'BARCODE_CORRECTION', warehouseName: 'Mumbai DC', reason: 'WRONG_ENTRY', status: 'APPROVED', totalLines: 1, totalAdjustmentQty: 0, totalAdjustmentValue: 0, requestedByName: 'Sandeep Kumar', approvedByName: 'Anita Desai', approvedAt: '2026-07-09', postedAt: null, inventoryPosted: false, financePosted: false, isWriteOff: false, photoAttached: false, remarks: 'Wrong barcode scanned during putaway — corrected product mapping (no qty impact).' },
+  ],
+  reasons: [
+    { id: 'rsn-001', reasonCode: 'DAMAGE', reasonName: 'Damage / Breakage', effectType: 'DECREASE', requiresPhoto: true, requiresApproval: true, approvalLevel: 'WAREHOUSE_MANAGER', isWriteOff: true, displayOrder: 10, status: 'ACTIVE' },
+    { id: 'rsn-002', reasonCode: 'EXPIRY', reasonName: 'Expired Stock', effectType: 'DECREASE', requiresPhoto: true, requiresApproval: true, approvalLevel: 'WAREHOUSE_MANAGER', isWriteOff: true, displayOrder: 20, status: 'ACTIVE' },
+    { id: 'rsn-003', reasonCode: 'BROKEN_PACKAGING', reasonName: 'Broken Packaging', effectType: 'DECREASE', requiresPhoto: true, requiresApproval: true, approvalLevel: 'SUPERVISOR', isWriteOff: false, displayOrder: 30, status: 'ACTIVE' },
+    { id: 'rsn-004', reasonCode: 'LOST', reasonName: 'Lost / Missing Stock', effectType: 'DECREASE', requiresPhoto: false, requiresApproval: true, approvalLevel: 'FINANCE', isWriteOff: true, displayOrder: 40, status: 'ACTIVE' },
+    { id: 'rsn-005', reasonCode: 'FOUND', reasonName: 'Found Stock', effectType: 'INCREASE', requiresPhoto: false, requiresApproval: true, approvalLevel: 'SUPERVISOR', isWriteOff: false, displayOrder: 50, status: 'ACTIVE' },
+    { id: 'rsn-006', reasonCode: 'THEFT', reasonName: 'Theft / Pilferage', effectType: 'DECREASE', requiresPhoto: true, requiresApproval: true, approvalLevel: 'MANAGEMENT', isWriteOff: true, displayOrder: 60, status: 'ACTIVE' },
+    { id: 'rsn-007', reasonCode: 'WRONG_ENTRY', reasonName: 'Wrong Entry / Data Error', effectType: 'NEUTRAL', requiresPhoto: false, requiresApproval: true, approvalLevel: 'SUPERVISOR', isWriteOff: false, displayOrder: 70, status: 'ACTIVE' },
+    { id: 'rsn-008', reasonCode: 'COUNTING_ERROR', reasonName: 'Counting Error', effectType: 'NEUTRAL', requiresPhoto: false, requiresApproval: true, approvalLevel: 'SUPERVISOR', isWriteOff: false, displayOrder: 80, status: 'ACTIVE' },
+    { id: 'rsn-009', reasonCode: 'SUPPLIER_SHORTAGE', reasonName: 'Supplier Shortage', effectType: 'DECREASE', requiresPhoto: false, requiresApproval: true, approvalLevel: 'FINANCE', isWriteOff: false, displayOrder: 90, status: 'ACTIVE' },
+    { id: 'rsn-010', reasonCode: 'PRODUCTION_LOSS', reasonName: 'Production Loss / Variance', effectType: 'DECREASE', requiresPhoto: true, requiresApproval: true, approvalLevel: 'FINANCE', isWriteOff: false, displayOrder: 100, status: 'ACTIVE' },
+  ],
+  damageReports: [
+    { id: 'dmg-001', damageReportNumber: 'DR-2026-0901', reportDate: '2026-07-08', damageType: 'WAREHOUSE_DAMAGE', damageSeverity: 'SEVERE', productName: 'Kaju Katli 500g', batchNumber: 'KK-2607-04', damagedQty: 12, unitCost: 600, totalDamageValue: 7200, warehouseName: 'Mumbai DC', photoCount: 4, disposition: 'WRITE_OFF', status: 'POSTED', reportedByName: 'Suresh Patil', adjustmentNumber: 'ADJ-2026-0103', damageDescription: '12 units crushed during forklift handling — outer carton damaged, inner packs contaminated.' },
+    { id: 'dmg-002', damageReportNumber: 'DR-2026-0902', reportDate: '2026-07-09', damageType: 'TRANSPORT_DAMAGE', damageSeverity: 'MODERATE', productName: 'Soan Cake 1kg', batchNumber: 'SC-2606-04', damagedQty: 6, unitCost: 625, totalDamageValue: 3750, warehouseName: 'Mumbai DC', photoCount: 2, disposition: 'REPACK', status: 'UNDER_REVIEW', reportedByName: 'Ramesh Yadav', adjustmentNumber: null, damageDescription: '6 units outer box dented during truck unload — contents intact, repackable.' },
+    { id: 'dmg-003', damageReportNumber: 'DR-2026-0903', reportDate: '2026-07-09', damageType: 'STORAGE_DAMAGE', damageSeverity: 'MINOR', productName: 'Mixed Namkeen 200g', batchNumber: 'MN-2607-03', damagedQty: 18, unitCost: 53, totalDamageValue: 954, warehouseName: 'Mumbai DC', photoCount: 1, disposition: 'REPAIRABLE', status: 'REPORTED', reportedByName: 'Sandeep Kumar', adjustmentNumber: null, damageDescription: '18 packets with minor seal damage from cold storage humidity — sealable via rework.' },
+    { id: 'dmg-004', damageReportNumber: 'DR-2026-0904', reportDate: '2026-07-07', damageType: 'PRODUCTION_DAMAGE', damageSeverity: 'TOTAL_LOSS', productName: 'Gulab Jamun 1kg', batchNumber: 'GJ-2607-01', damagedQty: 24, unitCost: 304, totalDamageValue: 7296, warehouseName: 'Mumbai Plant Warehouse', photoCount: 6, disposition: 'SCRAP', status: 'DISPOSED', reportedByName: 'Chef Rajesh', adjustmentNumber: 'ADJ-2026-0107', damageDescription: 'Full batch burned due to thermostat malfunction — disposed to animal feed vendor.' },
+  ],
+  expiryAdjustments: [
+    { id: 'exa-001', expiryAdjustmentNumber: 'EXA-2026-001', adjustmentDate: '2026-07-07', productName: 'Kaju Katli 250g', batchNumber: 'KK-2606-12', expiredQty: 24, expiryDate: '2026-07-05', unitCost: 200, totalValue: 4800, warehouseName: 'Mumbai Retail Store 01', disposition: 'DESTROYED', disposalDate: '2026-07-07', status: 'POSTED', expiryCategory: 'EXPIRED', daysBeforeExpiry: -2, createdByName: 'Vikram Iyer', approvedByName: 'Anita Desai' },
+    { id: 'exa-002', expiryAdjustmentNumber: 'EXA-2026-002', adjustmentDate: '2026-07-09', productName: 'Soan Cake 500g', batchNumber: 'SC-2605-22', expiredQty: 18, expiryDate: '2026-07-14', unitCost: 312, totalValue: 5616, warehouseName: 'Mumbai DC', disposition: 'PENDING', status: 'PENDING_APPROVAL', expiryCategory: 'NEAR_EXPIRY', daysBeforeExpiry: 5, createdByName: 'Suresh Patil', approvedByName: null },
+    { id: 'exa-003', expiryAdjustmentNumber: 'EXA-2026-003', adjustmentDate: '2026-07-08', productName: 'Mixed Namkeen 200g', batchNumber: 'MN-2606-30', expiredQty: 60, expiryDate: '2026-07-12', unitCost: 53, totalValue: 3180, warehouseName: 'Mumbai DC', disposition: 'PENDING', status: 'APPROVED', expiryCategory: 'BLOCKED', daysBeforeExpiry: 4, createdByName: 'Sandeep Kumar', approvedByName: 'Anita Desai' },
+  ],
+  rootCauses: [
+    { id: 'rc-001', adjustmentNumber: 'ADJ-2026-0103', rootCauseCategory: 'STORAGE', rootCauseDetail: 'Pallets stacked too high in Zone B causing top-tier product crush damage during forklift retrieval.', affectedQty: 12, affectedValue: 7200, correctiveAction: 'Reduce max stacking height from 5 to 3 pallets. Install racking guards on top tier.', preventiveAction: 'Add rack height sensors + weekly safety audit.', actionOwner: 'Anita Desai', actionDueDate: '2026-07-20', actionStatus: 'IN_PROGRESS', isRecurring: true, recurrenceCount: 3 },
+    { id: 'rc-002', adjustmentNumber: 'ADJ-2026-0102', rootCauseCategory: 'HUMAN_ERROR', rootCauseDetail: 'Cycle count clerk missed 6 units in dark corner of Zone A — physical count discrepancy.', affectedQty: 6, affectedValue: 1800, correctiveAction: 'Re-train cycle count staff on full-sweep methodology. Add task lighting to Zone A corners.', preventiveAction: 'Add lighting + monthly count audit on Zone A.', actionOwner: 'Sandeep Kumar', actionDueDate: '2026-07-15', actionStatus: 'OPEN', isRecurring: false, recurrenceCount: 1 },
+    { id: 'rc-003', adjustmentNumber: 'ADJ-2026-0108', rootCauseCategory: 'SYSTEM_ERROR', rootCauseDetail: 'Barcode master mismatch — GS1 GTIN for Kaju Katli 500g not synced from PIM to scanner database, causing wrong scans during putaway.', affectedQty: 0, affectedValue: 0, correctiveAction: 'Force PIM → scanner sync job. Add validation rule to fail putaway if barcode not recognized.', preventiveAction: 'Add nightly PIM sync verification alert.', actionOwner: 'Ramesh Yadav', actionDueDate: '2026-07-12', actionStatus: 'COMPLETED', isRecurring: false, recurrenceCount: 0 },
+    { id: 'rc-004', adjustmentNumber: 'ADJ-2026-0107', rootCauseCategory: 'PRODUCTION', rootCauseDetail: 'Thermostat on cooker #3 malfunctioned, temperature exceeded BOM threshold by 12°C causing batch burn and yield drop.', affectedQty: 15, affectedValue: 9750, correctiveAction: 'Replace thermostat, recalibrate cooker #3, add 15-min temperature logging interval.', preventiveAction: 'Quarterly thermostat calibration schedule.', actionOwner: 'Chef Rajesh', actionDueDate: '2026-07-13', actionStatus: 'OPEN', isRecurring: true, recurrenceCount: 2 },
+    { id: 'rc-005', adjustmentNumber: 'ADJ-2026-0104', rootCauseCategory: 'RECEIVING', rootCauseDetail: 'GRN inspector did not verify expiry date on incoming batch — expired stock accepted into Mumbai Retail Store 01 inventory.', affectedQty: 24, affectedValue: 4800, correctiveAction: 'Add mandatory expiry date check to GRN workflow with photo evidence.', preventiveAction: 'Update GRN checklist, train 4 receiving staff on near-expiry rejection policy.', actionOwner: 'Vikram Iyer', actionDueDate: '2026-07-18', actionStatus: 'IN_PROGRESS', isRecurring: false, recurrenceCount: 1 },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1123,7 +1167,8 @@ const server = Bun.serve({
         { code: 'GRN', name: 'Goods Receipt & Putaway', status: 'active', entities: 5, sprint: 13 },
         { code: 'ISS', name: 'Stock Issue & Outbound', status: 'active', entities: 6, sprint: 14 },
         { code: 'TRF', name: 'Stock Transfer & Transit', status: 'active', entities: 4, sprint: 15 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 16 },
+        { code: 'ADJ', name: 'Adjustment & Reconciliation', status: 'active', entities: 6, sprint: 16 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 17 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 17 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -2693,12 +2738,142 @@ const server = Bun.serve({
       }, 'SUOP Transfer Engine v15.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 16 — INVENTORY ADJUSTMENT & RECONCILIATION ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    if (path === '/api/inventory-adjustments' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let adjustments = ADJ_DATA.adjustments
+      if (typeFilter) adjustments = adjustments.filter(a => a.adjustmentType === typeFilter.toUpperCase())
+      if (statusFilter) adjustments = adjustments.filter(a => a.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(adjustments, `${adjustments.length} inventory adjustments`)), { headers })
+    }
+    if (path === '/api/inventory-adjustments' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.adjustmentType) return new Response(JSON.stringify(errorResponse('adjustmentType is required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        const adjustmentNumber = `ADJ-2026-${String(108 + ADJ_DATA.adjustments.length).padStart(4, '0')}`
+        const adjustment = {
+          id: crypto.randomUUID(), adjustmentNumber,
+          adjustmentDate: body.adjustmentDate || new Date().toISOString().slice(0, 10),
+          adjustmentType: body.adjustmentType.toUpperCase(),
+          warehouseName: body.warehouseName || null,
+          reason: body.reason || null,
+          status: 'DRAFT',
+          totalLines: body.lines ? body.lines.length : 0,
+          totalAdjustmentQty: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.differenceQty || 0), 0) : 0,
+          totalAdjustmentValue: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.adjustmentValue || 0), 0) : 0,
+          requestedByName: body.requestedByName || 'System',
+          approvedByName: null, approvedAt: null, postedAt: null,
+          inventoryPosted: false, financePosted: false, isWriteOff: body.isWriteOff || false,
+          photoAttached: body.photoAttached || false,
+          remarks: body.remarks || null,
+        }
+        ADJ_DATA.adjustments.unshift(adjustment)
+        log('info', 'Inventory adjustment created', { adjustmentNumber, type: adjustment.adjustmentType })
+        return new Response(JSON.stringify(successResponse(adjustment, `Adjustment ${adjustmentNumber} created`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    if (path.match(/^\/api\/inventory-adjustments\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]; const a = ADJ_DATA.adjustments.find(x => x.id === id)
+      if (!a) return new Response(JSON.stringify(errorResponse('Not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (a.status !== 'DRAFT' && a.status !== 'SUBMITTED' && a.status !== 'PENDING_APPROVAL') return new Response(JSON.stringify(errorResponse(`Cannot approve in ${a.status}`)), { status: 400, headers })
+      a.status = 'APPROVED'; a.approvedByName = a.approvedByName || 'Anita Desai'; a.approvedAt = new Date().toISOString().slice(0, 10)
+      log('info', 'Adjustment approved', { adjustmentNumber: a.adjustmentNumber })
+      return new Response(JSON.stringify(successResponse(a, 'Adjustment approved')), { headers })
+    }
+    if (path === '/api/inventory-adjustments/reasons' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ADJ_DATA.reasons, 'Adjustment reasons')), { headers })
+    }
+    if (path === '/api/damage-reports-s16' && method === 'GET') {
+      const severityFilter = url.searchParams.get('severity')
+      let reports = ADJ_DATA.damageReports
+      if (severityFilter) reports = reports.filter(r => r.damageSeverity === severityFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(reports, `${reports.length} damage reports`)), { headers })
+    }
+    if (path === '/api/expiry-adjustments' && method === 'GET') {
+      const categoryFilter = url.searchParams.get('category')
+      let adjustments = ADJ_DATA.expiryAdjustments
+      if (categoryFilter) adjustments = adjustments.filter(a => a.expiryCategory === categoryFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(adjustments, `${adjustments.length} expiry adjustments`)), { headers })
+    }
+    if (path === '/api/inventory-adjustments/root-causes' && method === 'GET') {
+      const categoryFilter = url.searchParams.get('category')
+      let causes = ADJ_DATA.rootCauses
+      if (categoryFilter) causes = causes.filter(c => c.rootCauseCategory === categoryFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(causes, `${causes.length} root cause records`)), { headers })
+    }
+    if (path === '/api/inventory-adjustments/dashboard' && method === 'GET') {
+      const totalWriteOffValue = ADJ_DATA.adjustments.filter(a => a.isWriteOff && a.status === 'POSTED').reduce((s, a) => s + Math.abs(a.totalAdjustmentValue), 0)
+        + ADJ_DATA.damageReports.reduce((s, d) => s + d.totalDamageValue, 0)
+        + ADJ_DATA.expiryAdjustments.reduce((s, e) => s + e.totalValue, 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          total: ADJ_DATA.adjustments.length,
+          posted: ADJ_DATA.adjustments.filter(a => a.status === 'POSTED').length,
+          pendingApproval: ADJ_DATA.adjustments.filter(a => a.status === 'PENDING_APPROVAL' || a.status === 'SUBMITTED').length,
+          approved: ADJ_DATA.adjustments.filter(a => a.status === 'APPROVED').length,
+          rejected: ADJ_DATA.adjustments.filter(a => a.status === 'REJECTED').length,
+          writeOffs: ADJ_DATA.adjustments.filter(a => a.isWriteOff).length,
+        },
+        types: {
+          stockGain: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'STOCK_GAIN').length,
+          stockLoss: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'STOCK_LOSS').length,
+          damage: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'DAMAGE').length,
+          expiry: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'EXPIRY').length,
+          shrinkage: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'SHRINKAGE').length,
+          theft: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'THEFT').length,
+          productionVariance: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'PRODUCTION_VARIANCE').length,
+          barcodeCorrection: ADJ_DATA.adjustments.filter(a => a.adjustmentType === 'BARCODE_CORRECTION').length,
+        },
+        damage: {
+          total: ADJ_DATA.damageReports.length,
+          severe: ADJ_DATA.damageReports.filter(d => d.damageSeverity === 'SEVERE' || d.damageSeverity === 'TOTAL_LOSS').length,
+          totalLossValue: ADJ_DATA.damageReports.reduce((s, d) => s + d.totalDamageValue, 0),
+        },
+        expiry: {
+          total: ADJ_DATA.expiryAdjustments.length,
+          expired: ADJ_DATA.expiryAdjustments.filter(e => e.expiryCategory === 'EXPIRED').length,
+          nearExpiry: ADJ_DATA.expiryAdjustments.filter(e => e.expiryCategory === 'NEAR_EXPIRY').length,
+          blocked: ADJ_DATA.expiryAdjustments.filter(e => e.expiryCategory === 'BLOCKED').length,
+          totalValue: ADJ_DATA.expiryAdjustments.reduce((s, e) => s + e.totalValue, 0),
+        },
+        rootCauses: {
+          total: ADJ_DATA.rootCauses.length,
+          open: ADJ_DATA.rootCauses.filter(r => r.actionStatus === 'OPEN').length,
+          inProgress: ADJ_DATA.rootCauses.filter(r => r.actionStatus === 'IN_PROGRESS').length,
+          completed: ADJ_DATA.rootCauses.filter(r => r.actionStatus === 'COMPLETED').length,
+          recurring: ADJ_DATA.rootCauses.filter(r => r.isRecurring).length,
+        },
+        writeOffValue: totalWriteOffValue,
+        reasonsCount: ADJ_DATA.reasons.length,
+      }, 'Adjustment & Reconciliation dashboard')), { headers })
+    }
+    if (path === '/api/inventory-adjustments/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Adjustment & Reconciliation Engine', version: '16.0.0', sprint: 16,
+        sprintName: 'Inventory Adjustment, Damage, Expiry & Root Cause Analysis',
+        adjustmentTypes: ['STOCK_GAIN','STOCK_LOSS','DAMAGE','EXPIRY','SHRINKAGE','THEFT','PRODUCTION_VARIANCE','PACKING_VARIANCE','SUPPLIER_SHORTAGE','CUSTOMER_RETURN_CORRECTION','BARCODE_CORRECTION','OPENING_BALANCE_CORRECTION','FINANCIAL_RECONCILIATION'],
+        adjustmentStatuses: ['DRAFT','SUBMITTED','PENDING_APPROVAL','APPROVED','POSTED','REJECTED','CANCELLED'],
+        damageTypes: ['FOOD_DAMAGE','TRANSPORT_DAMAGE','WAREHOUSE_DAMAGE','PRODUCTION_DAMAGE','STORAGE_DAMAGE','HANDLING_DAMAGE'],
+        damageSeverities: ['MINOR','MODERATE','SEVERE','TOTAL_LOSS'],
+        expiryCategories: ['EXPIRED','NEAR_EXPIRY','BLOCKED'],
+        rootCauseCategories: ['RECEIVING','STORAGE','PRODUCTION','PACKING','PICKING','DISPATCH','TRANSPORT','RETAIL','RESTAURANT','SYSTEM_ERROR','HUMAN_ERROR'],
+        effectTypes: ['INCREASE','DECREASE','NEUTRAL'],
+        approvalLevels: ['SUPERVISOR','WAREHOUSE_MANAGER','FINANCE','MANAGEMENT'],
+        endpoints: ['GET/POST /api/inventory-adjustments','POST /:id/approve','GET /api/inventory-adjustments/reasons','GET /api/damage-reports-s16','GET /api/expiry-adjustments','GET /api/inventory-adjustments/root-causes','GET /api/inventory-adjustments/dashboard','GET /api/inventory-adjustments/info'],
+      }, 'SUOP Adjustment Engine v16.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 15, sprintName: 'Stock Transfer & In-Transit Inventory Engine' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 16, sprintName: 'Inventory Adjustment & Reconciliation Engine' })
+log('info', 'Adjustment endpoints available', { adjustments: 'GET/POST /api/inventory-adjustments', approve: 'POST /:id/approve', reasons: 'GET /api/inventory-adjustments/reasons', damage: 'GET /api/damage-reports-s16', expiry: 'GET /api/expiry-adjustments', rootCauses: 'GET /api/inventory-adjustments/root-causes', dashboard: 'GET /api/inventory-adjustments/dashboard', info: 'GET /api/inventory-adjustments/info' })
 log('info', 'Transfer endpoints available', { transfers: 'GET/POST /api/stock-transfers', approve: 'POST /:id/approve', dispatch: 'POST /:id/dispatch', receive: 'POST /:id/receive', inTransit: 'GET /api/stock-transfers/in-transit', binTransfers: 'GET /api/bin-transfers', dashboard: 'GET /api/stock-transfers/dashboard' })
 log('info', 'Outbound endpoints available', { stockIssues: 'GET/POST /api/stock-issues', picking: 'GET /api/picking/tasks', scrap: 'GET /api/scrap-records', damage: 'GET /api/damage-records' })
 log('info', 'Receiving endpoints available', { goodsReceipts: 'GET/POST /api/goods-receipts', putaway: 'GET /api/putaway/tasks', quality: 'GET /api/quality-holds' })
