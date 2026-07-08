@@ -59,6 +59,7 @@ const SERVICES: ServiceHealth[] = [
   { name: 'Redis', status: 'pending', icon: <Zap className="h-4 w-4" /> },
   { name: 'RabbitMQ', status: 'pending', icon: <Activity className="h-4 w-4" /> },
   { name: 'MinIO Storage', status: 'pending', icon: <HardDrive className="h-4 w-4" /> },
+  { name: 'OpenSearch', status: 'pending', icon: <Search className="h-4 w-4" /> },
   { name: 'Backend API', status: 'pending', icon: <Server className="h-4 w-4" /> },
 ]
 
@@ -275,7 +276,7 @@ export default function Home() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">Admin User</p>
-                  <p className="text-xs text-muted-foreground truncate">Sprint 1 — Platform Foundation</p>
+                  <p className="text-xs text-muted-foreground truncate">Sprint 2 — Enterprise Core Infrastructure</p>
                 </div>
               </div>
             </div>
@@ -299,7 +300,7 @@ export default function Home() {
             <h1 className="text-lg font-semibold">Dashboard</h1>
             <Badge variant="outline" className="hidden sm:flex">
               <Clock className="mr-1 h-3 w-3" />
-              Sprint 1 — Platform Foundation
+              Sprint 2 — Enterprise Core Infrastructure
             </Badge>
           </div>
 
@@ -338,7 +339,7 @@ export default function Home() {
                   <h2 className="text-2xl font-bold mb-1">Welcome to SUOP Admin</h2>
                   <p className="text-slate-300 text-sm max-w-2xl">
                     Sudhastar Unified Operating Platform — Enterprise Operating System for Food Manufacturing,
-                    Warehouse, Retail & Restaurant Operations. Currently in <span className="font-semibold text-white">Sprint 1: Platform Foundation</span>.
+                    Warehouse, Retail & Restaurant Operations. Currently in <span className="font-semibold text-white">Sprint 2: Enterprise Core Infrastructure</span>.
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -401,24 +402,28 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-blue-600" />
-                  <h3 className="font-semibold">Sprint 1 — Platform Foundation</h3>
+                  <h3 className="font-semibold">Sprint 2 — Enterprise Core Infrastructure</h3>
                 </div>
                 <Badge variant="outline">In Progress</Badge>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Overall Progress</span>
-                  <span className="font-medium">20%</span>
+                  <span className="font-medium">50%</span>
                 </div>
-                <Progress value={20} className="h-2" />
+                <Progress value={50} className="h-2" />
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 mt-4">
                   {[
                     { name: 'Repository Initialization', status: 'done' },
                     { name: 'Monorepo Setup', status: 'done' },
-                    { name: 'Docker Infrastructure', status: 'in-progress' },
-                    { name: 'Shared Development Standards', status: 'done' },
+                    { name: 'Docker Infrastructure', status: 'done' },
                     { name: 'Admin Application Bootstrap', status: 'done' },
-                    { name: 'Backend Bootstrap', status: 'in-progress' },
+                    { name: 'Configuration Framework', status: 'done' },
+                    { name: 'Database Foundation (Prisma)', status: 'done' },
+                    { name: 'Redis & RabbitMQ Platform', status: 'done' },
+                    { name: 'Logging & Exception Framework', status: 'done' },
+                    { name: 'Shared SDK & UI Library', status: 'done' },
+                    { name: 'CI/CD Pipeline', status: 'done' },
                   ].map(epic => (
                     <div key={epic.name} className="flex items-center gap-2 text-sm">
                       {epic.status === 'done' ? (
@@ -494,7 +499,7 @@ export default function Home() {
                 <span className="text-muted-foreground">Implementation Phase</span>
                 <Badge variant="default" className="bg-blue-600 hover:bg-blue-600 text-white">
                   <ArrowRight className="mr-1 h-3 w-3" />
-                  Sprint 1 — In Progress
+                  Sprint 2 — In Progress
                 </Badge>
               </div>
             </Card>
@@ -502,7 +507,7 @@ export default function Home() {
             {/* Footer */}
             <div className="text-center text-xs text-muted-foreground py-4">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Volume 1 — Enterprise Development Blueprint · Sprint 1 — Platform Foundation</p>
+              <p className="mt-1">Volume 1 — Enterprise Development Blueprint · Sprint 2 — Enterprise Core Infrastructure</p>
             </div>
           </main>
         </ScrollArea>

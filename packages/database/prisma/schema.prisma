@@ -1,0 +1,390 @@
+// SUOP — Enterprise Prisma Schema
+// Sprint 2: Epic 2 — Database Foundation
+//
+// This schema defines the PLATFORM TABLES ONLY (no business module tables yet).
+// Per Volume 0.75 Part 4: Multi-schema PostgreSQL with strong boundaries.
+// Per Volume 0.5 Part 14: Platform Services entities (601-630+).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLATFORM SCHEMA — Identity, Organization, RBAC, Audit, Config
+// Entities: 601-630 (Volume 0.5 Part 14)
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Organizations (Entity 605) ───────────────────────────────
+model OrganizationNode {
+  id              String   @id @default(uuid()) @db.Uuid
+  nodeCode        String   @unique(map: "org_node_code_unique")
+  nodeName        String
+  nodeType        String   // ENTERPRISE, COMPANY, BUSINESS_UNIT, BRANCH, PLANT, WAREHOUSE, STORE, RESTAURANT, OFFICE
+  parentNodeId    String?  @db.Uuid
+  hierarchyLevel  Int      @default(1)
+  hierarchyPath   String
+  companyId       String?  @db.Uuid
+  facilityId      String?  @db.Uuid
+  legalEntity     Boolean  @default(false)
+  currencyCode    String   @default("INR") @db.Char(3)
+  timezone        String   @default("Asia/Kolkata")
+  locale          String   @default("en-IN")
+  description     String?
+  metadata        Json     @default("{}")
+  childrenCount   Int      @default(0)
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, MERGED, DIVESTED
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  parent          OrganizationNode?  @relation("OrgHierarchy", fields: [parentNodeId], references: [id])
+  children        OrganizationNode[] @relation("OrgHierarchy")
+
+  @@map("organization_nodes")
+  @@index([parentNodeId], map: "idx_org_parent")
+  @@index([nodeType, status], map: "idx_org_type_status")
+  @@index([hierarchyLevel], map: "idx_org_level")
+}
+
+// ─── Companies (Entity 01) ────────────────────────────────────
+model Company {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyCode     String   @unique(map: "company_code_unique")
+  companyName     String
+  legalName       String?
+  companyType     String   @default("PRIVATE_LIMITED")
+  gstNumber       String?  @db.VarChar(15)
+  panNumber       String?  @db.VarChar(10)
+  tanNumber       String?  @db.VarChar(10)
+  cinNumber       String?
+  website         String?
+  logoAttachmentId String? @db.Uuid
+  currencyCode    String   @default("INR") @db.Char(3)
+  timezone        String   @default("Asia/Kolkata")
+  locale          String   @default("en-IN")
+  fiscalYearStartMonth Int @default(4)
+  fiscalYearEndMonth   Int @default(3)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branches        Branch[]
+  users           User[]
+
+  @@map("companies")
+  @@index([gstNumber], map: "idx_company_gst")
+  @@index([status], map: "idx_company_status")
+}
+
+// ─── Branches (Entity 606) ────────────────────────────────────
+model Branch {
+  id              String   @id @default(uuid()) @db.Uuid
+  branchCode      String   @unique(map: "branch_code_unique")
+  branchName      String
+  companyId       String   @db.Uuid
+  branchType      String   @default("OFFICE") // HEAD_OFFICE, PLANT, WAREHOUSE, STORE, RESTAURANT, OFFICE
+  branchManagerId String?  @db.Uuid
+  currencyCode    String   @default("INR") @db.Char(3)
+  timezone        String   @default("Asia/Kolkata")
+  locale          String   @default("en-IN")
+  taxRegionCode   String?
+  gstNumber       String?  @db.VarChar(15)
+  stateCode       String?
+  countryCode     String   @default("IN") @db.Char(2)
+  addressLine1    String?
+  city            String?
+  state           String?
+  country         String?
+  postalCode      String?
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+  contactPhone    String?
+  contactEmail    String?
+  isOperational   Boolean  @default(true)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  company         Company  @relation(fields: [companyId], references: [id])
+  users           User[]
+
+  @@map("branches")
+  @@index([companyId, status], map: "idx_branch_company_status")
+  @@index([branchType, status], map: "idx_branch_type_status")
+}
+
+// ─── Users / Identity Master (Entity 601) ─────────────────────
+model User {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @unique(map: "user_id_unique") // Display ID
+  username            String   @unique(map: "username_unique")
+  email               String   @unique(map: "email_unique")
+  emailVerified       Boolean  @default(false) @map("email_verified")
+  mobile              String?  @unique(map: "mobile_unique")
+  mobileVerified      Boolean  @default(false) @map("mobile_verified")
+  passwordHash        String?  @map("password_hash")
+  passwordAlgorithm   String   @default("ARGON2ID") @map("password_algorithm")
+  passwordChangedAt   DateTime? @map("password_changed_at")
+  passwordExpiresAt   DateTime? @map("password_expires_at")
+  mfaEnabled          Boolean  @default(false) @map("mfa_enabled")
+  mfaSecret           String?  @map("mfa_secret")
+  firstName           String   @map("first_name")
+  lastName            String   @map("last_name")
+  displayName         String   @map("display_name")
+  avatarAttachmentId  String?  @db.Uuid @map("avatar_attachment_id")
+  primaryCompanyId    String   @db.Uuid @map("primary_company_id")
+  primaryBranchId     String?  @db.Uuid @map("primary_branch_id")
+  preferredLanguage   String   @default("en-IN") @map("preferred_language")
+  preferredTimezone   String   @default("Asia/Kolkata") @map("preferred_timezone")
+  preferredTheme      String   @default("LIGHT") @map("preferred_theme")
+  lastLoginAt         DateTime? @map("last_login_at")
+  lastLoginIp         String?  @map("last_login_ip") @db.Inet
+  loginCount          Int      @default(0) @map("login_count")
+  failedLoginCount    Int      @default(0) @map("failed_login_count")
+  accountLockedUntil  DateTime? @map("account_locked_until")
+  status              String   @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, ACTIVE, SUSPENDED, LOCKED, DEACTIVATED, TERMINATED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  company             Company  @relation(fields: [primaryCompanyId], references: [id])
+  branch              Branch?  @relation(fields: [primaryBranchId], references: [id])
+  sessions            Session[]
+  userRoles           UserRole[]
+  auditLogs           AuditLog[]
+
+  @@map("users")
+  @@index([primaryCompanyId, status], map: "idx_user_company_status")
+  @@index([status, accountLockedUntil], map: "idx_user_status_locked")
+  @@index([emailVerified, mobileVerified], map: "idx_user_verified")
+}
+
+// ─── Roles (Entity 611) ───────────────────────────────────────
+model Role {
+  id              String   @id @default(uuid()) @db.Uuid
+  roleCode        String   @unique(map: "role_code_unique")
+  roleName        String
+  roleDescription String?  @map("role_description")
+  roleCategory    String   @default("CUSTOM") @map("role_category") // EXECUTIVE, MANAGEMENT, MANAGER, SUPERVISOR, OPERATOR, CLERK, TECHNICIAN, EXTERNAL_USER, SYSTEM, OTHER
+  roleType        String   @default("CUSTOM") @map("role_type") // SYSTEM, BUILTIN, CUSTOM, TEMPLATE
+  isSystemRole    Boolean  @default(false) @map("is_system_role")
+  parentRoleId    String?  @db.Uuid @map("parent_role_id")
+  companyId       String?  @db.Uuid @map("company_id")
+  accessLevel     String   @default("BRANCH") @map("access_level") // ENTERPRISE, COMPANY, BUSINESS_UNIT, BRANCH, DEPARTMENT, SELF
+  requiresMfa     Boolean  @default(false) @map("requires_mfa")
+  maxSessionDurationMinutes Int @default(480) @map("max_session_duration_minutes")
+  concurrentSessionsAllowed  Int @default(3) @map("concurrent_sessions_allowed")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+  @@index([companyId, status], map: "idx_role_company_status")
+  @@index([roleType, isSystemRole], map: "idx_role_type_system")
+}
+
+// ─── Permissions (Entity 612) ─────────────────────────────────
+model Permission {
+  id                  String   @id @default(uuid()) @db.Uuid
+  permissionCode      String   @unique(map: "permission_code_unique") // e.g., INVENTORY:PRODUCT:CREATE
+  permissionName      String   @map("permission_name")
+  module              String   // INVENTORY, FINANCE, HR, etc.
+  resource            String   // PRODUCT, INVOICE, etc.
+  action              String   // CREATE, READ, UPDATE, DELETE, APPROVE, etc.
+  permissionDescription String? @map("permission_description")
+  permissionType      String   @default("ACTION") @map("permission_type") // ACTION, FIELD_LEVEL, RECORD_LEVEL, WILDCARD
+  isDangerous         Boolean  @default(false) @map("is_dangerous")
+  isSystemPermission  Boolean  @default(false) @map("is_system_permission")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  rolePermissions     RolePermission[]
+
+  @@map("permissions")
+  @@index([module, resource, action], map: "idx_perm_module_resource_action")
+  @@index([permissionType, status], map: "idx_perm_type_status")
+}
+
+// ─── Role-Permission Mapping ──────────────────────────────────
+model RolePermission {
+  id            String   @id @default(uuid()) @db.Uuid
+  roleId        String   @db.Uuid @map("role_id")
+  permissionId  String   @db.Uuid @map("permission_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId], map: "role_permission_unique")
+  @@map("role_permissions")
+  @@index([roleId], map: "idx_rp_role")
+  @@index([permissionId], map: "idx_rp_permission")
+}
+
+// ─── User-Role Mapping ────────────────────────────────────────
+model UserRole {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid @map("user_id")
+  roleId        String   @db.Uuid @map("role_id")
+  branchId      String?  @db.Uuid @map("branch_id") // Scope to specific branch
+  assignedBy    String?  @db.Uuid @map("assigned_by")
+  assignedAt    DateTime @default(now()) @map("assigned_at")
+  expiresAt     DateTime? @map("expires_at")
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, branchId], map: "user_role_branch_unique")
+  @@map("user_roles")
+  @@index([userId, status], map: "idx_ur_user_status")
+  @@index([roleId, status], map: "idx_ur_role_status")
+}
+
+// ─── Sessions (Entity 603) ────────────────────────────────────
+model Session {
+  id                    String   @id @default(uuid()) @db.Uuid
+  sessionId             String   @unique(map: "session_id_unique") @db.VarChar(200)
+  userId                String   @db.Uuid @map("user_id")
+  sessionType           String   @default("WEB") // WEB, MOBILE_APP, TABLET, API, KIOSK, POS
+  deviceId              String?  @db.Uuid @map("device_id")
+  deviceFingerprint     String?  @map("device_fingerprint")
+  clientIp              String   @map("client_ip") @db.Inet
+  clientUserAgent       String   @map("client_user_agent")
+  geolocation           Json?
+  loginAt               DateTime @default(now()) @map("login_at")
+  logoutAt              DateTime? @map("logout_at")
+  lastActivityAt        DateTime @default(now()) @map("last_activity_at")
+  expiresAt             DateTime @map("expires_at")
+  refreshTokenHash      String?  @map("refresh_token_hash")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  mfaVerified           Boolean  @default(false) @map("mfa_verified")
+  mfaVerifiedAt         DateTime? @map("mfa_verified_at")
+  mfaMethodUsed         String?  @map("mfa_method_used")
+  riskScore             Decimal  @default(0) @map("risk_score") @db.Decimal(5, 2)
+  isSuspicious          Boolean  @default(false) @map("is_suspicious")
+  revokedAt             DateTime? @map("revoked_at")
+  revocationReason      String?  @map("revocation_reason")
+  status                String   @default("ACTIVE") // ACTIVE, EXPIRED, LOGGED_OUT, REVOKED, SUSPENDED
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+  @@index([userId, status], map: "idx_session_user_status")
+  @@index([status, expiresAt], map: "idx_session_status_expires")
+  @@index([lastActivityAt], map: "idx_session_activity")
+}
+
+// ─── Audit Logs (Entity 661) ──────────────────────────────────
+model AuditLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  eventId             String   @unique(map: "audit_event_id_unique")
+  businessModule      String   @map("business_module")
+  entityType          String   @map("entity_type")
+  entityId            String   @db.Uuid @map("entity_id")
+  entityCode          String?  @map("entity_code")
+  action              String   // CREATE, READ, UPDATE, DELETE, APPROVE, REJECT, LOGIN, LOGOUT, etc.
+  actionCategory      String   @map("action_category") // LIFECYCLE, MODIFICATION, APPROVAL, ACCESS, SECURITY
+  eventType           String   @map("event_type") // e.g., purchase_order.submitted
+  actorId             String?  @db.Uuid @map("actor_id")
+  actorName           String?  @map("actor_name")
+  actorType           String   @default("USER") // USER, SYSTEM, SERVICE_ACCOUNT, EXTERNAL_USER, AI
+  actionTimestamp     DateTime @default(now()) @map("action_timestamp")
+  ipAddress           String?  @db.Inet @map("ip_address")
+  userAgent           String?  @map("user_agent")
+  sessionId           String?  @db.Uuid @map("session_id")
+  requestId           String?  @db.Uuid @map("request_id")
+  correlationId       String?  @db.Uuid @map("correlation_id")
+  beforeValues        Json?    @map("before_values")
+  afterValues         Json?    @map("after_values")
+  changeSummary       String?  @map("change_summary")
+  businessContext     Json     @default("{}") @map("business_context")
+  riskScore           Decimal  @default(0) @map("risk_score") @db.Decimal(5, 2)
+  isFlagged           Boolean  @default(false) @map("is_flagged")
+  recordHash          String   @map("record_hash") @db.VarChar(64)
+  previousHash        String   @map("previous_hash") @db.VarChar(64)
+  companyId           String   @db.Uuid @map("company_id")
+  branchId            String?  @db.Uuid @map("branch_id")
+  retentionUntil      Date     @map("retention_until")
+  status              String   @default("RECORDED")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user                User?    @relation(fields: [actorId], references: [id])
+
+  @@map("audit_logs")
+  @@index([businessModule, entityType, entityId, actionTimestamp], map: "idx_audit_entity_time")
+  @@index([actorId, actionTimestamp], map: "idx_audit_actor_time")
+  @@index([action, actionTimestamp], map: "idx_audit_action_time")
+  @@index([correlationId], map: "idx_audit_correlation")
+  @@index([actionTimestamp, retentionUntil], map: "idx_audit_retention")
+}
+
+// ─── System Settings (Entity 621) ─────────────────────────────
+model SystemSetting {
+  id                  String   @id @default(uuid()) @db.Uuid
+  configKey           String   @unique(map: "config_key_unique")
+  configName          String   @map("config_name")
+  configDescription   String?  @map("config_description")
+  configCategory      String   @default("COMPANY_SETTINGS") @map("config_category")
+  configType          String   @default("SETTING") @map("config_type") // SETTING, JSON, ENCRYPTED, REFERENCE, FEATURE_FLAG
+  dataType            String   @default("STRING") // STRING, INTEGER, DECIMAL, BOOLEAN, DATE, JSON
+  defaultValue        String   @map("default_value")
+  currentValue        String   @map("current_value")
+  encryptedValue      String?  @map("encrypted_value")
+  validationRules     Json?    @map("validation_rules")
+  allowedValues       Json?    @map("allowed_values")
+  applicabilityLevel  String   @default("COMPANY") @map("applicability_level") // ENTERPRISE, COMPANY, BRANCH, DEPARTMENT, USER
+  applicableCompanyId String?  @db.Uuid @map("applicable_company_id")
+  applicableBranchId  String?  @db.Uuid @map("applicable_branch_id")
+  overrideAllowed     Boolean  @default(true) @map("override_allowed")
+  requiresApproval    Boolean  @default(false) @map("requires_approval")
+  cacheTtlSeconds     Int      @default(300) @map("cache_ttl_seconds")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+  @@index([configKey, applicabilityLevel, status], map: "idx_settings_key_level_status")
+  @@index([configCategory, status], map: "idx_settings_category_status")
+}
+
+// ─── Feature Flags (Entity 622) ───────────────────────────────
+model FeatureFlag {
+  id                  String   @id @default(uuid()) @db.Uuid
+  flagKey             String   @unique(map: "flag_key_unique")
+  flagName            String   @map("flag_name")
+  flagDescription     String?  @map("flag_description")
+  flagType            String   @default("BOOLEAN") // BOOLEAN, STRING, INTEGER, DECIMAL, JSON, VARIANT
+  defaultState        String   @default("DISABLED") // ENABLED, DISABLED
+  currentState        String   @default("DISABLED") // ENABLED, DISABLED, BETA, PILOT, GRADUAL_ROLLOUT
+  targetRoles         String[] @default([])
+  targetBranches      String[] @default([])
+  rolloutPercentage   Decimal  @default(0) @map("rollout_percentage") @db.Decimal(5, 2)
+  killSwitchEnabled   Boolean  @default(false) @map("kill_switch_enabled")
+  killSwitchReason    String?  @map("kill_switch_reason")
+  ownerUserId         String   @db.Uuid @map("owner_user_id")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+  @@index([currentState, status], map: "idx_flag_state_status")
+  @@index([killSwitchEnabled], map: "idx_flag_kill_switch")
+}
