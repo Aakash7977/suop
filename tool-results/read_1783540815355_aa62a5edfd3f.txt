@@ -1,0 +1,452 @@
+  4570→// ─── Reservation & Allocation Module (Sprint 17) ────────
+  4571→type ReservationTab = 'overview' | 'reservations' | 'rules' | 'availability'
+  4572→
+  4573→function ReservationModule() {
+  4574→  const [tab, setTab] = useState<ReservationTab>('overview')
+  4575→  const tabs: Array<{ key: ReservationTab; label: string; icon: React.ReactNode }> = [
+  4576→    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+  4577→    { key: 'reservations', label: 'Reservations', icon: <ShieldCheck className="h-4 w-4" /> },
+  4578→    { key: 'rules', label: 'Allocation Rules', icon: <ListChecks className="h-4 w-4" /> },
+  4579→    { key: 'availability', label: 'Availability', icon: <Boxes className="h-4 w-4" /> },
+  4580→  ]
+  4581→  return (
+  4582→    <div className="space-y-6">
+  4583→      <Card className="p-6 bg-gradient-to-r from-indigo-950 via-blue-900 to-cyan-900 text-white border-0">
+  4584→        <div className="flex items-start justify-between">
+  4585→          <div>
+  4586→            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+  4587→              <ShieldCheck className="h-7 w-7" /> Reservation & Allocation Engine
+  4588→            </h2>
+  4589→            <p className="text-blue-200 text-sm max-w-3xl">
+  4590→              Inventory reservations across sales, production, kitchen, transfer, maintenance, project, sample, and emergency.
+  4591→              6 allocation strategies (FIFO, FEFO, LIFO, NEAREST_BIN, LOWEST_COST, HIGHEST_PRIORITY), priority matrix,
+  4592→              and real-time availability snapshots with short-supply detection.
+  4593→            </p>
+  4594→          </div>
+  4595→          <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Sprint 17</Badge>
+  4596→        </div>
+  4597→      </Card>
+  4598→      <div className="flex flex-wrap gap-2 border-b pb-3">
+  4599→        {tabs.map(t => (
+  4600→          <button key={t.key} onClick={() => setTab(t.key)}
+  4601→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  4602→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+  4603→            {t.icon}{t.label}
+  4604→          </button>
+  4605→        ))}
+  4606→      </div>
+  4607→      {tab === 'overview' && <ReservationOverviewTab />}
+  4608→      {tab === 'reservations' && <ReservationListTab />}
+  4609→      {tab === 'rules' && <AllocationRulesTab />}
+  4610→      {tab === 'availability' && <AvailabilityTab />}
+  4611→    </div>
+  4612→  )
+  4613→}
+  4614→
+  4615→function ReservationOverviewTab() {
+  4616→  const stats = [
+  4617→    { label: 'Active Reservations', value: '4', sub: '2 ACTIVE · 2 PARTIALLY_ALLOCATED', icon: <ShieldCheck className="h-5 w-5 text-blue-600" /> },
+  4618→    { label: 'Fully Allocated', value: '2', sub: 'PRODUCTION + EMERGENCY', icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" /> },
+  4619→    { label: 'Short Supply Items', value: '2', sub: 'Soan Cake + Gulab Jamun', icon: <AlertTriangleIcon className="h-5 w-5 text-red-600" /> },
+  4620→    { label: 'Released / Expired', value: '1', sub: 'SAMPLE_RESERVATION released', icon: <Archive className="h-5 w-5 text-slate-600" /> },
+  4621→    { label: 'Allocation Rules', value: '6', sub: 'FIFO · FEFO · LIFO · NEAREST · LOWEST · PRIORITY', icon: <ListChecks className="h-5 w-5 text-purple-600" /> },
+  4622→    { label: 'Available Stock Value', value: '₹3.47L', sub: 'across 4 warehouses', icon: <IndianRupee className="h-5 w-5 text-amber-600" /> },
+  4623→  ]
+  4624→  const flowSteps = [
+  4625→    { n: 1, label: 'Business Document', detail: 'Sales Order / Production Order / Transfer / Project', color: 'text-blue-600' },
+  4626→    { n: 2, label: 'Reservation Request', detail: 'Auto-create reservation with priority + expiry', color: 'text-cyan-600' },
+  4627→    { n: 3, label: 'Availability Check', detail: 'Query AvailabilitySnapshot (onHand − reserved − allocated − blocked)', color: 'text-amber-600' },
+  4628→    { n: 4, label: 'Reservation Created', detail: 'Stock earmarked — available pool reduced', color: 'text-orange-600' },
+  4629→    { n: 5, label: 'Allocation', detail: 'Apply allocation rule (FIFO / FEFO / LIFO / NEAREST / LOWEST / PRIORITY)', color: 'text-purple-600' },
+  4630→    { n: 6, label: 'Picking', detail: 'Pick list generated against allocated bin', color: 'text-violet-600' },
+  4631→    { n: 7, label: 'Issue / Consumption', detail: 'Stock issued — ledger updated, reservation moves to FULLY_ISSUED', color: 'text-indigo-600' },
+  4632→    { n: 8, label: 'Inventory Ledger', detail: 'Reservation → Allocation → Issue chain recorded for audit', color: 'text-emerald-600' },
+  4633→  ]
+  4634→  const priorityMatrix = [
+  4635→    { rank: 1, source: 'Manufacturing Orders', exampleType: 'PRODUCTION_ORDER', priority: 'CRITICAL', score: 95, sla: '24 hrs', notes: 'Production line stoppage costs >50K/hr — highest non-emergency priority.' },
+  4636→    { rank: 2, source: 'Customer Sales Orders', exampleType: 'SALES_ORDER', priority: 'HIGH', score: 80, sla: '48 hrs', notes: 'Wholesale + retail orders. VIP customers get CRITICAL override.' },
+  4637→    { rank: 3, source: 'Restaurant / Kitchen', exampleType: 'KITCHEN_ORDER', priority: 'NORMAL', score: 60, sla: '8 hrs', notes: 'Same-day consumption — short reservation window.' },
+  4638→    { rank: 4, source: 'Stock Transfers', exampleType: 'TRANSFER_ORDER', priority: 'NORMAL', score: 50, sla: '144 hrs', notes: 'Inter-warehouse restocking — 6-day reservation window.' },
+  4639→    { rank: 5, source: 'Samples & Marketing', exampleType: 'SAMPLE_RESERVATION', priority: 'LOW', score: 25, sla: '288 hrs', notes: '12-day window — low priority, can be bumped by higher orders.' },
+  4640→  ]
+  4641→  const priorityColor: Record<string, string> = {
+  4642→    CRITICAL: 'bg-orange-100 text-orange-800',
+  4643→    HIGH: 'bg-amber-100 text-amber-800',
+  4644→    NORMAL: 'bg-blue-100 text-blue-800',
+  4645→    LOW: 'bg-slate-100 text-slate-800',
+  4646→  }
+  4647→  return (
+  4648→    <div className="space-y-6">
+  4649→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  4650→        {stats.map(s => (
+  4651→          <Card key={s.label} className="p-4">
+  4652→            <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+  4653→            <p className="text-2xl font-bold">{s.value}</p>
+  4654→            <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+  4655→          </Card>
+  4656→        ))}
+  4657→      </div>
+  4658→      <Card className="p-6">
+  4659→        <h3 className="font-semibold mb-4 flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Reservation → Allocation → Issue Flow</h3>
+  4660→        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 font-mono text-xs space-y-2">
+  4661→          <p className="text-muted-foreground">// 8 reservation types: SALES_ORDER, PRODUCTION_ORDER, KITCHEN_ORDER, TRANSFER_ORDER, MAINTENANCE_ORDER, PROJECT_RESERVATION, SAMPLE_RESERVATION, EMERGENCY_RESERVATION</p>
+  4662→          <div className="space-y-1 pt-2">
+  4663→            {flowSteps.map(s => (
+  4664→              <p key={s.n}>
+  4665→                <Badge variant="outline" className="font-mono">{s.n}</Badge> → <span className={s.color}>{s.label}</span> — <span className="text-muted-foreground">{s.detail}</span>
+  4666→              </p>
+  4667→            ))}
+  4668→          </div>
+  4669→        </div>
+  4670→      </Card>
+  4671→      <Card className="p-6">
+  4672→        <h3 className="font-semibold mb-4 flex items-center gap-2"><ListChecks className="h-5 w-5" /> Reservation Priority Matrix</h3>
+  4673→        <div className="overflow-x-auto">
+  4674→          <table className="w-full text-sm">
+  4675→            <thead>
+  4676→              <tr className="border-b text-left">
+  4677→                <th className="py-2 pr-3 font-medium text-muted-foreground">Rank</th>
+  4678→                <th className="py-2 pr-3 font-medium text-muted-foreground">Source</th>
+  4679→                <th className="py-2 pr-3 font-medium text-muted-foreground">Example Type</th>
+  4680→                <th className="py-2 pr-3 font-medium text-muted-foreground">Default Priority</th>
+  4681→                <th className="py-2 pr-3 font-medium text-muted-foreground">Score</th>
+  4682→                <th className="py-2 pr-3 font-medium text-muted-foreground">SLA</th>
+  4683→                <th className="py-2 pr-3 font-medium text-muted-foreground">Notes</th>
+  4684→              </tr>
+  4685→            </thead>
+  4686→            <tbody>
+  4687→              {priorityMatrix.map(p => (
+  4688→                <tr key={p.rank} className="border-b last:border-0">
+  4689→                  <td className="py-2 pr-3 font-mono">{p.rank}</td>
+  4690→                  <td className="py-2 pr-3 font-medium">{p.source}</td>
+  4691→                  <td className="py-2 pr-3"><Badge variant="outline" className="font-mono text-xs">{p.exampleType}</Badge></td>
+  4692→                  <td className="py-2 pr-3"><Badge className={priorityColor[p.priority]}>{p.priority}</Badge></td>
+  4693→                  <td className="py-2 pr-3 font-mono">{p.score}</td>
+  4694→                  <td className="py-2 pr-3">{p.sla}</td>
+  4695→                  <td className="py-2 pr-3 text-muted-foreground text-xs">{p.notes}</td>
+  4696→                </tr>
+  4697→              ))}
+  4698→            </tbody>
+  4699→          </table>
+  4700→        </div>
+  4701→      </Card>
+  4702→    </div>
+  4703→  )
+  4704→}
+  4705→
+  4706→function ReservationListTab() {
+  4707→  const reservations = [
+  4708→    { id: 'res-001', number: 'RSV-2026-0001', date: '2026-07-09', type: 'SALES_ORDER', priority: 'HIGH', score: 80, warehouse: 'Mumbai DC', refType: 'SALES_ORDER', refNumber: 'SO-2026-0451', partner: 'Sai Distribution Pvt Ltd', requested: 250, reserved: 250, allocated: 180, issued: 0, status: 'ACTIVE', expiry: '2026-07-12', autoRelease: 72, createdBy: 'Anita Desai' },
+  4709→    { id: 'res-002', number: 'RSV-2026-0002', date: '2026-07-09', type: 'PRODUCTION_ORDER', priority: 'CRITICAL', score: 95, warehouse: 'Mumbai Plant Warehouse', refType: 'PRODUCTION_ORDER', refNumber: 'PO-2026-0078', partner: null, requested: 1200, reserved: 1200, allocated: 1200, issued: 600, status: 'FULLY_ALLOCATED', expiry: '2026-07-10', autoRelease: 24, createdBy: 'Chef Rajesh' },
+  4710→    { id: 'res-003', number: 'RSV-2026-0003', date: '2026-07-09', type: 'KITCHEN_ORDER', priority: 'NORMAL', score: 60, warehouse: 'Mumbai Plant Warehouse', refType: 'KITCHEN_REQUISITION', refNumber: 'KR-2026-0234', partner: null, requested: 80, reserved: 80, allocated: 45, issued: 45, status: 'PARTIALLY_ALLOCATED', expiry: '2026-07-09', autoRelease: 8, createdBy: 'Chef Rajesh' },
+  4711→    { id: 'res-004', number: 'RSV-2026-0004', date: '2026-07-08', type: 'TRANSFER_ORDER', priority: 'NORMAL', score: 50, warehouse: 'Mumbai DC', refType: 'STOCK_TRANSFER', refNumber: 'ST-2026-0156', partner: null, requested: 400, reserved: 380, allocated: 200, issued: 0, status: 'ACTIVE', expiry: '2026-07-14', autoRelease: 144, createdBy: 'Ramesh Yadav' },
+  4712→    { id: 'res-005', number: 'RSV-2026-0005', date: '2026-07-07', type: 'MAINTENANCE_ORDER', priority: 'LOW', score: 30, warehouse: 'Mumbai Plant Warehouse', refType: 'MAINTENANCE_WO', refNumber: 'MWO-2026-0089', partner: null, requested: 15, reserved: 15, allocated: 15, issued: 0, status: 'ACTIVE', expiry: '2026-07-21', autoRelease: 240, createdBy: 'Sandeep Kumar' },
+  4713→    { id: 'res-006', number: 'RSV-2026-0006', date: '2026-07-06', type: 'PROJECT_RESERVATION', priority: 'HIGH', score: 75, warehouse: 'Mumbai DC', refType: 'PROJECT', refNumber: 'PRJ-2026-0012', partner: 'Wedding Belles Events', requested: 600, reserved: 550, allocated: 320, issued: 100, status: 'PARTIALLY_ALLOCATED', expiry: '2026-07-25', autoRelease: 360, createdBy: 'Anita Desai' },
+  4714→    { id: 'res-007', number: 'RSV-2026-0007', date: '2026-07-05', type: 'SAMPLE_RESERVATION', priority: 'LOW', score: 25, warehouse: 'Mumbai Retail Store 01', refType: 'SAMPLE_REQUEST', refNumber: 'SR-2026-0042', partner: 'Apna Bazaar Chain', requested: 12, reserved: 12, allocated: 12, issued: 12, status: 'RELEASED', expiry: '2026-07-19', autoRelease: 288, createdBy: 'Vikram Iyer' },
+  4715→    { id: 'res-008', number: 'RSV-2026-0008', date: '2026-07-09', type: 'EMERGENCY_RESERVATION', priority: 'EMERGENCY', score: 100, warehouse: 'Mumbai DC', refType: 'EMERGENCY_REQUEST', refNumber: 'ER-2026-0003', partner: 'Lifeline Hospital Canteen', requested: 50, reserved: 50, allocated: 50, issued: 0, status: 'FULLY_ALLOCATED', expiry: '2026-07-10', autoRelease: 12, createdBy: 'Anita Desai' },
+  4716→  ]
+  4717→  const typeColor: Record<string, string> = {
+  4718→    SALES_ORDER: 'bg-blue-100 text-blue-800',
+  4719→    PRODUCTION_ORDER: 'bg-purple-100 text-purple-800',
+  4720→    KITCHEN_ORDER: 'bg-orange-100 text-orange-800',
+  4721→    TRANSFER_ORDER: 'bg-cyan-100 text-cyan-800',
+  4722→    MAINTENANCE_ORDER: 'bg-slate-100 text-slate-800',
+  4723→    PROJECT_RESERVATION: 'bg-violet-100 text-violet-800',
+  4724→    SAMPLE_RESERVATION: 'bg-pink-100 text-pink-800',
+  4725→    EMERGENCY_RESERVATION: 'bg-red-100 text-red-800',
+  4726→    QUALITY_RESERVATION: 'bg-teal-100 text-teal-800',
+  4727→  }
+  4728→  const priorityColor: Record<string, string> = {
+  4729→    EMERGENCY: 'bg-red-600 hover:bg-red-600 text-white',
+  4730→    CRITICAL: 'bg-orange-500 hover:bg-orange-500 text-white',
+  4731→    HIGH: 'bg-amber-500 hover:bg-amber-500 text-white',
+  4732→    NORMAL: 'bg-blue-600 hover:bg-blue-600 text-white',
+  4733→    LOW: 'bg-slate-500 hover:bg-slate-500 text-white',
+  4734→  }
+  4735→  const statusColor: Record<string, string> = {
+  4736→    ACTIVE: 'bg-blue-600 hover:bg-blue-600 text-white',
+  4737→    PARTIALLY_ALLOCATED: 'bg-amber-500 hover:bg-amber-500 text-white',
+  4738→    FULLY_ALLOCATED: 'bg-emerald-600 hover:bg-emerald-600 text-white',
+  4739→    RELEASED: 'bg-slate-500 hover:bg-slate-500 text-white',
+  4740→    EXPIRED: 'bg-rose-600 hover:bg-rose-600 text-white',
+  4741→  }
+  4742→  return (
+  4743→    <Card className="p-6">
+  4744→      <div className="flex items-center justify-between mb-4">
+  4745→        <h3 className="font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> All Reservations ({reservations.length})</h3>
+  4746→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Reservation</Button>
+  4747→      </div>
+  4748→      <div className="overflow-x-auto">
+  4749→        <table className="w-full text-sm">
+  4750→          <thead>
+  4751→            <tr className="border-b text-left">
+  4752→              <th className="py-2 pr-3 font-medium text-muted-foreground">Reservation #</th>
+  4753→              <th className="py-2 pr-3 font-medium text-muted-foreground">Date</th>
+  4754→              <th className="py-2 pr-3 font-medium text-muted-foreground">Type</th>
+  4755→              <th className="py-2 pr-3 font-medium text-muted-foreground">Priority</th>
+  4756→              <th className="py-2 pr-3 font-medium text-muted-foreground">Reference</th>
+  4757→              <th className="py-2 pr-3 font-medium text-muted-foreground">Warehouse</th>
+  4758→              <th className="py-2 pr-3 font-medium text-muted-foreground">Req</th>
+  4759→              <th className="py-2 pr-3 font-medium text-muted-foreground">Rsvd</th>
+  4760→              <th className="py-2 pr-3 font-medium text-muted-foreground">Alloc</th>
+  4761→              <th className="py-2 pr-3 font-medium text-muted-foreground">Issued</th>
+  4762→              <th className="py-2 pr-3 font-medium text-muted-foreground">Status</th>
+  4763→              <th className="py-2 pr-3 font-medium text-muted-foreground">Expiry</th>
+  4764→            </tr>
+  4765→          </thead>
+  4766→          <tbody>
+  4767→            {reservations.map(r => (
+  4768→              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/50">
+  4769→                <td className="py-2 pr-3 font-mono text-xs">{r.number}</td>
+  4770→                <td className="py-2 pr-3 text-xs">{r.date}</td>
+  4771→                <td className="py-2 pr-3"><Badge className={typeColor[r.type]}>{r.type}</Badge></td>
+  4772→                <td className="py-2 pr-3">
+  4773→                  <div className="flex items-center gap-1">
+  4774→                    <Badge className={priorityColor[r.priority]}>{r.priority}</Badge>
+  4775→                    <span className="font-mono text-xs text-muted-foreground">{r.score}</span>
+  4776→                  </div>
+  4777→                </td>
+  4778→                <td className="py-2 pr-3 text-xs"><div className="font-mono">{r.refNumber}</div><div className="text-muted-foreground">{r.partner || '—'}</div></td>
+  4779→                <td className="py-2 pr-3 text-xs">{r.warehouse}</td>
+  4780→                <td className="py-2 pr-3 font-mono text-right">{r.requested}</td>
+  4781→                <td className="py-2 pr-3 font-mono text-right text-blue-600">{r.reserved}</td>
+  4782→                <td className="py-2 pr-3 font-mono text-right text-purple-600">{r.allocated}</td>
+  4783→                <td className="py-2 pr-3 font-mono text-right text-emerald-600">{r.issued}</td>
+  4784→                <td className="py-2 pr-3"><Badge className={statusColor[r.status]}>{r.status}</Badge></td>
+  4785→                <td className="py-2 pr-3 text-xs">{r.expiry}<div className="text-muted-foreground">{r.autoRelease}h</div></td>
+  4786→              </tr>
+  4787→            ))}
+  4788→          </tbody>
+  4789→        </table>
+  4790→      </div>
+  4791→    </Card>
+  4792→  )
+  4793→}
+  4794→
+  4795→function AllocationRulesTab() {
+  4796→  const rules = [
+  4797→    { id: 'alr-001', code: 'FEFO-PERISHABLE', name: 'FEFO for Perishable Items', description: 'First Expiry First Out — strict for dairy, sweets, and short-shelf-life products.', strategy: 'FEFO', priority: 10, reservationType: 'SALES_ORDER', category: 'PERISHABLES', productType: 'FINISHED_GOOD', warehouse: 'All Warehouses', batchPreference: 'EXPIRY_BASED', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+  4798→    { id: 'alr-002', code: 'FIFO-RAW-MATERIAL', name: 'FIFO for Raw Materials', description: 'First In First Out — for raw materials and ingredients in plant warehouse.', strategy: 'FIFO', priority: 20, reservationType: 'PRODUCTION_ORDER', category: 'RAW_MATERIALS', productType: 'RAW_MATERIAL', warehouse: 'Mumbai Plant Warehouse', batchPreference: 'SAME_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+  4799→    { id: 'alr-003', code: 'LIFO-FINISHED', name: 'LIFO for Finished Goods', description: 'Last In First Out — for finished goods in dispatch zone, picks freshest batch first.', strategy: 'LIFO', priority: 30, reservationType: 'SALES_ORDER', category: 'FINISHED_GOODS', productType: 'FINISHED_GOOD', warehouse: 'Mumbai DC', batchPreference: 'AUTO_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+  4800→    { id: 'alr-004', code: 'NEAREST-BIN-PICK', name: 'Nearest Bin for Picking', description: 'Optimize picker travel time — picks from nearest bin to dispatch dock.', strategy: 'NEAREST_BIN', priority: 40, reservationType: 'TRANSFER_ORDER', category: 'ANY', productType: 'ANY', warehouse: 'All Warehouses', batchPreference: 'MULTIPLE_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+  4801→    { id: 'alr-005', code: 'LOWEST-COST-PROJ', name: 'Lowest Cost for Project Reservations', description: 'Select stock from lowest-cost batches for project/event reservations to maximize margin.', strategy: 'LOWEST_COST', priority: 50, reservationType: 'PROJECT_RESERVATION', category: 'FINISHED_GOODS', productType: 'FINISHED_GOOD', warehouse: 'All Warehouses', batchPreference: 'SUPPLIER_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+  4802→    { id: 'alr-006', code: 'HIGHEST-PRIORITY-EMR', name: 'Highest Priority for Emergency', description: 'Override all other reservations — emergency orders get highest-priority stock access.', strategy: 'HIGHEST_PRIORITY', priority: 5, reservationType: 'EMERGENCY_RESERVATION', category: 'ANY', productType: 'ANY', warehouse: 'All Warehouses', batchPreference: 'AUTO_BATCH', excludeExpired: true, excludeQuarantine: false, excludeBlocked: false, status: 'ACTIVE' },
+  4803→  ]
+  4804→  const strategyColor: Record<string, string> = {
+  4805→    FIFO: 'bg-blue-100 text-blue-800',
+  4806→    FEFO: 'bg-amber-100 text-amber-800',
+  4807→    LIFO: 'bg-purple-100 text-purple-800',
+  4808→    NEAREST_BIN: 'bg-cyan-100 text-cyan-800',
+  4809→    LOWEST_COST: 'bg-emerald-100 text-emerald-800',
+  4810→    HIGHEST_PRIORITY: 'bg-red-100 text-red-800',
+  4811→  }
+  4812→  return (
+  4813→    <div className="space-y-4">
+  4814→      <Card className="p-4">
+  4815→        <div className="flex items-center justify-between mb-2">
+  4816→          <h3 className="font-semibold flex items-center gap-2"><ListChecks className="h-5 w-5" /> Allocation Rules ({rules.length})</h3>
+  4817→          <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
+  4818→        </div>
+  4819→        <p className="text-xs text-muted-foreground">Rules evaluated by ascending priority (lower number = higher precedence). First matching rule wins for each reservation line.</p>
+  4820→      </Card>
+  4821→      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+  4822→        {rules.map(r => (
+  4823→          <Card key={r.id} className="p-4">
+  4824→            <div className="flex items-start justify-between mb-2">
+  4825→              <div>
+  4826→                <p className="font-mono text-xs text-muted-foreground">{r.code}</p>
+  4827→                <p className="font-semibold text-sm">{r.name}</p>
+  4828→              </div>
+  4829→              <Badge className={strategyColor[r.strategy]}>{r.strategy}</Badge>
+  4830→            </div>
+  4831→            <p className="text-xs text-muted-foreground mb-3">{r.description}</p>
+  4832→            <div className="space-y-1 text-xs">
+  4833→              <div className="flex justify-between"><span className="text-muted-foreground">Priority</span><span className="font-mono">#{r.priority}</span></div>
+  4834→              <div className="flex justify-between"><span className="text-muted-foreground">Reservation Type</span><Badge variant="outline" className="text-xs">{r.reservationType}</Badge></div>
+  4835→              <div className="flex justify-between"><span className="text-muted-foreground">Product Category</span><span>{r.category}</span></div>
+  4836→              <div className="flex justify-between"><span className="text-muted-foreground">Warehouse</span><span className="truncate ml-2">{r.warehouse}</span></div>
+  4837→              <div className="flex justify-between"><span className="text-muted-foreground">Batch Preference</span><Badge variant="outline" className="text-xs">{r.batchPreference}</Badge></div>
+  4838→            </div>
+  4839→            <Separator className="my-3" />
+  4840→            <div className="flex flex-wrap gap-1">
+  4841→              {r.excludeExpired && <Badge variant="outline" className="text-xs text-rose-700 border-rose-300">No Expired</Badge>}
+  4842→              {r.excludeQuarantine ? <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">No Quarantine</Badge> : <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-300">Allow Quarantine</Badge>}
+  4843→              {r.excludeBlocked ? <Badge variant="outline" className="text-xs text-red-700 border-red-300">No Blocked</Badge> : <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-300">Allow Blocked</Badge>}
+  4844→            </div>
+  4845→          </Card>
+  4846→        ))}
+  4847→      </div>
+  4848→    </div>
+  4849→  )
+  4850→}
+  4851→
+  4852→function AvailabilityTab() {
+  4853→  const snapshots = [
+  4854→    { id: 'avs-001', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', onHand: 480, reserved: 250, allocated: 180, inTransit: 100, blocked: 12, unitCost: 600 },
+  4855→    { id: 'avs-002', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', onHand: 1500, reserved: 600, allocated: 600, inTransit: 0, blocked: 0, unitCost: 45 },
+  4856→    { id: 'avs-003', product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', onHand: 80, reserved: 40, allocated: 30, inTransit: 50, blocked: 0, unitCost: 520 },
+  4857→    { id: 'avs-004', product: 'Soan Cake 1kg', warehouse: 'Mumbai DC', onHand: 60, reserved: 80, allocated: 50, inTransit: 40, blocked: 6, unitCost: 625 },
+  4858→    { id: 'avs-005', product: 'Mixed Namkeen 200g', warehouse: 'Mumbai DC', onHand: 850, reserved: 200, allocated: 150, inTransit: 0, blocked: 24, unitCost: 53 },
+  4859→    { id: 'avs-006', product: 'Gulab Jamun 1kg', warehouse: 'Mumbai Retail Store 01', onHand: 24, reserved: 30, allocated: 20, inTransit: 0, blocked: 0, unitCost: 304 },
+  4860→  ]
+  4861→  const rows = snapshots.map(s => ({
+  4862→    ...s,
+  4863→    available: s.onHand - s.reserved - s.allocated - s.blocked,
+  4864→    totalValue: s.onHand * s.unitCost,
+  4865→  }))
+  4866→  const formatINR = (n: number) => `₹${n.toLocaleString('en-IN')}`
+  4867→  return (
+  4868→    <Card className="p-6">
+  4869→      <div className="flex items-center justify-between mb-4">
+  4870→        <h3 className="font-semibold flex items-center gap-2"><Boxes className="h-5 w-5" /> Availability Snapshots ({rows.length})</h3>
+  4871→        <Badge variant="outline" className="text-xs">Snapshot: 2026-07-09 09:30 IST</Badge>
+  4872→      </div>
+  4873→      <div className="overflow-x-auto">
+  4874→        <table className="w-full text-sm">
+  4875→          <thead>
+  4876→            <tr className="border-b text-left">
+  4877→              <th className="py-2 pr-3 font-medium text-muted-foreground">Product</th>
+  4878→              <th className="py-2 pr-3 font-medium text-muted-foreground">Warehouse</th>
+  4879→              <th className="py-2 pr-3 font-medium text-muted-foreground">On Hand</th>
+  4880→              <th className="py-2 pr-3 font-medium text-muted-foreground">Reserved</th>
+  4881→              <th className="py-2 pr-3 font-medium text-muted-foreground">Allocated</th>
+  4882→              <th className="py-2 pr-3 font-medium text-muted-foreground">In Transit</th>
+  4883→              <th className="py-2 pr-3 font-medium text-muted-foreground">Blocked</th>
+  4884→              <th className="py-2 pr-3 font-medium text-muted-foreground">Available</th>
+  4885→              <th className="py-2 pr-3 font-medium text-muted-foreground">Stock Value</th>
+  4886→            </tr>
+  4887→          </thead>
+  4888→          <tbody>
+  4889→            {rows.map(r => (
+  4890→              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/50">
+  4891→                <td className="py-2 pr-3 font-medium">{r.product}</td>
+  4892→                <td className="py-2 pr-3 text-xs">{r.warehouse}</td>
+  4893→                <td className="py-2 pr-3 font-mono text-right">{r.onHand}</td>
+  4894→                <td className="py-2 pr-3 font-mono text-right text-amber-600">{r.reserved}</td>
+  4895→                <td className="py-2 pr-3 font-mono text-right text-purple-600">{r.allocated}</td>
+  4896→                <td className="py-2 pr-3 font-mono text-right text-blue-600">{r.inTransit}</td>
+  4897→                <td className="py-2 pr-3 font-mono text-right text-red-600">{r.blocked}</td>
+  4898→                <td className="py-2 pr-3 font-mono text-right">
+  4899→                  <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-bold',
+  4900→                    r.available > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800')}>
+  4901→                    {r.available > 0 ? `+${r.available}` : r.available}
+  4902→                  </span>
+  4903→                </td>
+  4904→                <td className="py-2 pr-3 font-mono text-right text-xs">{formatINR(r.totalValue)}</td>
+  4905→              </tr>
+  4906→            ))}
+  4907→          </tbody>
+  4908→          <tfoot>
+  4909→            <tr className="border-t-2 font-semibold">
+  4910→              <td className="py-2 pr-3" colSpan={2}>Totals</td>
+  4911→              <td className="py-2 pr-3 font-mono text-right">{rows.reduce((s, r) => s + r.onHand, 0)}</td>
+  4912→              <td className="py-2 pr-3 font-mono text-right text-amber-600">{rows.reduce((s, r) => s + r.reserved, 0)}</td>
+  4913→              <td className="py-2 pr-3 font-mono text-right text-purple-600">{rows.reduce((s, r) => s + r.allocated, 0)}</td>
+  4914→              <td className="py-2 pr-3 font-mono text-right text-blue-600">{rows.reduce((s, r) => s + r.inTransit, 0)}</td>
+  4915→              <td className="py-2 pr-3 font-mono text-right text-red-600">{rows.reduce((s, r) => s + r.blocked, 0)}</td>
+  4916→              <td className="py-2 pr-3 font-mono text-right">{rows.reduce((s, r) => s + r.available, 0)}</td>
+  4917→              <td className="py-2 pr-3 font-mono text-right text-xs">{formatINR(rows.reduce((s, r) => s + r.totalValue, 0))}</td>
+  4918→            </tr>
+  4919→          </tfoot>
+  4920→        </table>
+  4921→      </div>
+  4922→      <div className="mt-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+  4923→        <p className="text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+  4924→          <AlertTriangleIcon className="h-4 w-4" />
+  4925→          <strong>Short Supply Alert:</strong> 2 items showing negative availability — Soan Cake 1kg (-76) and Gulab Jamun 1kg (-26). Reserved + allocated qty exceeds on-hand. Trigger replenishment or release lower-priority reservations.
+  4926→        </p>
+  4927→      </div>
+  4928→    </Card>
+  4929→  )
+  4930→}
+  4931→
+  4932→// ─── Settings Module (Sprint 2) ─────────────────────────
+  4933→function SettingsModule() {
+  4934→  return (
+  4935→    <div className="space-y-6">
+  4936→      <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
+  4937→        <h2 className="text-2xl font-bold mb-1">Platform Settings</h2>
+  4938→        <p className="text-slate-300 text-sm">Configuration, Infrastructure, Health Monitoring</p>
+  4939→      </Card>
+  4940→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  4941→        {[
+  4942→          { name: 'PostgreSQL', status: 'healthy', icon: <Database className="h-5 w-5" /> },
+  4943→          { name: 'Redis', status: 'healthy', icon: <Zap className="h-5 w-5" /> },
+  4944→          { name: 'RabbitMQ', status: 'healthy', icon: <Activity className="h-5 w-5" /> },
+  4945→          { name: 'MinIO Storage', status: 'healthy', icon: <HardDrive className="h-5 w-5" /> },
+  4946→          { name: 'OpenSearch', status: 'offline', icon: <Search className="h-5 w-5" /> },
+  4947→          { name: 'Backend API', status: 'healthy', icon: <Server className="h-5 w-5" /> },
+  4948→        ].map(s => (
+  4949→          <Card key={s.name} className="p-4">
+  4950→            <div className="flex items-center justify-between">
+  4951→              <div className="flex items-center gap-3">
+  4952→                <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', s.status === 'healthy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-muted text-muted-foreground')}>{s.icon}</div>
+  4953→                <div><p className="text-sm font-medium">{s.name}</p></div>
+  4954→              </div>
+  4955→              <Badge className={cn('text-xs', s.status === 'healthy' ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground')}>{s.status}</Badge>
+  4956→            </div>
+  4957→          </Card>
+  4958→        ))}
+  4959→      </div>
+  4960→    </div>
+  4961→  )
+  4962→}
+  4963→
+  4964→// ─── Coming Soon Placeholder ────────────────────────────
+  4965→function ComingSoon({ name }: { name: string }) {
+  4966→  return (
+  4967→    <Card className="p-12 text-center">
+  4968→      <div className="flex flex-col items-center gap-4">
+  4969→        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted"><Package className="h-8 w-8 text-muted-foreground" /></div>
+  4970→        <div><h3 className="font-semibold text-lg">{name}</h3><p className="text-sm text-muted-foreground mt-1">This module is planned for future sprints.</p></div>
+  4971→      </div>
+  4972→    </Card>
+  4973→  )
+  4974→}
+  4975→
+  4976→// ─── Main Unified Application ───────────────────────────
+  4977→export default function Home() {
+  4978→  const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode } = useAuthStore()
+  4979→  const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard')
+  4980→  const [sidebarOpen, setSidebarOpen] = useState(true)
+  4981→
+  4982→  useEffect(() => { initialize() }, [initialize])
+  4983→
+  4984→  if (isLoading) {
+  4985→    return (
+  4986→      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+  4987→        <div className="text-center space-y-4">
+  4988→          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-3xl">S</div>
+  4989→          <div className="flex items-center justify-center gap-2 text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /><p className="text-sm">Loading SUOP Admin...</p></div>
+  4990→        </div>
+  4991→      </div>
+  4992→    )
+  4993→  }
+  4994→
+  4995→  if (!isAuthenticated) {
+  4996→    return <LoginScreen onLogin={async (e, p, r) => { await login(e, p) }} onDemo={loginDemo} />
+  4997→  }
+  4998→
+  4999→  const moduleNames: Record<ModuleKey, string> = {
+  5000→    dashboard: 'Dashboard', organization: 'Organization', rbac: 'RBAC & Security',
+  5001→    products: 'Product Master', pim: 'PIM Platform', commercial: 'Commercial Engine',
+  5002→    partners: 'Business Partners', identification: 'Identification & Traceability',
+  5003→    governance: 'Data Governance', inventory: 'Inventory Engine',
+  5004→    goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', settings: 'Settings',
+  5005→    warehouse: 'Warehouse', manufacturing: 'Manufacturing',
+  5006→    quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
+  5007→    maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
+  5008→    analytics: 'Analytics', ai: 'AI Copilot',
+  5009→  }
+  5010→
+  5011→  return (
+  5012→    <div className="flex h-screen overflow-hidden bg-background">
+  5013→      {/* Sidebar */}
+  5014→      <aside className={cn('flex flex-col border-r bg-sidebar transition-all duration-200 flex-shrink-0', sidebarOpen ? 'w-64' : 'w-0')}>
+  5015→        {sidebarOpen && (
+  5016→          <>
+  5017→            <div className="flex h-16 items-center gap-3 border-b px-6">
+  5018→              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">S</div>
+  5019→              <div><p className="font-bold text-sm leading-tight">SUOP</p><p className="text-xs text-muted-foreground leading-tight">Sudhastar Unified OS</p></div>
+
+[showing lines 4570-5019 of 5087; use offset=5020 with limit to continue reading]

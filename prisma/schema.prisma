@@ -4992,3 +4992,251 @@ model AvailabilitySnapshot {
   @@index([snapshotAt], map: "idx_as_snapshot")
   @@index([availableQty], map: "idx_as_available")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 18 — PHYSICAL INVENTORY, CYCLE COUNT & STOCK AUDIT
+// Continuous counting without warehouse shutdown
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Physical Inventory Document ────────────────
+model PhysicalInventory {
+  id              String   @id @default(uuid()) @db.Uuid
+  countNumber     String   @unique @map("count_number")
+  countDate       DateTime @map("count_date")
+  // ─── Type ───
+  countType       String   @map("count_type") // ANNUAL_COUNT, CYCLE_COUNT, BLIND_COUNT, SPOT_COUNT, ABC_COUNT, RANDOM_COUNT, BIN_COUNT, BATCH_COUNT, EXPIRY_COUNT, INVESTIGATION_COUNT
+  countMethod     String   @default("BARCODE") @map("count_method") // BARCODE, MANUAL, BLIND, QR
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  branchId        String?  @db.Uuid @map("branch_id")
+  zone            String?
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, ASSIGNED, IN_PROGRESS, COMPLETED, RECOUNT_REQUIRED, APPROVED, POSTED, CANCELLED
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  countedLines    Int      @default(0) @map("counted_lines")
+  varianceLines   Int      @default(0) @map("variance_lines")
+  totalSystemQty  Decimal  @db.Decimal(18, 4) @default(0) @map("total_system_qty")
+  totalCountedQty Decimal  @db.Decimal(18, 4) @default(0) @map("total_counted_qty")
+  totalVarianceQty Decimal @db.Decimal(18, 4) @default(0) @map("total_variance_qty")
+  totalVarianceValue Decimal @db.Decimal(18, 2) @default(0) @map("total_variance_value")
+  // ─── Accuracy ───
+  accuracyPercent Decimal? @db.Decimal(5, 2) @map("accuracy_percent")
+  // ─── Team ───
+  countTeamId     String?  @db.Uuid @map("count_team_id")
+  countTeamName   String?  @map("count_team_name")
+  // ─── Workflow ───
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  postedAt        DateTime? @map("posted_at")
+  adjustmentId    String?  @db.Uuid @map("adjustment_id")
+  // ─── Recount ───
+  recountRequired Boolean  @default(false) @map("recount_required")
+  recountCount    Int      @default(0) @map("recount_count")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           PhysicalInventoryLine[]
+  variances       CountVariance[]
+
+  @@map("physical_inventories")
+  @@index([countType, status], map: "idx_pi_type_status")
+  @@index([warehouseId, countDate], map: "idx_pi_warehouse_date")
+  @@index([status], map: "idx_pi_status")
+}
+
+model PhysicalInventoryLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  physicalInventoryId String @db.Uuid @map("physical_inventory_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Location ───
+  locationId      String?  @db.Uuid @map("location_id")
+  locationName    String?  @map("location_name")
+  bin             String?
+  zone            String?
+  // ─── Quantities ───
+  systemQty       Decimal  @db.Decimal(18, 4) @map("system_qty")
+  countedQty      Decimal? @db.Decimal(18, 4) @map("counted_qty")
+  varianceQty     Decimal  @db.Decimal(18, 4) @default(0) @map("variance_qty")
+  approvedQty     Decimal? @db.Decimal(18, 4) @map("approved_qty")
+  // ─── Value ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  varianceValue   Decimal  @db.Decimal(18, 2) @default(0) @map("variance_value")
+  // ─── Count status ───
+  countStatus     String   @default("PENDING") @map("count_status") // PENDING, COUNTED, VARIANCE, RECOUNT_REQUIRED, APPROVED, SKIPPED
+  isBlind         Boolean  @default(false) @map("is_blind")
+  // ─── Barcode ───
+  barcodeScanned  String?  @map("barcode_scanned")
+  // ─── Recount ───
+  recountRequired Boolean  @default(false) @map("recount_required")
+  recountCount    Int      @default(0) @map("recount_count")
+  recountById     String?  @db.Uuid @map("recount_by_id")
+  recountByName   String?  @map("recount_by_name")
+  recountAt       DateTime? @map("recount_at")
+  // ─── Counter ───
+  countedById     String?  @db.Uuid @map("counted_by_id")
+  countedByName   String?  @map("counted_by_name")
+  countedAt       DateTime? @map("counted_at")
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  physicalInventory PhysicalInventory @relation(fields: [physicalInventoryId], references: [id], onDelete: Cascade)
+
+  @@map("physical_inventory_lines")
+  @@index([physicalInventoryId, lineOrder], map: "idx_pil_pi_order")
+  @@index([productId, batchId], map: "idx_pil_product_batch")
+  @@index([countStatus], map: "idx_pil_count_status")
+}
+
+// ─── Epic 2: Cycle Count Plans ─────────────────────────
+model CycleCountPlan {
+  id              String   @id @default(uuid()) @db.Uuid
+  planCode        String   @unique @map("plan_code")
+  planName        String   @map("plan_name")
+  description     String?
+  // ─── Frequency ───
+  frequency       String   // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  // ─── ABC Strategy ───
+  abcClassA       String   @default("MONTHLY") @map("abc_class_a")
+  abcClassB       String   @default("QUARTERLY") @map("abc_class_b")
+  abcClassC       String   @default("YEARLY") @map("abc_class_c")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Configuration ───
+  varianceThreshold Decimal @db.Decimal(8, 2) @default(5) @map("variance_threshold") // % threshold for recount
+  autoRecount     Boolean  @default(true) @map("auto_recount")
+  blindCount      Boolean  @default(false) @map("blind_count")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  lastRunAt       DateTime? @map("last_run_at")
+  nextRunAt       DateTime? @map("next_run_at")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  schedules       CycleCountSchedule[]
+
+  @@map("cycle_count_plans")
+  @@index([frequency, status], map: "idx_ccp_freq_status")
+  @@index([warehouseId], map: "idx_ccp_warehouse")
+  @@index([nextRunAt], map: "idx_ccp_next_run")
+}
+
+model CycleCountSchedule {
+  id              String   @id @default(uuid()) @db.Uuid
+  planId          String   @db.Uuid @map("plan_id")
+  scheduleDate    DateTime @map("schedule_date")
+  // ─── Scope ───
+  abcClass        String?  @map("abc_class") // A, B, C
+  zone            String?
+  productCategoryId String? @db.Uuid @map("product_category_id")
+  itemCount       Int      @default(0) @map("item_count")
+  // ─── Status ───
+  status          String   @default("SCHEDULED") // SCHEDULED, ASSIGNED, IN_PROGRESS, COMPLETED, SKIPPED
+  assignedTeamId  String?  @db.Uuid @map("assigned_team_id")
+  assignedTeamName String? @map("assigned_team_name")
+  // ─── Result ───
+  physicalInventoryId String? @db.Uuid @map("physical_inventory_id")
+  accuracyPercent Decimal? @db.Decimal(5, 2) @map("accuracy_percent")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  plan            CycleCountPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("cycle_count_schedules")
+  @@index([planId, scheduleDate], map: "idx_ccs_plan_date")
+  @@index([status, scheduleDate], map: "idx_ccs_status_date")
+  @@index([abcClass], map: "idx_ccs_abc")
+}
+
+// ─── Epic 5: Count Teams ───────────────────────────────
+model CountTeam {
+  id              String   @id @default(uuid()) @db.Uuid
+  teamCode        String   @unique @map("team_code")
+  teamName        String   @map("team_name")
+  // ─── Members ───
+  leaderId        String?  @db.Uuid @map("leader_id")
+  leaderName      String?  @map("leader_name")
+  memberCount     Int      @default(1) @map("member_count")
+  // ─── Assignment ───
+  assignedZone    String?  @map("assigned_zone")
+  assignedWarehouseId String? @db.Uuid @map("assigned_warehouse_id")
+  // ─── Stats ───
+  totalCounts     Int      @default(0) @map("total_counts")
+  totalItemsCounted Int    @default(0) @map("total_items_counted")
+  avgAccuracy     Decimal? @db.Decimal(5, 2) @map("avg_accuracy")
+  avgCountTime    Int?     @map("avg_count_time") // minutes
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, BUSY, INACTIVE
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("count_teams")
+  @@index([status], map: "idx_ct_status")
+  @@index([assignedWarehouseId], map: "idx_ct_warehouse")
+}
+
+// ─── Epic 6: Variance Analysis ─────────────────────────
+model CountVariance {
+  id              String   @id @default(uuid()) @db.Uuid
+  physicalInventoryId String? @db.Uuid @map("physical_inventory_id")
+  countNumber     String?  @map("count_number")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantities ───
+  systemQty       Decimal  @db.Decimal(18, 4) @map("system_qty")
+  countedQty      Decimal  @db.Decimal(18, 4) @map("counted_qty")
+  varianceQty     Decimal  @db.Decimal(18, 4) @map("variance_qty")
+  // ─── Value ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  varianceValue   Decimal  @db.Decimal(18, 2) @default(0) @map("variance_value")
+  // ─── Variance type ───
+  varianceType    String   @map("variance_type") // MISSING, EXTRA, WRONG_LOCATION, WRONG_BATCH, WRONG_UOM, WRONG_PRODUCT
+  // ─── Root cause ───
+  rootCause       String?
+  rootCauseCategory String? @map("root_cause_category")
+  correctiveAction String? @map("corrective_action")
+  // ─── Resolution ───
+  resolutionStatus String  @default("PENDING") @map("resolution_status") // PENDING, INVESTIGATING, RESOLVED, ADJUSTED, WRITTEN_OFF
+  resolutionNotes String?  @map("resolution_notes")
+  resolvedById    String?  @db.Uuid @map("resolved_by_id")
+  resolvedAt      DateTime? @map("resolved_at")
+  // ─── Recount ───
+  recountRequired Boolean  @default(false) @map("recount_required")
+  recountCount    Int      @default(0) @map("recount_count")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  physicalInventory PhysicalInventory? @relation(fields: [physicalInventoryId], references: [id], onDelete: SetNull)
+
+  @@map("count_variances")
+  @@index([physicalInventoryId], map: "idx_cv_pi")
+  @@index([varianceType], map: "idx_cv_type")
+  @@index([resolutionStatus], map: "idx_cv_resolution")
+  @@index([productId], map: "idx_cv_product")
+}

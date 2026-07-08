@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "17.0.0"
+const VERSION = "18.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -816,6 +816,45 @@ const RES_DATA = {
   ],
 }
 
+// ─── Sprint 18: Cycle Count & Audit Seed Data ───────────
+const CC_DATA = {
+  physicalInventories: [
+    { id: 'pi-001', countNumber: 'PI-2026-0001', countDate: '2026-07-09', countType: 'ANNUAL_COUNT', warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', teamId: 'ct-001', teamName: 'Alpha Count Team', teamLead: 'Anita Desai', scope: 'FULL WAREHOUSE', totalLines: 480, countedLines: 412, pendingLines: 68, systemQty: 18500, countedQty: 18350, varianceQty: -150, varianceValue: -42500, accuracyPct: 99.19, status: 'IN_PROGRESS', approvalLevel: 'WAREHOUSE_MANAGER', scheduledStart: '2026-07-09 08:00', actualStart: '2026-07-09 08:15', expectedCompletion: '2026-07-10 18:00', remarks: 'Annual count — full Mumbai DC warehouse. Freezer section pending.' },
+    { id: 'pi-002', countNumber: 'PI-2026-0002', countDate: '2026-07-08', countType: 'CYCLE_COUNT', warehouseName: 'Mumbai Plant Warehouse', branchName: 'Mumbai Plant', teamId: 'ct-002', teamName: 'Bravo Count Team', teamLead: 'Ramesh Yadav', scope: 'ABC CATEGORY A', totalLines: 120, countedLines: 120, pendingLines: 0, systemQty: 8400, countedQty: 8320, varianceQty: -80, varianceValue: -18400, accuracyPct: 99.05, status: 'COMPLETED', approvalLevel: 'SUPERVISOR', scheduledStart: '2026-07-08 06:00', actualStart: '2026-07-08 06:05', expectedCompletion: '2026-07-08 14:00', remarks: 'Monthly cycle count — Category A SKUs only. 4 variances identified.' },
+    { id: 'pi-003', countNumber: 'PI-2026-0003', countDate: '2026-07-09', countType: 'BLIND_COUNT', warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', teamId: 'ct-003', teamName: 'Charlie Count Team', teamLead: 'Vikram Iyer', scope: 'HIGH-VALUE ITEMS', totalLines: 45, countedLines: 45, pendingLines: 0, systemQty: 920, countedQty: 935, varianceQty: 15, varianceValue: 9300, accuracyPct: 98.37, status: 'PENDING_APPROVAL', approvalLevel: 'FINANCE', scheduledStart: '2026-07-09 10:00', actualStart: '2026-07-09 10:00', expectedCompletion: '2026-07-09 16:00', remarks: 'Blind count — counters did not see system qty. 3 extra units found in Kaju Katli bin.' },
+    { id: 'pi-004', countNumber: 'PI-2026-0004', countDate: '2026-07-09', countType: 'SPOT_COUNT', warehouseName: 'Mumbai Retail Store 01', branchName: 'Mumbai Retail', teamId: 'ct-001', teamName: 'Alpha Count Team', teamLead: 'Anita Desai', scope: 'BIN-A-12 + BIN-A-13', totalLines: 12, countedLines: 12, pendingLines: 0, systemQty: 280, countedQty: 265, varianceQty: -15, varianceValue: -4560, accuracyPct: 94.64, status: 'VARIANCE_INVESTIGATION', approvalLevel: 'SUPERVISOR', scheduledStart: '2026-07-09 14:00', actualStart: '2026-07-09 14:05', expectedCompletion: '2026-07-09 15:00', remarks: 'Spot count triggered by POS alert — 15 units short in Gulab Jamun display bin.' },
+    { id: 'pi-005', countNumber: 'PI-2026-0005', countDate: '2026-07-07', countType: 'ABC_COUNT', warehouseName: 'Mumbai Plant Warehouse', branchName: 'Mumbai Plant', teamId: 'ct-002', teamName: 'Bravo Count Team', teamLead: 'Ramesh Yadav', scope: 'ABC CATEGORY B', totalLines: 220, countedLines: 220, pendingLines: 0, systemQty: 14200, countedQty: 14180, varianceQty: -20, varianceValue: -6800, accuracyPct: 99.86, status: 'COMPLETED', approvalLevel: 'SUPERVISOR', scheduledStart: '2026-07-07 07:00', actualStart: '2026-07-07 07:00', expectedCompletion: '2026-07-07 16:00', remarks: 'Quarterly ABC Category B count — minimal variance, 1 SKU short.' },
+    { id: 'pi-006', countNumber: 'PI-2026-0006', countDate: '2026-07-09', countType: 'RANDOM_COUNT', warehouseName: 'Pune DC', branchName: 'Pune Branch', teamId: 'ct-003', teamName: 'Charlie Count Team', teamLead: 'Vikram Iyer', scope: 'RANDOM 50 BINS', totalLines: 50, countedLines: 35, pendingLines: 15, systemQty: 3100, countedQty: 3085, varianceQty: -15, varianceValue: -3250, accuracyPct: 99.52, status: 'IN_PROGRESS', approvalLevel: 'SUPERVISOR', scheduledStart: '2026-07-09 09:00', actualStart: '2026-07-09 09:10', expectedCompletion: '2026-07-09 17:00', remarks: 'Random sample of 50 bins — system-generated. 15 bins pending in cold storage.' },
+    { id: 'pi-007', countNumber: 'PI-2026-0007', countDate: '2026-07-06', countType: 'BIN_COUNT', warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', teamId: 'ct-001', teamName: 'Alpha Count Team', teamLead: 'Anita Desai', scope: 'ZONE-3 ALL BINS', totalLines: 85, countedLines: 85, pendingLines: 0, systemQty: 6400, countedQty: 6380, varianceQty: -20, varianceValue: -8200, accuracyPct: 99.69, status: 'COMPLETED', approvalLevel: 'SUPERVISOR', scheduledStart: '2026-07-06 13:00', actualStart: '2026-07-06 13:00', expectedCompletion: '2026-07-06 18:00', remarks: 'Zone-3 bin count after reorganization. 1 missing carton traced to wrong bin.' },
+    { id: 'pi-008', countNumber: 'PI-2026-0008', countDate: '2026-07-05', countType: 'INVESTIGATION_COUNT', warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', teamId: 'ct-002', teamName: 'Bravo Count Team', teamLead: 'Ramesh Yadav', scope: 'SKU: KAJU-KATLI-500G', totalLines: 8, countedLines: 8, pendingLines: 0, systemQty: 480, countedQty: 445, varianceQty: -35, varianceValue: -21000, accuracyPct: 92.71, status: 'RECOUNT_REQUIRED', approvalLevel: 'FINANCE', scheduledStart: '2026-07-05 11:00', actualStart: '2026-07-05 11:00', expectedCompletion: '2026-07-05 13:00', remarks: 'Investigation count — 35 units unaccounted. Suspected theft or unrecorded dispatch. Recount ordered by Finance.' },
+  ],
+  cyclePlans: [
+    { id: 'ccp-001', planCode: 'CC-DAILY-A', planName: 'Daily Cycle Count — Category A', frequency: 'DAILY', abcClass: 'A', itemsPerCycle: 25, varianceThreshold: 0.5, recountTrigger: 1.0, nextRunDate: '2026-07-10', lastRunDate: '2026-07-09', avgAccuracy: 99.05, totalExecutions: 142, activeSchedules: 1, status: 'ACTIVE', strategy: 'High-value items counted daily — 25 SKUs per day covering entire Category A in ~10 days.' },
+    { id: 'ccp-002', planCode: 'CC-WEEKLY-B', planName: 'Weekly Cycle Count — Category B', frequency: 'WEEKLY', abcClass: 'B', itemsPerCycle: 50, varianceThreshold: 1.0, recountTrigger: 2.0, nextRunDate: '2026-07-14', lastRunDate: '2026-07-07', avgAccuracy: 99.86, totalExecutions: 28, activeSchedules: 1, status: 'ACTIVE', strategy: 'Medium-value items counted weekly — 50 SKUs per week covering Category B in ~4 weeks.' },
+    { id: 'ccp-003', planCode: 'CC-MONTHLY-C', planName: 'Monthly Cycle Count — Category C', frequency: 'MONTHLY', abcClass: 'C', itemsPerCycle: 100, varianceThreshold: 2.0, recountTrigger: 5.0, nextRunDate: '2026-07-31', lastRunDate: '2026-06-30', avgAccuracy: 98.42, totalExecutions: 6, activeSchedules: 1, status: 'ACTIVE', strategy: 'Low-value items counted monthly — 100 SKUs per cycle covering Category C quarterly.' },
+    { id: 'ccp-004', planCode: 'CC-QTR-ALL', planName: 'Quarterly Full Warehouse Count', frequency: 'QUARTERLY', abcClass: 'ALL', itemsPerCycle: 480, varianceThreshold: 1.0, recountTrigger: 3.0, nextRunDate: '2026-10-01', lastRunDate: '2026-07-09', avgAccuracy: 99.19, totalExecutions: 4, activeSchedules: 1, status: 'ACTIVE', strategy: 'Full warehouse count once per quarter — covers all categories including slow-moving items.' },
+  ],
+  cycleSchedules: [
+    { id: 'ccs-001', scheduleCode: 'SCH-2026-0710-A', planId: 'ccp-001', planName: 'Daily Cycle Count — Category A', scheduledDate: '2026-07-10', warehouseName: 'Mumbai DC', teamId: 'ct-001', teamName: 'Alpha Count Team', itemsScheduled: 25, itemsCounted: 0, varianceExpected: 0.5, status: 'SCHEDULED', windowStart: '2026-07-10 08:00', windowEnd: '2026-07-10 12:00', notes: 'Daily Category A count — top 25 high-value SKUs in Mumbai DC.' },
+    { id: 'ccs-002', scheduleCode: 'SCH-2026-0708-A', planId: 'ccp-001', planName: 'Daily Cycle Count — Category A', scheduledDate: '2026-07-08', warehouseName: 'Mumbai Plant Warehouse', teamId: 'ct-002', teamName: 'Bravo Count Team', itemsScheduled: 25, itemsCounted: 25, varianceExpected: 0.5, actualVariance: -80, status: 'COMPLETED', windowStart: '2026-07-08 06:00', windowEnd: '2026-07-08 14:00', notes: 'Completed — 4 variances identified, all within threshold. Avg accuracy 99.05%.' },
+    { id: 'ccs-003', scheduleCode: 'SCH-2026-0714-B', planId: 'ccp-002', planName: 'Weekly Cycle Count — Category B', scheduledDate: '2026-07-14', warehouseName: 'Mumbai DC', teamId: 'ct-003', teamName: 'Charlie Count Team', itemsScheduled: 50, itemsCounted: 0, varianceExpected: 1.0, status: 'SCHEDULED', windowStart: '2026-07-14 09:00', windowEnd: '2026-07-14 17:00', notes: 'Weekly Category B count — 50 SKUs across Mumbai DC.' },
+    { id: 'ccs-004', scheduleCode: 'SCH-2026-0707-B', planId: 'ccp-002', planName: 'Weekly Cycle Count — Category B', scheduledDate: '2026-07-07', warehouseName: 'Mumbai Plant Warehouse', teamId: 'ct-002', teamName: 'Bravo Count Team', itemsScheduled: 50, itemsCounted: 50, varianceExpected: 1.0, actualVariance: -20, status: 'COMPLETED', windowStart: '2026-07-07 07:00', windowEnd: '2026-07-07 16:00', notes: 'Completed — minimal variance. 1 SKU short. Avg accuracy 99.86%.' },
+  ],
+  countTeams: [
+    { id: 'ct-001', teamCode: 'ALPHA', teamName: 'Alpha Count Team', teamLead: 'Anita Desai', memberCount: 4, specializations: ['ANNUAL_COUNT', 'BIN_COUNT', 'SPOT_COUNT'], homeWarehouse: 'Mumbai DC', totalCounts: 38, avgAccuracy: 98.74, activeAssignments: 2, certificationLevel: 'LEVEL_3', status: 'ACTIVE', lastAssignment: '2026-07-09', notes: 'Primary Mumbai DC team — handles high-precision counts and investigations.' },
+    { id: 'ct-002', teamCode: 'BRAVO', teamName: 'Bravo Count Team', teamLead: 'Ramesh Yadav', memberCount: 4, specializations: ['CYCLE_COUNT', 'ABC_COUNT', 'INVESTIGATION_COUNT'], homeWarehouse: 'Mumbai Plant Warehouse', totalCounts: 56, avgAccuracy: 99.32, activeAssignments: 0, certificationLevel: 'LEVEL_3', status: 'ACTIVE', lastAssignment: '2026-07-08', notes: 'Plant warehouse specialists — certified for raw material and finished goods counts.' },
+    { id: 'ct-003', teamCode: 'CHARLIE', teamName: 'Charlie Count Team', teamLead: 'Vikram Iyer', memberCount: 3, specializations: ['BLIND_COUNT', 'RANDOM_COUNT', 'SPOT_COUNT'], homeWarehouse: 'Multi-Warehouse', totalCounts: 24, avgAccuracy: 98.91, activeAssignments: 1, certificationLevel: 'LEVEL_2', status: 'ACTIVE', lastAssignment: '2026-07-09', notes: 'Mobile team — performs blind and random counts across all warehouses.' },
+  ],
+  countVariances: [
+    { id: 'cv-001', varianceNumber: 'VAR-2026-0001', countId: 'pi-008', countNumber: 'PI-2026-0008', productName: 'Kaju Katli 500g', warehouseName: 'Mumbai DC', binLocation: 'BIN-B-04', batchNumber: 'KK-2606-08', varianceType: 'MISSING', systemQty: 480, countedQty: 445, varianceQty: -35, unitCost: 600, varianceValue: -21000, rootCause: 'SUSPECTED_THEFT', investigationStatus: 'IN_PROGRESS', resolutionStatus: 'PENDING_RECOUNT', assignedTo: 'Anita Desai', identifiedAt: '2026-07-05 12:30', resolvedAt: null, notes: '35 units missing — high-value item. CCTV review in progress. Recount ordered.' },
+    { id: 'cv-002', varianceNumber: 'VAR-2026-0002', countId: 'pi-003', countNumber: 'PI-2026-0003', productName: 'Kaju Katli 500g', warehouseName: 'Mumbai DC', binLocation: 'BIN-A-12', batchNumber: 'KK-2607-01', varianceType: 'EXTRA', systemQty: 200, countedQty: 215, varianceQty: 15, unitCost: 600, varianceValue: 9000, rootCause: 'UNRECORDED_RECEIPT', investigationStatus: 'COMPLETED', resolutionStatus: 'ADJUSTMENT_POSTED', assignedTo: 'Vikram Iyer', identifiedAt: '2026-07-09 11:15', resolvedAt: '2026-07-09 14:00', notes: '15 extra units — traced to GRN-2026-0512 not yet posted to bin. Stock receipt confirmed.' },
+    { id: 'cv-003', varianceNumber: 'VAR-2026-0003', countId: 'pi-007', countNumber: 'PI-2026-0007', productName: 'Soan Cake 1kg', warehouseName: 'Mumbai DC', binLocation: 'BIN-C-08', batchNumber: 'SC-2606-12', varianceType: 'WRONG_LOCATION', systemQty: 60, countedQty: 0, varianceQty: -60, unitCost: 625, varianceValue: -37500, rootCause: 'PUTAWAY_ERROR', investigationStatus: 'COMPLETED', resolutionStatus: 'RELOCATED', assignedTo: 'Anita Desai', identifiedAt: '2026-07-06 15:20', resolvedAt: '2026-07-06 16:45', notes: '60 units not in BIN-C-08 — found in adjacent BIN-C-09. Putaway operator error during reorganization.' },
+    { id: 'cv-004', varianceNumber: 'VAR-2026-0004', countId: 'pi-002', countNumber: 'PI-2026-0002', productName: 'Ghee (Raw)', warehouseName: 'Mumbai Plant Warehouse', binLocation: 'BIN-RM-02', batchNumber: 'GHEE-2606-A', varianceType: 'WRONG_BATCH', systemQty: 80, countedQty: 78, varianceQty: -2, unitCost: 520, varianceValue: -1040, rootCause: 'BATCH_MIXING', investigationStatus: 'COMPLETED', resolutionStatus: 'BATCH_CORRECTED', assignedTo: 'Ramesh Yadav', identifiedAt: '2026-07-08 09:45', resolvedAt: '2026-07-08 11:30', notes: '2 tins of GHEE-2606-A counted as GHEE-2606-B. Batch labels corrected in system.' },
+    { id: 'cv-005', varianceNumber: 'VAR-2026-0005', countId: 'pi-005', countNumber: 'PI-2026-0005', productName: 'Sugar (Raw)', warehouseName: 'Mumbai Plant Warehouse', binLocation: 'BIN-RM-05', batchNumber: 'SUG-2606-01', varianceType: 'WRONG_UOM', systemQty: 1500, countedQty: 1480, varianceQty: -20, unitCost: 45, varianceValue: -900, rootCause: 'UOM_CONVERSION', investigationStatus: 'COMPLETED', resolutionStatus: 'UOM_RECALCULATED', assignedTo: 'Ramesh Yadav', identifiedAt: '2026-07-07 13:10', resolvedAt: '2026-07-07 14:00', notes: '20 kg variance — system recorded in KG, physical count in bags. UOM conversion applied.' },
+    { id: 'cv-006', varianceNumber: 'VAR-2026-0006', countId: 'pi-004', countNumber: 'PI-2026-0004', productName: 'Gulab Jamun 1kg', warehouseName: 'Mumbai Retail Store 01', binLocation: 'DISPLAY-BIN-A', batchNumber: 'GJ-2607-03', varianceType: 'WRONG_PRODUCT', systemQty: 80, countedQty: 65, varianceQty: -15, unitCost: 304, varianceValue: -4560, rootCause: 'MISIDENTIFICATION', investigationStatus: 'COMPLETED', resolutionStatus: 'CORRECTED', assignedTo: 'Anita Desai', identifiedAt: '2026-07-09 14:35', resolvedAt: '2026-07-09 15:30', notes: '15 boxes were Kala Jamun mislabeled as Gulab Jamun. Product master updated, POS label corrected.' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1206,6 +1245,7 @@ const server = Bun.serve({
         { code: 'TRF', name: 'Stock Transfer & Transit', status: 'active', entities: 4, sprint: 15 },
         { code: 'ADJ', name: 'Adjustment & Reconciliation', status: 'active', entities: 6, sprint: 16 },
         { code: 'RES', name: 'Reservation & Allocation', status: 'active', entities: 4, sprint: 17 },
+        { code: 'CC', name: 'Cycle Count & Audit', status: 'active', entities: 6, sprint: 18 },
         { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 18 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
@@ -3036,12 +3076,146 @@ const server = Bun.serve({
       }, `Reservation ${r.reservationNumber} allocated — ${remainingQty} units newly allocated`)), { headers })
     }
 
+    // ─── Sprint 18: Cycle Count & Audit Endpoints ─────────
+    if (path === '/api/physical-inventory' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let inventories = CC_DATA.physicalInventories
+      if (typeFilter) inventories = inventories.filter(i => i.countType === typeFilter.toUpperCase())
+      if (statusFilter) inventories = inventories.filter(i => i.status === statusFilter.toUpperCase())
+      if (warehouseFilter) inventories = inventories.filter(i => i.warehouseName.toLowerCase().includes(warehouseFilter.toLowerCase()))
+      return new Response(JSON.stringify(successResponse(inventories, `${inventories.length} physical inventory counts`)), { headers })
+    }
+    if (path === '/api/physical-inventory' && method === 'POST') {
+      try {
+        const body = await req.json()
+        const countNumber = body.countNumber || `PI-2026-${String(CC_DATA.physicalInventories.length + 1).padStart(4, '0')}`
+        const inventory: any = {
+          id: `pi-${String(CC_DATA.physicalInventories.length + 1).padStart(3, '0')}`,
+          countNumber, countDate: body.countDate || new Date().toISOString().slice(0, 10),
+          countType: body.countType || 'CYCLE_COUNT', warehouseName: body.warehouseName || 'Mumbai DC',
+          branchName: body.branchName || 'Mumbai Branch', teamId: body.teamId || 'ct-001',
+          teamName: body.teamName || 'Alpha Count Team', teamLead: body.teamLead || 'Anita Desai',
+          scope: body.scope || 'PARTIAL', totalLines: body.totalLines || 0, countedLines: 0, pendingLines: body.totalLines || 0,
+          systemQty: body.systemQty || 0, countedQty: 0, varianceQty: 0, varianceValue: 0, accuracyPct: 0,
+          status: body.status || 'SCHEDULED', approvalLevel: body.approvalLevel || 'SUPERVISOR',
+          scheduledStart: body.scheduledStart || null, actualStart: null, expectedCompletion: body.expectedCompletion || null,
+          remarks: body.remarks || null,
+        }
+        CC_DATA.physicalInventories.unshift(inventory)
+        log('info', 'Physical inventory created', { countNumber, type: inventory.countType })
+        return new Response(JSON.stringify(successResponse(inventory, `Physical inventory ${countNumber} created`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    if (path.match(/^\/api\/physical-inventory\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]; const inv = CC_DATA.physicalInventories.find(x => x.id === id)
+      if (!inv) return new Response(JSON.stringify(errorResponse('Physical inventory not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (inv.status === 'COMPLETED' || inv.status === 'APPROVED') return new Response(JSON.stringify(errorResponse(`Cannot approve in ${inv.status}`)), { status: 400, headers })
+      const prevStatus = inv.status
+      inv.status = inv.status === 'RECOUNT_REQUIRED' ? 'APPROVED_WITH_RECOUNT' : 'APPROVED'
+      log('info', 'Physical inventory approved', { countNumber: inv.countNumber, was: prevStatus, now: inv.status })
+      return new Response(JSON.stringify(successResponse(inv, `Physical inventory ${inv.countNumber} approved — variance ${inv.varianceQty} units (₹${inv.varianceValue}) posted to ledger`)), { headers })
+    }
+    if (path === '/api/cycle-count/plans' && method === 'GET') {
+      const freqFilter = url.searchParams.get('frequency')
+      let plans = CC_DATA.cyclePlans
+      if (freqFilter) plans = plans.filter(p => p.frequency === freqFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(plans, `${plans.length} cycle count plans`)), { headers })
+    }
+    if (path === '/api/cycle-count/schedules' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let schedules = CC_DATA.cycleSchedules
+      if (statusFilter) schedules = schedules.filter(s => s.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(schedules, `${schedules.length} cycle count schedules`)), { headers })
+    }
+    if (path === '/api/count-teams' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(CC_DATA.countTeams, `${CC_DATA.countTeams.length} count teams`)), { headers })
+    }
+    if (path === '/api/count-variances' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const resolutionFilter = url.searchParams.get('resolution')
+      let variances = CC_DATA.countVariances
+      if (typeFilter) variances = variances.filter(v => v.varianceType === typeFilter.toUpperCase())
+      if (resolutionFilter) variances = variances.filter(v => v.resolutionStatus === resolutionFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(variances, `${variances.length} count variances`)), { headers })
+    }
+    if (path === '/api/physical-inventory/dashboard' && method === 'GET') {
+      const totalVarianceValue = CC_DATA.physicalInventories.reduce((s, i) => s + i.varianceValue, 0)
+      const avgAccuracy = CC_DATA.physicalInventories.reduce((s, i) => s + i.accuracyPct, 0) / CC_DATA.physicalInventories.length
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          total: CC_DATA.physicalInventories.length,
+          inProgress: CC_DATA.physicalInventories.filter(i => i.status === 'IN_PROGRESS').length,
+          completed: CC_DATA.physicalInventories.filter(i => i.status === 'COMPLETED' || i.status === 'APPROVED').length,
+          pendingApproval: CC_DATA.physicalInventories.filter(i => i.status === 'PENDING_APPROVAL').length,
+          varianceInvestigation: CC_DATA.physicalInventories.filter(i => i.status === 'VARIANCE_INVESTIGATION').length,
+          recountRequired: CC_DATA.physicalInventories.filter(i => i.status === 'RECOUNT_REQUIRED').length,
+        },
+        byType: {
+          annualCount: CC_DATA.physicalInventories.filter(i => i.countType === 'ANNUAL_COUNT').length,
+          cycleCount: CC_DATA.physicalInventories.filter(i => i.countType === 'CYCLE_COUNT').length,
+          blindCount: CC_DATA.physicalInventories.filter(i => i.countType === 'BLIND_COUNT').length,
+          spotCount: CC_DATA.physicalInventories.filter(i => i.countType === 'SPOT_COUNT').length,
+          abcCount: CC_DATA.physicalInventories.filter(i => i.countType === 'ABC_COUNT').length,
+          randomCount: CC_DATA.physicalInventories.filter(i => i.countType === 'RANDOM_COUNT').length,
+          binCount: CC_DATA.physicalInventories.filter(i => i.countType === 'BIN_COUNT').length,
+          investigationCount: CC_DATA.physicalInventories.filter(i => i.countType === 'INVESTIGATION_COUNT').length,
+        },
+        totals: {
+          totalLines: CC_DATA.physicalInventories.reduce((s, i) => s + i.totalLines, 0),
+          countedLines: CC_DATA.physicalInventories.reduce((s, i) => s + i.countedLines, 0),
+          pendingLines: CC_DATA.physicalInventories.reduce((s, i) => s + i.pendingLines, 0),
+          totalSystemQty: CC_DATA.physicalInventories.reduce((s, i) => s + i.systemQty, 0),
+          totalCountedQty: CC_DATA.physicalInventories.reduce((s, i) => s + i.countedQty, 0),
+          totalVarianceQty: CC_DATA.physicalInventories.reduce((s, i) => s + i.varianceQty, 0),
+          totalVarianceValue,
+          avgAccuracy: parseFloat(avgAccuracy.toFixed(2)),
+        },
+        cyclePlans: CC_DATA.cyclePlans.length,
+        cycleSchedules: CC_DATA.cycleSchedules.length,
+        countTeams: CC_DATA.countTeams.length,
+        countVariances: CC_DATA.countVariances.length,
+        variancesByType: {
+          MISSING: CC_DATA.countVariances.filter(v => v.varianceType === 'MISSING').length,
+          EXTRA: CC_DATA.countVariances.filter(v => v.varianceType === 'EXTRA').length,
+          WRONG_LOCATION: CC_DATA.countVariances.filter(v => v.varianceType === 'WRONG_LOCATION').length,
+          WRONG_BATCH: CC_DATA.countVariances.filter(v => v.varianceType === 'WRONG_BATCH').length,
+          WRONG_UOM: CC_DATA.countVariances.filter(v => v.varianceType === 'WRONG_UOM').length,
+          WRONG_PRODUCT: CC_DATA.countVariances.filter(v => v.varianceType === 'WRONG_PRODUCT').length,
+        },
+        abcStrategy: [
+          { class: 'A', description: 'High-value items (top 20% revenue)', frequency: 'DAILY', itemsPerCycle: 25, accuracyTarget: 99.5, itemsTracked: 250 },
+          { class: 'B', description: 'Medium-value items (next 30% revenue)', frequency: 'WEEKLY', itemsPerCycle: 50, accuracyTarget: 99.0, itemsTracked: 400 },
+          { class: 'C', description: 'Low-value items (bottom 50% revenue)', frequency: 'YEARLY', itemsPerCycle: 100, accuracyTarget: 98.0, itemsTracked: 800 },
+        ],
+      }, 'Cycle Count & Audit dashboard')), { headers })
+    }
+    if (path === '/api/physical-inventory/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Cycle Count & Audit Engine', version: '18.0.0', sprint: 18,
+        sprintName: 'Physical Inventory, Cycle Count & Variance Management',
+        countTypes: ['ANNUAL_COUNT','CYCLE_COUNT','BLIND_COUNT','SPOT_COUNT','ABC_COUNT','RANDOM_COUNT','BIN_COUNT','INVESTIGATION_COUNT'],
+        countStatuses: ['SCHEDULED','IN_PROGRESS','PENDING_APPROVAL','VARIANCE_INVESTIGATION','RECOUNT_REQUIRED','COMPLETED','APPROVED','APPROVED_WITH_RECOUNT','CANCELLED'],
+        approvalLevels: ['SUPERVISOR','WAREHOUSE_MANAGER','FINANCE','MANAGEMENT'],
+        cycleFrequencies: ['DAILY','WEEKLY','MONTHLY','QUARTERLY','YEARLY'],
+        abcClasses: ['A','B','C','ALL'],
+        varianceTypes: ['MISSING','EXTRA','WRONG_LOCATION','WRONG_BATCH','WRONG_UOM','WRONG_PRODUCT'],
+        rootCauses: ['SUSPECTED_THEFT','UNRECORDED_RECEIPT','UNRECORDED_ISSUE','PUTAWAY_ERROR','PICKING_ERROR','BATCH_MIXING','UOM_CONVERSION','MISIDENTIFICATION','SYSTEM_ERROR','DAMAGE','EXPIRY'],
+        investigationStatuses: ['PENDING','IN_PROGRESS','COMPLETED','ESCALATED'],
+        resolutionStatuses: ['PENDING_RECOUNT','ADJUSTMENT_POSTED','RELOCATED','BATCH_CORRECTED','UOM_RECALCULATED','CORRECTED','WRITTEN_OFF','CLOSED'],
+        certificationLevels: ['LEVEL_1','LEVEL_2','LEVEL_3','LEVEL_4'],
+        endpoints: ['GET/POST /api/physical-inventory','POST /:id/approve','GET /api/cycle-count/plans','GET /api/cycle-count/schedules','GET /api/count-teams','GET /api/count-variances','GET /api/physical-inventory/dashboard','GET /api/physical-inventory/info'],
+      }, 'SUOP Cycle Count & Audit Engine v18.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 17, sprintName: 'Inventory Reservation, Allocation & Availability Engine' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 18, sprintName: 'Cycle Count, Physical Inventory & Variance Management' })
+log('info', 'Cycle count endpoints available', { physicalInventory: 'GET/POST /api/physical-inventory', approve: 'POST /:id/approve', plans: 'GET /api/cycle-count/plans', schedules: 'GET /api/cycle-count/schedules', teams: 'GET /api/count-teams', variances: 'GET /api/count-variances', dashboard: 'GET /api/physical-inventory/dashboard', info: 'GET /api/physical-inventory/info' })
 log('info', 'Reservation endpoints available', { reservations: 'GET/POST /api/reservations', release: 'POST /:id/release', allocate: 'GET /:id/allocate', rules: 'GET /api/allocation-rules', availability: 'GET /api/reservations/availability', dashboard: 'GET /api/reservations/dashboard', info: 'GET /api/reservations/info' })
 log('info', 'Adjustment endpoints available', { adjustments: 'GET/POST /api/inventory-adjustments', approve: 'POST /:id/approve', reasons: 'GET /api/inventory-adjustments/reasons', damage: 'GET /api/damage-reports-s16', expiry: 'GET /api/expiry-adjustments', rootCauses: 'GET /api/inventory-adjustments/root-causes', dashboard: 'GET /api/inventory-adjustments/dashboard', info: 'GET /api/inventory-adjustments/info' })
 log('info', 'Transfer endpoints available', { transfers: 'GET/POST /api/stock-transfers', approve: 'POST /:id/approve', dispatch: 'POST /:id/dispatch', receive: 'POST /:id/receive', inTransit: 'GET /api/stock-transfers/in-transit', binTransfers: 'GET /api/bin-transfers', dashboard: 'GET /api/stock-transfers/dashboard' })
