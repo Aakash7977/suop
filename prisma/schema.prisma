@@ -1406,3 +1406,335 @@ model ProductDocument {
   @@index([productId, documentType], map: "idx_pdoc_product_type")
   @@index([documentType, status], map: "idx_pdoc_type")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PIM (Product Information Management) — Sprint 7
+// Epics 1-9: Families, Groups, Collections, Templates,
+//            Specifications, Compliance, Translations,
+//            Versioning, Approval Workflow
+// + Product Usage Matrix (Chief Architect)
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Product Families (Epic 1) ────────────────────────────────
+model ProductFamily {
+  id              String   @id @default(uuid()) @db.Uuid
+  familyCode      String   @unique @map("family_code")
+  familyName      String   @map("family_name")
+  description     String?
+  displayOrder    Int      @default(100) @map("display_order")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  productMappings ProductFamilyMapping[]
+
+  @@map("product_families")
+  @@index([status], map: "idx_pf_status")
+}
+
+model ProductFamilyMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  familyId        String   @db.Uuid @map("family_id")
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, familyId], map: "pfm_unique")
+  @@map("product_family_mappings")
+  @@index([familyId], map: "idx_pfm_family")
+  @@index([productId], map: "idx_pfm_product")
+}
+
+// ─── Product Groups (Epic 2 — Unlimited Hierarchy) ────────────
+model ProductGroup {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupCode       String   @unique @map("group_code")
+  groupName       String   @map("group_name")
+  parentGroupId   String?  @db.Uuid @map("parent_group_id")
+  description     String?
+  level           Int      @default(1)
+  path            String   @default("/")
+  displayOrder    Int      @default(100) @map("display_order")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  parent          ProductGroup?  @relation("GroupHierarchy", fields: [parentGroupId], references: [id])
+  children        ProductGroup[] @relation("GroupHierarchy")
+  productMappings ProductGroupMapping[]
+
+  @@map("product_groups")
+  @@index([parentGroupId, displayOrder], map: "idx_pg_parent_order")
+  @@index([status], map: "idx_pg_status")
+}
+
+model ProductGroupMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  groupId         String   @db.Uuid @map("group_id")
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, groupId], map: "pgm_unique")
+  @@map("product_group_mappings")
+  @@index([groupId], map: "idx_pgm_group")
+  @@index([productId], map: "idx_pgm_product")
+}
+
+// ─── Product Collections (Epic 3) ─────────────────────────────
+model ProductCollection {
+  id              String   @id @default(uuid()) @db.Uuid
+  collectionCode  String   @unique @map("collection_code")
+  collectionName  String   @map("collection_name")
+  description     String?
+  collectionType  String   @default("MARKETING") @map("collection_type") // MARKETING, SEASONAL, FESTIVAL, CORPORATE, EXPORT
+  startDate       DateTime? @map("start_date")
+  endDate         DateTime? @map("end_date")
+  imageUrl        String?  @map("image_url")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  items           ProductCollectionItem[]
+
+  @@map("product_collections")
+  @@index([collectionType, status], map: "idx_pcol_type_status")
+  @@index([status, startDate, endDate], map: "idx_pcol_dates")
+}
+
+model ProductCollectionItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  collectionId    String   @db.Uuid @map("collection_id")
+  productId       String   @db.Uuid @map("product_id")
+  displayOrder    Int      @default(100) @map("display_order")
+  isFeatured      Boolean  @default(false) @map("is_featured")
+  addedAt         DateTime @default(now()) @map("added_at")
+
+  @@unique([collectionId, productId], map: "pci_unique")
+  @@map("product_collection_items")
+  @@index([collectionId, displayOrder], map: "idx_pci_collection_order")
+}
+
+// ─── Product Templates (Epic 4) ───────────────────────────────
+model ProductTemplate {
+  id              String   @id @default(uuid()) @db.Uuid
+  templateCode    String   @unique @map("template_code")
+  templateName    String   @map("template_name")
+  description     String?
+  // ─── Default values applied when creating product from template ───
+  defaultProductType  String? @map("default_product_type")
+  defaultCategoryId   String?  @db.Uuid @map("default_category_id")
+  defaultBrandId      String?  @db.Uuid @map("default_brand_id")
+  defaultUomId        String?  @db.Uuid @map("default_uom_id")
+  defaultTaxGroupId   String?  @db.Uuid @map("default_tax_group_id")
+  defaultHsnCode      String?  @map("default_hsn_code")
+  defaultShelfLifeDays Int?   @map("default_shelf_life_days")
+  defaultTrackBatch   Boolean? @map("default_track_batch")
+  defaultTrackExpiry  Boolean? @map("default_track_expiry")
+  defaultBarcodeType  String?  @map("default_barcode_type")
+  // ─── Template attributes (JSON of attribute defaults) ───
+  defaultAttributes   Json     @default("{}") @map("default_attributes")
+  // ─── Usage matrix defaults ───
+  defaultIsManufactured Boolean @default(false) @map("default_is_manufactured")
+  defaultIsPurchased    Boolean @default(false) @map("default_is_purchased")
+  defaultIsSold         Boolean @default(true)  @map("default_is_sold")
+  defaultIsStockManaged Boolean @default(true)  @map("default_is_stock_managed")
+  defaultIsKitchenItem  Boolean @default(false) @map("default_is_kitchen_item")
+  // ─── Specification defaults ───
+  defaultSpecs         Json     @default("{}") @map("default_specs")
+  // ─── Compliance defaults ───
+  defaultCompliance    Json     @default("{}") @map("default_compliance")
+  // ─── Status ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("product_templates")
+  @@index([status], map: "idx_pt_status")
+}
+
+// ─── Product Specifications (Epic 5) ──────────────────────────
+model ProductSpecification {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  // ─── Ingredients ───
+  ingredients     Json     @default("[]") // [{ name: "Cashew", percentage: 45 }, { name: "Sugar", percentage: 40 }, ...]
+  allergens       String[] @default([]) // CASHEW, MILK, GLUTEN, SOY, PEANUT, TREE_NUT, EGG, FISH, SHELLFISH, SESAME
+  // ─── Nutritional values (per 100g) ───
+  energyKcal      Decimal? @map("energy_kcal") @db.Decimal(8, 2)
+  proteinG        Decimal? @map("protein_g") @db.Decimal(8, 2)
+  fatG            Decimal? @map("fat_g") @db.Decimal(8, 2)
+  carbsG          Decimal? @map("carbs_g") @db.Decimal(8, 2)
+  sugarG          Decimal? @map("sugar_g") @db.Decimal(8, 2)
+  sodiumMg        Decimal? @map("sodium_mg") @db.Decimal(8, 2)
+  // ─── Storage & shelf life ───
+  shelfLifeDays   Int?     @map("shelf_life_days")
+  storageConditions String? @map("storage_conditions") // "Cool & Dry Place", "Refrigerate at 2-4°C"
+  storageTempMin  Decimal? @map("storage_temp_min") @db.Decimal(5, 2)
+  storageTempMax  Decimal? @map("storage_temp_max") @db.Decimal(5, 2)
+  // ─── Manufacturing & packaging ───
+  manufacturingNotes String? @map("manufacturing_notes")
+  packagingInstructions String? @map("packaging_instructions")
+  // ─── Additional specs ───
+  additionalSpecs Json     @default("{}") @map("additional_specs")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("product_specifications")
+  @@index([productId], map: "idx_pspec_product")
+}
+
+// ─── Product Compliance (Epic 6) ──────────────────────────────
+model ProductCompliance {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  complianceType  String   @map("compliance_type") // FSSAI, AGMARK, ISO, HACCP, EXPORT, FDA
+  certificateNumber String? @map("certificate_number")
+  licenseNumber   String?  @map("license_number")
+  issuingAuthority String? @map("issuing_authority")
+  issuedDate      DateTime? @map("issued_date")
+  expiryDate      DateTime? @map("expiry_date")
+  status          String   @default("PENDING") // PENDING, APPROVED, EXPIRED, REJECTED
+  documentUrl     String?  @map("document_url")
+  verifiedBy      String?  @db.Uuid @map("verified_by")
+  verifiedAt      DateTime? @map("verified_at")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("product_compliance")
+  @@index([productId, complianceType], map: "idx_pcomp_product_type")
+  @@index([complianceType, status], map: "idx_pcomp_type_status")
+  @@index([expiryDate], map: "idx_pcomp_expiry")
+}
+
+// ─── Multi-Language Product Translations (Epic 7) ─────────────
+model ProductTranslation {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  languageCode    String   @map("language_code") @db.VarChar(10) // en, hi, mr, gu, ta, kn, te
+  name            String
+  shortName       String?  @map("short_name")
+  description     String?
+  ingredients     String?  // Translated ingredients list
+  instructions    String?  // Usage/storage instructions
+  warnings        String?  // Allergen warnings
+  isVerified      Boolean  @default(false) @map("is_verified")
+  verifiedBy      String?  @db.Uuid @map("verified_by")
+  verifiedAt      DateTime? @map("verified_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([productId, languageCode], map: "pt_unique")
+  @@map("product_translations")
+  @@index([productId], map: "idx_pt_product")
+  @@index([languageCode], map: "idx_pt_lang")
+}
+
+// ─── Product Versioning (Epic 8) ──────────────────────────────
+model ProductVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  versionNumber   Int      @map("version_number")
+  changeType      String   @map("change_type") // CREATE, UPDATE, STATUS_CHANGE, PRICE_CHANGE, COMPLIANCE_UPDATE, SPEC_UPDATE
+  changeSummary   String   @map("change_summary")
+  changeReason    String?  @map("change_reason")
+  // ─── Snapshot of product data at this version ───
+  snapshot        Json     @default("{}") // Full product JSON snapshot
+  // ─── Editor info ───
+  editedBy        String   @db.Uuid @map("edited_by")
+  editedAt        DateTime @default(now()) @map("edited_at")
+  // ─── Approval ───
+  approvalStatus  String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy      String?  @db.Uuid @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Rollback ───
+  isCurrent       Boolean  @default(false) @map("is_current")
+  rolledBackFrom  Int?     @map("rolled_back_from") // Version number this was rolled back from
+
+  @@map("product_versions")
+  @@index([productId, versionNumber], map: "idx_pv_product_version")
+  @@index([productId, isCurrent], map: "idx_pv_product_current")
+  @@index([approvalStatus], map: "idx_pv_approval")
+}
+
+// ─── Product Approval Workflow (Epic 9) ───────────────────────
+model ProductApprovalRequest {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  requestNumber   String   @unique @map("request_number")
+  // ─── Workflow stages ───
+  currentStage    String   @default("DRAFT") @map("current_stage") // DRAFT, QA_REVIEW, COMPLIANCE_REVIEW, FINANCE_REVIEW, APPROVED, PUBLISHED, REJECTED
+  // ─── Submitter ───
+  submittedBy     String   @db.Uuid @map("submitted_by")
+  submittedAt     DateTime @default(now()) @map("submitted_at")
+  // ─── Reviewers ───
+  qaReviewerId    String?  @db.Uuid @map("qa_reviewer_id")
+  qaReviewedAt    DateTime? @map("qa_reviewed_at")
+  qaDecision      String?  @map("qa_decision") // APPROVED, REJECTED, CHANGES_REQUESTED
+  qaNotes         String?  @map("qa_notes")
+  complianceReviewerId String? @db.Uuid @map("compliance_reviewer_id")
+  complianceReviewedAt DateTime? @map("compliance_reviewed_at")
+  complianceDecision String? @map("compliance_decision")
+  complianceNotes  String? @map("compliance_notes")
+  financeReviewerId String? @db.Uuid @map("finance_reviewer_id")
+  financeReviewedAt DateTime? @map("finance_reviewed_at")
+  financeDecision  String? @map("finance_decision")
+  financeNotes     String? @map("finance_notes")
+  // ─── Final approval ───
+  approvedBy      String?  @db.Uuid @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Publishing ───
+  publishedBy     String?  @db.Uuid @map("published_by")
+  publishedAt     DateTime? @map("published_at")
+  // ─── Rejection ───
+  rejectedBy      String?  @db.Uuid @map("rejected_by")
+  rejectedAt      DateTime? @map("rejected_at")
+  rejectionReason String?  @map("rejection_reason")
+  // ─── SLA ───
+  slaDueAt        DateTime @map("sla_due_at")
+  slaBreached     Boolean  @default(false) @map("sla_breached")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, IN_REVIEW, APPROVED, PUBLISHED, REJECTED, CANCELLED
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("product_approval_requests")
+  @@index([productId, status], map: "idx_par_product_status")
+  @@index([currentStage, status], map: "idx_par_stage_status")
+  @@index([submittedBy, status], map: "idx_par_submitter")
+  @@index([slaDueAt, slaBreached], map: "idx_par_sla")
+}
+
+// ─── Product Usage Matrix (Chief Architect Recommendation) ────
+model ProductUsageMatrix {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  // ─── Channel flags ───
+  useInManufacturing Boolean @default(false) @map("use_in_manufacturing")
+  useInWarehouse     Boolean @default(false) @map("use_in_warehouse")
+  useInRetailPos     Boolean @default(false) @map("use_in_retail_pos")
+  useInRestaurantPos Boolean @default(false) @map("use_in_restaurant_pos")
+  useInEcommerce     Boolean @default(false) @map("use_in_ecommerce")
+  useInProcurement   Boolean @default(false) @map("use_in_procurement")
+  useInFinance       Boolean @default(false) @map("use_in_finance")
+  // ─── Additional metadata ───
+  manufacturingRole  String? @map("manufacturing_role") // PRODUCTION_ITEM, BOM_COMPONENT
+  warehouseRole      String? @map("warehouse_role") // STOCK_ITEM, CONSUMABLE
+  retailRole         String? @map("retail_role") // BILLING_ITEM, NON_STOCK
+  restaurantRole     String? @map("restaurant_role") // INGREDIENT, MENU_ITEM
+  ecommerceRole      String? @map("ecommerce_role") // LISTED, UNLISTED
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("product_usage_matrix")
+  @@index([productId], map: "idx_pum_product")
+  @@index([useInManufacturing], map: "idx_pum_mfg")
+  @@index([useInRetailPos], map: "idx_pum_retail")
+  @@index([useInRestaurantPos], map: "idx_pum_restaurant")
+}
