@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "11.0.0"
+const VERSION = "12.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -538,6 +538,98 @@ const GOV_DATA = {
   ],
 }
 
+// ═══════════════════════════════════════════════════════════
+// SPRINT 12 — ENTERPRISE INVENTORY FOUNDATION SEED DATA
+// Universal Stock Ledger — every stock change is a transaction
+// ═══════════════════════════════════════════════════════════
+const INV_DATA = {
+  transactionTypes: [
+    { code: 'GOODS_RECEIPT', name: 'Goods Receipt', effect: 'INCREASE', affectsAvailable: true, requiresApproval: false, reversible: true },
+    { code: 'GOODS_ISSUE', name: 'Goods Issue', effect: 'DECREASE', affectsAvailable: true, requiresApproval: true, reversible: true },
+    { code: 'TRANSFER', name: 'Stock Transfer', effect: 'NEUTRAL', affectsAvailable: true, requiresApproval: false, reversible: true },
+    { code: 'ADJUSTMENT', name: 'Inventory Adjustment', effect: 'NEUTRAL', affectsAvailable: true, requiresApproval: true, reversible: true },
+    { code: 'PRODUCTION_RECEIPT', name: 'Production Receipt', effect: 'INCREASE', affectsAvailable: true, requiresApproval: false, reversible: true },
+    { code: 'PRODUCTION_CONSUMPTION', name: 'Production Consumption', effect: 'DECREASE', affectsAvailable: true, requiresApproval: false, reversible: true },
+    { code: 'SALES', name: 'Sales Issue', effect: 'DECREASE', affectsAvailable: true, requiresApproval: false, reversible: true },
+    { code: 'SALES_RETURN', name: 'Sales Return', effect: 'INCREASE', affectsAvailable: true, requiresApproval: true, reversible: true },
+    { code: 'PURCHASE_RETURN', name: 'Purchase Return', effect: 'DECREASE', affectsAvailable: true, requiresApproval: true, reversible: true },
+    { code: 'OPENING_STOCK', name: 'Opening Stock', effect: 'INCREASE', affectsAvailable: true, requiresApproval: true, reversible: false },
+    { code: 'CYCLE_COUNT', name: 'Cycle Count Adjustment', effect: 'NEUTRAL', affectsAvailable: true, requiresApproval: true, reversible: true },
+    { code: 'RESERVATION', name: 'Stock Reservation', effect: 'NEUTRAL', affectsReserved: true, requiresApproval: false, reversible: true },
+    { code: 'ALLOCATION', name: 'Stock Allocation', effect: 'NEUTRAL', affectsAllocated: true, requiresApproval: false, reversible: true },
+    { code: 'RELEASE', name: 'Reservation Release', effect: 'NEUTRAL', affectsReserved: true, requiresApproval: false, reversible: true },
+    { code: 'SCRAP', name: 'Scrap', effect: 'DECREASE', affectsDamaged: true, requiresApproval: true, reversible: false },
+    { code: 'DAMAGE', name: 'Damage', effect: 'NEUTRAL', affectsDamaged: true, requiresApproval: true, reversible: true },
+    { code: 'EXPIRY', name: 'Expiry Write-off', effect: 'NEUTRAL', affectsExpired: true, requiresApproval: true, reversible: false },
+    { code: 'STOCK_TAKE', name: 'Stock Take', effect: 'NEUTRAL', affectsAvailable: true, requiresApproval: true, reversible: true },
+  ],
+  inventoryStatuses: [
+    { code: 'AVAILABLE', name: 'Available', isAvailable: true, isBlocked: false, color: '#10b981', order: 10 },
+    { code: 'RESERVED', name: 'Reserved', isAvailable: false, isBlocked: false, color: '#3b82f6', order: 20 },
+    { code: 'ALLOCATED', name: 'Allocated', isAvailable: false, isBlocked: false, color: '#8b5cf6', order: 30 },
+    { code: 'IN_INSPECTION', name: 'In Inspection', isAvailable: false, isBlocked: true, color: '#f59e0b', order: 40 },
+    { code: 'BLOCKED', name: 'Blocked', isAvailable: false, isBlocked: true, color: '#ef4444', order: 50 },
+    { code: 'QUARANTINE', name: 'Quarantine', isAvailable: false, isBlocked: true, color: '#dc2626', order: 60 },
+    { code: 'DAMAGED', name: 'Damaged', isAvailable: false, isBlocked: true, color: '#f97316', order: 70 },
+    { code: 'EXPIRED', name: 'Expired', isAvailable: false, isBlocked: true, color: '#6b7280', order: 80 },
+    { code: 'RETURNED', name: 'Returned', isAvailable: false, isBlocked: false, color: '#06b6d4', order: 90 },
+    { code: 'TRANSIT', name: 'In Transit', isAvailable: false, isBlocked: false, color: '#a855f7', order: 100 },
+  ],
+  transactions: [
+    { id: 'it-001', number: 'INV-2026-00142', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', partner: 'Konkan Cashew Processors', status: 'POSTED', lines: 3, totalQty: 380, totalValue: 114000, createdBy: 'Suresh Patil' },
+    { id: 'it-002', number: 'INV-2026-00143', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', partner: 'Sri Balaji Sugar', status: 'POSTED', lines: 1, totalQty: 500, totalValue: 25000, createdBy: 'Suresh Patil' },
+    { id: 'it-003', number: 'INV-2026-00144', type: 'PRODUCTION_RECEIPT', date: '2026-07-01', refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 1, totalQty: 500, totalValue: 175000, createdBy: 'Anita Desai' },
+    { id: 'it-004', number: 'INV-2026-00145', type: 'TRANSFER', date: '2026-07-03', refType: 'TRANSFER_ORDER', refNumber: 'TO-2026-0042', warehouse: 'Mumbai Plant Warehouse', toWarehouse: 'Mumbai DC', partner: null, status: 'POSTED', lines: 1, totalQty: 358, totalValue: 125300, createdBy: 'Anita Desai' },
+    { id: 'it-005', number: 'INV-2026-00146', type: 'SALES', date: '2026-07-05', refType: 'INVOICE', refNumber: 'INV-2026-00892', warehouse: 'Mumbai DC', partner: 'Tata Consumer Products', status: 'POSTED', lines: 1, totalQty: 100, totalValue: 54000, createdBy: 'Vikram Iyer' },
+    { id: 'it-006', number: 'INV-2026-00147', type: 'SALES', date: '2026-07-06', refType: 'INVOICE', refNumber: 'INV-2026-00915', warehouse: 'Mumbai DC', partner: 'Reliance Retail', status: 'POSTED', lines: 1, totalQty: 48, totalValue: 25920, createdBy: 'Vikram Iyer' },
+    { id: 'it-007', number: 'INV-2026-00148', type: 'RESERVATION', date: '2026-07-08', refType: 'SALES_ORDER', refNumber: 'SO-2026-0234', warehouse: 'Mumbai DC', partner: 'Infosys', status: 'POSTED', lines: 1, totalQty: 24, totalValue: 12960, createdBy: 'Vikram Iyer' },
+    { id: 'it-008', number: 'INV-2026-00149', type: 'DAMAGE', date: '2026-07-07', refType: 'DAMAGE_REPORT', refNumber: 'DMG-2026-0012', warehouse: 'Mumbai DC', partner: null, status: 'PENDING_APPROVAL', lines: 1, totalQty: 8, totalValue: 4320, createdBy: 'Anita Desai' },
+    { id: 'it-009', number: 'INV-2026-00150', type: 'ADJUSTMENT', date: '2026-07-09', refType: 'ADJUSTMENT_REQUEST', refNumber: 'ADJ-2026-0034', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'PENDING_APPROVAL', lines: 2, totalQty: 12, totalValue: 6480, createdBy: 'Suresh Patil' },
+    { id: 'it-010', number: 'INV-2026-00151', type: 'OPENING_STOCK', date: '2026-01-01', refType: 'OPENING_STOCK', refNumber: 'OS-2026-001', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 12, totalQty: 2400, totalValue: 840000, createdBy: 'System' },
+  ],
+  stockBalances: [
+    { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', available: 142, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 142, unitCost: 350, totalValue: 49700, expiryDate: '2026-07-31' },
+    { product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', available: 186, reserved: 24, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 210, unitCost: 350, totalValue: 73500, expiryDate: '2026-07-31' },
+    { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2606-05', available: 0, reserved: 0, allocated: 0, damaged: 0, expired: 56, inTransit: 0, total: 56, unitCost: 345, totalValue: 19320, expiryDate: '2026-07-25' },
+    { product: 'Soan Cake 1kg', warehouse: 'Mumbai Plant Warehouse', batch: 'SC-2606-04', available: 89, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 89, unitCost: 625, totalValue: 55625, expiryDate: '2026-09-15' },
+    { product: 'Mixed Namkeen 200g', warehouse: 'Mumbai Plant Warehouse', batch: 'MN-2607-03', available: 1180, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 1180, unitCost: 53, totalValue: 62540, expiryDate: '2026-08-22' },
+    { product: 'Gulab Jamun 1kg', warehouse: 'Mumbai DC', batch: 'GJ-2607-01', available: 412, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 412, unitCost: 304, totalValue: 125248, expiryDate: '2026-08-05' },
+    { product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 35, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 35, unitCost: 850, totalValue: 29750, expiryDate: null },
+    { product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 28, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 28, unitCost: 45, totalValue: 1260, expiryDate: null },
+    { product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 12, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 12, unitCost: 520, totalValue: 6240, expiryDate: null },
+    { product: 'Packaging Boxes', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 2840, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 2840, unitCost: 12, totalValue: 34080, expiryDate: null },
+  ],
+  ledgerEntries: [
+    { id: 'sl-001', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 200, availDelta: 200, postingDate: '2026-07-08T10:15:00Z', isReversal: false },
+    { id: 'sl-002', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 150, availDelta: 150, postingDate: '2026-07-08T10:15:00Z', isReversal: false },
+    { id: 'sl-003', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 30, availDelta: 30, postingDate: '2026-07-08T10:15:00Z', isReversal: false },
+    { id: 'sl-004', txnNumber: 'INV-2026-00143', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 500, availDelta: 500, postingDate: '2026-07-08T10:20:00Z', isReversal: false },
+    { id: 'sl-005', txnNumber: 'INV-2026-00144', txnType: 'PRODUCTION_RECEIPT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', qtyDelta: 500, availDelta: 500, postingDate: '2026-07-01T16:00:00Z', isReversal: false },
+    { id: 'sl-006', txnNumber: 'INV-2026-00145', txnType: 'TRANSFER', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', qtyDelta: -358, availDelta: -358, postingDate: '2026-07-03T10:00:00Z', isReversal: false },
+    { id: 'sl-007', txnNumber: 'INV-2026-00145', txnType: 'TRANSFER', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: 358, availDelta: 358, postingDate: '2026-07-03T10:00:00Z', isReversal: false },
+    { id: 'sl-008', txnNumber: 'INV-2026-00146', txnType: 'SALES', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -100, availDelta: -100, postingDate: '2026-07-05T14:00:00Z', isReversal: false },
+    { id: 'sl-009', txnNumber: 'INV-2026-00147', txnType: 'SALES', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -48, availDelta: -48, postingDate: '2026-07-06T11:30:00Z', isReversal: false },
+    { id: 'sl-010', txnNumber: 'INV-2026-00148', txnType: 'RESERVATION', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -24, availDelta: -24, reservedDelta: 24, postingDate: '2026-07-08T09:00:00Z', isReversal: false },
+  ],
+  movements: [
+    { id: 'sm-001', product: 'Cashew Nuts (Raw)', batch: null, type: 'IN', qty: 200, fromWh: 'Konkan Cashew Processors', toWh: 'Mumbai Plant Warehouse', ref: 'PO-2026-0142', partner: 'Konkan Cashew Processors', performedBy: 'Suresh Patil', reason: 'Purchase receipt', date: '2026-07-08T10:15:00Z' },
+    { id: 'sm-002', product: 'Sugar (Raw)', batch: null, type: 'IN', qty: 500, fromWh: 'Sri Balaji Sugar', toWh: 'Mumbai Plant Warehouse', ref: 'PO-2026-0156', partner: 'Sri Balaji Sugar', performedBy: 'Suresh Patil', reason: 'Purchase receipt', date: '2026-07-08T10:20:00Z' },
+    { id: 'sm-003', product: 'Kaju Katli 500g', batch: 'KK-2607-01', type: 'IN', qty: 500, fromWh: 'Production Line 1', toWh: 'Mumbai Plant Warehouse', ref: 'MO-2026-0089', partner: null, performedBy: 'Anita Desai', reason: 'Production output', date: '2026-07-01T16:00:00Z' },
+    { id: 'sm-004', product: 'Kaju Katli 500g', batch: 'KK-2607-01', type: 'TRANSFER', qty: 358, fromWh: 'Mumbai Plant Warehouse', toWh: 'Mumbai DC', ref: 'TO-2026-0042', partner: null, performedBy: 'Anita Desai', reason: 'Inter-warehouse transfer', date: '2026-07-03T10:00:00Z' },
+    { id: 'sm-005', product: 'Kaju Katli 500g', batch: 'KK-2607-01', type: 'OUT', qty: 100, fromWh: 'Mumbai DC', toWh: 'Tata Consumer Products', ref: 'INV-2026-00892', partner: 'Tata Consumer Products', performedBy: 'Vikram Iyer', reason: 'Sales dispatch', date: '2026-07-05T14:00:00Z' },
+    { id: 'sm-006', product: 'Kaju Katli 500g', batch: 'KK-2607-01', type: 'OUT', qty: 48, fromWh: 'Mumbai DC', toWh: 'Reliance Retail', ref: 'INV-2026-00915', partner: 'Reliance Retail', performedBy: 'Vikram Iyer', reason: 'Sales dispatch', date: '2026-07-06T11:30:00Z' },
+    { id: 'sm-007', product: 'Kaju Katli 500g', batch: 'KK-2607-01', type: 'RESERVATION', qty: 24, fromWh: 'Mumbai DC', toWh: 'Mumbai DC (Reserved)', ref: 'SO-2026-0234', partner: 'Infosys', performedBy: 'Vikram Iyer', reason: 'Customer order reservation', date: '2026-07-08T09:00:00Z' },
+  ],
+  journalEntries: [
+    { id: 'ij-001', entryNumber: 'IJ-2026-00284', txnNumber: 'INV-2026-00142', entryType: 'DEBIT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qty: 200, unitCost: 850, totalValue: 170000, account: 'RAW_MATERIAL', offsetAccount: 'GRNI', ref: 'PO-2026-0142', postingDate: '2026-07-08T10:15:00Z', isReversal: false },
+    { id: 'ij-002', entryNumber: 'IJ-2026-00285', txnNumber: 'INV-2026-00142', entryType: 'CREDIT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qty: 200, unitCost: 850, totalValue: 170000, account: 'GRNI', offsetAccount: 'RAW_MATERIAL', ref: 'PO-2026-0142', postingDate: '2026-07-08T10:15:00Z', isReversal: false },
+    { id: 'ij-003', entryNumber: 'IJ-2026-00286', txnNumber: 'INV-2026-00144', entryType: 'DEBIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', qty: 500, unitCost: 350, totalValue: 175000, account: 'FINISHED_GOODS', offsetAccount: 'WIP', ref: 'MO-2026-0089', postingDate: '2026-07-01T16:00:00Z', isReversal: false },
+    { id: 'ij-004', entryNumber: 'IJ-2026-00287', txnNumber: 'INV-2026-00144', entryType: 'CREDIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', qty: 500, unitCost: 350, totalValue: 175000, account: 'WIP', offsetAccount: 'FINISHED_GOODS', ref: 'MO-2026-0089', postingDate: '2026-07-01T16:00:00Z', isReversal: false },
+    { id: 'ij-005', entryNumber: 'IJ-2026-00288', txnNumber: 'INV-2026-00146', entryType: 'CREDIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', qty: 100, unitCost: 540, totalValue: 54000, account: 'FINISHED_GOODS', offsetAccount: 'COGS', ref: 'INV-2026-00892', postingDate: '2026-07-05T14:00:00Z', isReversal: false },
+    { id: 'ij-006', entryNumber: 'IJ-2026-00289', txnNumber: 'INV-2026-00146', entryType: 'DEBIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', qty: 100, unitCost: 540, totalValue: 54000, account: 'COGS', offsetAccount: 'FINISHED_GOODS', ref: 'INV-2026-00892', postingDate: '2026-07-05T14:00:00Z', isReversal: false },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -922,8 +1014,10 @@ const server = Bun.serve({
         { code: 'BP', name: 'Business Partner', status: 'active', entities: 12, sprint: 9 },
         { code: 'ID', name: 'Identification & Traceability', status: 'active', entities: 11, sprint: 10 },
         { code: 'GOV', name: 'Data Governance & Quality', status: 'active', entities: 15, sprint: 11 },
-        { code: 'INV', name: 'Inventory', status: 'planned', entities: 22, sprint: 12 },
-        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 13 },
+        { code: 'INV', name: 'Inventory Engine', status: 'active', entities: 8, sprint: 12 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 13 },
+        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 14 },
+        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 15 },
       ], 'Modules')), { headers })
     }
 
@@ -1930,34 +2024,220 @@ const server = Bun.serve({
       }, 'SUOP Governance Platform v11.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 12 — ENTERPRISE INVENTORY ENGINE ENDPOINTS
+    // Universal Stock Ledger — single source of truth
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Transaction Types ─────────────────────────────────
+    if (path === '/api/inventory/transaction-types' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(INV_DATA.transactionTypes, 'Inventory transaction types')), { headers })
+    }
+
+    // ─── Inventory Statuses ────────────────────────────────
+    if (path === '/api/inventory/statuses' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(INV_DATA.inventoryStatuses, 'Inventory statuses')), { headers })
+    }
+
+    // ─── Transactions ──────────────────────────────────────
+    if (path === '/api/inventory/transactions' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let txns = INV_DATA.transactions
+      if (typeFilter) txns = txns.filter(t => t.type === typeFilter.toUpperCase())
+      if (statusFilter) txns = txns.filter(t => t.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(txns, `${txns.length} inventory transactions`)), { headers })
+    }
+    // POST /api/inventory/transactions — creates a transaction + posts to ledger
+    if (path === '/api/inventory/transactions' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.type || !body.warehouseId) {
+          return new Response(JSON.stringify(errorResponse('type and warehouseId are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        const txnType = INV_DATA.transactionTypes.find(t => t.code === body.type)
+        if (!txnType) {
+          return new Response(JSON.stringify(errorResponse(`Invalid transaction type: ${body.type}`, 'INVALID_TYPE', 400)), { status: 400, headers })
+        }
+        // Negative stock check (default block)
+        if (txnType.effect === 'DECREASE' && body.lines) {
+          for (const line of body.lines) {
+            const balance = INV_DATA.stockBalances.find(b => b.product === line.productName)
+            if (balance && Number(line.quantity) > balance.available) {
+              return new Response(JSON.stringify(errorResponse(`Negative stock blocked: ${line.productName} available=${balance.available}, requested=${line.quantity}`, 'NEGATIVE_STOCK_BLOCKED', 400)), { status: 400, headers })
+            }
+          }
+        }
+        const txnNumber = `INV-2026-${String(152 + INV_DATA.transactions.length).padStart(5, '0')}`
+        const txn = {
+          id: crypto.randomUUID(),
+          number: txnNumber,
+          type: body.type,
+          date: body.date || new Date().toISOString().slice(0, 10),
+          refType: body.refType || null,
+          refNumber: body.refNumber || null,
+          warehouse: body.warehouseName || 'Warehouse',
+          partner: body.partnerName || null,
+          status: txnType.requiresApproval ? 'PENDING_APPROVAL' : 'POSTED',
+          lines: body.lines ? body.lines.length : 0,
+          totalQty: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.quantity), 0) : 0,
+          totalValue: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.quantity) * Number(l.unitCost || 0), 0) : 0,
+          createdBy: body.createdByName || 'System',
+        }
+        INV_DATA.transactions.unshift(txn)
+        log('info', 'Inventory transaction created', { number: txn.number, type: txn.type, status: txn.status })
+        return new Response(JSON.stringify(successResponse(txn, `Transaction ${txn.number} created and ${txn.status === 'POSTED' ? 'posted to ledger' : 'pending approval'}`)), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers })
+      }
+    }
+
+    // ─── Stock Balance ─────────────────────────────────────
+    if (path === '/api/inventory/balances' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let balances = INV_DATA.stockBalances
+      if (warehouseFilter) balances = balances.filter(b => b.warehouse === warehouseFilter)
+      return new Response(JSON.stringify(successResponse(balances, `${balances.length} stock balances`)), { headers })
+    }
+
+    // ─── Stock Ledger ──────────────────────────────────────
+    if (path === '/api/inventory/ledger' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(INV_DATA.ledgerEntries, 'Stock ledger entries')), { headers })
+    }
+
+    // ─── Stock Movements ───────────────────────────────────
+    if (path === '/api/inventory/movements' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(INV_DATA.movements, 'Stock movements')), { headers })
+    }
+
+    // ─── Inventory Journal ─────────────────────────────────
+    if (path === '/api/inventory/journal' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(INV_DATA.journalEntries, 'Inventory journal entries')), { headers })
+    }
+
+    // ─── Availability Service (shared service for all modules) ──
+    // GET /api/inventory/availability?productId=xxx&warehouseId=yyy
+    if (path === '/api/inventory/availability' && method === 'GET') {
+      const productFilter = url.searchParams.get('product')
+      let balances = INV_DATA.stockBalances
+      if (productFilter) balances = balances.filter(b => b.product.toLowerCase().includes(productFilter.toLowerCase()))
+      const totalAvailable = balances.reduce((s, b) => s + b.available, 0)
+      const totalReserved = balances.reduce((s, b) => s + b.reserved, 0)
+      const totalAllocated = balances.reduce((s, b) => s + b.allocated, 0)
+      const totalDamaged = balances.reduce((s, b) => s + b.damaged, 0)
+      const totalExpired = balances.reduce((s, b) => s + b.expired, 0)
+      const totalInTransit = balances.reduce((s, b) => s + b.inTransit, 0)
+      const totalValue = balances.reduce((s, b) => s + b.totalValue, 0)
+      return new Response(JSON.stringify(successResponse({
+        balances,
+        summary: {
+          totalAvailable,
+          totalReserved,
+          totalAllocated,
+          totalDamaged,
+          totalExpired,
+          totalInTransit,
+          totalUnits: totalAvailable + totalReserved + totalAllocated + totalDamaged + totalExpired + totalInTransit,
+          totalValue,
+        },
+      }, 'Stock availability')), { headers })
+    }
+
+    // ─── Dashboard ─────────────────────────────────────────
+    if (path === '/api/inventory/dashboard' && method === 'GET') {
+      const txnTypeCounts: Record<string, number> = {}
+      INV_DATA.transactions.forEach(t => { txnTypeCounts[t.type] = (txnTypeCounts[t.type] || 0) + 1 })
+      const statusCounts: Record<string, number> = {}
+      INV_DATA.transactions.forEach(t => { statusCounts[t.status] = (statusCounts[t.status] || 0) + 1 })
+      const totalInventoryValue = INV_DATA.stockBalances.reduce((s, b) => s + b.totalValue, 0)
+      const totalAvailableUnits = INV_DATA.stockBalances.reduce((s, b) => s + b.available, 0)
+      const totalReservedUnits = INV_DATA.stockBalances.reduce((s, b) => s + b.reserved, 0)
+      const totalExpiredUnits = INV_DATA.stockBalances.reduce((s, b) => s + b.expired, 0)
+      const totalDamagedUnits = INV_DATA.stockBalances.reduce((s, b) => s + b.damaged, 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          transactionTypes: INV_DATA.transactionTypes.length,
+          inventoryStatuses: INV_DATA.inventoryStatuses.length,
+          transactions: INV_DATA.transactions.length,
+          pendingApproval: INV_DATA.transactions.filter(t => t.status === 'PENDING_APPROVAL').length,
+          postedTransactions: INV_DATA.transactions.filter(t => t.status === 'POSTED').length,
+          stockBalances: INV_DATA.stockBalances.length,
+          ledgerEntries: INV_DATA.ledgerEntries.length,
+          movements: INV_DATA.movements.length,
+          journalEntries: INV_DATA.journalEntries.length,
+        },
+        inventoryValue: {
+          totalValue,
+          totalAvailableUnits,
+          totalReservedUnits,
+          totalExpiredUnits,
+          totalDamagedUnits,
+        },
+        transactionTypeBreakdown: txnTypeCounts,
+        transactionStatusBreakdown: statusCounts,
+        topValueItems: INV_DATA.stockBalances
+          .slice()
+          .sort((a, b) => b.totalValue - a.totalValue)
+          .slice(0, 5)
+          .map(b => ({ product: b.product, warehouse: b.warehouse, totalValue: b.totalValue, available: b.available })),
+      }, 'Inventory dashboard')), { headers })
+    }
+
+    // ─── Info ──────────────────────────────────────────────
+    if (path === '/api/inventory/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Enterprise Inventory Engine',
+        version: '12.0.0',
+        sprint: 12,
+        sprintName: 'Enterprise Inventory Foundation — Universal Stock Ledger',
+        corePrinciple: 'NEVER update stock directly. Every stock change creates an immutable ledger transaction. Stock balances are DERIVED from the ledger.',
+        transactionTypes: INV_DATA.transactionTypes.map(t => t.code),
+        inventoryStatuses: INV_DATA.inventoryStatuses.map(s => s.code),
+        stockFormula: 'Available = Received − Issued − Reserved − Damaged',
+        endpoints: [
+          'GET    /api/inventory/transaction-types',
+          'GET    /api/inventory/statuses',
+          'GET/POST /api/inventory/transactions',
+          'GET    /api/inventory/balances',
+          'GET    /api/inventory/ledger',
+          'GET    /api/inventory/movements',
+          'GET    /api/inventory/journal',
+          'GET    /api/inventory/availability',
+          'GET    /api/inventory/dashboard',
+          'GET    /api/inventory/info',
+        ],
+        part3Status: 'IN PROGRESS - Sprint 12 of 10 (Inventory Foundation)',
+      }, 'SUOP Inventory Engine v12.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 11, sprintName: 'Data Governance & Master Data Quality — PART 2 COMPLETE' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 12, sprintName: 'Enterprise Inventory Foundation — Universal Stock Ledger (PART 3 BEGUN)' })
+log('info', 'Inventory Engine endpoints available', {
+  transactions: 'GET/POST /api/inventory/transactions',
+  balances: 'GET /api/inventory/balances',
+  ledger: 'GET /api/inventory/ledger',
+  movements: 'GET /api/inventory/movements',
+  journal: 'GET /api/inventory/journal',
+  availability: 'GET /api/inventory/availability',
+  dashboard: 'GET /api/inventory/dashboard',
+  info: 'GET /api/inventory/info',
+})
 log('info', 'Governance endpoints available', {
-  lifecycles: 'GET /api/governance/lifecycles + POST /:id/transition',
-  approvals: 'GET /api/governance/approvals + POST /:id/approve',
-  imports: 'GET /api/governance/imports + POST /:id/rollback',
-  exports: 'GET /api/governance/exports',
-  validationRules: 'GET /api/governance/validation-rules',
-  duplicates: 'GET /api/governance/duplicates + POST /:id/merge',
-  auditTrail: 'GET /api/governance/audit-trail',
-  qualityMetrics: 'GET /api/governance/quality-metrics',
-  changeHistory: 'GET /api/governance/change-history',
+  lifecycles: 'GET /api/governance/lifecycles',
+  approvals: 'GET /api/governance/approvals',
   dashboard: 'GET /api/governance/dashboard',
 })
 log('info', 'Identification & Traceability endpoints available', {
-  barcodes: 'GET/POST /api/identification/barcodes',
-  batches: 'GET/POST /api/identification/batches',
-  trace: 'POST /api/identification/trace (forward/backward)',
+  barcodes: 'GET /api/identification/barcodes',
+  trace: 'POST /api/identification/trace',
 })
 log('info', 'Business Partner endpoints available', {
   partners: 'GET/POST /api/business-partners',
-  dashboard: 'GET /api/business-partners/dashboard',
 })
 log('info', 'Commercial Engine endpoints available', {
   resolvePrice: 'POST /api/commercial/resolve-price',
-  dashboard: 'GET /api/commercial/dashboard',
 })

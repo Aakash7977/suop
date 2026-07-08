@@ -3467,3 +3467,331 @@ model ProductChangeHistory {
   @@index([productId, changedAt], map: "idx_pch_product_time")
   @@index([changeType], map: "idx_pch_type")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 12 — ENTERPRISE INVENTORY FOUNDATION (UNIVERSAL LEDGER)
+// Core principle: NEVER update stock directly.
+// Every stock change creates an immutable ledger transaction.
+// Stock balances are DERIVED from the ledger (cache only).
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Inventory Transaction Types ────────────────
+model InventoryTransactionType {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique // GOODS_RECEIPT, GOODS_ISSUE, TRANSFER, ADJUSTMENT, PRODUCTION_RECEIPT, PRODUCTION_CONSUMPTION, SALES, SALES_RETURN, PURCHASE_RETURN, OPENING_STOCK, CYCLE_COUNT, RESERVATION, ALLOCATION, RELEASE, SCRAP, DAMAGE, EXPIRY, STOCK_TAKE
+  name            String
+  description     String?
+  // ─── Effect on stock ───
+  effectType      String   @map("effect_type") // INCREASE, DECREASE, NEUTRAL (e.g. reservation)
+  affectsAvailable Boolean @default(true) @map("affects_available")
+  affectsReserved  Boolean @default(false) @map("affects_reserved")
+  affectsAllocated Boolean @default(false) @map("affects_allocated")
+  affectsDamaged   Boolean @default(false) @map("affects_damaged")
+  affectsExpired   Boolean @default(false) @map("affects_expired")
+  affectsInTransit Boolean @default(false) @map("affects_in_transit")
+  // ─── Workflow ───
+  requiresApproval Boolean @default(false) @map("requires_approval")
+  isReversible    Boolean  @default(true) @map("is_reversible")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  transactions    InventoryTransaction[]
+
+  @@map("inventory_transaction_types")
+  @@index([effectType, status], map: "idx_itt_effect_status")
+}
+
+// ─── Inventory Transaction (header) ─────────────────────
+model InventoryTransaction {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionNumber String  @unique @map("transaction_number")
+  transactionTypeId String @db.Uuid @map("transaction_type_id")
+  // ─── Dates ───
+  transactionDate DateTime @map("transaction_date")
+  postingDate     DateTime @default(now()) @map("posting_date")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // PURCHASE_ORDER, PRODUCTION_ORDER, SALES_ORDER, INVOICE, TRANSFER_ORDER, ADJUSTMENT_REQUEST, CYCLE_COUNT
+  referenceNumber String?  @map("reference_number")
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  toWarehouseId   String?  @db.Uuid @map("to_warehouse_id") // for transfers
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, POSTED, REVERSED, CANCELLED
+  // ─── Reversal ───
+  reversalOfTransactionId String? @db.Uuid @map("reversal_of_transaction_id")
+  reversedById    String?  @db.Uuid @map("reversed_by_id")
+  reversedAt      DateTime? @map("reversed_at")
+  reversalReason  String?  @map("reversal_reason")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  transactionType InventoryTransactionType @relation(fields: [transactionTypeId], references: [id])
+  lines           InventoryTransactionLine[]
+  journalEntries  InventoryJournalEntry[]
+  movements       StockMovement[]
+
+  @@map("inventory_transactions")
+  @@index([transactionTypeId, status], map: "idx_it_type_status")
+  @@index([warehouseId, transactionDate], map: "idx_it_warehouse_date")
+  @@index([referenceType, referenceNumber], map: "idx_it_reference")
+  @@index([status, transactionDate], map: "idx_it_status_date")
+  @@index([partnerId], map: "idx_it_partner")
+}
+
+// ─── Inventory Transaction Lines ────────────────────────
+model InventoryTransactionLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionId   String   @db.Uuid @map("transaction_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  batchId         String?  @db.Uuid @map("batch_id")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  quantity        Decimal  @db.Decimal(18, 4)
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalCost       Decimal? @db.Decimal(18, 4) @map("total_cost")
+  // ─── Location ───
+  fromLocationId  String?  @db.Uuid @map("from_location_id")
+  toLocationId    String?  @db.Uuid @map("to_location_id")
+  fromBin         String?  @map("from_bin")
+  toBin           String?  @map("to_bin")
+  // ─── Batch/expiry ───
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Status ───
+  inventoryStatus String   @default("AVAILABLE") @map("inventory_status") // AVAILABLE, RESERVED, ALLOCATED, IN_INSPECTION, BLOCKED, QUARANTINE, DAMAGED, EXPIRED, RETURNED, TRANSIT
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  transaction     InventoryTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_transaction_lines")
+  @@index([transactionId, lineOrder], map: "idx_itl_transaction_order")
+  @@index([productId, batchId], map: "idx_itl_product_batch")
+  @@index([inventoryStatus], map: "idx_itl_status")
+}
+
+// ─── Epic 2: Stock Ledger (immutable, source of truth) ─
+model StockLedger {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Link to transaction ───
+  transactionId   String   @db.Uuid @map("transaction_id")
+  transactionNumber String  @map("transaction_number")
+  transactionTypeId String @db.Uuid @map("transaction_type_id")
+  transactionTypeCode String @map("transaction_type_code")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  batchId         String?  @db.Uuid @map("batch_id")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  locationId      String?  @db.Uuid @map("location_id")
+  bin             String?
+  // ─── Quantity deltas (the heart of the ledger) ───
+  quantityDelta       Decimal @db.Decimal(18, 4) @default(0) @map("quantity_delta")
+  availableDelta      Decimal @db.Decimal(18, 4) @default(0) @map("available_delta")
+  reservedDelta       Decimal @db.Decimal(18, 4) @default(0) @map("reserved_delta")
+  allocatedDelta      Decimal @db.Decimal(18, 4) @default(0) @map("allocated_delta")
+  damagedDelta        Decimal @db.Decimal(18, 4) @default(0) @map("damaged_delta")
+  expiredDelta        Decimal @db.Decimal(18, 4) @default(0) @map("expired_delta")
+  inTransitDelta      Decimal @db.Decimal(18, 4) @default(0) @map("in_transit_delta")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalCost       Decimal? @db.Decimal(18, 4) @map("total_cost")
+  // ─── Posting ───
+  postingDate     DateTime @default(now()) @map("posting_date")
+  transactionDate DateTime @map("transaction_date")
+  // ─── Reversal flag ───
+  isReversal      Boolean  @default(false) @map("is_reversal")
+  reversalOfLedgerId String? @db.Uuid @map("reversal_of_ledger_id")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("stock_ledger")
+  @@index([productId, warehouseId, postingDate], map: "idx_sl_product_warehouse_date")
+  @@index([transactionId], map: "idx_sl_transaction")
+  @@index([batchId], map: "idx_sl_batch")
+  @@index([postingDate], map: "idx_sl_posting_date")
+}
+
+// ─── Epic 3: Inventory Status Engine ───────────────────
+model InventoryStatus {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique // AVAILABLE, RESERVED, ALLOCATED, IN_INSPECTION, BLOCKED, QUARANTINE, DAMAGED, EXPIRED, RETURNED, TRANSIT
+  name            String
+  description     String?
+  // ─── Behavior ───
+  isAvailable     Boolean  @default(false) @map("is_available") // counts toward available stock?
+  isBlocked       Boolean  @default(false) @map("is_blocked") // cannot be issued?
+  isNegativeAllowed Boolean @default(false) @map("is_negative_allowed")
+  color           String?  // for UI
+  displayOrder    Int      @default(100) @map("display_order")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_statuses")
+  @@index([isAvailable, status], map: "idx_is_available_status")
+}
+
+// ─── Epic 4: Stock Balance (derived cache from ledger) ─
+model StockBalance {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Scope (composite key dimensions) ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  locationId      String?  @db.Uuid @map("location_id")
+  bin             String?
+  batchId         String?  @db.Uuid @map("batch_id")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Batch expiry (for FEFO sorting) ───
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Quantities (derived from ledger) ───
+  availableQuantity Decimal @db.Decimal(18, 4) @default(0) @map("available_quantity")
+  reservedQuantity  Decimal @db.Decimal(18, 4) @default(0) @map("reserved_quantity")
+  allocatedQuantity Decimal @db.Decimal(18, 4) @default(0) @map("allocated_quantity")
+  damagedQuantity   Decimal @db.Decimal(18, 4) @default(0) @map("damaged_quantity")
+  expiredQuantity   Decimal @db.Decimal(18, 4) @default(0) @map("expired_quantity")
+  inTransitQuantity Decimal @db.Decimal(18, 4) @default(0) @map("in_transit_quantity")
+  // ─── Computed total ───
+  totalQuantity   Decimal  @db.Decimal(18, 4) @default(0) @map("total_quantity") // available + reserved + allocated + damaged + expired + in_transit
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalValue      Decimal? @db.Decimal(18, 4) @map("total_value")
+  // ─── Last activity ───
+  lastTransactionId String? @db.Uuid @map("last_transaction_id")
+  lastTransactionDate DateTime? @map("last_transaction_date")
+  // ─── Reconciliation ───
+  lastReconciledAt DateTime? @map("last_reconciled_at")
+  isReconciled    Boolean  @default(false) @map("is_reconciled")
+  // ─── Audit ───
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([productId, productVariantId, warehouseId, locationId, bin, batchId, lotId, serialNumberId], map: "sb_unique_scope")
+  @@map("stock_balances")
+  @@index([productId, warehouseId], map: "idx_sb_product_warehouse")
+  @@index([warehouseId, availableQuantity], map: "idx_sb_warehouse_available")
+  @@index([batchId, expiryDate], map: "idx_sb_batch_expiry")
+  @@index([productId, batchId], map: "idx_sb_product_batch")
+}
+
+// ─── Epic 5: Stock Movement History ────────────────────
+model StockMovement {
+  id              String   @id @default(uuid()) @db.Uuid
+  transactionId   String?  @db.Uuid @map("transaction_id")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  // ─── Movement ───
+  movementType    String   @map("movement_type") // IN, OUT, TRANSFER, ADJUSTMENT, RESERVATION, ALLOCATION, RELEASE
+  quantity        Decimal  @db.Decimal(18, 4)
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── From / To ───
+  fromWarehouseId String?  @db.Uuid @map("from_warehouse_id")
+  fromWarehouseName String? @map("from_warehouse_name")
+  fromLocationId  String?  @db.Uuid @map("from_location_id")
+  fromLocationName String? @map("from_location_name")
+  toWarehouseId   String?  @db.Uuid @map("to_warehouse_id")
+  toWarehouseName String?  @map("to_warehouse_name")
+  toLocationId    String?  @db.Uuid @map("to_location_id")
+  toLocationName  String?  @map("to_location_name")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Actor ───
+  performedById   String?  @db.Uuid @map("performed_by_id")
+  performedByName String?  @map("performed_by_name")
+  // ─── Reason & approval ───
+  reason          String?
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  // ─── Timestamp ───
+  movementDate    DateTime @default(now()) @map("movement_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  transaction     InventoryTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@map("stock_movements")
+  @@index([productId, movementDate], map: "idx_sm_product_date")
+  @@index([movementType], map: "idx_sm_type")
+  @@index([fromWarehouseId, toWarehouseId], map: "idx_sm_warehouses")
+  @@index([batchId], map: "idx_sm_batch")
+  @@index([referenceNumber], map: "idx_sm_reference")
+}
+
+// ─── Epic 6: Inventory Journal (immutable accounting) ──
+model InventoryJournalEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  journalEntryNumber String @unique @map("journal_entry_number")
+  transactionId   String?  @db.Uuid @map("transaction_id")
+  // ─── Account-style entries (double-entry inventory) ───
+  entryType       String   @map("entry_type") // DEBIT, CREDIT
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  batchId         String?  @db.Uuid @map("batch_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  locationId      String?  @db.Uuid @map("location_id")
+  // ─── Quantities ───
+  quantity        Decimal  @db.Decimal(18, 4)
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalValue      Decimal? @db.Decimal(18, 4) @map("total_value")
+  // ─── Account (inventory account code) ───
+  inventoryAccount String  @map("inventory_account") // e.g., FINISHED_GOODS, RAW_MATERIAL, PACKAGING, IN_TRANSIT
+  offsetAccount   String?  @map("offset_account") // e.g., COGS, WIP, PURCHASE_VARIANCE
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Posting ───
+  postingDate     DateTime @default(now()) @map("posting_date")
+  transactionDate DateTime @map("transaction_date")
+  // ─── Description ───
+  description     String?
+  // ─── Reversal ───
+  isReversal      Boolean  @default(false) @map("is_reversal")
+  reversalOfEntryId String? @db.Uuid @map("reversal_of_entry_id")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  transaction     InventoryTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@map("inventory_journal")
+  @@index([productId, warehouseId, postingDate], map: "idx_ij_product_warehouse_date")
+  @@index([transactionId], map: "idx_ij_transaction")
+  @@index([inventoryAccount, postingDate], map: "idx_ij_account_date")
+  @@index([postingDate], map: "idx_ij_posting_date")
+}

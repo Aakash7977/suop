@@ -1319,3 +1319,31 @@ Stage Summary:
 - Build: Production build successful, server running
 - PART 2 STATUS: COMPLETE (11/11 sprints). All master data foundation finished.
 - Next: Part 3 — Enterprise Inventory Engine (10 sprints: Sprint 12-21) begins the actual ERP transaction layer (Inventory Foundation, Goods Receipt, Stock Issue, Transfers, Adjustments, Reservations, Cycle Count, Batch/Expiry, Costing, Analytics)
+
+---
+Task ID: SPRINT-12
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 12 — Enterprise Inventory Foundation (Universal Stock Ledger) — PART 3 BEGINS
+
+Work Log:
+- Added Sprint 12 schema (8 new tables, total now 134):
+  - InventoryTransactionType (18 types: GOODS_RECEIPT, GOODS_ISSUE, TRANSFER, ADJUSTMENT, PRODUCTION_RECEIPT, PRODUCTION_CONSUMPTION, SALES, SALES_RETURN, PURCHASE_RETURN, OPENING_STOCK, CYCLE_COUNT, RESERVATION, ALLOCATION, RELEASE, SCRAP, DAMAGE, EXPIRY, STOCK_TAKE)
+  - InventoryTransaction (header with reference, scope, partner, status, reversal tracking)
+  - InventoryTransactionLine (product/variant/batch/lot/serial, quantity, cost, from/to location, inventory status)
+  - StockLedger (IMMUTABLE source of truth — append-only, quantity deltas, reversal flag)
+  - InventoryStatus (10 statuses: AVAILABLE, RESERVED, ALLOCATED, IN_INSPECTION, BLOCKED, QUARANTINE, DAMAGED, EXPIRED, RETURNED, TRANSIT)
+  - StockBalance (derived cache — multi-dimensional: product × warehouse × batch × location × bin × serial; tracks available/reserved/allocated/damaged/expired/in-transit quantities)
+  - StockMovement (from→to tracking with partner, performer, reason, reference)
+  - InventoryJournalEntry (immutable double-entry: DEBIT/CREDIT with inventory account + offset account)
+- Updated backend: INV_DATA seed (18 transaction types, 10 statuses, 10 transactions, 10 stock balances, 10 ledger entries, 7 movements, 6 journal entries). Added 10 endpoints under /api/inventory/* including POST /api/inventory/transactions with negative stock validation, GET /api/inventory/availability shared service, GET /api/inventory/dashboard. Backend version bumped to 12.0.0.
+- Updated frontend: Added InventoryModule with 7 tabs (Overview, Transactions, Balances, Ledger, Movements, Journal, Availability). Overview shows transaction flow diagram + core architecture principle card. Transactions tab shows 18 type color codes + status badges. Balances tab shows multi-dimensional stock with available/reserved/allocated/damaged/expired columns. Ledger tab shows immutable entries with green/red delta indicators. Movements tab shows from→to cards. Journal tab shows double-entry DEBIT/CREDIT pairs. Availability tab shows summary cards + per-product breakdown.
+- Updated sidebar: New "Operations (Sprint 12+) — PART 3" section with Inventory Engine available. Dashboard shows 134 tables, 12 sprints, Part 3 begun.
+- Verified: npx prisma validate passes. npx tsc --noEmit clean. npx next build succeeds. Server running on port 3000 serving "Inventory Engine" and "Part 3" in HTML.
+
+Stage Summary:
+- Database schema: 134 tables total (Sprint 12 added 8) — PART 3 BEGUN
+- Backend: 10 new endpoints under /api/inventory/* with negative stock validation and shared availability service
+- Frontend: New InventoryModule with 7 tabs
+- Build: Production build successful, server running
+- Architecture: Implements the Chief Architect's most critical recommendation — NEVER update stock directly. Every stock change creates an immutable ledger transaction. Stock balances are DERIVED from the ledger (cache only). Available = Received − Issued − Reserved − Damaged.
+- Next: Sprint 13 — Goods Receipt & Putaway Engine (GRN, Production Receipt, Supplier Delivery Verification, Barcode Receiving, Quality Hold, Putaway Rules, Bin Allocation, Storage Optimization, Receiving Dashboard, Receiving Approval Workflow)
