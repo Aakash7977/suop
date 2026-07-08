@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "16.0.0"
+const VERSION = "17.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -779,6 +779,43 @@ const ADJ_DATA = {
   ],
 }
 
+// ─── Sprint 17: Reservation & Allocation Seed Data ──────
+const RES_DATA = {
+  reservations: [
+    { id: 'res-001', reservationNumber: 'RSV-2026-0001', reservationDate: '2026-07-09', reservationType: 'SALES_ORDER', priority: 'HIGH', priorityScore: 80, warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0451', partnerName: 'Sai Distribution Pvt Ltd', expiryDate: '2026-07-12', autoReleaseAfter: 72, status: 'ACTIVE', totalLines: 3, totalRequestedQty: 250, totalReservedQty: 250, totalAllocatedQty: 180, totalIssuedQty: 0, createdByName: 'Anita Desai', remarks: 'Urgent wholesale order — customer SLA 24hrs. Premium SKUs reserved.' },
+    { id: 'res-002', reservationNumber: 'RSV-2026-0002', reservationDate: '2026-07-09', reservationType: 'PRODUCTION_ORDER', priority: 'CRITICAL', priorityScore: 95, warehouseName: 'Mumbai Plant Warehouse', branchName: 'Mumbai Plant', referenceType: 'PRODUCTION_ORDER', referenceNumber: 'PO-2026-0078', partnerName: null, expiryDate: '2026-07-10', autoReleaseAfter: 24, status: 'FULLY_ALLOCATED', totalLines: 5, totalRequestedQty: 1200, totalReservedQty: 1200, totalAllocatedQty: 1200, totalIssuedQty: 600, createdByName: 'Chef Rajesh', remarks: 'Kaju Katli production batch KK-2607-15 — BOM material reservation.' },
+    { id: 'res-003', reservationNumber: 'RSV-2026-0003', reservationDate: '2026-07-09', reservationType: 'KITCHEN_ORDER', priority: 'NORMAL', priorityScore: 60, warehouseName: 'Mumbai Plant Warehouse', branchName: 'Mumbai Plant', referenceType: 'KITCHEN_REQUISITION', referenceNumber: 'KR-2026-0234', partnerName: null, expiryDate: '2026-07-09', autoReleaseAfter: 8, status: 'PARTIALLY_ALLOCATED', totalLines: 4, totalRequestedQty: 80, totalReservedQty: 80, totalAllocatedQty: 45, totalIssuedQty: 45, createdByName: 'Chef Rajesh', remarks: 'Daily kitchen requisition — cooking oil, sugar, ghee.' },
+    { id: 'res-004', reservationNumber: 'RSV-2026-0004', reservationDate: '2026-07-08', reservationType: 'TRANSFER_ORDER', priority: 'NORMAL', priorityScore: 50, warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', referenceType: 'STOCK_TRANSFER', referenceNumber: 'ST-2026-0156', partnerName: null, expiryDate: '2026-07-14', autoReleaseAfter: 144, status: 'ACTIVE', totalLines: 6, totalRequestedQty: 400, totalReservedQty: 380, totalAllocatedQty: 200, totalIssuedQty: 0, createdByName: 'Ramesh Yadav', remarks: 'Inter-warehouse transfer to Pune DC — mixed SKUs.' },
+    { id: 'res-005', reservationNumber: 'RSV-2026-0005', reservationDate: '2026-07-07', reservationType: 'MAINTENANCE_ORDER', priority: 'LOW', priorityScore: 30, warehouseName: 'Mumbai Plant Warehouse', branchName: 'Mumbai Plant', referenceType: 'MAINTENANCE_WO', referenceNumber: 'MWO-2026-0089', partnerName: null, expiryDate: '2026-07-21', autoReleaseAfter: 240, status: 'ACTIVE', totalLines: 2, totalRequestedQty: 15, totalReservedQty: 15, totalAllocatedQty: 15, totalIssuedQty: 0, createdByName: 'Sandeep Kumar', remarks: 'Maintenance spare parts — conveyor belt replacement scheduled.' },
+    { id: 'res-006', reservationNumber: 'RSV-2026-0006', reservationDate: '2026-07-06', reservationType: 'PROJECT_RESERVATION', priority: 'HIGH', priorityScore: 75, warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', referenceType: 'PROJECT', referenceNumber: 'PRJ-2026-0012', partnerName: 'Wedding Belles Events', expiryDate: '2026-07-25', autoReleaseAfter: 360, status: 'PARTIALLY_ALLOCATED', totalLines: 8, totalRequestedQty: 600, totalReservedQty: 550, totalAllocatedQty: 320, totalIssuedQty: 100, createdByName: 'Anita Desai', remarks: 'Wedding event bulk order — 8 SKUs, long lead time reservation.' },
+    { id: 'res-007', reservationNumber: 'RSV-2026-0007', reservationDate: '2026-07-05', reservationType: 'SAMPLE_RESERVATION', priority: 'LOW', priorityScore: 25, warehouseName: 'Mumbai Retail Store 01', branchName: 'Mumbai Retail', referenceType: 'SAMPLE_REQUEST', referenceNumber: 'SR-2026-0042', partnerName: 'Apna Bazaar Chain', expiryDate: '2026-07-19', autoReleaseAfter: 288, status: 'RELEASED', totalLines: 3, totalRequestedQty: 12, totalReservedQty: 12, totalAllocatedQty: 12, totalIssuedQty: 12, createdByName: 'Vikram Iyer', remarks: 'Free samples for new product launch — fully issued.' },
+    { id: 'res-008', reservationNumber: 'RSV-2026-0008', reservationDate: '2026-07-09', reservationType: 'EMERGENCY_RESERVATION', priority: 'EMERGENCY', priorityScore: 100, warehouseName: 'Mumbai DC', branchName: 'Mumbai Branch', referenceType: 'EMERGENCY_REQUEST', referenceNumber: 'ER-2026-0003', partnerName: 'Lifeline Hospital Canteen', expiryDate: '2026-07-10', autoReleaseAfter: 12, status: 'FULLY_ALLOCATED', totalLines: 2, totalRequestedQty: 50, totalReservedQty: 50, totalAllocatedQty: 50, totalIssuedQty: 0, createdByName: 'Anita Desai', remarks: 'Emergency food supply — hospital canteen urgent need. Override standard SLA.' },
+  ],
+  allocationRules: [
+    { id: 'alr-001', ruleCode: 'FEFO-PERISHABLE', ruleName: 'FEFO for Perishable Items', description: 'First Expiry First Out — strict for dairy, sweets, and short-shelf-life products.', strategy: 'FEFO', priority: 10, reservationType: 'SALES_ORDER', productCategory: 'PERISHABLES', productType: 'FINISHED_GOOD', warehouseName: 'All Warehouses', batchPreference: 'EXPIRY_BASED', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+    { id: 'alr-002', ruleCode: 'FIFO-RAW-MATERIAL', ruleName: 'FIFO for Raw Materials', description: 'First In First Out — for raw materials and ingredients in plant warehouse.', strategy: 'FIFO', priority: 20, reservationType: 'PRODUCTION_ORDER', productCategory: 'RAW_MATERIALS', productType: 'RAW_MATERIAL', warehouseName: 'Mumbai Plant Warehouse', batchPreference: 'SAME_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+    { id: 'alr-003', ruleCode: 'LIFO-FINISHED', ruleName: 'LIFO for Finished Goods', description: 'Last In First Out — for finished goods in dispatch zone, picks freshest batch first.', strategy: 'LIFO', priority: 30, reservationType: 'SALES_ORDER', productCategory: 'FINISHED_GOODS', productType: 'FINISHED_GOOD', warehouseName: 'Mumbai DC', batchPreference: 'AUTO_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+    { id: 'alr-004', ruleCode: 'NEAREST-BIN-PICK', ruleName: 'Nearest Bin for Picking', description: 'Optimize picker travel time — picks from nearest bin to dispatch dock.', strategy: 'NEAREST_BIN', priority: 40, reservationType: 'TRANSFER_ORDER', productCategory: null, productType: null, warehouseName: 'All Warehouses', batchPreference: 'MULTIPLE_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+    { id: 'alr-005', ruleCode: 'LOWEST-COST-PROJ', ruleName: 'Lowest Cost for Project Reservations', description: 'Select stock from lowest-cost batches for project/event reservations to maximize margin.', strategy: 'LOWEST_COST', priority: 50, reservationType: 'PROJECT_RESERVATION', productCategory: 'FINISHED_GOODS', productType: 'FINISHED_GOOD', warehouseName: 'All Warehouses', batchPreference: 'SUPPLIER_BATCH', excludeExpired: true, excludeQuarantine: true, excludeBlocked: true, status: 'ACTIVE' },
+    { id: 'alr-006', ruleCode: 'HIGHEST-PRIORITY-EMR', ruleName: 'Highest Priority for Emergency', description: 'Override all other reservations — emergency orders get highest-priority stock access.', strategy: 'HIGHEST_PRIORITY', priority: 5, reservationType: 'EMERGENCY_RESERVATION', productCategory: null, productType: null, warehouseName: 'All Warehouses', batchPreference: 'AUTO_BATCH', excludeExpired: true, excludeQuarantine: false, excludeBlocked: false, status: 'ACTIVE' },
+  ],
+  availabilitySnapshots: [
+    { id: 'avs-001', productName: 'Kaju Katli 500g', warehouseName: 'Mumbai DC', onHandQty: 480, reservedQty: 250, allocatedQty: 180, inTransitQty: 100, blockedQty: 12, availableQty: 38, snapshotAt: '2026-07-09 09:30', unitCost: 600, totalValue: 288000 },
+    { id: 'avs-002', productName: 'Sugar (Raw)', warehouseName: 'Mumbai Plant Warehouse', onHandQty: 1500, reservedQty: 600, allocatedQty: 600, inTransitQty: 0, blockedQty: 0, availableQty: 300, snapshotAt: '2026-07-09 09:30', unitCost: 45, totalValue: 67500 },
+    { id: 'avs-003', productName: 'Ghee (Raw)', warehouseName: 'Mumbai Plant Warehouse', onHandQty: 80, reservedQty: 40, allocatedQty: 30, inTransitQty: 50, blockedQty: 0, availableQty: 10, snapshotAt: '2026-07-09 09:30', unitCost: 520, totalValue: 41600 },
+    { id: 'avs-004', productName: 'Soan Cake 1kg', warehouseName: 'Mumbai DC', onHandQty: 60, reservedQty: 80, allocatedQty: 50, inTransitQty: 40, blockedQty: 6, availableQty: -76, snapshotAt: '2026-07-09 09:30', unitCost: 625, totalValue: 37500 },
+    { id: 'avs-005', productName: 'Mixed Namkeen 200g', warehouseName: 'Mumbai DC', onHandQty: 850, reservedQty: 200, allocatedQty: 150, inTransitQty: 0, blockedQty: 24, availableQty: 476, snapshotAt: '2026-07-09 09:30', unitCost: 53, totalValue: 45050 },
+    { id: 'avs-006', productName: 'Gulab Jamun 1kg', warehouseName: 'Mumbai Retail Store 01', onHandQty: 24, reservedQty: 30, allocatedQty: 20, inTransitQty: 0, blockedQty: 0, availableQty: -26, snapshotAt: '2026-07-09 09:30', unitCost: 304, totalValue: 7296 },
+  ],
+  priorityMatrix: [
+    { rank: 1, source: 'Manufacturing Orders', exampleType: 'PRODUCTION_ORDER', defaultPriority: 'CRITICAL', defaultScore: 95, slaHours: 24, notes: 'Production line stoppage costs >50K/hr — highest non-emergency priority.' },
+    { rank: 2, source: 'Customer Sales Orders', exampleType: 'SALES_ORDER', defaultPriority: 'HIGH', defaultScore: 80, slaHours: 48, notes: 'Wholesale + retail orders. VIP customers get CRITICAL override.' },
+    { rank: 3, source: 'Restaurant / Kitchen', exampleType: 'KITCHEN_ORDER', defaultPriority: 'NORMAL', defaultScore: 60, slaHours: 8, notes: 'Same-day consumption — short reservation window.' },
+    { rank: 4, source: 'Stock Transfers', exampleType: 'TRANSFER_ORDER', defaultPriority: 'NORMAL', defaultScore: 50, slaHours: 144, notes: 'Inter-warehouse restocking — 6-day reservation window.' },
+    { rank: 5, source: 'Samples & Marketing', exampleType: 'SAMPLE_RESERVATION', defaultPriority: 'LOW', defaultScore: 25, slaHours: 288, notes: '12-day window — low priority, can be bumped by higher orders.' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1168,8 +1205,9 @@ const server = Bun.serve({
         { code: 'ISS', name: 'Stock Issue & Outbound', status: 'active', entities: 6, sprint: 14 },
         { code: 'TRF', name: 'Stock Transfer & Transit', status: 'active', entities: 4, sprint: 15 },
         { code: 'ADJ', name: 'Adjustment & Reconciliation', status: 'active', entities: 6, sprint: 16 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 17 },
-        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 17 },
+        { code: 'RES', name: 'Reservation & Allocation', status: 'active', entities: 4, sprint: 17 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 18 },
+        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
     }
@@ -2867,12 +2905,144 @@ const server = Bun.serve({
       }, 'SUOP Adjustment Engine v16.0.0')), { headers })
     }
 
+    // ─── Sprint 17: Reservation & Allocation Endpoints ────
+    if (path === '/api/reservations' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const priorityFilter = url.searchParams.get('priority')
+      let reservations = RES_DATA.reservations
+      if (typeFilter) reservations = reservations.filter(r => r.reservationType === typeFilter.toUpperCase())
+      if (statusFilter) reservations = reservations.filter(r => r.status === statusFilter.toUpperCase())
+      if (priorityFilter) reservations = reservations.filter(r => r.priority === priorityFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(reservations, `${reservations.length} reservations`)), { headers })
+    }
+    if (path === '/api/reservations' && method === 'POST') {
+      try {
+        const body = await req.json()
+        const reservationNumber = body.reservationNumber || `RSV-2026-${String(RES_DATA.reservations.length + 1).padStart(4, '0')}`
+        const reservation = {
+          id: `res-${String(RES_DATA.reservations.length + 1).padStart(3, '0')}`,
+          reservationNumber, reservationDate: body.reservationDate || new Date().toISOString().slice(0, 10),
+          reservationType: body.reservationType || 'SALES_ORDER', priority: body.priority || 'NORMAL', priorityScore: body.priorityScore || 50,
+          warehouseName: body.warehouseName || 'Mumbai DC', branchName: body.branchName || 'Mumbai Branch',
+          referenceType: body.referenceType || null, referenceNumber: body.referenceNumber || null, partnerName: body.partnerName || null,
+          expiryDate: body.expiryDate || null, autoReleaseAfter: body.autoReleaseAfter || 72,
+          status: body.status || 'ACTIVE', totalLines: body.totalLines || 1,
+          totalRequestedQty: body.totalRequestedQty || 0, totalReservedQty: body.totalReservedQty || 0,
+          totalAllocatedQty: body.totalAllocatedQty || 0, totalIssuedQty: body.totalIssuedQty || 0,
+          createdByName: body.createdByName || 'Anita Desai', remarks: body.remarks || null,
+        }
+        RES_DATA.reservations.unshift(reservation)
+        log('info', 'Reservation created', { reservationNumber, type: reservation.reservationType })
+        return new Response(JSON.stringify(successResponse(reservation, `Reservation ${reservationNumber} created`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    if (path === '/api/reservations/availability' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(RES_DATA.availabilitySnapshots, `${RES_DATA.availabilitySnapshots.length} availability snapshots`)), { headers })
+    }
+    if (path === '/api/reservations/dashboard' && method === 'GET') {
+      const totalReservedValue = RES_DATA.availabilitySnapshots.reduce((s, a) => s + (a.reservedQty * a.unitCost), 0)
+      const totalAvailableValue = RES_DATA.availabilitySnapshots.reduce((s, a) => s + (Math.max(0, a.availableQty) * a.unitCost), 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          total: RES_DATA.reservations.length,
+          active: RES_DATA.reservations.filter(r => r.status === 'ACTIVE').length,
+          fullyAllocated: RES_DATA.reservations.filter(r => r.status === 'FULLY_ALLOCATED').length,
+          partiallyAllocated: RES_DATA.reservations.filter(r => r.status === 'PARTIALLY_ALLOCATED').length,
+          released: RES_DATA.reservations.filter(r => r.status === 'RELEASED').length,
+          expired: RES_DATA.reservations.filter(r => r.status === 'EXPIRED').length,
+        },
+        byType: {
+          salesOrder: RES_DATA.reservations.filter(r => r.reservationType === 'SALES_ORDER').length,
+          productionOrder: RES_DATA.reservations.filter(r => r.reservationType === 'PRODUCTION_ORDER').length,
+          kitchenOrder: RES_DATA.reservations.filter(r => r.reservationType === 'KITCHEN_ORDER').length,
+          transferOrder: RES_DATA.reservations.filter(r => r.reservationType === 'TRANSFER_ORDER').length,
+          maintenanceOrder: RES_DATA.reservations.filter(r => r.reservationType === 'MAINTENANCE_ORDER').length,
+          projectReservation: RES_DATA.reservations.filter(r => r.reservationType === 'PROJECT_RESERVATION').length,
+          sampleReservation: RES_DATA.reservations.filter(r => r.reservationType === 'SAMPLE_RESERVATION').length,
+          emergencyReservation: RES_DATA.reservations.filter(r => r.reservationType === 'EMERGENCY_RESERVATION').length,
+        },
+        byPriority: {
+          emergency: RES_DATA.reservations.filter(r => r.priority === 'EMERGENCY').length,
+          critical: RES_DATA.reservations.filter(r => r.priority === 'CRITICAL').length,
+          high: RES_DATA.reservations.filter(r => r.priority === 'HIGH').length,
+          normal: RES_DATA.reservations.filter(r => r.priority === 'NORMAL').length,
+          low: RES_DATA.reservations.filter(r => r.priority === 'LOW').length,
+        },
+        totals: {
+          totalRequested: RES_DATA.reservations.reduce((s, r) => s + r.totalRequestedQty, 0),
+          totalReserved: RES_DATA.reservations.reduce((s, r) => s + r.totalReservedQty, 0),
+          totalAllocated: RES_DATA.reservations.reduce((s, r) => s + r.totalAllocatedQty, 0),
+          totalIssued: RES_DATA.reservations.reduce((s, r) => s + r.totalIssuedQty, 0),
+        },
+        availability: {
+          totalItems: RES_DATA.availabilitySnapshots.length,
+          shortSupplyItems: RES_DATA.availabilitySnapshots.filter(a => a.availableQty <= 0).length,
+          totalReservedValue, totalAvailableValue,
+        },
+        rulesCount: RES_DATA.allocationRules.length,
+        priorityMatrix: RES_DATA.priorityMatrix,
+      }, 'Reservation & Allocation dashboard')), { headers })
+    }
+    if (path === '/api/allocation-rules' && method === 'GET') {
+      const strategyFilter = url.searchParams.get('strategy')
+      let rules = RES_DATA.allocationRules
+      if (strategyFilter) rules = rules.filter(r => r.strategy === strategyFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(rules, `${rules.length} allocation rules`)), { headers })
+    }
+    if (path === '/api/reservations/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Reservation & Allocation Engine', version: '17.0.0', sprint: 17,
+        sprintName: 'Inventory Reservation, Allocation & Availability Engine',
+        reservationTypes: ['SALES_ORDER','PRODUCTION_ORDER','KITCHEN_ORDER','TRANSFER_ORDER','MAINTENANCE_ORDER','PROJECT_RESERVATION','SAMPLE_RESERVATION','EMERGENCY_RESERVATION'],
+        priorityLevels: ['EMERGENCY','CRITICAL','HIGH','NORMAL','LOW'],
+        reservationStatuses: ['ACTIVE','PARTIALLY_ALLOCATED','FULLY_ALLOCATED','PARTIALLY_ISSUED','FULLY_ISSUED','RELEASED','EXPIRED','CANCELLED'],
+        allocationStrategies: ['FIFO','FEFO','LIFO','NEAREST_BIN','LOWEST_COST','HIGHEST_PRIORITY','MANUAL'],
+        batchPreferences: ['SAME_BATCH','MULTIPLE_BATCH','AUTO_BATCH','EXPIRY_BASED','SUPPLIER_BATCH'],
+        lineAllocationStatuses: ['PENDING','PARTIALLY_ALLOCATED','FULLY_ALLOCATED','SHORT_SUPPLY','ALLOCATION_FAILED'],
+        endpoints: ['GET/POST /api/reservations','POST /:id/release','GET /:id/allocate','GET /api/allocation-rules','GET /api/reservations/availability','GET /api/reservations/dashboard','GET /api/reservations/info'],
+      }, 'SUOP Reservation Engine v17.0.0')), { headers })
+    }
+    if (path.match(/^\/api\/reservations\/[^/]+\/release$/) && method === 'POST') {
+      const id = path.split('/')[3]; const r = RES_DATA.reservations.find(x => x.id === id)
+      if (!r) return new Response(JSON.stringify(errorResponse('Reservation not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (r.status === 'RELEASED' || r.status === 'EXPIRED') return new Response(JSON.stringify(errorResponse(`Cannot release in ${r.status}`)), { status: 400, headers })
+      r.status = 'RELEASED'
+      log('info', 'Reservation released', { reservationNumber: r.reservationNumber })
+      return new Response(JSON.stringify(successResponse(r, `Reservation ${r.reservationNumber} released — allocated stock returned to available pool`)), { headers })
+    }
+    if (path.match(/^\/api\/reservations\/[^/]+\/allocate$/) && method === 'GET') {
+      const id = path.split('/')[3]; const r = RES_DATA.reservations.find(x => x.id === id)
+      if (!r) return new Response(JSON.stringify(errorResponse('Reservation not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      // Simulate allocation: try to fully allocate the remaining requested qty
+      const remainingQty = Math.max(0, r.totalRequestedQty - r.totalAllocatedQty)
+      const wasStatus = r.status
+      if (remainingQty > 0) {
+        r.totalAllocatedQty = r.totalRequestedQty
+        r.status = r.totalIssuedQty > 0 ? 'FULLY_ALLOCATED' : 'FULLY_ALLOCATED'
+      } else {
+        r.status = 'FULLY_ALLOCATED'
+      }
+      log('info', 'Reservation allocated', { reservationNumber: r.reservationNumber, wasStatus, nowStatus: r.status })
+      return new Response(JSON.stringify(successResponse({
+        reservation: r,
+        allocationResult: {
+          previouslyAllocated: r.totalAllocatedQty - remainingQty,
+          newlyAllocated: remainingQty,
+          totalAllocated: r.totalAllocatedQty,
+          remainingShort: 0,
+          statusChanged: wasStatus !== r.status,
+        },
+      }, `Reservation ${r.reservationNumber} allocated — ${remainingQty} units newly allocated`)), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 16, sprintName: 'Inventory Adjustment & Reconciliation Engine' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 17, sprintName: 'Inventory Reservation, Allocation & Availability Engine' })
+log('info', 'Reservation endpoints available', { reservations: 'GET/POST /api/reservations', release: 'POST /:id/release', allocate: 'GET /:id/allocate', rules: 'GET /api/allocation-rules', availability: 'GET /api/reservations/availability', dashboard: 'GET /api/reservations/dashboard', info: 'GET /api/reservations/info' })
 log('info', 'Adjustment endpoints available', { adjustments: 'GET/POST /api/inventory-adjustments', approve: 'POST /:id/approve', reasons: 'GET /api/inventory-adjustments/reasons', damage: 'GET /api/damage-reports-s16', expiry: 'GET /api/expiry-adjustments', rootCauses: 'GET /api/inventory-adjustments/root-causes', dashboard: 'GET /api/inventory-adjustments/dashboard', info: 'GET /api/inventory-adjustments/info' })
 log('info', 'Transfer endpoints available', { transfers: 'GET/POST /api/stock-transfers', approve: 'POST /:id/approve', dispatch: 'POST /:id/dispatch', receive: 'POST /:id/receive', inTransit: 'GET /api/stock-transfers/in-transit', binTransfers: 'GET /api/bin-transfers', dashboard: 'GET /api/stock-transfers/dashboard' })
 log('info', 'Outbound endpoints available', { stockIssues: 'GET/POST /api/stock-issues', picking: 'GET /api/picking/tasks', scrap: 'GET /api/scrap-records', damage: 'GET /api/damage-records' })

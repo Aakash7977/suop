@@ -1446,3 +1446,17 @@ Stage Summary:
 - Architecture: Full reconciliation workflow: Identify Discrepancy → Capture Evidence (photo required for DAMAGE/EXPIRY/THEFT) → Submit for Approval (routed by reason approvalLevel) → Approve/Reject (write-offs require FINANCE/MANAGEMENT) → Post to Inventory (ledger updated) → Post to Finance (GL journalized to loss/shrinkage account) → Root Cause Analysis (corrective + preventive actions with recurrence detection).
 - Next: Sprint 17 — Warehouse Management System (zones, bins, racks, capacity planning, slotting)
 ---
+
+## SPRINT-17 — Reservation & Allocation Engine (2026-07-09)
+- Backend: 7 new endpoints: GET/POST /api/reservations (with type/status/priority filters), POST /api/reservations/:id/release, GET /api/reservations/:id/allocate, GET /api/allocation-rules, GET /api/reservations/availability, GET /api/reservations/dashboard, GET /api/reservations/info
+- Backend: VERSION bumped to 17.0.0; modules list updated with { code: 'RES', name: 'Reservation & Allocation', status: 'active', entities: 4, sprint: 17 }; WHS+MFG moved to planned sprint 18
+- Backend: RES_DATA seed — 8 inventory reservations spanning all 8 types (SALES_ORDER, PRODUCTION_ORDER, KITCHEN_ORDER, TRANSFER_ORDER, MAINTENANCE_ORDER, PROJECT_RESERVATION, SAMPLE_RESERVATION, EMERGENCY_RESERVATION) with priorities EMERGENCY/CRITICAL/HIGH/NORMAL/LOW and scores 25–100; 6 allocation rules (FIFO, FEFO, LIFO, NEAREST_BIN, LOWEST_COST, HIGHEST_PRIORITY) with batch preferences + exclusion flags; 6 availability snapshots showing onHand/reserved/allocated/inTransit/blocked/available with 2 short-supply cases; 5-row priority matrix
+- Frontend: ModuleKey extended with 'reservation'; sidebar Operations section gains 'Reservations' (ShieldCheck icon, available=true); moduleNames entry reservation: 'Reservations & Allocation'; route {activeModule === 'reservation' && <ReservationModule />}
+- Frontend: Dashboard sprintData array extended with Sprint 17 row; stats updated 155→159 tables, 16→17 sprints, "Sprint 17 of 21"; login screen, header badge, dashboard hero, footer all updated
+- Frontend: ReservationModule with 4 tabs:
+  • Overview — 6 stat cards (Active Reservations, Fully Allocated, Short Supply, Released/Expired, Allocation Rules, Available Stock Value) + 8-step reservation→allocation→issue flow diagram + 5-row priority matrix table (Manufacturing=1, Customer=2, Restaurant=3, Transfers=4, Samples=5)
+  • Reservations — table with 9 type color codes, priority badges (EMERGENCY red, CRITICAL orange, HIGH amber, NORMAL blue, LOW gray), requested/reserved/allocated/issued qty columns, status badges, expiry date
+  • Allocation Rules — 6 strategy cards with priority, batch preference, and exclusion flags (No Expired / No Quarantine / No Blocked)
+  • Availability — table with onHand/reserved/allocated/inTransit/blocked/available(computed), color-coded available column (green if >0, red if ≤0), totals row + short-supply alert banner
+- Verification: tsc --noEmit (no src/app/ errors), npm run build (compiled successfully 10.6s), bun build backend (44 modules, 0.65 MB), Next.js server restarted on port 3000 (HTTP 200), CSS chunk returns HTTP 200, JS chunk contains Sprint 17 + 159 Tables + ReservationModule strings
+- Next: Sprint 18 — Warehouse Management System (zones, bins, racks, capacity planning, slotting)

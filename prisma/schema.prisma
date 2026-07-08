@@ -4834,3 +4834,161 @@ model AdjustmentRootCause {
   @@index([actionStatus], map: "idx_arc_action_status")
   @@index([isRecurring], map: "idx_arc_recurring")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 17 — STOCK RESERVATION & ALLOCATION ENGINE
+// Lock inventory so departments don't compete for the same stock
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Reservation Engine ─────────────────────────
+model InventoryReservation {
+  id              String   @id @default(uuid()) @db.Uuid
+  reservationNumber String  @unique @map("reservation_number")
+  reservationDate DateTime @map("reservation_date")
+  // ─── Type ───
+  reservationType String   @map("reservation_type") // SALES_ORDER, PRODUCTION_ORDER, KITCHEN_ORDER, TRANSFER_ORDER, MAINTENANCE_ORDER, PROJECT_RESERVATION, SAMPLE_RESERVATION, QUALITY_RESERVATION, EMERGENCY_RESERVATION
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, CRITICAL, HIGH, NORMAL, LOW
+  priorityScore   Int      @default(50) @map("priority_score") // 0-100, higher = more important
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Expiry ───
+  expiryDate      DateTime? @map("expiry_date")
+  autoReleaseAfter Int?    @map("auto_release_after") // hours
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, PARTIALLY_ALLOCATED, FULLY_ALLOCATED, PARTIALLY_ISSUED, FULLY_ISSUED, RELEASED, EXPIRED, CANCELLED
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  totalRequestedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_requested_qty")
+  totalReservedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_reserved_qty")
+  totalAllocatedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_allocated_qty")
+  totalIssuedQty  Decimal  @db.Decimal(18, 4) @default(0) @map("total_issued_qty")
+  // ─── Workflow ───
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  allocatedAt     DateTime? @map("allocated_at")
+  releasedAt      DateTime? @map("released_at")
+  releasedById    String?  @db.Uuid @map("released_by_id")
+  releaseReason   String?  @map("release_reason")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  requestedById   String?  @db.Uuid @map("requested_by_id")
+  requestedByName String?  @map("requested_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           ReservationLine[]
+
+  @@map("inventory_reservations")
+  @@index([reservationType, status], map: "idx_ir_type_status")
+  @@index([priority, status], map: "idx_ir_priority_status")
+  @@index([warehouseId, status], map: "idx_ir_warehouse_status")
+  @@index([expiryDate], map: "idx_ir_expiry")
+  @@index([status], map: "idx_ir_status")
+}
+
+model ReservationLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  reservationId   String   @db.Uuid @map("reservation_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Quantities ───
+  requestedQty    Decimal  @db.Decimal(18, 4) @map("requested_qty")
+  reservedQty     Decimal  @db.Decimal(18, 4) @default(0) @map("reserved_qty")
+  allocatedQty    Decimal  @db.Decimal(18, 4) @default(0) @map("allocated_qty")
+  issuedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("issued_qty")
+  // ─── Allocation ───
+  allocationStatus String  @default("PENDING") @map("allocation_status") // PENDING, PARTIALLY_ALLOCATED, FULLY_ALLOCATED, SHORT_SUPPLY, ALLOCATION_FAILED
+  allocationStrategy String? @map("allocation_strategy") // FIFO, FEFO, LIFO, NEAREST_BIN, LOWEST_COST, MANUAL
+  // ─── Allocated location ───
+  allocatedLocationId String? @db.Uuid @map("allocated_location_id")
+  allocatedBin    String?  @map("allocated_bin")
+  // ─── Short supply ───
+  shortSupplyQty  Decimal  @db.Decimal(18, 4) @default(0) @map("short_supply_qty")
+  shortSupplyReason String? @map("short_supply_reason")
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  reservation     InventoryReservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("reservation_lines")
+  @@index([reservationId, lineOrder], map: "idx_rl_r_order")
+  @@index([productId, batchId], map: "idx_rl_product_batch")
+  @@index([allocationStatus], map: "idx_rl_allocation")
+}
+
+// ─── Epic 2: Allocation Engine ─────────────────────────
+model AllocationRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  ruleCode        String   @unique @map("rule_code")
+  ruleName        String   @map("rule_name")
+  description     String?
+  // ─── Strategy ───
+  strategy        String   // FIFO, FEFO, LIFO, NEAREST_BIN, LOWEST_COST, HIGHEST_PRIORITY, MANUAL
+  priority        Int      @default(100)
+  // ─── Conditions ───
+  reservationType String?  @map("reservation_type")
+  productCategoryId String? @db.Uuid @map("product_category_id")
+  productType     String?  @map("product_type")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  // ─── Batch preference ───
+  batchPreference String?  @map("batch_preference") // SAME_BATCH, MULTIPLE_BATCH, AUTO_BATCH, EXPIRY_BASED, SUPPLIER_BATCH
+  // ─── Exclusions ───
+  excludeExpired  Boolean  @default(true) @map("exclude_expired")
+  excludeQuarantine Boolean @default(true) @map("exclude_quarantine")
+  excludeBlocked  Boolean  @default(true) @map("exclude_blocked")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("allocation_rules")
+  @@index([strategy, status], map: "idx_alr_strategy_status")
+  @@index([reservationType], map: "idx_alr_reservation_type")
+}
+
+// ─── Epic 6: Availability Snapshot ──────────────────────
+model AvailabilitySnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Quantities ───
+  onHandQty       Decimal  @db.Decimal(18, 4) @default(0) @map("on_hand_qty")
+  reservedQty     Decimal  @db.Decimal(18, 4) @default(0) @map("reserved_qty")
+  allocatedQty    Decimal  @db.Decimal(18, 4) @default(0) @map("allocated_qty")
+  inTransitQty    Decimal  @db.Decimal(18, 4) @default(0) @map("in_transit_qty")
+  blockedQty      Decimal  @db.Decimal(18, 4) @default(0) @map("blocked_qty")
+  // ─── Computed ───
+  availableQty    Decimal  @db.Decimal(18, 4) @default(0) @map("available_qty") // onHand - reserved - allocated - blocked
+  // ─── Snapshot time ───
+  snapshotAt      DateTime @default(now()) @map("snapshot_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("availability_snapshots")
+  @@index([productId, warehouseId], map: "idx_as_product_warehouse")
+  @@index([snapshotAt], map: "idx_as_snapshot")
+  @@index([availableQty], map: "idx_as_available")
+}
