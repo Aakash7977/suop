@@ -1098,3 +1098,311 @@ model FeatureAssignment {
   @@index([flagId, status], map: "idx_fa_flag_status")
   @@index([targetType, targetId, status], map: "idx_fa_target_status")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MASTER DATA PLATFORM — Sprint 6
+// Epics 1-8: Products, Categories, Brands, UOMs, Attributes,
+//            Variants, Images, Documents
+// + UPI (Universal Product Identity) per Chief Architect
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Product Categories (Epic 2) ──────────────────────────────
+model ProductCategory {
+  id              String   @id @default(uuid()) @db.Uuid
+  categoryCode    String   @unique @map("category_code")
+  categoryName    String   @map("category_name")
+  parentCategoryId String? @db.Uuid @map("parent_category_id")
+  description     String?
+  displayOrder    Int      @default(100) @map("display_order")
+  level           Int      @default(1)
+  path            String   @default("/")
+  imageIcon       String?  @map("image_icon")
+  isLeaf          Boolean  @default(true) @map("is_leaf") // Can have products assigned
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  parent          ProductCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  children        ProductCategory[] @relation("CategoryHierarchy")
+  products        Product[]
+
+  @@map("product_categories")
+  @@index([parentCategoryId, displayOrder], map: "idx_pc_parent_order")
+  @@index([status, isLeaf], map: "idx_pc_status_leaf")
+}
+
+// ─── Brands (Epic 3) ──────────────────────────────────────────
+model Brand {
+  id              String   @id @default(uuid()) @db.Uuid
+  brandCode       String   @unique @map("brand_code")
+  brandName       String   @map("brand_name")
+  description     String?
+  logoUrl         String?  @map("logo_url")
+  website         String?
+  manufacturer    String?
+  isOem           Boolean  @default(false) @map("is_oem")
+  isPrivateLabel  Boolean  @default(false) @map("is_private_label")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  products        Product[]
+
+  @@map("brands")
+  @@index([status], map: "idx_brand_status")
+}
+
+// ─── Units of Measure (Epic 4) ────────────────────────────────
+model Uom {
+  id              String   @id @default(uuid()) @db.Uuid
+  uomCode         String   @unique @map("uom_code") // PCS, KG, G, L, ML, BOX, PKT, TRAY, BTL, BAG
+  uomName         String   @map("uom_name")
+  uomType         String   @default("COUNT") @map("uom_type") // COUNT, WEIGHT, VOLUME, LENGTH, TIME
+  symbol          String?
+  description     String?
+  isBaseUnit      Boolean  @default(false) @map("is_base_unit")
+  decimalPlaces   Int      @default(0) @map("decimal_places")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Self-referencing for conversions
+  conversionsFrom UomConversion[] @relation("UomConversionFrom")
+  conversionsTo   UomConversion[] @relation("UomConversionTo")
+  products        Product[]
+
+  @@map("uoms")
+  @@index([uomType, status], map: "idx_uom_type_status")
+}
+
+model UomConversion {
+  id              String   @id @default(uuid()) @db.Uuid
+  fromUomId       String   @db.Uuid @map("from_uom_id")
+  toUomId         String   @db.Uuid @map("to_uom_id")
+  factor          Decimal  @db.Decimal(18, 6) // e.g., 1 KG = 1000 G (factor = 1000)
+  companyId       String?  @db.Uuid @map("company_id") // NULL = global
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  fromUom         Uom      @relation("UomConversionFrom", fields: [fromUomId], references: [id])
+  toUom           Uom      @relation("UomConversionTo", fields: [toUomId], references: [id])
+
+  @@unique([fromUomId, toUomId, companyId], map: "uom_conversion_unique")
+  @@map("uom_conversions")
+  @@index([fromUomId], map: "idx_uc_from")
+  @@index([toUomId], map: "idx_uc_to")
+}
+
+// ─── Products (Epic 1 + UPI) ──────────────────────────────────
+model Product {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── UPI (Universal Product Identity) ───────────────────
+  upi             String   @unique @map("upi") // Universal Product Identity — permanent, channel-agnostic
+  // ─── Standard codes ─────────────────────────────────────
+  productCode     String   @unique @map("product_code") // Internal code
+  sku             String   @unique // Stock Keeping Unit
+  // ─── Basic info ─────────────────────────────────────────
+  name            String
+  shortName       String?  @map("short_name")
+  description     String?
+  // ─── Classification ─────────────────────────────────────
+  productType     String   @default("FINISHED_GOODS") @map("product_type") // FINISHED_GOODS, RAW_MATERIAL, PACKAGING, SEMI_FINISHED, CONSUMABLE, INGREDIENT, SERVICE, ASSET, SPARE_PART, KITCHEN_ITEM, GIFT_CARD
+  status          String   @default("DRAFT") // DRAFT, ACTIVE, INACTIVE, BLOCKED, DISCONTINUED, ARCHIVED
+  // ─── Relationships ──────────────────────────────────────
+  brandId         String?  @db.Uuid @map("brand_id")
+  categoryId      String?  @db.Uuid @map("category_id")
+  defaultUomId    String   @db.Uuid @map("default_uom_id")
+  // ─── Tax & Compliance ───────────────────────────────────
+  hsnCode         String?  @map("hsn_code") @db.VarChar(10)
+  taxGroupId      String?  @db.Uuid @map("tax_group_id") // Reference to future TaxGroup
+  // ─── Tracking ───────────────────────────────────────────
+  barcodeType     String   @default("EAN_13") @map("barcode_type") // EAN_13, UPC, CODE_128, GS1_128, QR
+  trackBatch      Boolean  @default(false) @map("track_batch")
+  trackSerial     Boolean  @default(false) @map("track_serial")
+  trackExpiry     Boolean  @default(false) @map("track_expiry")
+  shelfLifeDays   Int?     @map("shelf_life_days")
+  // ─── Business flags (UPI channel mapping) ───────────────
+  isManufactured  Boolean  @default(false) @map("is_manufactured")
+  isPurchased     Boolean  @default(false) @map("is_purchased")
+  isSold          Boolean  @default(true) @map("is_sold")
+  isStockManaged  Boolean  @default(true) @map("is_stock_managed")
+  isKitchenItem   Boolean  @default(false) @map("is_kitchen_item") // Restaurant ingredient
+  // ─── Physical attributes ────────────────────────────────
+  netWeight       Decimal? @map("net_weight") @db.Decimal(15, 3)
+  grossWeight     Decimal? @map("gross_weight") @db.Decimal(15, 3)
+  weightUomId     String?  @db.Uuid @map("weight_uom_id")
+  length          Decimal? @db.Decimal(15, 3)
+  width           Decimal? @db.Decimal(15, 3)
+  height          Decimal? @db.Decimal(15, 3)
+  dimensionUom    String?  @default("CM") @map("dimension_uom")
+  // ─── Pricing ────────────────────────────────────────────
+  defaultCostPrice Decimal? @map("default_cost_price") @db.Decimal(18, 4)
+  defaultMrp       Decimal? @map("default_mrp") @db.Decimal(18, 4)
+  defaultSellingPrice Decimal? @map("default_selling_price") @db.Decimal(18, 4)
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  // ─── Audit ──────────────────────────────────────────────
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  // ─── Relations ──────────────────────────────────────────
+  brand           Brand?           @relation(fields: [brandId], references: [id])
+  category        ProductCategory? @relation(fields: [categoryId], references: [id])
+  defaultUom      Uom              @relation(fields: [defaultUomId], references: [id])
+  weightUom       Uom?             @relation(fields: [weightUomId], references: [id])
+  attributes      ProductAttribute[]
+  variants        ProductVariant[]
+  images          ProductImage[]
+  documents       ProductDocument[]
+
+  @@map("products")
+  @@index([productType, status], map: "idx_product_type_status")
+  @@index([brandId, status], map: "idx_product_brand_status")
+  @@index([categoryId, status], map: "idx_product_category_status")
+  @@index([sku, status], map: "idx_product_sku_status")
+  @@index([upi], map: "idx_product_upi")
+  @@index([isManufactured, isPurchased, isSold], map: "idx_product_channels")
+}
+
+// ─── Product Attributes (Epic 5) ──────────────────────────────
+model Attribute {
+  id              String   @id @default(uuid()) @db.Uuid
+  attributeCode   String   @unique @map("attribute_code") // FLAVOR, COLOR, WEIGHT, SIZE, MATERIAL, SHELF_LIFE, STORAGE_TEMP
+  attributeName   String   @map("attribute_name")
+  attributeType   String   @default("TEXT") @map("attribute_type") // TEXT, NUMBER, BOOLEAN, DATE, SELECT, MULTI_SELECT
+  dataType        String   @default("STRING") // STRING, INTEGER, DECIMAL, BOOLEAN, DATE
+  unit            String?  // e.g., "days" for shelf life, "°C" for storage temp
+  isRequired      Boolean  @default(false) @map("is_required")
+  isVariantAttribute Boolean @default(false) @map("is_variant_attribute") // Used for variants
+  isSearchable    Boolean  @default(true) @map("is_searchable")
+  displayOrder    Int      @default(100) @map("display_order")
+  allowedValues   String[] @default([]) @map("allowed_values") // For SELECT type
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  values          AttributeValue[]
+  productAttributes ProductAttribute[]
+
+  @@map("attributes")
+  @@index([isVariantAttribute, status], map: "idx_attr_variant_status")
+}
+
+model AttributeValue {
+  id              String   @id @default(uuid()) @db.Uuid
+  attributeId     String   @db.Uuid @map("attribute_id")
+  value           String
+  displayValue    String?  @map("display_value") // For display (e.g., "250g" instead of "250")
+  sortOrder       Int      @default(0) @map("sort_order")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  attribute       Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeId, value], map: "attr_value_unique")
+  @@map("attribute_values")
+  @@index([attributeId, status], map: "idx_av_attr_status")
+}
+
+model ProductAttribute {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  attributeId     String   @db.Uuid @map("attribute_id")
+  attributeValueId String? @db.Uuid @map("attribute_value_id") // Reference to predefined value
+  valueText       String?  @map("value_text") // For TEXT/SELECT
+  valueNumber     Decimal? @map("value_number") @db.Decimal(18, 6) // For NUMBER
+  valueBoolean    Boolean? @map("value_boolean") // For BOOLEAN
+  valueDate       DateTime? @map("value_date") // For DATE
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute       Attribute @relation(fields: [attributeId], references: [id])
+
+  @@unique([productId, attributeId], map: "product_attr_unique")
+  @@map("product_attributes")
+  @@index([productId], map: "idx_pa_product")
+  @@index([attributeId], map: "idx_pa_attribute")
+}
+
+// ─── Product Variants (Epic 6) ────────────────────────────────
+model ProductVariant {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  variantCode     String   @unique @map("variant_code") // e.g., KAJU-KATLI-250G
+  variantName     String   @map("variant_name") // e.g., "Kaju Katli 250g"
+  variantSku      String   @unique @map("variant_sku")
+  variantBarcode  String?  @map("variant_barcode")
+  // ─── Variant-specific attributes ────────────────────────
+  variantAttributes Json    @default("{}") @map("variant_attributes") // { "WEIGHT": "250g", "PACKAGING": "Box" }
+  // ─── Variant-specific pricing ───────────────────────────
+  costPrice       Decimal? @map("cost_price") @db.Decimal(18, 4)
+  mrp             Decimal? @db.Decimal(18, 4)
+  sellingPrice    Decimal? @map("selling_price") @db.Decimal(18, 4)
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  // ─── Variant-specific physical ──────────────────────────
+  netWeight       Decimal? @map("net_weight") @db.Decimal(15, 3)
+  grossWeight     Decimal? @map("gross_weight") @db.Decimal(15, 3)
+  // ─── Status ─────────────────────────────────────────────
+  isDefault       Boolean  @default(false) @map("is_default")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_variants")
+  @@index([productId, status], map: "idx_pv_product_status")
+  @@index([variantSku], map: "idx_pv_sku")
+}
+
+// ─── Product Images (Epic 7) ──────────────────────────────────
+model ProductImage {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  variantId       String?  @db.Uuid @map("variant_id") // Optional: variant-specific image
+  imageUrl        String   @map("image_url")
+  thumbnailUrl    String?  @map("thumbnail_url")
+  imageType       String   @default("GALLERY") @map("image_type") // PRIMARY, GALLERY, THUMBNAIL, QR_PREVIEW, BARCODE_PREVIEW
+  displayOrder    Int      @default(100) @map("display_order")
+  altText         String?  @map("alt_text")
+  fileSizeBytes   Int?     @map("file_size_bytes")
+  widthPx         Int?     @map("width_px")
+  heightPx        Int?     @map("height_px")
+  mimeType        String?  @map("mime_type")
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  uploadedAt      DateTime @default(now()) @map("uploaded_at")
+  uploadedBy      String?  @db.Uuid @map("uploaded_by")
+
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+  @@index([productId, imageType, displayOrder], map: "idx_pimg_product_type_order")
+  @@index([variantId], map: "idx_pimg_variant")
+}
+
+// ─── Product Documents (Epic 8) ───────────────────────────────
+model ProductDocument {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  documentName    String   @map("document_name")
+  documentType    String   @default("SPECIFICATION") @map("document_type") // SPECIFICATION, FSSAI, LAB_REPORT, RECIPE, WARRANTY, CERTIFICATE, COA, MSDS
+  fileUrl         String   @map("file_url")
+  fileSizeBytes   Int?     @map("file_size_bytes")
+  mimeType        String?  @map("mime_type")
+  version         String   @default("1.0")
+  isVerified      Boolean  @default(false) @map("is_verified")
+  verifiedBy      String?  @db.Uuid @map("verified_by")
+  verifiedAt      DateTime? @map("verified_at")
+  expiryDate      DateTime? @map("expiry_date")
+  uploadedAt      DateTime @default(now()) @map("uploaded_at")
+  uploadedBy      String?  @db.Uuid @map("uploaded_by")
+
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_documents")
+  @@index([productId, documentType], map: "idx_pdoc_product_type")
+  @@index([documentType, status], map: "idx_pdoc_type")
+}
