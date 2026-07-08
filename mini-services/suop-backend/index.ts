@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "10.0.0"
+const VERSION = "11.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -448,6 +448,96 @@ const ID_DATA = {
   ],
 }
 
+// ═══════════════════════════════════════════════════════════
+// SPRINT 11 — DATA GOVERNANCE & MASTER DATA QUALITY SEED DATA
+// Lifecycle, Approval Workflows, Import/Export, Validation,
+// Duplicate Detection, Audit Trail, Quality Metrics, Change History
+// ═══════════════════════════════════════════════════════════
+const GOV_DATA = {
+  lifecycles: [
+    { id: 'plc-001', productName: 'Kaju Katli 500g', currentState: 'ACTIVE', previousState: 'PUBLISHED', submittedAt: '2026-06-15', approvedAt: '2026-06-18', publishedAt: '2026-06-20', activatedAt: '2026-06-20', stateReason: null, transitions: 4 },
+    { id: 'plc-002', productName: 'Kaju Katli 250g', currentState: 'UNDER_REVIEW', previousState: 'DRAFT', submittedAt: '2026-07-08', approvedAt: null, publishedAt: null, stateReason: 'Pending QA review', transitions: 1 },
+    { id: 'plc-003', productName: 'Soan Cake 1kg', currentState: 'ACTIVE', previousState: 'PUBLISHED', submittedAt: '2026-05-10', approvedAt: '2026-05-12', publishedAt: '2026-05-15', activatedAt: '2026-05-15', stateReason: null, transitions: 4 },
+    { id: 'plc-004', productName: 'Mixed Namkeen 200g', currentState: 'APPROVED', previousState: 'UNDER_REVIEW', submittedAt: '2026-07-05', approvedAt: '2026-07-07', publishedAt: null, stateReason: 'Awaiting publish', transitions: 2 },
+    { id: 'plc-005', productName: 'Gulab Jamun 1kg', currentState: 'INACTIVE', previousState: 'ACTIVE', submittedAt: '2026-04-01', approvedAt: '2026-04-03', publishedAt: '2026-04-05', activatedAt: '2026-04-05', inactivatedAt: '2026-07-01', stateReason: 'Seasonal - summer off-season', transitions: 5 },
+    { id: 'plc-006', productName: 'Diwali Gift Hampers 2026', currentState: 'DRAFT', previousState: null, submittedAt: null, approvedAt: null, publishedAt: null, stateReason: 'New product in design', transitions: 0 },
+    { id: 'plc-007', productName: 'Old Recipe Laddu 500g', currentState: 'ARCHIVED', previousState: 'DISCONTINUED', submittedAt: '2024-09-01', approvedAt: '2024-09-05', publishedAt: '2024-09-10', activatedAt: '2024-09-10', inactivatedAt: '2025-08-01', discontinuedAt: '2025-12-31', archivedAt: '2026-01-15', stateReason: 'Recipe discontinued, replaced by new formulation', transitions: 6 },
+    { id: 'plc-008', productName: 'Pista Roll 250g', currentState: 'DISCONTINUED', previousState: 'INACTIVE', submittedAt: '2025-10-01', approvedAt: '2025-10-05', publishedAt: '2025-10-10', activatedAt: '2025-10-10', inactivatedAt: '2026-05-01', discontinuedAt: '2026-06-30', stateReason: 'Low demand', transitions: 5 },
+  ],
+  approvalWorkflows: [
+    { id: 'awf-001', productName: 'Kaju Katli 250g', workflowType: 'STANDARD', currentStage: 'QA', status: 'IN_REVIEW', slaDueAt: '2026-07-12', slaBreached: false, initiatedAt: '2026-07-08', steps: 6, completedSteps: 2 },
+    { id: 'awf-002', productName: 'Mixed Namkeen 200g', workflowType: 'STANDARD', currentStage: 'PUBLISHER', status: 'IN_REVIEW', slaDueAt: '2026-07-09', slaBreached: false, initiatedAt: '2026-07-05', steps: 6, completedSteps: 5 },
+    { id: 'awf-003', productName: 'Diwali Gift Hampers 2026', workflowType: 'PARALLEL', currentStage: 'CREATOR', status: 'PENDING', slaDueAt: '2026-08-15', slaBreached: false, initiatedAt: '2026-07-08', steps: 6, completedSteps: 0 },
+    { id: 'awf-004', productName: 'Pista Roll 250g', workflowType: 'CONDITIONAL', currentStage: 'COMPLETED', status: 'PUBLISHED', slaDueAt: '2025-10-15', slaBreached: false, initiatedAt: '2025-10-01', steps: 4, completedSteps: 4 },
+    { id: 'awf-005', productName: 'Old Recipe Laddu 500g', workflowType: 'STANDARD', currentStage: 'COMPLETED', status: 'REJECTED', slaDueAt: '2026-01-20', slaBreached: true, initiatedAt: '2026-01-10', steps: 3, completedSteps: 3 },
+  ],
+  importJobs: [
+    { id: 'ij-001', jobCode: 'IMP-PROD-2026-0142', entityType: 'PRODUCT', fileName: 'products_batch_july.xlsx', fileFormat: 'EXCEL', totalRows: 250, processedRows: 250, successRows: 242, errorRows: 5, duplicateRows: 3, status: 'COMPLETED', initiatedAt: '2026-07-08T10:00:00Z', completedAt: '2026-07-08T10:15:00Z' },
+    { id: 'ij-002', jobCode: 'IMP-BP-2026-0089', entityType: 'BUSINESS_PARTNER', fileName: 'customers_import.csv', fileFormat: 'CSV', totalRows: 500, processedRows: 487, successRows: 485, errorRows: 12, duplicateRows: 3, status: 'COMPLETED', initiatedAt: '2026-07-07T14:00:00Z', completedAt: '2026-07-07T14:08:00Z' },
+    { id: 'ij-003', jobCode: 'IMP-PROD-2026-0143', entityType: 'PRODUCT', fileName: 'new_sweets_catalog.xlsx', fileFormat: 'EXCEL', totalRows: 0, processedRows: 0, successRows: 0, errorRows: 0, duplicateRows: 0, status: 'PREVIEWING', initiatedAt: '2026-07-09T11:00:00Z', completedAt: null },
+    { id: 'ij-004', jobCode: 'IMP-PROD-2026-0140', entityType: 'PRODUCT', fileName: 'faulty_import.xlsx', fileFormat: 'EXCEL', totalRows: 100, processedRows: 100, successRows: 45, errorRows: 55, duplicateRows: 0, status: 'ROLLBACK', initiatedAt: '2026-07-05T09:00:00Z', completedAt: '2026-07-05T09:10:00Z', rollbackReason: 'Excessive validation errors - rolled back per policy' },
+    { id: 'ij-005', jobCode: 'IMP-PRICE-2026-0034', entityType: 'PRICE_LIST', fileName: 'price_update_august.csv', fileFormat: 'CSV', totalRows: 0, processedRows: 0, successRows: 0, errorRows: 0, duplicateRows: 0, status: 'QUEUED', initiatedAt: '2026-07-09T12:00:00Z', completedAt: null },
+  ],
+  exportJobs: [
+    { id: 'ej-001', jobCode: 'EXP-PROD-2026-0056', entityType: 'PRODUCT', fileFormat: 'EXCEL', fileName: 'product_master_export.xlsx', totalRows: 1248, exportedRows: 1248, status: 'COMPLETED', fileSizeBytes: 245678, initiatedAt: '2026-07-08T16:00:00Z', completedAt: '2026-07-08T16:02:00Z' },
+    { id: 'ej-002', jobCode: 'EXP-BP-2026-0023', entityType: 'BUSINESS_PARTNER', fileFormat: 'CSV', fileName: 'business_partners.csv', totalRows: 1412, exportedRows: 1412, status: 'COMPLETED', fileSizeBytes: 384567, initiatedAt: '2026-07-07T11:00:00Z', completedAt: '2026-07-07T11:01:00Z' },
+    { id: 'ej-003', jobCode: 'EXP-PROD-2026-0057', entityType: 'PRODUCT', fileFormat: 'PDF', fileName: 'product_catalog_q3.pdf', totalRows: 0, exportedRows: 0, status: 'EXPORTING', initiatedAt: '2026-07-09T13:00:00Z', completedAt: null },
+    { id: 'ej-004', jobCode: 'EXP-PRICE-2026-0012', entityType: 'PRICE_LIST', fileFormat: 'JSON', fileName: 'price_lists_api.json', totalRows: 6, exportedRows: 6, status: 'COMPLETED', fileSizeBytes: 45678, initiatedAt: '2026-07-08T09:00:00Z', completedAt: '2026-07-08T09:00:30Z' },
+  ],
+  validationRules: [
+    { id: 'vr-001', ruleCode: 'PROD-NAME-REQ', ruleName: 'Product Name Required', entityType: 'PRODUCT', fieldName: 'productName', ruleType: 'REQUIRED', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-002', ruleCode: 'PROD-SKU-UNIQUE', ruleName: 'SKU Must Be Unique', entityType: 'PRODUCT', fieldName: 'sku', ruleType: 'UNIQUE', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-003', ruleCode: 'PROD-BARCODE-UNIQUE', ruleName: 'Barcode Must Be Unique', entityType: 'PRODUCT', fieldName: 'barcode', ruleType: 'UNIQUE', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-004', ruleCode: 'PROD-PRICE-RANGE', ruleName: 'Price Range (₹1 - ₹100000)', entityType: 'PRODUCT', fieldName: 'sellingPrice', ruleType: 'RANGE', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-005', ruleCode: 'PROD-HSN-REGEX', ruleName: 'HSN Code Format (4-8 digits)', entityType: 'PRODUCT', fieldName: 'hsnCode', ruleType: 'REGEX', severity: 'WARNING', enforcementMode: 'WARN', status: 'ACTIVE' },
+    { id: 'vr-006', ruleCode: 'BP-GST-REGEX', ruleName: 'GST Number Format (15 chars)', entityType: 'BUSINESS_PARTNER', fieldName: 'gstNumber', ruleType: 'REGEX', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-007', ruleCode: 'BP-PAN-UNIQUE', ruleName: 'PAN Must Be Unique', entityType: 'BUSINESS_PARTNER', fieldName: 'panNumber', ruleType: 'UNIQUE', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-008', ruleCode: 'PROD-CAT-XREF', ruleName: 'Category Must Exist', entityType: 'PRODUCT', fieldName: 'categoryId', ruleType: 'CROSS_REFERENCE', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'vr-009', ruleCode: 'PROD-MARGIN-BIZ', ruleName: 'Margin Must Be > 5%', entityType: 'PRODUCT', fieldName: 'marginPercent', ruleType: 'BUSINESS_RULE', severity: 'WARNING', enforcementMode: 'WARN', status: 'ACTIVE' },
+    { id: 'vr-010', ruleCode: 'PROD-UOM-REQ', ruleName: 'UOM Required for Stock Items', entityType: 'PRODUCT', fieldName: 'defaultUomId', ruleType: 'REQUIRED', severity: 'ERROR', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+  ],
+  duplicateCandidates: [
+    { id: 'dc-001', primaryName: 'Kaju Katli 500g', duplicateName: 'Kaju Katri 500g', detectionRule: 'SIMILAR_NAME', matchScore: 92.5, matchedFields: ['name (92% similar)', 'category (match)', 'brand (match)'], resolutionStatus: 'PENDING' },
+    { id: 'dc-002', primaryName: 'Soan Cake 1kg', duplicateName: 'Soan Papdi 1kg', detectionRule: 'SIMILAR_NAME', matchScore: 78.3, matchedFields: ['name (78% similar)', 'category (match)'], resolutionStatus: 'FALSE_POSITIVE', resolutionNotes: 'Different products - Soan Cake vs Soan Papdi' },
+    { id: 'dc-003', primaryName: 'Mixed Namkeen 200g', duplicateName: 'Namkeen Mix 200g', detectionRule: 'SIMILAR_NAME', matchScore: 88.9, matchedFields: ['name (89% similar)', 'category (match)', 'weight (match)'], resolutionStatus: 'MERGED', resolutionAction: 'KEEP_PRIMARY', resolutionNotes: 'Confirmed duplicate - merged into primary' },
+    { id: 'dc-004', primaryName: 'Gulab Jamun 1kg', duplicateName: 'Gulab Jamun (1kg tin)', detectionRule: 'BARCODE', matchScore: 100, matchedFields: ['barcode (exact match)'], resolutionStatus: 'MERGED', resolutionAction: 'ARCHIVE_DUPLICATE', resolutionNotes: 'Same barcode - archived duplicate' },
+    { id: 'dc-005', primaryName: 'Pista Roll 250g', duplicateName: 'Pista Roll 250gms', detectionRule: 'SKU', matchScore: 95.0, matchedFields: ['sku (95% similar)', 'name (match)'], resolutionStatus: 'PENDING' },
+    { id: 'dc-006', primaryName: 'Cashew Nuts (Raw)', duplicateName: 'Cashew Nut Raw Material', detectionRule: 'SIMILAR_NAME', matchScore: 85.7, matchedFields: ['name (86% similar)'], resolutionStatus: 'IGNORED', resolutionNotes: 'Different grade specifications' },
+  ],
+  auditTrail: [
+    { id: 'mda-001', entityType: 'PRODUCT', entityName: 'Kaju Katli 500g', action: 'UPDATE', moduleName: 'PIM', userName: 'Priya Sharma', userRole: 'PIM Manager', changedFields: ['sellingPrice: ₹520 → ₹540', 'mrp: ₹580 → ₹600'], reason: 'Quarterly price review', ipAddress: '192.168.1.45', changedAt: '2026-07-08T14:30:00Z' },
+    { id: 'mda-002', entityType: 'PRODUCT', entityName: 'Mixed Namkeen 200g', action: 'CREATE', moduleName: 'Product Master', userName: 'Rajesh Mehta', userRole: 'Product Manager', changedFields: ['New product created'], reason: 'New product launch', ipAddress: '192.168.1.50', changedAt: '2026-07-08T09:15:00Z' },
+    { id: 'mda-003', entityType: 'PRODUCT', entityName: 'Old Recipe Laddu 500g', action: 'ARCHIVE', moduleName: 'Lifecycle', userName: 'Anita Desai', userRole: 'Admin', changedFields: ['lifecycleState: DISCONTINUED → ARCHIVED'], reason: 'Recipe discontinued 6 months ago', ipAddress: '192.168.1.10', changedAt: '2026-01-15T10:00:00Z' },
+    { id: 'mda-004', entityType: 'BUSINESS_PARTNER', entityName: 'Tata Consumer Products', action: 'UPDATE', moduleName: 'Business Partner', userName: 'Suresh Patil', userRole: 'Accounts Manager', changedFields: ['creditLimit: ₹4500000 → ₹5000000'], reason: 'Annual credit review', ipAddress: '192.168.1.55', changedAt: '2026-07-07T16:45:00Z' },
+    { id: 'mda-005', entityType: 'PRODUCT', entityName: 'Kaju Katli 500g', action: 'MERGE', moduleName: 'Duplicate Manager', userName: 'Priya Sharma', userRole: 'PIM Manager', changedFields: ['Merged "Kaju Katri 500g" into "Kaju Katli 500g"'], reason: 'Duplicate detected and merged', ipAddress: '192.168.1.45', changedAt: '2026-07-06T11:20:00Z' },
+    { id: 'mda-006', entityType: 'PRICE_LIST', entityName: 'Diwali Festival Price List', action: 'CREATE', moduleName: 'Commercial Engine', userName: 'Vikram Iyer', userRole: 'Pricing Manager', changedFields: ['New price list with 45 items'], reason: 'Diwali festival preparation', ipAddress: '192.168.1.60', changedAt: '2026-09-01T14:00:00Z' },
+    { id: 'mda-007', entityType: 'PRODUCT', entityName: 'Gulab Jamun 1kg', action: 'UPDATE', moduleName: 'PIM', userName: 'Rajesh Mehta', userRole: 'Product Manager', changedFields: ['lifecycleState: ACTIVE → INACTIVE'], reason: 'Summer off-season - temporarily inactive', ipAddress: '192.168.1.50', changedAt: '2026-07-01T08:00:00Z' },
+    { id: 'mda-008', entityType: 'BUSINESS_PARTNER', entityName: 'Konkan Cashew Processors', action: 'UPDATE', moduleName: 'Business Partner', userName: 'Suresh Patil', userRole: 'Accounts Manager', changedFields: ['compliance.FSSAI verified'], reason: 'Annual compliance renewal', ipAddress: '192.168.1.55', changedAt: '2026-06-28T15:30:00Z' },
+  ],
+  qualityMetrics: [
+    { entityType: 'PRODUCT', metricName: 'COMPLETENESS', value: 87.5, unit: 'PERCENT', score: 87.5, description: '87.5% of required fields populated across 1248 products' },
+    { entityType: 'PRODUCT', metricName: 'ACCURACY', value: 94.2, unit: 'PERCENT', score: 94.2, description: '94.2% of products passed validation rules' },
+    { entityType: 'PRODUCT', metricName: 'CONSISTENCY', value: 91.8, unit: 'PERCENT', score: 91.8, description: '91.8% consistent across all channels' },
+    { entityType: 'PRODUCT', metricName: 'DUPLICATE_PERCENT', value: 2.3, unit: 'PERCENT', score: 97.7, description: '2.3% duplicate rate (29 duplicates out of 1248)' },
+    { entityType: 'PRODUCT', metricName: 'APPROVAL_SLA', value: 88.0, unit: 'PERCENT', score: 88.0, description: '88% of approvals completed within SLA' },
+    { entityType: 'PRODUCT', metricName: 'VALIDATION_ERRORS', value: 47, unit: 'COUNT', score: 92.0, description: '47 active validation errors across products' },
+    { entityType: 'PRODUCT', metricName: 'INACTIVE_PRODUCTS', value: 124, unit: 'COUNT', score: 90.0, description: '124 inactive products (9.9% of catalog)' },
+    { entityType: 'PRODUCT', metricName: 'MISSING_IMAGES', value: 89, unit: 'COUNT', score: 92.9, description: '89 products missing images (7.1%)' },
+    { entityType: 'PRODUCT', metricName: 'MISSING_BARCODES', value: 23, unit: 'COUNT', score: 98.2, description: '23 products missing barcodes (1.8%)' },
+    { entityType: 'BUSINESS_PARTNER', metricName: 'COMPLETENESS', value: 92.1, unit: 'PERCENT', score: 92.1, description: '92.1% of required fields populated' },
+    { entityType: 'BUSINESS_PARTNER', metricName: 'DUPLICATE_PERCENT', value: 1.1, unit: 'PERCENT', score: 98.9, description: '1.1% duplicate rate (15 out of 1412)' },
+    { entityType: 'BUSINESS_PARTNER', metricName: 'MISSING_GST', value: 34, unit: 'COUNT', score: 97.6, description: '34 partners missing GST (2.4%)' },
+  ],
+  changeHistory: [
+    { id: 'pch-001', productName: 'Kaju Katli 500g', version: 5, changeType: 'PRICE_CHANGE', changedFields: ['sellingPrice: ₹520 → ₹540', 'mrp: ₹580 → ₹600'], editedByName: 'Priya Sharma', reason: 'Quarterly price review', changedAt: '2026-07-08T14:30:00Z', rollbackable: true },
+    { id: 'pch-002', productName: 'Kaju Katli 500g', version: 4, changeType: 'UPDATE', changedFields: ['description updated', 'ingredients clarified'], editedByName: 'Rajesh Mehta', reason: 'Compliance review - ingredient clarity', changedAt: '2026-06-20T11:00:00Z', rollbackable: true },
+    { id: 'pch-003', productName: 'Kaju Katli 500g', version: 3, changeType: 'LIFECYCLE_TRANSITION', changedFields: ['lifecycleState: PUBLISHED → ACTIVE'], editedByName: 'System', reason: 'Auto-activation after publish', changedAt: '2026-06-20T10:00:00Z', rollbackable: false },
+    { id: 'pch-004', productName: 'Kaju Katli 500g', version: 2, changeType: 'LIFECYCLE_TRANSITION', changedFields: ['lifecycleState: APPROVED → PUBLISHED'], editedByName: 'Anita Desai', reason: 'Approved for publication', changedAt: '2026-06-20T09:30:00Z', rollbackable: false },
+    { id: 'pch-005', productName: 'Kaju Katli 500g', version: 1, changeType: 'CREATE', changedFields: ['Initial product creation'], editedByName: 'Rajesh Mehta', reason: 'New product', changedAt: '2026-06-15T08:00:00Z', rollbackable: false },
+    { id: 'pch-006', productName: 'Mixed Namkeen 200g', version: 3, changeType: 'CATEGORY_CHANGE', changedFields: ['categoryId: Sweets → Namkeen'], editedByName: 'Priya Sharma', reason: 'Reclassification - product is savory not sweet', changedAt: '2026-07-09T10:00:00Z', rollbackable: true },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -831,8 +921,9 @@ const server = Bun.serve({
         { code: 'COM', name: 'Commercial Engine', status: 'active', entities: 16, sprint: 8 },
         { code: 'BP', name: 'Business Partner', status: 'active', entities: 12, sprint: 9 },
         { code: 'ID', name: 'Identification & Traceability', status: 'active', entities: 11, sprint: 10 },
-        { code: 'INV', name: 'Inventory', status: 'planned', entities: 22, sprint: 11 },
-        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 12 },
+        { code: 'GOV', name: 'Data Governance & Quality', status: 'active', entities: 15, sprint: 11 },
+        { code: 'INV', name: 'Inventory', status: 'planned', entities: 22, sprint: 12 },
+        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 13 },
       ], 'Modules')), { headers })
     }
 
@@ -1624,42 +1715,249 @@ const server = Bun.serve({
       }, 'SUOP Identification Platform v10.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 11 — DATA GOVERNANCE & MASTER DATA QUALITY ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Product Lifecycle ─────────────────────────────────
+    if (path === '/api/governance/lifecycles' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.lifecycles, 'Product lifecycles')), { headers })
+    }
+    // POST /api/governance/lifecycles/:id/transition
+    if (path.match(/^\/api\/governance\/lifecycles\/[^/]+\/transition$/) && method === 'POST') {
+      try {
+        const id = path.split('/')[4]
+        const body = await req.json()
+        const lc = GOV_DATA.lifecycles.find(l => l.id === id)
+        if (!lc) return new Response(JSON.stringify(errorResponse('Lifecycle not found', 'NOT_FOUND', 404)), { status: 404, headers })
+        const validTransitions: Record<string, string[]> = {
+          DRAFT: ['UNDER_REVIEW'],
+          UNDER_REVIEW: ['APPROVED', 'DRAFT'],
+          APPROVED: ['PUBLISHED', 'UNDER_REVIEW'],
+          PUBLISHED: ['ACTIVE'],
+          ACTIVE: ['INACTIVE'],
+          INACTIVE: ['ACTIVE', 'DISCONTINUED'],
+          DISCONTINUED: ['ARCHIVED'],
+          ARCHIVED: [],
+        }
+        const allowed = validTransitions[lc.currentState] || []
+        if (!allowed.includes(body.toState)) {
+          return new Response(JSON.stringify(errorResponse(`Invalid transition: ${lc.currentState} → ${body.toState}. Allowed: ${allowed.join(', ') || 'none (terminal state)'}`, 'INVALID_TRANSITION', 400)), { status: 400, headers })
+        }
+        lc.previousState = lc.currentState
+        lc.currentState = body.toState
+        lc.transitions = (lc.transitions || 0) + 1
+        if (body.reason) lc.stateReason = body.reason
+        log('info', 'Lifecycle transition', { id, from: lc.previousState, to: lc.currentState })
+        return new Response(JSON.stringify(successResponse(lc, `Transitioned ${lc.previousState} → ${lc.currentState}`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── Approval Workflows ────────────────────────────────
+    if (path === '/api/governance/approvals' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.approvalWorkflows, 'Approval workflows')), { headers })
+    }
+    // POST /api/governance/approvals/:id/approve
+    if (path.match(/^\/api\/governance\/approvals\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[4]
+      const awf = GOV_DATA.approvalWorkflows.find(a => a.id === id)
+      if (!awf) return new Response(JSON.stringify(errorResponse('Workflow not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      const stages = ['CREATOR', 'REVIEWER', 'QA', 'COMPLIANCE', 'FINANCE', 'PUBLISHER', 'COMPLETED']
+      const idx = stages.indexOf(awf.currentStage)
+      if (idx < 0 || idx >= stages.length - 1) {
+        return new Response(JSON.stringify(errorResponse('Cannot advance further')), { status: 400, headers })
+      }
+      awf.currentStage = stages[idx + 1]
+      awf.completedSteps = (awf.completedSteps || 0) + 1
+      if (awf.currentStage === 'COMPLETED') {
+        awf.status = 'PUBLISHED'
+        awf.completedAt = new Date().toISOString()
+      } else {
+        awf.status = 'IN_REVIEW'
+      }
+      log('info', 'Approval advanced', { id, stage: awf.currentStage })
+      return new Response(JSON.stringify(successResponse(awf, `Advanced to ${awf.currentStage}`)), { headers })
+    }
+
+    // ─── Import Jobs ───────────────────────────────────────
+    if (path === '/api/governance/imports' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.importJobs, 'Import jobs')), { headers })
+    }
+    // POST /api/governance/imports/:id/rollback
+    if (path.match(/^\/api\/governance\/imports\/[^/]+\/rollback$/) && method === 'POST') {
+      try {
+        const id = path.split('/')[4]
+        const body = await req.json()
+        const job = GOV_DATA.importJobs.find(j => j.id === id)
+        if (!job) return new Response(JSON.stringify(errorResponse('Import job not found', 'NOT_FOUND', 404)), { status: 404, headers })
+        if (!job.isRollbackable && job.isRollbackable !== undefined) {
+          return new Response(JSON.stringify(errorResponse('Job not rollbackable', 'NOT_ROLLBACKABLE', 400)), { status: 400, headers })
+        }
+        if (job.status !== 'COMPLETED') {
+          return new Response(JSON.stringify(errorResponse('Only completed jobs can be rolled back', 'INVALID_STATE', 400)), { status: 400, headers })
+        }
+        job.status = 'ROLLBACK'
+        job.rolledBackAt = new Date().toISOString()
+        job.rollbackReason = body.reason || 'Manual rollback'
+        log('info', 'Import rolled back', { jobCode: job.jobCode, reason: job.rollbackReason })
+        return new Response(JSON.stringify(successResponse(job, 'Import rolled back successfully')), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── Export Jobs ───────────────────────────────────────
+    if (path === '/api/governance/exports' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.exportJobs, 'Export jobs')), { headers })
+    }
+
+    // ─── Validation Rules ──────────────────────────────────
+    if (path === '/api/governance/validation-rules' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.validationRules, 'Validation rules')), { headers })
+    }
+
+    // ─── Duplicate Candidates ──────────────────────────────
+    if (path === '/api/governance/duplicates' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.duplicateCandidates, 'Duplicate candidates')), { headers })
+    }
+    // POST /api/governance/duplicates/:id/merge
+    if (path.match(/^\/api\/governance\/duplicates\/[^/]+\/merge$/) && method === 'POST') {
+      try {
+        const id = path.split('/')[4]
+        const body = await req.json()
+        const dc = GOV_DATA.duplicateCandidates.find(d => d.id === id)
+        if (!dc) return new Response(JSON.stringify(errorResponse('Duplicate candidate not found', 'NOT_FOUND', 404)), { status: 404, headers })
+        if (dc.resolutionStatus !== 'PENDING') {
+          return new Response(JSON.stringify(errorResponse('Already resolved', 'ALREADY_RESOLVED', 400)), { status: 400, headers })
+        }
+        dc.resolutionStatus = 'MERGED'
+        dc.resolutionAction = body.action || 'KEEP_PRIMARY'
+        dc.resolvedAt = new Date().toISOString()
+        dc.resolutionNotes = body.notes || ''
+        log('info', 'Duplicate merged', { id, primary: dc.primaryName, duplicate: dc.duplicateName, action: dc.resolutionAction })
+        return new Response(JSON.stringify(successResponse(dc, 'Duplicate merged successfully')), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── Audit Trail ───────────────────────────────────────
+    if (path === '/api/governance/audit-trail' && method === 'GET') {
+      const actionFilter = url.searchParams.get('action')
+      const moduleFilter = url.searchParams.get('module')
+      let logs = GOV_DATA.auditTrail
+      if (actionFilter) logs = logs.filter(l => l.action === actionFilter.toUpperCase())
+      if (moduleFilter) logs = logs.filter(l => l.moduleName.toLowerCase().includes(moduleFilter.toLowerCase()))
+      return new Response(JSON.stringify(successResponse(logs, `${logs.length} audit entries`)), { headers })
+    }
+
+    // ─── Quality Metrics ───────────────────────────────────
+    if (path === '/api/governance/quality-metrics' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.qualityMetrics, 'Quality metrics')), { headers })
+    }
+
+    // ─── Change History ────────────────────────────────────
+    if (path === '/api/governance/change-history' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GOV_DATA.changeHistory, 'Change history')), { headers })
+    }
+
+    // ─── Dashboard ─────────────────────────────────────────
+    if (path === '/api/governance/dashboard' && method === 'GET') {
+      const lifecycleCounts: Record<string, number> = {}
+      GOV_DATA.lifecycles.forEach(l => { lifecycleCounts[l.currentState] = (lifecycleCounts[l.currentState] || 0) + 1 })
+      const approvalStatusCounts: Record<string, number> = {}
+      GOV_DATA.approvalWorkflows.forEach(a => { approvalStatusCounts[a.status] = (approvalStatusCounts[a.status] || 0) + 1 })
+      const duplicateStatusCounts: Record<string, number> = {}
+      GOV_DATA.duplicateCandidates.forEach(d => { duplicateStatusCounts[d.resolutionStatus] = (duplicateStatusCounts[d.resolutionStatus] || 0) + 1 })
+      // Calculate overall quality score (average of all product metrics scores)
+      const productMetrics = GOV_DATA.qualityMetrics.filter(m => m.entityType === 'PRODUCT')
+      const overallQualityScore = productMetrics.reduce((sum, m) => sum + m.score, 0) / productMetrics.length
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          lifecycles: GOV_DATA.lifecycles.length,
+          activeProducts: GOV_DATA.lifecycles.filter(l => l.currentState === 'ACTIVE').length,
+          draftProducts: GOV_DATA.lifecycles.filter(l => l.currentState === 'DRAFT').length,
+          archivedProducts: GOV_DATA.lifecycles.filter(l => l.currentState === 'ARCHIVED').length,
+          approvalWorkflows: GOV_DATA.approvalWorkflows.length,
+          pendingApprovals: GOV_DATA.approvalWorkflows.filter(a => a.status === 'PENDING' || a.status === 'IN_REVIEW').length,
+          slaBreachedApprovals: GOV_DATA.approvalWorkflows.filter(a => a.slaBreached).length,
+          importJobs: GOV_DATA.importJobs.length,
+          exportJobs: GOV_DATA.exportJobs.length,
+          validationRules: GOV_DATA.validationRules.length,
+          duplicateCandidates: GOV_DATA.duplicateCandidates.length,
+          pendingDuplicates: GOV_DATA.duplicateCandidates.filter(d => d.resolutionStatus === 'PENDING').length,
+          auditEntries: GOV_DATA.auditTrail.length,
+          qualityMetrics: GOV_DATA.qualityMetrics.length,
+        },
+        lifecycleBreakdown: lifecycleCounts,
+        approvalStatusBreakdown: approvalStatusCounts,
+        duplicateStatusBreakdown: duplicateStatusCounts,
+        overallQualityScore: Number(overallQualityScore.toFixed(2)),
+        qualityGrade: overallQualityScore >= 90 ? 'A' : overallQualityScore >= 80 ? 'B' : overallQualityScore >= 70 ? 'C' : 'D',
+      }, 'Governance dashboard')), { headers })
+    }
+
+    // ─── Info ──────────────────────────────────────────────
+    if (path === '/api/governance/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Data Governance & Master Data Quality Platform',
+        version: '11.0.0',
+        sprint: 11,
+        sprintName: 'Product Lifecycle, Data Governance & Master Data Quality',
+        lifecycleStates: ['DRAFT', 'UNDER_REVIEW', 'APPROVED', 'PUBLISHED', 'ACTIVE', 'INACTIVE', 'DISCONTINUED', 'ARCHIVED'],
+        approvalStages: ['CREATOR', 'REVIEWER', 'QA', 'COMPLIANCE', 'FINANCE', 'PUBLISHER'],
+        workflowTypes: ['STANDARD', 'PARALLEL', 'CONDITIONAL'],
+        importStatuses: ['QUEUED', 'VALIDATING', 'PREVIEWING', 'IMPORTING', 'COMPLETED', 'FAILED', 'ROLLBACK'],
+        exportFormats: ['EXCEL', 'CSV', 'PDF', 'JSON'],
+        validationTypes: ['REQUIRED', 'UNIQUE', 'RANGE', 'REGEX', 'BUSINESS_RULE', 'CROSS_REFERENCE'],
+        duplicateDetectionRules: ['NAME', 'SKU', 'BARCODE', 'HSN', 'BRAND', 'SIMILAR_NAME'],
+        auditActions: ['CREATE', 'UPDATE', 'DELETE', 'ARCHIVE', 'RESTORE', 'MERGE'],
+        qualityMetrics: ['COMPLETENESS', 'ACCURACY', 'CONSISTENCY', 'DUPLICATE_PERCENT', 'APPROVAL_SLA', 'VALIDATION_ERRORS', 'INACTIVE_PRODUCTS', 'MISSING_IMAGES', 'MISSING_BARCODES'],
+        endpoints: [
+          'GET    /api/governance/lifecycles',
+          'POST   /api/governance/lifecycles/:id/transition',
+          'GET    /api/governance/approvals',
+          'POST   /api/governance/approvals/:id/approve',
+          'GET    /api/governance/imports',
+          'POST   /api/governance/imports/:id/rollback',
+          'GET    /api/governance/exports',
+          'GET    /api/governance/validation-rules',
+          'GET    /api/governance/duplicates',
+          'POST   /api/governance/duplicates/:id/merge',
+          'GET    /api/governance/audit-trail',
+          'GET    /api/governance/quality-metrics',
+          'GET    /api/governance/change-history',
+          'GET    /api/governance/dashboard',
+          'GET    /api/governance/info',
+        ],
+        part2Status: 'COMPLETE - All 11 sprints of Enterprise Master Data Platform done',
+      }, 'SUOP Governance Platform v11.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 10, sprintName: 'Enterprise Identification, Barcode & Traceability Platform' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 11, sprintName: 'Data Governance & Master Data Quality — PART 2 COMPLETE' })
+log('info', 'Governance endpoints available', {
+  lifecycles: 'GET /api/governance/lifecycles + POST /:id/transition',
+  approvals: 'GET /api/governance/approvals + POST /:id/approve',
+  imports: 'GET /api/governance/imports + POST /:id/rollback',
+  exports: 'GET /api/governance/exports',
+  validationRules: 'GET /api/governance/validation-rules',
+  duplicates: 'GET /api/governance/duplicates + POST /:id/merge',
+  auditTrail: 'GET /api/governance/audit-trail',
+  qualityMetrics: 'GET /api/governance/quality-metrics',
+  changeHistory: 'GET /api/governance/change-history',
+  dashboard: 'GET /api/governance/dashboard',
+})
 log('info', 'Identification & Traceability endpoints available', {
   barcodes: 'GET/POST /api/identification/barcodes',
-  qrCodes: 'GET /api/identification/qr-codes',
   batches: 'GET/POST /api/identification/batches',
-  lots: 'GET /api/identification/lots',
-  serialNumbers: 'GET/POST /api/identification/serial-numbers',
-  gs1: 'GET /api/identification/gs1',
-  labelTemplates: 'GET /api/identification/label-templates',
-  printJobs: 'GET /api/identification/print-jobs',
-  traceabilityLogs: 'GET /api/identification/traceability-logs',
   trace: 'POST /api/identification/trace (forward/backward)',
-  dashboard: 'GET /api/identification/dashboard',
 })
 log('info', 'Business Partner endpoints available', {
   partners: 'GET/POST /api/business-partners',
-  partnerById: 'GET /api/business-partners/:id',
-  groups: 'GET /api/business-partners/groups',
-  scorecards: 'GET /api/business-partners/scorecards',
-  relationships: 'GET /api/business-partners/relationships',
   dashboard: 'GET /api/business-partners/dashboard',
-  info: 'GET /api/business-partners/info',
 })
 log('info', 'Commercial Engine endpoints available', {
-  priceLists: 'GET/POST /api/commercial/price-lists',
-  taxGroups: 'GET/POST /api/commercial/tax-groups',
-  discounts: 'GET/POST /api/commercial/discounts',
-  promotions: 'GET/POST /api/commercial/promotions',
-  futurePrices: 'GET/POST /api/commercial/future-prices',
-  approvals: 'GET /api/commercial/approvals',
   resolvePrice: 'POST /api/commercial/resolve-price',
-  resolutionLogs: 'GET /api/commercial/resolution-logs',
   dashboard: 'GET /api/commercial/dashboard',
 })

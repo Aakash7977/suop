@@ -3040,3 +3040,430 @@ model TraceabilityLog {
   @@index([partnerId], map: "idx_tl_partner")
   @@index([referenceNumber], map: "idx_tl_reference")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 11 — DATA GOVERNANCE, LIFECYCLE & MASTER DATA QUALITY
+// Product Lifecycle, Approval Workflows, Import/Export Engine,
+// Validation Framework, Duplicate Detection & Merge,
+// Audit Trail, Quality Dashboard, Change History
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Product Lifecycle Management ───────────────
+model ProductLifecycle {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @unique @map("product_id")
+  // ─── Lifecycle state ───
+  currentState    String   @map("current_state") // DRAFT, UNDER_REVIEW, APPROVED, PUBLISHED, ACTIVE, INACTIVE, DISCONTINUED, ARCHIVED
+  previousState   String?  @map("previous_state")
+  // ─── State timestamps ───
+  submittedAt     DateTime? @map("submitted_at")
+  approvedAt      DateTime? @map("approved_at")
+  publishedAt     DateTime? @map("published_at")
+  activatedAt     DateTime? @map("activated_at")
+  inactivatedAt   DateTime? @map("inactivated_at")
+  discontinuedAt  DateTime? @map("discontinued_at")
+  archivedAt      DateTime? @map("archived_at")
+  // ─── Reason for current state ───
+  stateReason     String?  @map("state_reason")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  history         ProductLifecycleHistory[]
+
+  @@map("product_lifecycle")
+  @@index([currentState], map: "idx_plc_state")
+}
+
+model ProductLifecycleHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  lifecycleId     String   @db.Uuid @map("lifecycle_id")
+  productId       String   @db.Uuid @map("product_id")
+  // ─── Transition ───
+  fromState       String   @map("from_state")
+  toState         String   @map("to_state")
+  // ─── Actor ───
+  changedById     String?  @db.Uuid @map("changed_by_id")
+  changedByName   String?  @map("changed_by_name")
+  // ─── Context ───
+  reason          String?
+  comments        String?
+  ipAddress       String?  @map("ip_address")
+  // ─── Approval link ───
+  approvalStepId  String?  @db.Uuid @map("approval_step_id")
+  // ─── Timestamp ───
+  changedAt       DateTime @default(now()) @map("changed_at")
+
+  lifecycle       ProductLifecycle @relation(fields: [lifecycleId], references: [id], onDelete: Cascade)
+
+  @@map("product_lifecycle_history")
+  @@index([productId, changedAt], map: "idx_plh_product_time")
+  @@index([fromState, toState], map: "idx_plh_transition")
+}
+
+// ─── Epic 2: Product Approval Workflow ──────────────────
+model ProductApprovalWorkflow {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  // ─── Workflow config ───
+  workflowType    String   @map("workflow_type") // STANDARD, PARALLEL, CONDITIONAL
+  isParallel      Boolean  @default(false) @map("is_parallel")
+  // ─── Current state ───
+  currentStage    String   @default("CREATOR") @map("current_stage") // CREATOR, REVIEWER, QA, COMPLIANCE, FINANCE, PUBLISHER
+  status          String   @default("PENDING") // PENDING, IN_REVIEW, APPROVED, REJECTED, PUBLISHED, CANCELLED
+  // ─── SLA ───
+  slaDueAt        DateTime @map("sla_due_at")
+  slaBreached     Boolean  @default(false) @map("sla_breached")
+  // ─── Audit ───
+  initiatedById   String?  @db.Uuid @map("initiated_by_id")
+  initiatedAt     DateTime @default(now()) @map("initiated_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  steps           ProductApprovalStep[]
+  logs            ProductApprovalLog[]
+
+  @@map("product_approval_workflows")
+  @@index([productId, status], map: "idx_paw_product_status")
+  @@index([currentStage, status], map: "idx_paw_stage_status")
+  @@index([slaDueAt, slaBreached], map: "idx_paw_sla")
+}
+
+model ProductApprovalStep {
+  id              String   @id @default(uuid()) @db.Uuid
+  workflowId      String   @db.Uuid @map("workflow_id")
+  // ─── Step config ───
+  stepOrder       Int      @map("step_order")
+  stepName        String   @map("step_name") // CREATOR, REVIEWER, QA, COMPLIANCE, FINANCE, PUBLISHER
+  stepType        String   @map("step_type") // SEQUENTIAL, PARALLEL, CONDITIONAL
+  // ─── Approver ───
+  approverId      String?  @db.Uuid @map("approver_id")
+  approverRole    String?  @map("approver_role")
+  // ─── Decision ───
+  decision        String?  // PENDING, APPROVED, REJECTED, SKIPPED
+  decisionComments String? @map("decision_comments")
+  decidedAt       DateTime? @map("decided_at")
+  // ─── Condition (for CONDITIONAL type) ───
+  conditionExpression String? @map("condition_expression")
+  isRequired      Boolean  @default(true) @map("is_required")
+
+  workflow        ProductApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@map("product_approval_steps")
+  @@index([workflowId, stepOrder], map: "idx_pas_workflow_order")
+  @@index([decision], map: "idx_pas_decision")
+}
+
+model ProductApprovalLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  workflowId      String   @db.Uuid @map("workflow_id")
+  stepId          String?  @db.Uuid @map("step_id")
+  // ─── Action ───
+  action          String   // SUBMITTED, APPROVED, REJECTED, SKIPPED, COMMENTED, REASSIGNED
+  stepName        String   @map("step_name")
+  // ─── Actor ───
+  actorId         String?  @db.Uuid @map("actor_id")
+  actorName       String?  @map("actor_name")
+  // ─── Details ───
+  comments        String?
+  ipAddress       String?  @map("ip_address")
+  actionAt        DateTime @default(now()) @map("action_at")
+
+  workflow        ProductApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@map("product_approval_logs")
+  @@index([workflowId, actionAt], map: "idx_pal_workflow_time")
+  @@index([action], map: "idx_pal_action")
+}
+
+// ─── Epic 3: Bulk Import & Export Engine ────────────────
+model ImportJob {
+  id              String   @id @default(uuid()) @db.Uuid
+  jobCode         String   @unique @map("job_code")
+  // ─── Source ───
+  entityType      String   @map("entity_type") // PRODUCT, BUSINESS_PARTNER, PRICE_LIST, etc.
+  fileName        String   @map("file_name")
+  fileSizeBytes   Int      @map("file_size_bytes")
+  fileFormat      String   @map("file_format") // EXCEL, CSV
+  // ─── Progress ───
+  totalRows       Int      @default(0) @map("total_rows")
+  processedRows   Int      @default(0) @map("processed_rows")
+  successRows     Int      @default(0) @map("success_rows")
+  errorRows       Int      @default(0) @map("error_rows")
+  duplicateRows   Int      @default(0) @map("duplicate_rows")
+  // ─── Status ───
+  status          String   @default("QUEUED") // QUEUED, VALIDATING, PREVIEWING, IMPORTING, COMPLETED, FAILED, ROLLBACK
+  // ─── Rollback ───
+  isRollbackable  Boolean  @default(true) @map("is_rollbackable")
+  rolledBackAt    DateTime? @map("rolled_back_at")
+  rolledBackById  String?  @db.Uuid @map("rolled_back_by_id")
+  rollbackReason  String?  @map("rollback_reason")
+  // ─── Validation summary ───
+  validationSummary Json?  @map("validation_summary")
+  // ─── Audit ───
+  initiatedById   String?  @db.Uuid @map("initiated_by_id")
+  initiatedAt     DateTime @default(now()) @map("initiated_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  errors          ImportError[]
+
+  @@map("import_jobs")
+  @@index([entityType, status], map: "idx_ij_entity_status")
+  @@index([status, initiatedAt], map: "idx_ij_status_time")
+}
+
+model ExportJob {
+  id              String   @id @default(uuid()) @db.Uuid
+  jobCode         String   @unique @map("job_code")
+  // ─── Source ───
+  entityType      String   @map("entity_type")
+  // ─── Filters ───
+  filters         Json     @default("{}")
+  // ─── Output ───
+  fileFormat      String   @map("file_format") // EXCEL, CSV, PDF, JSON
+  fileName        String   @map("file_name")
+  fileUrl         String?  @map("file_url")
+  fileSizeBytes   Int?     @map("file_size_bytes")
+  // ─── Progress ───
+  totalRows       Int      @default(0) @map("total_rows")
+  exportedRows    Int      @default(0) @map("exported_rows")
+  // ─── Status ───
+  status          String   @default("QUEUED") // QUEUED, EXPORTING, COMPLETED, FAILED
+  // ─── Audit ───
+  initiatedById   String?  @db.Uuid @map("initiated_by_id")
+  initiatedAt     DateTime @default(now()) @map("initiated_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("export_jobs")
+  @@index([entityType, status], map: "idx_ej_entity_status")
+  @@index([status], map: "idx_ej_status")
+}
+
+model ImportError {
+  id              String   @id @default(uuid()) @db.Uuid
+  importJobId     String   @db.Uuid @map("import_job_id")
+  // ─── Error location ───
+  rowNumber       Int      @map("row_number")
+  columnName      String?  @map("column_name")
+  // ─── Error details ───
+  errorType       String   @map("error_type") // VALIDATION, DUPLICATE, MISSING_REQUIRED, INVALID_FORMAT, BUSINESS_RULE
+  errorMessage    String   @map("error_message")
+  errorValue      String?  @map("error_value")
+  // ─── Severity ───
+  severity        String   @default("ERROR") // ERROR, WARNING
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  importJob       ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@map("import_errors")
+  @@index([importJobId, rowNumber], map: "idx_ie_job_row")
+  @@index([errorType, severity], map: "idx_ie_type_severity")
+}
+
+// ─── Epic 4: Data Validation Framework ──────────────────
+model ValidationRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  ruleCode        String   @unique @map("rule_code")
+  ruleName        String   @map("rule_name")
+  description     String?
+  // ─── Scope ───
+  entityType      String   @map("entity_type") // PRODUCT, BUSINESS_PARTNER, PRICE_LIST, etc.
+  fieldName       String   @map("field_name")
+  // ─── Rule type ───
+  ruleType        String   @map("rule_type") // REQUIRED, UNIQUE, RANGE, REGEX, BUSINESS_RULE, CROSS_REFERENCE
+  // ─── Rule config ───
+  ruleConfig      Json     @map("rule_config") // { pattern, min, max, crossRef, etc. }
+  // ─── Enforcement ───
+  severity        String   @default("ERROR") // ERROR, WARNING
+  enforcementMode String   @default("BLOCK") @map("enforcement_mode") // BLOCK, WARN, LOG
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  results         ValidationResult[]
+
+  @@map("validation_rules")
+  @@index([entityType, fieldName], map: "idx_vr_entity_field")
+  @@index([ruleType, status], map: "idx_vr_type_status")
+}
+
+model ValidationResult {
+  id              String   @id @default(uuid()) @db.Uuid
+  ruleId          String   @db.Uuid @map("rule_id")
+  // ─── Entity being validated ───
+  entityType      String   @map("entity_type")
+  entityId        String   @db.Uuid @map("entity_id")
+  entityName      String   @map("entity_name")
+  // ─── Result ───
+  isValid         Boolean  @map("is_valid")
+  errorMessage    String?  @map("error_message")
+  fieldValue      String?  @map("field_value")
+  // ─── Context ───
+  validationBatch String?  @map("validation_batch")
+  // ─── Audit ───
+  validatedAt     DateTime @default(now()) @map("validated_at")
+
+  rule            ValidationRule @relation(fields: [ruleId], references: [id])
+
+  @@map("validation_results")
+  @@index([entityType, entityId, isValid], map: "idx_vres_entity_valid")
+  @@index([ruleId, isValid], map: "idx_vres_rule_valid")
+  @@index([validationBatch], map: "idx_vres_batch")
+}
+
+// ─── Epic 5: Duplicate Detection & Merge ────────────────
+model DuplicateCandidate {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Primary record ───
+  primaryEntityType String  @map("primary_entity_type")
+  primaryEntityId   String  @db.Uuid @map("primary_entity_id")
+  primaryEntityName String  @map("primary_entity_name")
+  // ─── Duplicate record ───
+  duplicateEntityType String @map("duplicate_entity_type")
+  duplicateEntityId   String @db.Uuid @map("duplicate_entity_id")
+  duplicateEntityName String @map("duplicate_entity_name")
+  // ─── Detection ───
+  detectionRule   String   @map("detection_rule") // NAME, SKU, BARCODE, HSN, BRAND, SIMILAR_NAME
+  matchScore      Decimal  @db.Decimal(5, 2) @map("match_score") // 0-100
+  matchedFields   Json     @default("[]") @map("matched_fields")
+  // ─── Resolution ───
+  resolutionStatus String  @default("PENDING") @map("resolution_status") // PENDING, MERGED, IGNORED, FALSE_POSITIVE
+  resolutionAction String? @map("resolution_action") // KEEP_PRIMARY, MERGE, ARCHIVE_DUPLICATE
+  resolvedById    String?  @db.Uuid @map("resolved_by_id")
+  resolvedAt      DateTime? @map("resolved_at")
+  resolutionNotes String?  @map("resolution_notes")
+  // ─── Audit ───
+  detectedAt      DateTime @default(now()) @map("detected_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("duplicate_candidates")
+  @@index([primaryEntityType, primaryEntityId], map: "idx_dc_primary")
+  @@index([duplicateEntityType, duplicateEntityId], map: "idx_dc_duplicate")
+  @@index([resolutionStatus], map: "idx_dc_resolution")
+  @@index([matchScore], map: "idx_dc_score")
+}
+
+model MergeHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Merge operation ───
+  entityType      String   @map("entity_type")
+  primaryEntityId String   @db.Uuid @map("primary_entity_id")
+  mergedEntityId  String   @db.Uuid @map("merged_entity_id")
+  primaryEntityName String @map("primary_entity_name")
+  mergedEntityName  String @map("merged_entity_name")
+  // ─── Merge details ───
+  fieldsMerged    Json     @default("[]") @map("fields_merged")
+  referencesMoved Json     @default("[]") @map("references_moved")
+  // ─── Post-merge action ───
+  duplicateAction String   @map("duplicate_action") // ARCHIVED, DELETED, KEPT_INACTIVE
+  // ─── Audit ───
+  mergedById      String?  @db.Uuid @map("merged_by_id")
+  mergedByName    String?  @map("merged_by_name")
+  mergedAt        DateTime @default(now()) @map("merged_at")
+  ipAddress       String?  @map("ip_address")
+  notes           String?
+
+  @@map("merge_history")
+  @@index([entityType, primaryEntityId], map: "idx_mh_entity_primary")
+  @@index([mergedAt], map: "idx_mh_time")
+}
+
+// ─── Epic 6: Master Data Audit Trail ────────────────────
+model MasterDataAudit {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Entity ───
+  entityType      String   @map("entity_type") // PRODUCT, BUSINESS_PARTNER, PRICE_LIST, BATCH, etc.
+  entityId        String   @db.Uuid @map("entity_id")
+  entityName      String   @map("entity_name")
+  // ─── Change ───
+  action          String   // CREATE, UPDATE, DELETE, ARCHIVE, RESTORE, MERGE
+  moduleName      String   @map("module_name")
+  // ─── Before/After ───
+  beforeValue     Json?    @map("before_value")
+  afterValue      Json?    @map("after_value")
+  changedFields   Json     @default("[]") @map("changed_fields")
+  // ─── Actor ───
+  userId          String?  @db.Uuid @map("user_id")
+  userName        String?  @map("user_name")
+  userRole        String?  @map("user_role")
+  // ─── Context ───
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  reason          String?
+  // ─── Related ───
+  referenceType   String?  @map("reference_type") // IMPORT_JOB, APPROVAL_WORKFLOW, MERGE_OPERATION
+  referenceId     String?  @db.Uuid @map("reference_id")
+  // ─── Timestamp ───
+  changedAt       DateTime @default(now()) @map("changed_at")
+
+  @@map("master_data_audit")
+  @@index([entityType, entityId, changedAt], map: "idx_mda_entity_time")
+  @@index([action, moduleName], map: "idx_mda_action_module")
+  @@index([userId, changedAt], map: "idx_mda_user_time")
+  @@index([changedAt], map: "idx_mda_time")
+}
+
+// ─── Epic 7: Master Data Quality Dashboard ──────────────
+model DataQualityMetric {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Scope ───
+  entityType      String   @map("entity_type") // PRODUCT, BUSINESS_PARTNER, PRICE_LIST, etc.
+  entityId        String?  @db.Uuid @map("entity_id") // null for aggregate metrics
+  // ─── Metric ───
+  metricName      String   @map("metric_name") // COMPLETENESS, ACCURACY, CONSISTENCY, DUPLICATE_PERCENT, APPROVAL_SLA, VALIDATION_ERRORS, INACTIVE_PRODUCTS, MISSING_IMAGES, MISSING_BARCODES
+  metricValue     Decimal  @db.Decimal(8, 2) @map("metric_value")
+  metricUnit      String   @default("PERCENT") @map("metric_unit") // PERCENT, COUNT, SCORE
+  // ─── Quality score ───
+  qualityScore    Decimal? @db.Decimal(5, 2) @map("quality_score") // 0-100
+  // ─── Period ───
+  measuredAt      DateTime @default(now()) @map("measured_at")
+  periodDate      DateTime @map("period_date")
+  // ─── Details ───
+  details         Json?    @default("{}")
+
+  @@map("data_quality_metrics")
+  @@index([entityType, metricName, periodDate], map: "idx_dqm_entity_metric_period")
+  @@index([qualityScore], map: "idx_dqm_score")
+  @@index([periodDate], map: "idx_dqm_period")
+}
+
+// ─── Epic 8: Product Change History ─────────────────────
+model ProductChangeHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  // ─── Version ───
+  version         Int
+  // ─── Change ───
+  changeType      String   @map("change_type") // CREATE, UPDATE, PRICE_CHANGE, CATEGORY_CHANGE, ARCHIVE, RESTORE, LIFECYCLE_TRANSITION
+  changedFields   Json     @default("[]") @map("changed_fields")
+  beforeSnapshot  Json     @map("before_snapshot")
+  afterSnapshot   Json     @map("after_snapshot")
+  // ─── Editor ───
+  editedById      String?  @db.Uuid @map("edited_by_id")
+  editedByName    String?  @map("edited_by_name")
+  // ─── Reason & Approval ───
+  reason          String?
+  approvalWorkflowId String? @db.Uuid @map("approval_workflow_id")
+  // ─── Rollback ───
+  isRollbackable  Boolean  @default(true) @map("is_rollbackable")
+  rolledBackToVersion Int? @map("rolled_back_to_version")
+  rolledBackAt    DateTime? @map("rolled_back_at")
+  rolledBackById  String?  @db.Uuid @map("rolled_back_by_id")
+  rollbackReason  String?  @map("rollback_reason")
+  // ─── Context ───
+  ipAddress       String?  @map("ip_address")
+  changedAt       DateTime @default(now()) @map("changed_at")
+
+  @@map("product_change_history")
+  @@index([productId, version], map: "idx_pch_product_version")
+  @@index([productId, changedAt], map: "idx_pch_product_time")
+  @@index([changeType], map: "idx_pch_type")
+}
