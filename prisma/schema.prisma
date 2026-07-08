@@ -1,32 +1,282 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// SUOP — Enterprise Prisma Schema
+// Sprint 3: Epic 1 — User Domain (Identity Platform)
+//
+// 7 Identity Tables:
+//   users, user_profiles, user_devices, user_sessions,
+//   password_history, password_reset_tokens, email_verification_tokens
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// ═══════════════════════════════════════════════════════════════
+// IDENTITY PLATFORM — Sprint 3
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Users (Entity 601) ────────────────────────────────────────
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @map("user_id") // Display ID: USR-2026-00001
+  employeeCode          String?  @unique @map("employee_code")
+  username              String   @unique
+  email                 String   @unique
+  emailVerified         Boolean  @default(false) @map("email_verified")
+  mobile                String?  @unique
+  mobileVerified        Boolean  @default(false) @map("mobile_verified")
+  passwordHash          String   @map("password_hash")
+  passwordAlgorithm     String   @default("ARGON2ID") @map("password_algorithm")
+  passwordChangedAt     DateTime @default(now()) @map("password_changed_at")
+  passwordExpiresAt     DateTime? @map("password_expires_at")
+  mfaEnabled            Boolean  @default(false) @map("mfa_enabled")
+  mfaSecret             String?  @map("mfa_secret")
+  firstName             String   @map("first_name")
+  lastName              String   @map("last_name")
+  displayName           String   @map("display_name")
+  avatarUrl             String?  @map("avatar_url")
+  language              String   @default("en-IN")
+  timezone              String   @default("Asia/Kolkata")
+  theme                 String   @default("LIGHT")
+  lastLoginAt           DateTime? @map("last_login_at")
+  lastLoginIp           String?  @map("last_login_ip")
+  loginCount            Int      @default(0) @map("login_count")
+  failedLoginAttempts   Int      @default(0) @map("failed_login_attempts")
+  isLocked              Boolean  @default(false) @map("is_locked")
+  lockedUntil           DateTime? @map("locked_until")
+  lockReason            String?  @map("lock_reason")
+  status                String   @default("PENDING") // PENDING, ACTIVE, INACTIVE, LOCKED, SUSPENDED, DELETED
+  // IdP Abstraction (per Chief Architect recommendation)
+  authProvider          String   @default("LOCAL") @map("auth_provider") // LOCAL, GOOGLE, MICROSOFT, LDAP, SAML
+  authProviderId        String?  @map("auth_provider_id") // External ID from provider
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
+
+  profile               UserProfile?
+  devices               UserDevice[]
+  sessions              UserSession[]
+  passwordHistory       PasswordHistory[]
+  passwordResetTokens   PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+
+  @@map("users")
+  @@index([email, status], map: "idx_users_email_status")
+  @@index([username, status], map: "idx_users_username_status")
+  @@index([status, isLocked], map: "idx_users_status_locked")
+  @@index([authProvider], map: "idx_users_auth_provider")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ─── User Profiles ────────────────────────────────────────────
+model UserProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @db.Uuid @map("user_id")
+  bio             String?
+  dateOfBirth     DateTime? @map("date_of_birth")
+  gender          String?
+  nationality     String?
+  maritalStatus   String?   @map("marital_status")
+  bloodGroup      String?   @map("blood_group")
+  emergencyContactName    String?  @map("emergency_contact_name")
+  emergencyContactPhone   String?  @map("emergency_contact_phone")
+  emergencyContactRelation String? @map("emergency_contact_relation")
+  addressLine1    String?   @map("address_line_1")
+  addressLine2    String?   @map("address_line_2")
+  city            String?
+  state           String?
+  country         String?
+  postalCode      String?   @map("postal_code")
+  linkedinUrl     String?   @map("linkedin_url")
+  twitterUrl      String?   @map("twitter_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+// ─── User Devices (Entity 604) ────────────────────────────────
+model UserDevice {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @db.Uuid @map("user_id")
+  deviceType          String   @default("DESKTOP") @map("device_type") // DESKTOP, LAPTOP, MOBILE, TABLET, POS, BARCODE_SCANNER, KIOSK
+  deviceName          String   @map("device_name")
+  deviceFingerprint   String   @unique @map("device_fingerprint")
+  operatingSystem     String?  @map("operating_system")
+  osVersion           String?  @map("os_version")
+  browserName         String?  @map("browser_name")
+  browserVersion      String?  @map("browser_version")
+  appVersion          String?  @map("app_version")
+  userAgent           String?  @map("user_agent")
+  isTrusted           Boolean  @default(false) @map("is_trusted")
+  isRegistered        Boolean  @default(false) @map("is_registered")
+  lastActiveAt        DateTime @default(now()) @map("last_active_at")
+  lastActiveIp        String?  @map("last_active_ip") @db.Inet
+  registeredAt        DateTime @default(now()) @map("registered_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions            UserSession[]
+
+  @@map("user_devices")
+  @@index([userId, isTrusted], map: "idx_devices_user_trusted")
+  @@index([deviceType], map: "idx_devices_type")
+}
+
+// ─── User Sessions (Entity 603) ───────────────────────────────
+model UserSession {
+  id                    String   @id @default(uuid()) @db.Uuid
+  sessionId             String   @unique @map("session_id") @db.VarChar(200)
+  userId                String   @db.Uuid @map("user_id")
+  deviceId              String?  @db.Uuid @map("device_id")
+  sessionType           String   @default("WEB") @map("session_type") // WEB, MOBILE_APP, TABLET, API, KIOSK, POS
+  clientIp              String   @map("client_ip")
+  clientUserAgent       String   @map("client_user_agent")
+  geolocation           Json?
+  loginAt               DateTime @default(now()) @map("login_at")
+  logoutAt              DateTime? @map("logout_at")
+  lastActivityAt        DateTime @default(now()) @map("last_activity_at")
+  expiresAt             DateTime @map("expires_at")
+  refreshTokenHash      String   @map("refresh_token_hash")
+  refreshTokenExpiresAt DateTime @map("refresh_token_expires_at")
+  rememberMe            Boolean  @default(false) @map("remember_me")
+  mfaVerified           Boolean  @default(false) @map("mfa_verified")
+  mfaVerifiedAt         DateTime? @map("mfa_verified_at")
+  riskScore             Float    @default(0) @map("risk_score")
+  isSuspicious          Boolean  @default(false) @map("is_suspicious")
+  revokedAt             DateTime? @map("revoked_at")
+  revocationReason      String?  @map("revocation_reason")
+  status                String   @default("ACTIVE") // ACTIVE, EXPIRED, LOGGED_OUT, REVOKED, SUSPENDED
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device                UserDevice? @relation(fields: [deviceId], references: [id])
+
+  @@map("user_sessions")
+  @@index([userId, status], map: "idx_sessions_user_status")
+  @@index([status, expiresAt], map: "idx_sessions_status_expires")
+  @@index([sessionId], map: "idx_sessions_session_id")
+}
+
+// ─── Password History ─────────────────────────────────────────
+model PasswordHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid @map("user_id")
+  passwordHash    String   @map("password_hash")
+  passwordAlgorithm String @default("ARGON2ID") @map("password_algorithm")
+  changedAt       DateTime @default(now()) @map("changed_at")
+  changedBy       String?  @db.Uuid @map("changed_by") // Who changed it (self or admin)
+  changeReason    String?  @map("change_reason") // LOGIN, RESET, EXPIRY, ADMIN_RESET
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_history")
+  @@index([userId, changedAt], map: "idx_pw_history_user_date")
+}
+
+// ─── Password Reset Tokens ────────────────────────────────────
+model PasswordResetToken {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid @map("user_id")
+  token           String   @unique @db.VarChar(500)
+  tokenHash       String   @unique @map("token_hash") @db.VarChar(500)
+  expiresAt       DateTime @map("expires_at") // 15 minutes
+  usedAt          DateTime? @map("used_at")
+  usedFromIp      String?  @map("used_from_ip") @db.Inet
+  requestedAt     DateTime @default(now()) @map("requested_at")
+  requestedFromIp String   @map("requested_from_ip") @db.Inet
+  isUsed          Boolean  @default(false) @map("is_used")
+  isExpired       Boolean  @default(false) @map("is_expired")
+  status          String   @default("ACTIVE") // ACTIVE, USED, EXPIRED, CANCELLED
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+  @@index([userId, status], map: "idx_reset_tokens_user_status")
+  @@index([tokenHash, status], map: "idx_reset_tokens_hash_status")
+  @@index([expiresAt], map: "idx_reset_tokens_expires")
+}
+
+// ─── Email Verification Tokens ────────────────────────────────
+model EmailVerificationToken {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid @map("user_id")
+  email           String   // The email being verified
+  token           String   @unique @db.VarChar(500)
+  tokenHash       String   @unique @map("token_hash") @db.VarChar(500)
+  expiresAt       DateTime @map("expires_at") // 24 hours
+  usedAt          DateTime? @map("used_at")
+  sentAt          DateTime @default(now()) @map("sent_at")
+  sentTo          String   @map("sent_to") // email address
+  isUsed          Boolean  @default(false) @map("is_used")
+  isExpired       Boolean  @default(false) @map("is_expired")
+  status          String   @default("ACTIVE") // ACTIVE, USED, EXPIRED
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+  @@index([userId, status], map: "idx_email_tokens_user_status")
+  @@index([tokenHash, status], map: "idx_email_tokens_hash_status")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLATFORM TABLES (from Sprint 2 — kept for compatibility)
+// ═══════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  eventId             String   @unique @map("event_id")
+  businessModule      String   @map("business_module")
+  entityType          String   @map("entity_type")
+  entityId            String   @map("entity_id")
+  action              String
+  actionCategory      String   @map("action_category")
+  eventType           String   @map("event_type")
+  actorId             String?  @db.Uuid @map("actor_id")
+  actorName           String?  @map("actor_name")
+  actorType           String   @default("USER") @map("actor_type")
+  actionTimestamp     DateTime @default(now()) @map("action_timestamp")
+  ipAddress           String?  @db.Inet @map("ip_address")
+  userAgent           String?  @map("user_agent")
+  sessionId           String?  @db.Uuid @map("session_id")
+  correlationId       String?  @db.Uuid @map("correlation_id")
+  beforeValues        Json?    @map("before_values")
+  afterValues         Json?    @map("after_values")
+  changeSummary       String?  @map("change_summary")
+  businessContext     Json     @default("{}") @map("business_context")
+  riskScore           Float    @default(0) @map("risk_score")
+  isFlagged           Boolean  @default(false) @map("is_flagged")
+  recordHash          String   @map("record_hash")
+  previousHash        String?  @map("previous_hash")
+  companyId           String?  @db.Uuid @map("company_id")
+  retentionUntil      Date     @map("retention_until")
+  status              String   @default("RECORDED")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+  @@index([businessModule, entityType, entityId, actionTimestamp], map: "idx_audit_entity_time")
+  @@index([actorId, actionTimestamp], map: "idx_audit_actor_time")
+}
+
+model SystemSetting {
+  id                  String   @id @default(uuid()) @db.Uuid
+  configKey           String   @unique @map("config_key")
+  configName          String   @map("config_name")
+  configCategory      String   @default("COMPANY_SETTINGS") @map("config_category")
+  configType          String   @default("SETTING") @map("config_type")
+  dataType            String   @default("STRING")
+  defaultValue        String   @map("default_value")
+  currentValue        String   @map("current_value")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+  @@index([configKey, status], map: "idx_settings_key_status")
 }

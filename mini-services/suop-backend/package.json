@@ -5,5 +5,7 @@
   "scripts": {
     "dev": "bun --hot index.ts"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.1"
+  }
 }
