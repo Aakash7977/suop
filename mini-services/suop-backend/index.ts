@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "18.0.0"
+const VERSION = "19.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -855,6 +855,64 @@ const CC_DATA = {
   ],
 }
 
+// ─── Sprint 19: Batch & Expiry Management Seed Data ─────
+const BATCH_DATA = {
+  batchMasters: [
+    { id: 'bm-001', batchNumber: 'KK-2607-01', productName: 'Kaju Katli 500g', batchType: 'FINISHED_GOODS', supplierBatchNo: null, productionBatchNo: 'PB-KK-2607-01', productionOrderId: 'MO-2026-0089', supplierId: null, supplierName: null, manufacturingDate: '2026-07-01', packingDate: '2026-07-02', bestBeforeDate: '2026-07-31', expiryDate: '2026-07-31', batchStatus: 'AVAILABLE', statusReason: 'Released by QC after micro test', warehouseName: 'Mumbai DC', originalQty: 500, currentQty: 358, uomName: 'BOX', unitCost: 600, totalValue: 214800, fefoPriority: 10, storageConditions: 'Cool dry place', temperatureRange: '15-25°C', qualityGrade: 'A', qualityStatus: 'PASSED', createdByName: 'Chef Rajesh', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'bm-002', batchNumber: 'KK-2607-02', productName: 'Kaju Katli 500g', batchType: 'FINISHED_GOODS', supplierBatchNo: null, productionBatchNo: 'PB-KK-2607-02', productionOrderId: 'MO-2026-0090', supplierId: null, supplierName: null, manufacturingDate: '2026-07-05', packingDate: '2026-07-06', bestBeforeDate: '2026-08-04', expiryDate: '2026-08-04', batchStatus: 'AVAILABLE', statusReason: 'Quality A grade confirmed', warehouseName: 'Mumbai DC', originalQty: 400, currentQty: 380, uomName: 'BOX', unitCost: 600, totalValue: 228000, fefoPriority: 20, storageConditions: 'Cool dry place', temperatureRange: '15-25°C', qualityGrade: 'A', qualityStatus: 'PASSED', createdByName: 'Chef Rajesh', createdAt: '2026-07-05T17:00:00Z' },
+    { id: 'bm-003', batchNumber: 'NM-2607-03', productName: 'Mixed Namkeen 200g', batchType: 'FINISHED_GOODS', supplierBatchNo: null, productionBatchNo: 'PB-NM-2607-03', productionOrderId: 'MO-2026-0091', supplierId: null, supplierName: null, manufacturingDate: '2026-07-03', packingDate: '2026-07-04', bestBeforeDate: '2026-08-17', expiryDate: '2026-08-17', batchStatus: 'AVAILABLE', statusReason: 'Released — shelf life 45 days', warehouseName: 'Mumbai DC', originalQty: 1000, currentQty: 850, uomName: 'PACK', unitCost: 53, totalValue: 45050, fefoPriority: 15, storageConditions: 'Airtight container', temperatureRange: '15-25°C', qualityGrade: 'A', qualityStatus: 'PASSED', createdByName: 'Sandeep Kumar', createdAt: '2026-07-03T14:00:00Z' },
+    { id: 'bm-004', batchNumber: 'GJ-2606-12', productName: 'Gulab Jamun 1kg', batchType: 'FINISHED_GOODS', supplierBatchNo: null, productionBatchNo: 'PB-GJ-2606-12', productionOrderId: 'MO-2026-0078', supplierId: null, supplierName: null, manufacturingDate: '2026-06-25', packingDate: '2026-06-26', bestBeforeDate: '2026-07-10', expiryDate: '2026-07-10', batchStatus: 'EXPIRED', statusReason: 'Auto-flagged by expiry engine — past expiry', warehouseName: 'Mumbai DC', originalQty: 200, currentQty: 24, uomName: 'BOX', unitCost: 304, totalValue: 7296, fefoPriority: 1, storageConditions: 'Refrigerate', temperatureRange: '2-8°C', qualityGrade: 'C', qualityStatus: 'FAILED', createdByName: 'Chef Rajesh', createdAt: '2026-06-25T18:00:00Z' },
+    { id: 'bm-005', batchNumber: 'SC-2606-15', productName: 'Soan Cake 1kg', batchType: 'FINISHED_GOODS', supplierBatchNo: null, productionBatchNo: 'PB-SC-2606-15', productionOrderId: 'MO-2026-0070', supplierId: null, supplierName: null, manufacturingDate: '2026-07-04', packingDate: '2026-07-05', bestBeforeDate: '2026-07-12', expiryDate: '2026-07-12', batchStatus: 'BLOCKED', statusReason: 'Customer complaint — taste deviation under investigation', warehouseName: 'Mumbai DC', originalQty: 150, currentQty: 60, uomName: 'BOX', unitCost: 625, totalValue: 37500, fefoPriority: 5, storageConditions: 'Cool dry place', temperatureRange: '15-25°C', qualityGrade: 'B', qualityStatus: 'QUARANTINE', createdByName: 'Chef Rajesh', createdAt: '2026-07-04T15:00:00Z' },
+    { id: 'bm-006', batchNumber: 'CASHEW-RM-2606', productName: 'Cashew Nuts (Raw Material)', batchType: 'RAW_MATERIAL', supplierBatchNo: 'SUP-CAS-2026-007', productionBatchNo: null, productionOrderId: null, supplierId: 'sup-001', supplierName: 'Mumbai Dry Fruits Co.', manufacturingDate: '2026-06-20', packingDate: null, bestBeforeDate: '2026-12-20', expiryDate: '2026-12-20', batchStatus: 'AVAILABLE', statusReason: 'GRN posted — quality passed', warehouseName: 'Mumbai Plant Warehouse', originalQty: 500, currentQty: 320, uomName: 'KG', unitCost: 850, totalValue: 272000, fefoPriority: 100, storageConditions: 'Cool dry place', temperatureRange: '10-20°C', qualityGrade: 'A', qualityStatus: 'PASSED', createdByName: 'Ramesh Yadav', createdAt: '2026-06-20T10:00:00Z' },
+    { id: 'bm-007', batchNumber: 'GHEE-RM-2606-A', productName: 'Ghee (Raw Material)', batchType: 'RAW_MATERIAL', supplierBatchNo: 'SUP-GHEE-2026-014', productionBatchNo: null, productionOrderId: null, supplierId: 'sup-002', supplierName: 'Anand Dairy Ltd.', manufacturingDate: '2026-06-15', packingDate: null, bestBeforeDate: '2026-09-15', expiryDate: '2026-09-15', batchStatus: 'QUARANTINED', statusReason: 'Pending quality check — fat content retest', warehouseName: 'Mumbai Plant Warehouse', originalQty: 100, currentQty: 80, uomName: 'KG', unitCost: 520, totalValue: 41600, fefoPriority: 50, storageConditions: 'Cool place', temperatureRange: '10-20°C', qualityGrade: 'B', qualityStatus: 'PENDING', createdByName: 'Ramesh Yadav', createdAt: '2026-06-15T09:30:00Z' },
+    { id: 'bm-008', batchNumber: 'PKG-BOX-2607-001', productName: 'Printed Box 500g (Packaging)', batchType: 'PACKAGING_MATERIAL', supplierBatchNo: 'SUP-PKG-2026-045', productionBatchNo: null, productionOrderId: null, supplierId: 'sup-003', supplierName: 'PackPrint Industries', manufacturingDate: '2026-07-01', packingDate: null, bestBeforeDate: '2027-07-01', expiryDate: '2027-07-01', batchStatus: 'AVAILABLE', statusReason: 'Long-shelf-life packaging', warehouseName: 'Mumbai Plant Warehouse', originalQty: 10000, currentQty: 8500, uomName: 'PCS', unitCost: 8, totalValue: 68000, fefoPriority: 200, storageConditions: 'Dry place', temperatureRange: '15-30°C', qualityGrade: 'A', qualityStatus: 'PASSED', createdByName: 'Sandeep Kumar', createdAt: '2026-07-01T11:00:00Z' },
+    { id: 'bm-009', batchNumber: 'KK-2606-05', productName: 'Kaju Katli 500g', batchType: 'FINISHED_GOODS', supplierBatchNo: null, productionBatchNo: 'PB-KK-2606-05', productionOrderId: 'MO-2026-0065', supplierId: null, supplierName: null, manufacturingDate: '2026-06-15', packingDate: '2026-06-16', bestBeforeDate: '2026-07-15', expiryDate: '2026-07-15', batchStatus: 'RECALLED', statusReason: 'Recall RC-2026-001 — sugar proportion issue', warehouseName: 'Mumbai DC', originalQty: 300, currentQty: 56, uomName: 'BOX', unitCost: 600, totalValue: 33600, fefoPriority: 1, storageConditions: 'Cool dry place', temperatureRange: '15-25°C', qualityGrade: 'C', qualityStatus: 'FAILED', createdByName: 'Chef Rajesh', createdAt: '2026-06-15T16:00:00Z' },
+    { id: 'bm-010', batchNumber: 'SUG-RM-2606-01', productName: 'Sugar (Raw Material)', batchType: 'RAW_MATERIAL', supplierBatchNo: 'SUP-SUG-2026-021', productionBatchNo: null, productionOrderId: null, supplierId: 'sup-004', supplierName: 'EID Parry India', manufacturingDate: '2026-06-10', packingDate: null, bestBeforeDate: '2027-06-10', expiryDate: '2027-06-10', batchStatus: 'CONSUMED', statusReason: 'Fully consumed in production batches KK-2607-01 + KK-2607-02', warehouseName: 'Mumbai Plant Warehouse', originalQty: 1500, currentQty: 0, uomName: 'KG', unitCost: 45, totalValue: 0, fefoPriority: 300, storageConditions: 'Dry place', temperatureRange: '15-30°C', qualityGrade: 'A', qualityStatus: 'PASSED', createdByName: 'Ramesh Yadav', createdAt: '2026-06-10T08:00:00Z' },
+  ],
+  batchHistories: [
+    { id: 'bh-001', batchId: 'bm-001', batchNumber: 'KK-2607-01', fromStatus: 'CREATED', toStatus: 'RELEASED', changedByName: 'QC Manager Anita', reason: 'Microbiological test passed', comments: 'Sample tested — yeast & mold within limits', referenceType: 'QUALITY_ORDER', referenceNumber: 'QC-2026-0234', changedAt: '2026-07-02T10:00:00Z' },
+    { id: 'bh-002', batchId: 'bm-001', batchNumber: 'KK-2607-01', fromStatus: 'RELEASED', toStatus: 'AVAILABLE', changedByName: 'WH Manager Ramesh', reason: 'Stock putaway completed', comments: 'Moved to cold storage BIN-A-12', referenceType: 'PUTAWAY_TASK', referenceNumber: 'PA-2026-0234', changedAt: '2026-07-02T14:30:00Z' },
+    { id: 'bh-003', batchId: 'bm-004', batchNumber: 'GJ-2606-12', fromStatus: 'AVAILABLE', toStatus: 'EXPIRED', changedByName: 'System Expiry Engine', reason: 'Auto-flag — expiry date crossed', comments: 'No action taken — pending destruction approval', referenceType: 'SYSTEM', referenceNumber: 'EXP-AUTO-2026-0710', changedAt: '2026-07-10T00:00:00Z' },
+    { id: 'bh-004', batchId: 'bm-005', batchNumber: 'SC-2606-15', fromStatus: 'AVAILABLE', toStatus: 'BLOCKED', changedByName: 'QC Manager Anita', reason: 'Customer complaint CC-2026-0012', comments: 'Taste deviation reported — quarantining remaining stock', referenceType: 'CUSTOMER_COMPLAINT', referenceNumber: 'CC-2026-0012', changedAt: '2026-07-08T11:00:00Z' },
+    { id: 'bh-005', batchId: 'bm-009', batchNumber: 'KK-2606-05', fromStatus: 'BLOCKED', toStatus: 'RECALLED', changedByName: 'CEO Vikram', reason: 'Recall RC-2026-001 authorized', comments: 'Full recall — sugar proportion issue affects all batches Jun 15-20', referenceType: 'RECALL_ORDER', referenceNumber: 'RC-2026-001', changedAt: '2026-07-08T09:00:00Z' },
+  ],
+  shelfLifeRules: [
+    { id: 'slr-001', ruleCode: 'SL-SWEETS-30', ruleName: 'Sweets Shelf Life — 30 days', productId: null, productName: null, productCategoryId: 'cat-sweets', productType: 'FINISHED_GOODS', shelfLifeDays: 30, bestBeforeDays: 25, storageConditions: 'Cool dry place', minTemperature: 15, maxTemperature: 25, maxHumidity: 60, maxTransitDays: 5, alert30Days: false, alert15Days: true, alert7Days: true, alert3Days: true, alertToday: true, status: 'ACTIVE' },
+    { id: 'slr-002', ruleCode: 'SL-NAMKEEN-45', ruleName: 'Namkeen Shelf Life — 45 days', productId: null, productName: null, productCategoryId: 'cat-namkeen', productType: 'FINISHED_GOODS', shelfLifeDays: 45, bestBeforeDays: 38, storageConditions: 'Airtight container', minTemperature: 15, maxTemperature: 25, maxHumidity: 50, maxTransitDays: 7, alert30Days: true, alert15Days: true, alert7Days: true, alert3Days: true, alertToday: true, status: 'ACTIVE' },
+    { id: 'slr-003', ruleCode: 'SL-DAIRY-7', ruleName: 'Dairy Products Shelf Life — 7 days', productId: null, productName: null, productCategoryId: 'cat-dairy', productType: 'FINISHED_GOODS', shelfLifeDays: 7, bestBeforeDays: 5, storageConditions: 'Refrigerate', minTemperature: 2, maxTemperature: 8, maxHumidity: 80, maxTransitDays: 1, alert30Days: false, alert15Days: false, alert7Days: true, alert3Days: true, alertToday: true, status: 'ACTIVE' },
+    { id: 'slr-004', ruleCode: 'SL-RAW-DRYFRUIT-180', ruleName: 'Raw Dry Fruits Shelf Life — 180 days', productId: null, productName: null, productCategoryId: 'cat-raw-dryfruit', productType: 'RAW_MATERIAL', shelfLifeDays: 180, bestBeforeDays: 150, storageConditions: 'Cool dry place', minTemperature: 10, maxTemperature: 20, maxHumidity: 40, maxTransitDays: 14, alert30Days: true, alert15Days: true, alert7Days: true, alert3Days: false, alertToday: true, status: 'ACTIVE' },
+    { id: 'slr-005', ruleCode: 'SL-PKG-365', ruleName: 'Packaging Material Shelf Life — 365 days', productId: null, productName: null, productCategoryId: 'cat-packaging', productType: 'PACKAGING_MATERIAL', shelfLifeDays: 365, bestBeforeDays: 300, storageConditions: 'Dry place', minTemperature: 15, maxTemperature: 30, maxHumidity: 70, maxTransitDays: 30, alert30Days: true, alert15Days: false, alert7Days: false, alert3Days: false, alertToday: true, status: 'ACTIVE' },
+  ],
+  expiryAlerts: [
+    { id: 'ea-001', batchId: 'bm-001', batchNumber: 'KK-2607-01', productName: 'Kaju Katli 500g', expiryDate: '2026-07-31', manufacturingDate: '2026-07-01', alertLevel: 'NEAR_EXPIRY', daysToExpiry: 22, quantity: 358, uomName: 'BOX', unitCost: 600, totalValue: 214800, warehouseName: 'Mumbai DC', status: 'ACTIVE', actionTaken: null, emailSent: true, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-002', batchId: 'bm-002', batchNumber: 'KK-2607-02', productName: 'Kaju Katli 500g', expiryDate: '2026-08-04', manufacturingDate: '2026-07-05', alertLevel: 'HEALTHY', daysToExpiry: 26, quantity: 380, uomName: 'BOX', unitCost: 600, totalValue: 228000, warehouseName: 'Mumbai DC', status: 'ACTIVE', actionTaken: null, emailSent: false, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-003', batchId: 'bm-003', batchNumber: 'NM-2607-03', productName: 'Mixed Namkeen 200g', expiryDate: '2026-08-17', manufacturingDate: '2026-07-03', alertLevel: 'HEALTHY', daysToExpiry: 39, quantity: 850, uomName: 'PACK', unitCost: 53, totalValue: 45050, warehouseName: 'Mumbai DC', status: 'ACTIVE', actionTaken: null, emailSent: false, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-004', batchId: 'bm-004', batchNumber: 'GJ-2606-12', productName: 'Gulab Jamun 1kg', expiryDate: '2026-07-10', manufacturingDate: '2026-06-25', alertLevel: 'EXPIRED', daysToExpiry: -1, quantity: 24, uomName: 'BOX', unitCost: 304, totalValue: 7296, warehouseName: 'Mumbai DC', status: 'ACTIVE', actionTaken: null, emailSent: true, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-005', batchId: 'bm-005', batchNumber: 'SC-2606-15', productName: 'Soan Cake 1kg', expiryDate: '2026-07-12', manufacturingDate: '2026-07-04', alertLevel: 'CRITICAL', daysToExpiry: 3, quantity: 60, uomName: 'BOX', unitCost: 625, totalValue: 37500, warehouseName: 'Mumbai DC', status: 'ACKNOWLEDGED', actionTaken: 'FEFO_PRIORITIZE', emailSent: true, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-006', batchId: 'bm-009', batchNumber: 'KK-2606-05', productName: 'Kaju Katli 500g', expiryDate: '2026-07-15', manufacturingDate: '2026-06-15', alertLevel: 'CRITICAL', daysToExpiry: 6, quantity: 56, uomName: 'BOX', unitCost: 600, totalValue: 33600, warehouseName: 'Mumbai DC', status: 'ACTIONED', actionTaken: 'RETURN_TO_SUPPLIER', emailSent: true, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-007', batchId: 'bm-006', batchNumber: 'CASHEW-RM-2606', productName: 'Cashew Nuts (Raw Material)', expiryDate: '2026-12-20', manufacturingDate: '2026-06-20', alertLevel: 'HEALTHY', daysToExpiry: 164, quantity: 320, uomName: 'KG', unitCost: 850, totalValue: 272000, warehouseName: 'Mumbai Plant Warehouse', status: 'ACTIVE', actionTaken: null, emailSent: false, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'ea-008', batchId: 'bm-007', batchNumber: 'GHEE-RM-2606-A', productName: 'Ghee (Raw Material)', expiryDate: '2026-09-15', manufacturingDate: '2026-06-15', alertLevel: 'HEALTHY', daysToExpiry: 68, quantity: 80, uomName: 'KG', unitCost: 520, totalValue: 41600, warehouseName: 'Mumbai Plant Warehouse', status: 'ACTIVE', actionTaken: null, emailSent: false, dashboardShown: true, createdAt: '2026-07-09T08:00:00Z' },
+  ],
+  productRecalls: [
+    { id: 'pr-001', recallNumber: 'RC-2026-001', recallDate: '2026-07-08', recallType: 'FULL_RECALL', recallReason: 'QUALITY_ISSUE', description: 'Sugar proportion deviation in Kaju Katli batches produced between Jun 15-20. Affected batches: KK-2606-05, KK-2606-06, KK-2606-07.', complaintNumber: 'CC-2026-0012', reportedBy: 'QC Manager Anita', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', status: 'RETURNS_IN_PROGRESS', totalBatchesAffected: 3, totalQuantityRecalled: 168, totalQuantityReturned: 84, totalCustomersAffected: 12, totalValue: 100800, initiatedAt: '2026-07-08T09:00:00Z', noticeSentAt: '2026-07-08T10:30:00Z', completedAt: null, approvedByName: 'CEO Vikram', approvedAt: '2026-07-08T09:15:00Z', remarks: 'Market-wide recall. Refund + replacement offered. FSSAI notified.', createdByName: 'CEO Vikram', createdAt: '2026-07-08T09:00:00Z' },
+    { id: 'pr-002', recallNumber: 'RC-2026-002', recallDate: '2026-07-06', recallType: 'PARTIAL_RECALL', recallReason: 'MISLABELING', description: '15 boxes of Kala Jamun mislabeled as Gulab Jamun in batch GJ-2607-03. Only specific shipment to Andheri retail chain affected.', complaintNumber: 'CC-2026-0008', reportedBy: 'Store Manager Pune', productId: 'prod-gj-1kg', productName: 'Gulab Jamun 1kg', status: 'COMPLETED', totalBatchesAffected: 1, totalQuantityRecalled: 15, totalQuantityReturned: 15, totalCustomersAffected: 3, totalValue: 4560, initiatedAt: '2026-07-06T11:00:00Z', noticeSentAt: '2026-07-06T12:00:00Z', completedAt: '2026-07-07T15:00:00Z', approvedByName: 'COO Anita', approvedAt: '2026-07-06T11:30:00Z', remarks: 'All 15 units recovered from 3 customers. No health impact — only labeling issue.', createdByName: 'COO Anita', createdAt: '2026-07-06T11:00:00Z' },
+    { id: 'pr-003', recallNumber: 'RC-2026-003', recallDate: '2026-07-09', recallType: 'MARKET_WITHDRAWAL', recallReason: 'FOREIGN_OBJECT', description: 'Customer reported small plastic fragment in Mixed Namkeen 200g pack — batch NM-2607-01. Voluntary withdrawal initiated as precaution.', complaintNumber: 'CC-2026-0018', reportedBy: 'Customer Care Helpline', productId: 'prod-nm-200', productName: 'Mixed Namkeen 200g', status: 'INVESTIGATING', totalBatchesAffected: 1, totalQuantityRecalled: 200, totalQuantityReturned: 0, totalCustomersAffected: 1, totalValue: 10600, initiatedAt: '2026-07-09T14:00:00Z', noticeSentAt: null, completedAt: null, approvedByName: null, approvedAt: null, remarks: 'Withdrawal (not full recall) — only 1 complaint. Investigation in progress to identify source of contamination in packaging line.', createdByName: 'QC Manager Anita', createdAt: '2026-07-09T14:00:00Z' },
+  ],
+  recallBatches: [
+    { id: 'rb-001', recallId: 'pr-001', batchId: 'bm-009', batchNumber: 'KK-2606-05', productName: 'Kaju Katli 500g', quantityProduced: 300, quantityInStock: 56, quantityDispatched: 244, quantityReturned: 56, manufacturingDate: '2026-06-15', expiryDate: '2026-07-15', status: 'RETURNED' },
+    { id: 'rb-002', recallId: 'pr-001', batchId: null, batchNumber: 'KK-2606-06', productName: 'Kaju Katli 500g', quantityProduced: 280, quantityInStock: 0, quantityDispatched: 280, quantityReturned: 28, manufacturingDate: '2026-06-17', expiryDate: '2026-07-17', status: 'NOTIFIED' },
+    { id: 'rb-003', recallId: 'pr-001', batchId: null, batchNumber: 'KK-2606-07', productName: 'Kaju Katli 500g', quantityProduced: 320, quantityInStock: 0, quantityDispatched: 320, quantityReturned: 0, manufacturingDate: '2026-06-19', expiryDate: '2026-07-19', status: 'IDENTIFIED' },
+    { id: 'rb-004', recallId: 'pr-002', batchId: null, batchNumber: 'GJ-2607-03', productName: 'Gulab Jamun 1kg', quantityProduced: 200, quantityInStock: 80, quantityDispatched: 120, quantityReturned: 15, manufacturingDate: '2026-07-01', expiryDate: '2026-07-16', status: 'DISPOSED' },
+  ],
+  batchGenealogies: [
+    { id: 'bg-001', fromBatchId: 'bm-006', fromBatchNumber: 'CASHEW-RM-2606', fromProductName: 'Cashew Nuts (Raw Material)', fromBatchType: 'RAW_MATERIAL', toBatchId: 'bm-001', toBatchNumber: 'KK-2607-01', toProductName: 'Kaju Katli 500g', toBatchType: 'FINISHED_GOODS', relationshipType: 'PRODUCED_FROM', quantityUsed: 180, uomId: 'uom-kg', productionOrderId: 'MO-2026-0089', productionDate: '2026-07-01', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'bg-002', fromBatchId: 'bm-010', fromBatchNumber: 'SUG-RM-2606-01', fromProductName: 'Sugar (Raw Material)', fromBatchType: 'RAW_MATERIAL', toBatchId: 'bm-001', toBatchNumber: 'KK-2607-01', toProductName: 'Kaju Katli 500g', toBatchType: 'FINISHED_GOODS', relationshipType: 'USED_IN', quantityUsed: 150, uomId: 'uom-kg', productionOrderId: 'MO-2026-0089', productionDate: '2026-07-01', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'bg-003', fromBatchId: 'bm-007', fromBatchNumber: 'GHEE-RM-2606-A', fromProductName: 'Ghee (Raw Material)', fromBatchType: 'RAW_MATERIAL', toBatchId: 'bm-001', toBatchNumber: 'KK-2607-01', toProductName: 'Kaju Katli 500g', toBatchType: 'FINISHED_GOODS', relationshipType: 'USED_IN', quantityUsed: 40, uomId: 'uom-kg', productionOrderId: 'MO-2026-0089', productionDate: '2026-07-01', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'bg-004', fromBatchId: 'bm-006', fromBatchNumber: 'CASHEW-RM-2606', fromProductName: 'Cashew Nuts (Raw Material)', fromBatchType: 'RAW_MATERIAL', toBatchId: 'bm-002', toBatchNumber: 'KK-2607-02', toProductName: 'Kaju Katli 500g', toBatchType: 'FINISHED_GOODS', relationshipType: 'PRODUCED_FROM', quantityUsed: 160, uomId: 'uom-kg', productionOrderId: 'MO-2026-0090', productionDate: '2026-07-05', createdAt: '2026-07-05T17:00:00Z' },
+    { id: 'bg-005', fromBatchId: 'bm-008', fromBatchNumber: 'PKG-BOX-2607-001', fromProductName: 'Printed Box 500g (Packaging)', fromBatchType: 'PACKAGING_MATERIAL', toBatchId: 'bm-001', toBatchNumber: 'KK-2607-01', toProductName: 'Kaju Katli 500g', toBatchType: 'FINISHED_GOODS', relationshipType: 'USED_IN', quantityUsed: 500, uomId: 'uom-pcs', productionOrderId: 'MO-2026-0089', productionDate: '2026-07-02', createdAt: '2026-07-02T10:00:00Z' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1246,7 +1304,8 @@ const server = Bun.serve({
         { code: 'ADJ', name: 'Adjustment & Reconciliation', status: 'active', entities: 6, sprint: 16 },
         { code: 'RES', name: 'Reservation & Allocation', status: 'active', entities: 4, sprint: 17 },
         { code: 'CC', name: 'Cycle Count & Audit', status: 'active', entities: 6, sprint: 18 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 18 },
+        { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 19 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -3209,12 +3268,193 @@ const server = Bun.serve({
       }, 'SUOP Cycle Count & Audit Engine v18.0.0')), { headers })
     }
 
+    // ─── Sprint 19: Batch & Expiry Management Endpoints ────
+    if (path === '/api/batch-master' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let batches = BATCH_DATA.batchMasters
+      if (typeFilter) batches = batches.filter(b => b.batchType === typeFilter.toUpperCase())
+      if (statusFilter) batches = batches.filter(b => b.batchStatus === statusFilter.toUpperCase())
+      if (warehouseFilter) batches = batches.filter(b => b.warehouseName?.toLowerCase().includes(warehouseFilter.toLowerCase()))
+      return new Response(JSON.stringify(successResponse(batches, `${batches.length} batch master records`)), { headers })
+    }
+    if (path === '/api/shelf-life-rules' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let rules = BATCH_DATA.shelfLifeRules
+      if (statusFilter) rules = rules.filter(r => r.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(rules, `${rules.length} shelf-life rules`)), { headers })
+    }
+    if (path === '/api/expiry-alerts' && method === 'GET') {
+      const levelFilter = url.searchParams.get('level')
+      const statusFilter = url.searchParams.get('status')
+      let alerts = BATCH_DATA.expiryAlerts
+      if (levelFilter) alerts = alerts.filter(a => a.alertLevel === levelFilter.toUpperCase())
+      if (statusFilter) alerts = alerts.filter(a => a.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(alerts, `${alerts.length} expiry alerts`)), { headers })
+    }
+    if (path.match(/^\/api\/expiry-alerts\/[^/]+\/action$/) && method === 'POST') {
+      try {
+        const id = path.split('/')[3]
+        const alert = BATCH_DATA.expiryAlerts.find(a => a.id === id)
+        if (!alert) return new Response(JSON.stringify(errorResponse('Expiry alert not found', 'NOT_FOUND', 404)), { status: 404, headers })
+        const body = await req.json()
+        const action = body.action
+        const validActions = ['FEFO_PRIORITIZE', 'DISCOUNT', 'DONATE', 'DESTROY', 'RETURN_TO_SUPPLIER']
+        if (!validActions.includes(action)) return new Response(JSON.stringify(errorResponse(`Invalid action. Valid: ${validActions.join(', ')}`, 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        const prevStatus = alert.status
+        alert.status = 'ACTIONED'
+        alert.actionTaken = action
+        log('info', 'Expiry alert actioned', { alertId: id, action, was: prevStatus, now: 'ACTIONED' })
+        return new Response(JSON.stringify(successResponse(alert, `Expiry alert for batch ${alert.batchNumber} actioned: ${action.replace(/_/g, ' ')}`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    if (path === '/api/product-recalls' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let recalls = BATCH_DATA.productRecalls
+      if (typeFilter) recalls = recalls.filter(r => r.recallType === typeFilter.toUpperCase())
+      if (statusFilter) recalls = recalls.filter(r => r.status === statusFilter.toUpperCase())
+      // Attach recall batches to each recall
+      const recallsWithBatches = recalls.map(r => ({
+        ...r,
+        batches: BATCH_DATA.recallBatches.filter(rb => rb.recallId === r.id),
+      }))
+      return new Response(JSON.stringify(successResponse(recallsWithBatches, `${recallsWithBatches.length} product recalls`)), { headers })
+    }
+    if (path.match(/^\/api\/product-recalls\/[^/]+\/advance$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const recall = BATCH_DATA.productRecalls.find(r => r.id === id)
+      if (!recall) return new Response(JSON.stringify(errorResponse('Product recall not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      const statusFlow: Record<string, string> = {
+        'INITIATED': 'INVESTIGATING',
+        'INVESTIGATING': 'RECALL_NOTICE_SENT',
+        'RECALL_NOTICE_SENT': 'RETURNS_IN_PROGRESS',
+        'RETURNS_IN_PROGRESS': 'COMPLETED',
+        'COMPLETED': 'COMPLETED',
+        'CANCELLED': 'CANCELLED',
+      }
+      const prevStatus = recall.status
+      const nextStatus = statusFlow[recall.status] || recall.status
+      if (nextStatus === recall.status) return new Response(JSON.stringify(errorResponse(`Recall already in terminal status: ${recall.status}`, 'INVALID_TRANSITION', 400)), { status: 400, headers })
+      recall.status = nextStatus
+      if (nextStatus === 'RECALL_NOTICE_SENT' && !recall.noticeSentAt) recall.noticeSentAt = new Date().toISOString()
+      if (nextStatus === 'COMPLETED' && !recall.completedAt) recall.completedAt = new Date().toISOString()
+      log('info', 'Recall status advanced', { recallNumber: recall.recallNumber, was: prevStatus, now: nextStatus })
+      return new Response(JSON.stringify(successResponse(recall, `Recall ${recall.recallNumber} advanced: ${prevStatus} → ${nextStatus}`)), { headers })
+    }
+    if (path === '/api/batch-genealogy' && method === 'GET') {
+      const batchId = url.searchParams.get('batchId')
+      const direction = url.searchParams.get('direction') || 'both'
+      let genealogies = BATCH_DATA.batchGenealogies
+      if (batchId) {
+        if (direction === 'forward') {
+          // forward: trace what this batch was used to produce (from -> to)
+          genealogies = genealogies.filter(g => g.fromBatchId === batchId)
+        } else if (direction === 'backward') {
+          // backward: trace what raw materials went into this batch (to -> from)
+          genealogies = genealogies.filter(g => g.toBatchId === batchId)
+        } else {
+          genealogies = genealogies.filter(g => g.fromBatchId === batchId || g.toBatchId === batchId)
+        }
+      }
+      return new Response(JSON.stringify(successResponse(genealogies, `${genealogies.length} batch genealogy records`)), { headers })
+    }
+    if (path.match(/^\/api\/batch-master\/[^/]+\/history$/) && method === 'GET') {
+      const id = path.split('/')[3]
+      const batch = BATCH_DATA.batchMasters.find(b => b.id === id)
+      if (!batch) return new Response(JSON.stringify(errorResponse('Batch not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      const history = BATCH_DATA.batchHistories.filter(h => h.batchId === id)
+      return new Response(JSON.stringify(successResponse({
+        batch,
+        history,
+        totalTransitions: history.length,
+      }, `${history.length} status transitions for batch ${batch.batchNumber}`)), { headers })
+    }
+    if (path === '/api/batch-master/dashboard' && method === 'GET') {
+      const totalBatches = BATCH_DATA.batchMasters.length
+      const totalCurrentValue = BATCH_DATA.batchMasters.reduce((s, b) => s + b.totalValue, 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          total: totalBatches,
+          available: BATCH_DATA.batchMasters.filter(b => b.batchStatus === 'AVAILABLE').length,
+          blocked: BATCH_DATA.batchMasters.filter(b => b.batchStatus === 'BLOCKED').length,
+          quarantined: BATCH_DATA.batchMasters.filter(b => b.batchStatus === 'QUARANTINED').length,
+          expired: BATCH_DATA.batchMasters.filter(b => b.batchStatus === 'EXPIRED').length,
+          recalled: BATCH_DATA.batchMasters.filter(b => b.batchStatus === 'RECALLED').length,
+          consumed: BATCH_DATA.batchMasters.filter(b => b.batchStatus === 'CONSUMED').length,
+        },
+        byType: {
+          RAW_MATERIAL: BATCH_DATA.batchMasters.filter(b => b.batchType === 'RAW_MATERIAL').length,
+          FINISHED_GOODS: BATCH_DATA.batchMasters.filter(b => b.batchType === 'FINISHED_GOODS').length,
+          PACKAGING_MATERIAL: BATCH_DATA.batchMasters.filter(b => b.batchType === 'PACKAGING_MATERIAL').length,
+          SEMI_FINISHED: BATCH_DATA.batchMasters.filter(b => b.batchType === 'SEMI_FINISHED').length,
+          RETURNED_GOODS: BATCH_DATA.batchMasters.filter(b => b.batchType === 'RETURNED_GOODS').length,
+          QUALITY_HOLD: BATCH_DATA.batchMasters.filter(b => b.batchType === 'QUALITY_HOLD').length,
+          TRIAL_BATCH: BATCH_DATA.batchMasters.filter(b => b.batchType === 'TRIAL_BATCH').length,
+          REWORK_BATCH: BATCH_DATA.batchMasters.filter(b => b.batchType === 'REWORK_BATCH').length,
+        },
+        byQualityGrade: {
+          A: BATCH_DATA.batchMasters.filter(b => b.qualityGrade === 'A').length,
+          B: BATCH_DATA.batchMasters.filter(b => b.qualityGrade === 'B').length,
+          C: BATCH_DATA.batchMasters.filter(b => b.qualityGrade === 'C').length,
+          REJECT: BATCH_DATA.batchMasters.filter(b => b.qualityGrade === 'REJECT').length,
+        },
+        expiryAlerts: {
+          total: BATCH_DATA.expiryAlerts.length,
+          healthy: BATCH_DATA.expiryAlerts.filter(a => a.alertLevel === 'HEALTHY').length,
+          nearExpiry: BATCH_DATA.expiryAlerts.filter(a => a.alertLevel === 'NEAR_EXPIRY').length,
+          critical: BATCH_DATA.expiryAlerts.filter(a => a.alertLevel === 'CRITICAL').length,
+          expired: BATCH_DATA.expiryAlerts.filter(a => a.alertLevel === 'EXPIRED').length,
+          active: BATCH_DATA.expiryAlerts.filter(a => a.status === 'ACTIVE').length,
+          acknowledged: BATCH_DATA.expiryAlerts.filter(a => a.status === 'ACKNOWLEDGED').length,
+          actioned: BATCH_DATA.expiryAlerts.filter(a => a.status === 'ACTIONED').length,
+        },
+        recalls: {
+          total: BATCH_DATA.productRecalls.length,
+          initiated: BATCH_DATA.productRecalls.filter(r => r.status === 'INITIATED').length,
+          investigating: BATCH_DATA.productRecalls.filter(r => r.status === 'INVESTIGATING').length,
+          returnsInProgress: BATCH_DATA.productRecalls.filter(r => r.status === 'RETURNS_IN_PROGRESS').length,
+          completed: BATCH_DATA.productRecalls.filter(r => r.status === 'COMPLETED').length,
+          totalCustomersAffected: BATCH_DATA.productRecalls.reduce((s, r) => s + r.totalCustomersAffected, 0),
+          totalValue: BATCH_DATA.productRecalls.reduce((s, r) => s + r.totalValue, 0),
+        },
+        shelfLifeRules: BATCH_DATA.shelfLifeRules.length,
+        genealogyLinks: BATCH_DATA.batchGenealogies.length,
+        totalCurrentValue,
+        fefoBatches: BATCH_DATA.batchMasters.filter(b => b.fefoPriority <= 20).length,
+        averageFefoPriority: parseFloat((BATCH_DATA.batchMasters.reduce((s, b) => s + b.fefoPriority, 0) / totalBatches).toFixed(1)),
+      }, 'Batch & Expiry Management dashboard')), { headers })
+    }
+    if (path === '/api/batch-master/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Batch & Expiry Management Engine', version: '19.0.0', sprint: 19,
+        sprintName: 'Batch Lifecycle, Shelf-Life, Expiry Monitoring, Recall Engine & Genealogy',
+        batchTypes: ['RAW_MATERIAL', 'PACKAGING_MATERIAL', 'SEMI_FINISHED', 'FINISHED_GOODS', 'RETURNED_GOODS', 'QUALITY_HOLD', 'TRIAL_BATCH', 'REWORK_BATCH'],
+        batchStatuses: ['PLANNED', 'CREATED', 'RELEASED', 'AVAILABLE', 'RESERVED', 'BLOCKED', 'QUARANTINED', 'EXPIRED', 'RECALLED', 'CONSUMED', 'CLOSED'],
+        qualityGrades: ['A', 'B', 'C', 'REJECT'],
+        qualityStatuses: ['PENDING', 'PASSED', 'FAILED', 'QUARANTINE'],
+        alertLevels: ['HEALTHY', 'NEAR_EXPIRY', 'CRITICAL', 'EXPIRED'],
+        alertStatuses: ['ACTIVE', 'ACKNOWLEDGED', 'ACTIONED', 'DISMISSED'],
+        alertActions: ['FEFO_PRIORITIZE', 'DISCOUNT', 'DONATE', 'DESTROY', 'RETURN_TO_SUPPLIER'],
+        recallTypes: ['FULL_RECALL', 'PARTIAL_RECALL', 'MARKET_WITHDRAWAL', 'SUPPLIER_RECALL', 'INTERNAL_RECALL'],
+        recallReasons: ['QUALITY_ISSUE', 'CONTAMINATION', 'MISLABELING', 'FOREIGN_OBJECT', 'REGULATORY', 'CUSTOMER_COMPLAINT'],
+        recallStatuses: ['INITIATED', 'INVESTIGATING', 'RECALL_NOTICE_SENT', 'RETURNS_IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+        recallBatchStatuses: ['IDENTIFIED', 'NOTIFIED', 'RETURNED', 'DISPOSED', 'WRITTEN_OFF'],
+        genealogyRelationshipTypes: ['PRODUCED_FROM', 'USED_IN', 'REPACKED_FROM', 'REWORKED_FROM', 'BLEND_OF'],
+        genealogyDirections: ['forward (Batch → Outputs)', 'backward (Batch → Inputs)', 'both'],
+        fefoStrategy: 'First Expiry First Out — lower fefoPriority value = picked first (priority 1 = next to dispatch)',
+        endpoints: ['GET /api/batch-master', 'GET /api/batch-master/:id/history', 'GET /api/shelf-life-rules', 'GET /api/expiry-alerts', 'POST /api/expiry-alerts/:id/action', 'GET /api/product-recalls', 'POST /api/product-recalls/:id/advance', 'GET /api/batch-genealogy', 'GET /api/batch-master/dashboard', 'GET /api/batch-master/info'],
+      }, 'SUOP Batch & Expiry Management Engine v19.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 18, sprintName: 'Cycle Count, Physical Inventory & Variance Management' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 19, sprintName: 'Batch Lifecycle, Shelf-Life, Expiry Monitoring, Recall Engine & Genealogy' })
+log('info', 'Batch & expiry endpoints available', { batchMaster: 'GET /api/batch-master', history: 'GET /:id/history', shelfLifeRules: 'GET /api/shelf-life-rules', expiryAlerts: 'GET /api/expiry-alerts', alertAction: 'POST /:id/action', recalls: 'GET /api/product-recalls', recallAdvance: 'POST /:id/advance', genealogy: 'GET /api/batch-genealogy', dashboard: 'GET /api/batch-master/dashboard', info: 'GET /api/batch-master/info' })
 log('info', 'Cycle count endpoints available', { physicalInventory: 'GET/POST /api/physical-inventory', approve: 'POST /:id/approve', plans: 'GET /api/cycle-count/plans', schedules: 'GET /api/cycle-count/schedules', teams: 'GET /api/count-teams', variances: 'GET /api/count-variances', dashboard: 'GET /api/physical-inventory/dashboard', info: 'GET /api/physical-inventory/info' })
 log('info', 'Reservation endpoints available', { reservations: 'GET/POST /api/reservations', release: 'POST /:id/release', allocate: 'GET /:id/allocate', rules: 'GET /api/allocation-rules', availability: 'GET /api/reservations/availability', dashboard: 'GET /api/reservations/dashboard', info: 'GET /api/reservations/info' })
 log('info', 'Adjustment endpoints available', { adjustments: 'GET/POST /api/inventory-adjustments', approve: 'POST /:id/approve', reasons: 'GET /api/inventory-adjustments/reasons', damage: 'GET /api/damage-reports-s16', expiry: 'GET /api/expiry-adjustments', rootCauses: 'GET /api/inventory-adjustments/root-causes', dashboard: 'GET /api/inventory-adjustments/dashboard', info: 'GET /api/inventory-adjustments/info' })
