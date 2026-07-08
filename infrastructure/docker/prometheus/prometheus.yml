@@ -1,0 +1,21 @@
+# SUOP Prometheus Configuration
+# Sprint 1: Platform Foundation
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # SUOP Backend API
+  - job_name: 'suop-backend'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3030']
+        labels:
+          service: 'suop-backend'
+          module: 'platform'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
