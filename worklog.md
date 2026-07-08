@@ -1151,3 +1151,27 @@ NEXT PHASE: Volume 1 — Enterprise Development Blueprint
 - Phase 5: Intelligence Layer (Sprints 71-100)
 
 🎉 ARCHITECTURE COMPLETE — IMPLEMENTATION BEGINS 🎉
+
+---
+Task ID: SPRINT-8
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 8 — Enterprise Pricing, Taxation & Commercial Engine
+
+Work Log:
+- Received restaurant POS source (MiniCentrinoLite_v1.9.10.zip) — cataloged for Phase 4 integration. Stack: Python (terminal.py + hub.py + KDS) + Next.js webapp + Supabase. Same Supabase project (adhzjmycvbfohjlcijwf.supabase.co).
+- Verified Prisma schema state — Sprint 7 ended with 72 tables. Fixed pre-existing relation issues (Product.defaultUom/weightUom ambiguous relation, Uom.products missing back-relation, Permission.menuPermissions missing, ProductFamilyMapping/ProductGroupMapping/ProductCollectionItem missing back-relations, ProductDocument index referencing nonexistent status field, AuditLog.retentionUntil using Date instead of DateTime).
+- Added Sprint 8 schema (16 new tables): PriceList, PriceListItem, PriceListVersion, ProductPrice, TaxGroup, TaxRate, ProductTaxMapping, TaxRule, DiscountRule, DiscountCondition, DiscountTarget, Promotion, PromotionProduct, PromotionCondition, CostProfile, MarginRule, FuturePrice, PriceApprovalRequest, CommercialRule, PriceResolutionLog. Total: 88 tables.
+- Updated backend (mini-services/suop-backend/index.ts) — added COMMERCIAL_DATA seed (6 price lists, 6 tax groups, 5 discounts, 5 promotions, 4 future prices, 5 approvals, 4 cost profiles, 5 commercial rules). Added 18 new endpoints under /api/commercial/* including the Chief-Architect-recommended Price Resolution Service (POST /api/commercial/resolve-price) that returns basePrice→listPrice→quantityBreak→discounts→promotions→taxableAmount→taxComponents→finalPrice with full resolution trace audit trail. Bumped backend version to 8.0.0.
+- Updated /api/modules to reflect sprints 1-8 with COM (Commercial Engine) as active.
+- Updated frontend (src/app/page.tsx) — added 'commercial' to ModuleKey, added "Commercial Engine" to sidebar (Master Data section, Sprint 6-8), added CommercialEngineModule component with 10 tabs: Overview, Price Lists, GST & Tax, Discounts, Promotions, Future Prices, Approvals, Cost & Margin, Commercial Rules, Price Resolution. The Price Resolution tab is interactive — calls POST /api/commercial/resolve-price and shows full breakdown with resolution trace.
+- Updated Sprint progress (Dashboard module now shows 8 sprints done, 88 tables, Sprint 8 of 11).
+- Fixed a TypeScript error in ApprovalsTab (a.currentStage → a.stage).
+- Verified: npx prisma validate passes (only env DATABASE_URL warning, expected since we use Supabase JS). Bun build of backend succeeds. npx tsc --noEmit clean for src/. npx next build succeeds in 11.3s with 4 routes.
+
+Stage Summary:
+- Database schema: 88 tables total (Sprint 8 added 16)
+- Backend: 18 new endpoints for commercial engine + Price Resolution Service
+- Frontend: New CommercialEngineModule with 10 tabs (visible in sidebar alongside Sprints 1-7 modules)
+- Build: Production build successful, no TypeScript errors in app code
+- Restaurant POS (MiniCentrinoLite_v1.9.10) cataloged at /home/z/my-project/upload/ — Python+Next.js+Supabase stack confirmed, will integrate in Phase 4 via the new Price Resolution API
+- Architecture alignment: The Price Resolution Service implements the Chief Architect's recommendation — POS apps will call POST /api/commercial/resolve-price instead of maintaining their own pricing logic

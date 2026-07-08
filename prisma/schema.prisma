@@ -255,7 +255,7 @@ model AuditLog {
   recordHash          String   @map("record_hash")
   previousHash        String?  @map("previous_hash")
   companyId           String?  @db.Uuid @map("company_id")
-  retentionUntil      Date     @map("retention_until")
+  retentionUntil      DateTime @map("retention_until")
   status              String   @default("RECORDED")
   createdAt           DateTime @default(now()) @map("created_at")
 
@@ -820,6 +820,7 @@ model Permission {
 
   permissionGroup     PermissionGroup? @relation(fields: [permissionGroupId], references: [id])
   rolePermissions     RolePermission[]
+  menuPermissions     MenuPermission[]
 
   @@map("permissions")
   @@index([module, resource, action], map: "idx_perm_module_resource_action")
@@ -1171,7 +1172,8 @@ model Uom {
   // Self-referencing for conversions
   conversionsFrom UomConversion[] @relation("UomConversionFrom")
   conversionsTo   UomConversion[] @relation("UomConversionTo")
-  products        Product[]
+  defaultForProducts Product[]    @relation("DefaultUom")
+  weightForProducts  Product[]    @relation("WeightUom")
 
   @@map("uoms")
   @@index([uomType, status], map: "idx_uom_type_status")
@@ -1249,8 +1251,8 @@ model Product {
   // ─── Relations ──────────────────────────────────────────
   brand           Brand?           @relation(fields: [brandId], references: [id])
   category        ProductCategory? @relation(fields: [categoryId], references: [id])
-  defaultUom      Uom              @relation(fields: [defaultUomId], references: [id])
-  weightUom       Uom?             @relation(fields: [weightUomId], references: [id])
+  defaultUom      Uom              @relation("DefaultUom", fields: [defaultUomId], references: [id])
+  weightUom       Uom?             @relation("WeightUom", fields: [weightUomId], references: [id])
   attributes      ProductAttribute[]
   variants        ProductVariant[]
   images          ProductImage[]
@@ -1404,7 +1406,7 @@ model ProductDocument {
 
   @@map("product_documents")
   @@index([productId, documentType], map: "idx_pdoc_product_type")
-  @@index([documentType, status], map: "idx_pdoc_type")
+  @@index([documentType, isVerified], map: "idx_pdoc_type_verified")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1439,6 +1441,8 @@ model ProductFamilyMapping {
   familyId        String   @db.Uuid @map("family_id")
   isPrimary       Boolean  @default(false) @map("is_primary")
   createdAt       DateTime @default(now()) @map("created_at")
+
+  family          ProductFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   @@unique([productId, familyId], map: "pfm_unique")
   @@map("product_family_mappings")
@@ -1477,6 +1481,8 @@ model ProductGroupMapping {
   isPrimary       Boolean  @default(false) @map("is_primary")
   createdAt       DateTime @default(now()) @map("created_at")
 
+  group           ProductGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
   @@unique([productId, groupId], map: "pgm_unique")
   @@map("product_group_mappings")
   @@index([groupId], map: "idx_pgm_group")
@@ -1512,6 +1518,8 @@ model ProductCollectionItem {
   displayOrder    Int      @default(100) @map("display_order")
   isFeatured      Boolean  @default(false) @map("is_featured")
   addedAt         DateTime @default(now()) @map("added_at")
+
+  collection      ProductCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@unique([collectionId, productId], map: "pci_unique")
   @@map("product_collection_items")
@@ -1737,4 +1745,587 @@ model ProductUsageMatrix {
   @@index([useInManufacturing], map: "idx_pum_mfg")
   @@index([useInRetailPos], map: "idx_pum_retail")
   @@index([useInRestaurantPos], map: "idx_pum_restaurant")
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 8 — ENTERPRISE PRICING, TAXATION & COMMERCIAL ENGINE
+// Epics: Price Lists, Product Pricing, GST Engine, Discount Engine,
+//        Promotion Engine, Cost & Margin, Future Pricing,
+//        Price Approval Workflow, Commercial Rules, Price Resolution
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Price Lists ────────────────────────────────
+model PriceList {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?
+  // ─── Price List Type ───
+  type            String   // RETAIL, WHOLESALE, DISTRIBUTOR, EXPORT, RESTAURANT, ONLINE, CORPORATE, EMPLOYEE, FESTIVAL, SPECIAL_CONTRACT
+  // ─── Currency & Validity ───
+  currency        String   @default("INR") @db.Char(3)
+  validFrom       DateTime @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  // ─── Priority & Status ───
+  priority        Int      @default(100) // Lower = higher priority
+  status          String   @default("ACTIVE") // DRAFT, ACTIVE, EXPIRED, SUSPENDED, ARCHIVED
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  customerTypeId  String?  @map("customer_type_id")
+  // ─── Tax mode ───
+  taxMode         String   @default("EXCLUSIVE") @map("tax_mode") // EXCLUSIVE, INCLUSIVE
+  // ─── Rounding ───
+  roundingRule    String?  @map("rounding_rule") // ROUND_HALF_UP, ROUND_DOWN, ROUND_UP
+  roundingDigits  Int      @default(2) @map("rounding_digits")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  items           PriceListItem[]
+  versions        PriceListVersion[]
+
+  @@map("price_lists")
+  @@index([type, status], map: "idx_pl_type_status")
+  @@index([companyId, branchId], map: "idx_pl_scope")
+  @@index([priority], map: "idx_pl_priority")
+  @@index([validFrom, validTo], map: "idx_pl_validity")
+}
+
+model PriceListItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  priceListId     String   @db.Uuid @map("price_list_id")
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Pricing ───
+  basePrice       Decimal  @db.Decimal(18, 4) @map("base_price")
+  sellingPrice    Decimal  @db.Decimal(18, 4) @map("selling_price")
+  mrp             Decimal? @db.Decimal(18, 4)
+  purchasePrice   Decimal? @db.Decimal(18, 4) @map("purchase_price")
+  transferPrice   Decimal? @db.Decimal(18, 4) @map("transfer_price")
+  // ─── Quantity breaks ───
+  minQuantity     Decimal? @db.Decimal(18, 4) @map("min_quantity")
+  maxQuantity     Decimal? @db.Decimal(18, 4) @map("max_quantity")
+  // ─── Validity ───
+  validFrom       DateTime? @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, EXPIRED
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  priceList       PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+
+  @@map("price_list_items")
+  @@index([priceListId, status], map: "idx_pli_list_status")
+  @@index([productId, priceListId], map: "idx_pli_product_list")
+  @@index([productId, status], map: "idx_pli_product_status")
+  @@index([validFrom, validTo], map: "idx_pli_validity")
+}
+
+model PriceListVersion {
+  id              String   @id @default(uuid()) @db.Uuid
+  priceListId     String   @db.Uuid @map("price_list_id")
+  version         Int
+  // ─── Snapshot ───
+  snapshot        Json     // Full price list snapshot at version time
+  changeSummary   String?  @map("change_summary")
+  // ─── Editor ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  priceList       PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+
+  @@map("price_list_versions")
+  @@index([priceListId, version], map: "idx_plv_list_version")
+}
+
+// ─── Epic 2: Product Pricing (per scope) ────────────────
+model ProductPrice {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Scope (any combination) ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  customerId      String?  @db.Uuid @map("customer_id")
+  // ─── Price Types ───
+  basePrice       Decimal? @db.Decimal(18, 4) @map("base_price")
+  sellingPrice    Decimal? @db.Decimal(18, 4) @map("selling_price")
+  mrp             Decimal? @db.Decimal(18, 4)
+  purchasePrice   Decimal? @db.Decimal(18, 4) @map("purchase_price")
+  transferPrice   Decimal? @db.Decimal(18, 4) @map("transfer_price")
+  averageCost     Decimal? @db.Decimal(18, 4) @map("average_cost")
+  standardCost    Decimal? @db.Decimal(18, 4) @map("standard_cost")
+  lastPurchaseCost Decimal? @db.Decimal(18, 4) @map("last_purchase_cost")
+  // ─── Effective dates ───
+  effectiveFrom   DateTime @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  // ─── Source ───
+  sourcePriceListId String? @db.Uuid @map("source_price_list_id")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("product_prices")
+  @@index([productId, status], map: "idx_pp_product_status")
+  @@index([companyId, branchId], map: "idx_pp_scope")
+  @@index([customerId], map: "idx_pp_customer")
+  @@index([effectiveFrom, effectiveTo], map: "idx_pp_effective")
+}
+
+// ─── Epic 3: GST & Tax Engine ───────────────────────────
+model TaxGroup {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?
+  // ─── Type ───
+  type            String   // GST, VAT, SALES_TAX, CESS, TCS, TDS, EXEMPT
+  // ─── Compound ───
+  isCompound      Boolean  @default(false) @map("is_compound")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  rates           TaxRate[]
+  productMappings ProductTaxMapping[]
+  rules           TaxRule[]
+
+  @@map("tax_groups")
+  @@index([type, status], map: "idx_tg_type_status")
+}
+
+model TaxRate {
+  id              String   @id @default(uuid()) @db.Uuid
+  taxGroupId      String   @db.Uuid @map("tax_group_id")
+  // ─── Components ───
+  componentType   String   @map("component_type") // CGST, SGST, IGST, CESS, TCS, TDS
+  ratePercentage  Decimal  @db.Decimal(8, 4) @map("rate_percentage")
+  // ─── Jurisdiction ───
+  jurisdiction    String?  // STATE, CENTRAL, INTER_STATE, INTRA_STATE
+  stateCode       String?  @map("state_code")
+  // ─── Effective ───
+  effectiveFrom   DateTime @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  taxGroup        TaxGroup @relation(fields: [taxGroupId], references: [id], onDelete: Cascade)
+
+  @@map("tax_rates")
+  @@index([taxGroupId, status], map: "idx_tr_group_status")
+  @@index([componentType], map: "idx_tr_component")
+  @@index([effectiveFrom, effectiveTo], map: "idx_tr_effective")
+}
+
+model ProductTaxMapping {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  taxGroupId      String   @db.Uuid @map("tax_group_id")
+  // ─── HSN/SAC ───
+  hsnCode         String?  @map("hsn_code")
+  sacCode         String?  @map("sac_code")
+  // ─── Validity ───
+  effectiveFrom   DateTime @default(now()) @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  taxGroup        TaxGroup @relation(fields: [taxGroupId], references: [id])
+
+  @@map("product_tax_mapping")
+  @@index([productId, status], map: "idx_ptm_product_status")
+  @@index([taxGroupId], map: "idx_ptm_group")
+  @@index([hsnCode], map: "idx_ptm_hsn")
+}
+
+model TaxRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?
+  taxGroupId      String?  @db.Uuid @map("tax_group_id")
+  // ─── Conditions ───
+  conditionType   String   @map("condition_type") // CUSTOMER_STATE, CUSTOMER_TYPE, PRODUCT_CATEGORY, SUPPLY_TYPE
+  conditionValue  Json     @map("condition_value")
+  // ─── Action ───
+  actionType      String   @map("action_type") // APPLY_TAX, EXEMPT, REDUCE_RATE, REVERSE_CHARGE
+  actionValue     Json?    @map("action_value")
+  // ─── Priority ───
+  priority        Int      @default(100)
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  taxGroup        TaxGroup? @relation(fields: [taxGroupId], references: [id])
+
+  @@map("tax_rules")
+  @@index([conditionType, status], map: "idx_txr_condition")
+  @@index([priority], map: "idx_txr_priority")
+}
+
+// ─── Epic 4: Discount Engine ────────────────────────────
+model DiscountRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?
+  // ─── Type ───
+  type            String   // FLAT, PERCENTAGE, BUY_X_GET_Y, VOLUME, COMBO, CATEGORY, BRAND, CUSTOMER, COUPON
+  // ─── Value ───
+  discountValue   Decimal  @db.Decimal(18, 4) @map("discount_value")
+  discountType    String   @map("discount_type") // AMOUNT, PERCENTAGE
+  maxDiscountAmount Decimal? @db.Decimal(18, 4) @map("max_discount_amount")
+  // ─── Stacking ───
+  isStackable     Boolean  @default(false) @map("is_stackable")
+  stackPriority   Int      @default(100) @map("stack_priority")
+  // ─── Validity ───
+  validFrom       DateTime @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // DRAFT, ACTIVE, EXPIRED, SUSPENDED
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  conditions      DiscountCondition[]
+  targets         DiscountTarget[]
+
+  @@map("discount_rules")
+  @@index([type, status], map: "idx_dr_type_status")
+  @@index([validFrom, validTo], map: "idx_dr_validity")
+}
+
+model DiscountCondition {
+  id              String   @id @default(uuid()) @db.Uuid
+  discountRuleId  String   @db.Uuid @map("discount_rule_id")
+  // ─── Condition ───
+  conditionField  String   @map("condition_field") // PRODUCT, CATEGORY, BRAND, CUSTOMER, CUSTOMER_GROUP, QUANTITY, AMOUNT, DAY_OF_WEEK, TIME_OF_DAY
+  operator        String   // EQ, NE, GT, LT, GTE, LTE, IN, NOT_IN, BETWEEN
+  conditionValue  Json     @map("condition_value")
+  // ─── Logical op with other conditions ───
+  logicalOp       String   @default("AND") @map("logical_op") // AND, OR
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  discountRule    DiscountRule @relation(fields: [discountRuleId], references: [id], onDelete: Cascade)
+
+  @@map("discount_conditions")
+  @@index([discountRuleId], map: "idx_dc_rule")
+  @@index([conditionField], map: "idx_dc_field")
+}
+
+model DiscountTarget {
+  id              String   @id @default(uuid()) @db.Uuid
+  discountRuleId  String   @db.Uuid @map("discount_rule_id")
+  targetType      String   @map("target_type") // PRODUCT, CATEGORY, BRAND, CUSTOMER, CUSTOMER_GROUP, ALL_PRODUCTS
+  targetId        String?  @map("target_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  discountRule    DiscountRule @relation(fields: [discountRuleId], references: [id], onDelete: Cascade)
+
+  @@map("discount_targets")
+  @@index([discountRuleId], map: "idx_dt_rule")
+  @@index([targetType, targetId], map: "idx_dt_target")
+}
+
+// ─── Epic 5: Promotion Engine ───────────────────────────
+model Promotion {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?
+  // ─── Type ───
+  type            String   // AUTOMATIC, MANUAL, COUPON, LOYALTY
+  // ─── Offer ───
+  offerType       String   @map("offer_type") // FLAT_OFF, PERCENT_OFF, BUY_X_GET_Y, FREE_ITEM, BUNDLE_PRICE
+  offerValue      Decimal? @db.Decimal(18, 4) @map("offer_value")
+  freeProductId   String?  @db.Uuid @map("free_product_id")
+  freeQuantity    Decimal? @db.Decimal(18, 4) @map("free_quantity")
+  // ─── Channel ───
+  channels        String[] @default([]) // RETAIL, RESTAURANT, ONLINE, ERP, ALL
+  // ─── Validity ───
+  validFrom       DateTime @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  // ─── Usage limits ───
+  maxUsageCount   Int?     @map("max_usage_count")
+  maxUsagePerCustomer Int? @map("max_usage_per_customer")
+  usedCount       Int      @default(0) @map("used_count")
+  // ─── Priority ───
+  priority        Int      @default(100)
+  // ─── Status ───
+  status          String   @default("ACTIVE") // DRAFT, ACTIVE, SCHEDULED, EXPIRED, SUSPENDED
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  products        PromotionProduct[]
+  conditions      PromotionCondition[]
+
+  @@map("promotions")
+  @@index([type, status], map: "idx_pr_type_status")
+  @@index([validFrom, validTo], map: "idx_pr_validity")
+  @@index([status, priority], map: "idx_pr_status_priority")
+}
+
+model PromotionProduct {
+  id              String   @id @default(uuid()) @db.Uuid
+  promotionId     String   @db.Uuid @map("promotion_id")
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  // ─── Quantity req ───
+  minQuantity     Decimal? @db.Decimal(18, 4) @map("min_quantity")
+  maxQuantity     Decimal? @db.Decimal(18, 4) @map("max_quantity")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  promotion       Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@map("promotion_products")
+  @@index([promotionId], map: "idx_pp_promo")
+  @@index([productId], map: "idx_pp_product")
+}
+
+model PromotionCondition {
+  id              String   @id @default(uuid()) @db.Uuid
+  promotionId     String   @db.Uuid @map("promotion_id")
+  conditionField  String   @map("condition_field") // MIN_ORDER_VALUE, MIN_QUANTITY, DAY_OF_WEEK, TIME_WINDOW, CUSTOMER_GROUP, BRANCH, PAYMENT_METHOD
+  operator        String
+  conditionValue  Json     @map("condition_value")
+  logicalOp       String   @default("AND") @map("logical_op")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  promotion       Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@map("promotion_conditions")
+  @@index([promotionId], map: "idx_pc_promo")
+}
+
+// ─── Epic 6: Cost & Margin Engine ───────────────────────
+model CostProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  // ─── Cost methods ───
+  costingMethod   String   @map("costing_method") // FIFO, WEIGHTED_AVERAGE, STANDARD, LAST_PURCHASE
+  // ─── Costs ───
+  purchaseCost    Decimal? @db.Decimal(18, 4) @map("purchase_cost")
+  averageCost     Decimal? @db.Decimal(18, 4) @map("average_cost")
+  fifoCost        Decimal? @db.Decimal(18, 4) @map("fifo_cost")
+  weightedAverageCost Decimal? @db.Decimal(18, 4) @map("weighted_average_cost")
+  standardCost    Decimal? @db.Decimal(18, 4) @map("standard_cost")
+  lastPurchaseCost Decimal? @db.Decimal(18, 4) @map("last_purchase_cost")
+  // ─── Additional costs ───
+  landingCost     Decimal? @db.Decimal(18, 4) @map("landing_cost")
+  overheadCost    Decimal? @db.Decimal(18, 4) @map("overhead_cost")
+  totalCost       Decimal? @db.Decimal(18, 4) @map("total_cost")
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  // ─── Effective ───
+  effectiveFrom   DateTime @default(now()) @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("cost_profiles")
+  @@index([productId, status], map: "idx_cp_product_status")
+  @@index([companyId, branchId], map: "idx_cp_scope")
+  @@index([effectiveFrom], map: "idx_cp_effective")
+}
+
+model MarginRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String?  @db.Uuid @map("product_id")
+  categoryId      String?  @db.Uuid @map("category_id")
+  brandId         String?  @db.Uuid @map("brand_id")
+  // ─── Margin rules ───
+  minMarginPercent Decimal? @db.Decimal(8, 4) @map("min_margin_percent")
+  maxMarginPercent Decimal? @db.Decimal(8, 4) @map("max_margin_percent")
+  targetMarginPercent Decimal? @db.Decimal(8, 4) @map("target_margin_percent")
+  // ─── Markup/Markdown ───
+  markupPercent   Decimal? @db.Decimal(8, 4) @map("markup_percent")
+  markdownPercent Decimal? @db.Decimal(8, 4) @map("markdown_percent")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("margin_rules")
+  @@index([productId], map: "idx_mr_product")
+  @@index([categoryId, brandId], map: "idx_mr_category_brand")
+}
+
+// ─── Epic 7: Future Pricing ─────────────────────────────
+model FuturePrice {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  priceListId     String?  @db.Uuid @map("price_list_id")
+  // ─── Pricing ───
+  currentPrice    Decimal  @db.Decimal(18, 4) @map("current_price")
+  futurePrice     Decimal  @db.Decimal(18, 4) @map("future_price")
+  changePercent   Decimal? @db.Decimal(8, 4) @map("change_percent")
+  // ─── Activation ───
+  effectiveDate   DateTime @map("effective_date")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Auto-activation ───
+  autoActivate    Boolean  @default(true) @map("auto_activate")
+  activatedAt     DateTime? @map("activated_at")
+  rolledBackAt    DateTime? @map("rolled_back_at")
+  rollbackReason  String?  @map("rollback_reason")
+  // ─── Approval ───
+  approvalRequestId String? @db.Uuid @map("approval_request_id")
+  // ─── Status ───
+  status          String   @default("SCHEDULED") // SCHEDULED, PENDING_APPROVAL, APPROVED, ACTIVATED, EXPIRED, ROLLED_BACK, CANCELLED
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("future_prices")
+  @@index([productId, status], map: "idx_fp_product_status")
+  @@index([effectiveDate], map: "idx_fp_effective")
+  @@index([status, effectiveDate], map: "idx_fp_status_effective")
+}
+
+// ─── Epic 8: Price Approval Workflow ────────────────────
+model PriceApprovalRequest {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Reference ───
+  entityType      String   @map("entity_type") // PRICE_LIST, PRODUCT_PRICE, FUTURE_PRICE, PROMOTION, DISCOUNT_RULE
+  entityId        String   @db.Uuid @map("entity_id")
+  entityName      String   @map("entity_name")
+  // ─── Workflow stages ───
+  currentStage    String   @default("DRAFT") @map("current_stage") // DRAFT, PRICING_TEAM, FINANCE, MANAGEMENT, APPROVED, PUBLISHED, REJECTED
+  // ─── Pricing Team ───
+  pricingTeamReviewerId String? @db.Uuid @map("pricing_team_reviewer_id")
+  pricingTeamReviewedAt DateTime? @map("pricing_team_reviewed_at")
+  pricingTeamDecision  String?  @map("pricing_team_decision")
+  pricingTeamNotes     String?  @map("pricing_team_notes")
+  // ─── Finance ───
+  financeReviewerId String?  @db.Uuid @map("finance_reviewer_id")
+  financeReviewedAt DateTime? @map("finance_reviewed_at")
+  financeDecision  String?  @map("finance_decision")
+  financeNotes     String?  @map("finance_notes")
+  // ─── Management ───
+  managementReviewerId String? @db.Uuid @map("management_reviewer_id")
+  managementReviewedAt DateTime? @map("management_reviewed_at")
+  managementDecision  String?  @map("management_decision")
+  managementNotes     String?  @map("management_notes")
+  // ─── Final ───
+  approvedBy      String?  @db.Uuid @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  publishedBy     String?  @db.Uuid @map("published_by")
+  publishedAt     DateTime? @map("published_at")
+  // ─── Rejection ───
+  rejectedBy      String?  @db.Uuid @map("rejected_by")
+  rejectedAt      DateTime? @map("rejected_at")
+  rejectionReason String?  @map("rejection_reason")
+  // ─── SLA ───
+  slaDueAt        DateTime @map("sla_due_at")
+  slaBreached     Boolean  @default(false) @map("sla_breached")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, IN_REVIEW, APPROVED, PUBLISHED, REJECTED, CANCELLED
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("price_approval_requests")
+  @@index([entityType, entityId], map: "idx_par_price_entity")
+  @@index([currentStage, status], map: "idx_par_price_stage")
+  @@index([entityType, status], map: "idx_par_price_type_status")
+  @@index([slaDueAt, slaBreached], map: "idx_par_price_sla")
+  @@index([status, currentStage], map: "idx_par_price_status_stage")
+}
+
+// ─── Epic 9: Commercial Rules Engine ────────────────────
+model CommercialRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?
+  // ─── Rule type ───
+  ruleType        String   @map("rule_type") // MIN_SELLING_PRICE, MAX_DISCOUNT, MIN_MARGIN, CUSTOMER_PRICING, LOCATION_PRICING, HOLIDAY_PRICING, CONTRACT_PRICING
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  productId       String?  @db.Uuid @map("product_id")
+  categoryId      String?  @db.Uuid @map("category_id")
+  brandId         String?  @db.Uuid @map("brand_id")
+  customerId      String?  @db.Uuid @map("customer_id")
+  customerGroupId String?  @map("customer_group_id")
+  // ─── Rule value ───
+  ruleValue       Json     @map("rule_value")
+  // ─── Validity ───
+  validFrom       DateTime @default(now()) @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  // ─── Enforcement ───
+  enforcementMode String   @default("HARD_BLOCK") @map("enforcement_mode") // HARD_BLOCK, WARN, OVERRIDE_WITH_REASON
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("commercial_rules")
+  @@index([ruleType, status], map: "idx_cr_type_status")
+  @@index([companyId, branchId], map: "idx_cr_scope")
+  @@index([productId, customerId], map: "idx_cr_product_customer")
+}
+
+// ─── Epic 10: Price Resolution Log (audit) ──────────────
+model PriceResolutionLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Request context ───
+  requestId       String   @unique @map("request_id")
+  channelId       String   @map("channel_id") // RETAIL_POS, RESTAURANT_POS, ERP, ECOMMERCE, CUSTOMER_PORTAL
+  // ─── Input ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  customerId      String?  @db.Uuid @map("customer_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  quantity        Decimal  @db.Decimal(18, 4)
+  // ─── Output ───
+  basePrice       Decimal  @db.Decimal(18, 4) @map("base_price")
+  listPrice       Decimal  @db.Decimal(18, 4) @map("list_price")
+  appliedDiscounts Json    @default("[]") @map("applied_discounts")
+  appliedPromotions Json   @default("[]") @map("applied_promotions")
+  discountAmount  Decimal  @db.Decimal(18, 4) @default(0) @map("discount_amount")
+  promotionAmount Decimal  @db.Decimal(18, 4) @default(0) @map("promotion_amount")
+  taxableAmount   Decimal  @db.Decimal(18, 4) @map("taxable_amount")
+  taxComponents   Json     @default("[]") @map("tax_components")
+  taxAmount       Decimal  @db.Decimal(18, 4) @default(0) @map("tax_amount")
+  finalPrice      Decimal  @db.Decimal(18, 4) @map("final_price")
+  // ─── Resolution trace ───
+  resolutionTrace Json     @map("resolution_trace") // Steps taken for audit
+  // ─── Source price list & rules ───
+  sourcePriceListId String? @db.Uuid @map("source_price_list_id")
+  // ─── Audit ───
+  requestedAt     DateTime @default(now()) @map("requested_at")
+  responseTimeMs  Int      @map("response_time_ms")
+
+  @@map("price_resolution_logs")
+  @@index([productId, requestedAt], map: "idx_prl_product_time")
+  @@index([channelId], map: "idx_prl_channel")
+  @@index([customerId], map: "idx_prl_customer")
 }
