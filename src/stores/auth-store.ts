@@ -3,6 +3,8 @@
  * Sprint 3: Epic 10 — Frontend Authentication
  *
  * Manages client-side authentication state.
+ * Includes timeout safeguard + demo mode so the UI loads even if Supabase
+ * is unreachable from the preview environment.
  */
 
 import { create } from 'zustand'
@@ -21,12 +23,22 @@ interface AuthState {
   isLoading: boolean
   isAuthenticated: boolean
   error: string | null
+  isDemoMode: boolean
 
   // Actions
   initialize: () => Promise<void>
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  loginDemo: () => void
   logout: () => Promise<void>
   clearError: () => void
+}
+
+// Helper: race a promise against a timeout
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ])
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -35,18 +47,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   isAuthenticated: false,
   error: null,
+  isDemoMode: false,
 
   initialize: async () => {
     try {
-      const { session } = await getSession()
+      // Timeout safeguard: if Supabase doesn't respond in 3 seconds, proceed to login screen
+      const { session } = await withTimeout(getSession(), 3000, { session: null, error: null })
       if (session) {
-        const { user } = await getCurrentUser()
-        set({
-          user,
-          session,
-          isAuthenticated: !!user,
-          isLoading: false,
-        })
+        try {
+          const { user } = await withTimeout(getCurrentUser(), 3000, { user: null, error: null })
+          set({
+            user,
+            session,
+            isAuthenticated: !!user,
+            isLoading: false,
+          })
+        } catch {
+          set({ user: null, session: null, isAuthenticated: false, isLoading: false })
+        }
       } else {
         set({ user: null, session: null, isAuthenticated: false, isLoading: false })
       }
@@ -81,9 +99,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  loginDemo: () => {
+    // Demo mode: bypass Supabase auth entirely — lets you explore the full UI
+    set({
+      user: { id: 'demo-user', email: 'demo@sudhastar.com' } as unknown as User,
+      session: { access_token: 'demo-token' },
+      isAuthenticated: true,
+      isLoading: false,
+      error: null,
+      isDemoMode: true,
+    })
+  },
+
   logout: async () => {
-    await supabaseSignOut()
-    set({ user: null, session: null, isAuthenticated: false, error: null })
+    try {
+      await supabaseSignOut()
+    } catch {
+      // ignore — demo mode doesn't need real signout
+    }
+    set({ user: null, session: null, isAuthenticated: false, error: null, isDemoMode: false })
   },
 
   clearError: () => set({ error: null }),

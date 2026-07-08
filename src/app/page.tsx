@@ -45,7 +45,7 @@ type ModuleKey =
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
 
 // ─── Login Screen ───────────────────────────────────────
-function LoginScreen({ onLogin }: { onLogin: (e: string, p: string, r: boolean) => void }) {
+function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: boolean) => void; onDemo: () => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -91,6 +91,9 @@ function LoginScreen({ onLogin }: { onLogin: (e: string, p: string, r: boolean) 
             </Button>
           </form>
           <Separator className="bg-slate-700 mt-6" />
+          <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
+            <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
+          </Button>
           <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-10 · Platform + Master Data + PIM + Commercial + Partner + Identification</p>
         </Card>
       </div>
@@ -2401,7 +2404,7 @@ function ComingSoon({ name }: { name: string }) {
 
 // ─── Main Unified Application ───────────────────────────
 export default function Home() {
-  const { isAuthenticated, isLoading, initialize, login, logout } = useAuthStore()
+  const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode } = useAuthStore()
   const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
@@ -2419,7 +2422,7 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={async (e, p, r) => { await login(e, p) }} />
+    return <LoginScreen onLogin={async (e, p, r) => { await login(e, p) }} onDemo={loginDemo} />
   }
 
   const moduleNames: Record<ModuleKey, string> = {
@@ -2477,6 +2480,7 @@ export default function Home() {
           <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
           <div className="flex-1" />
           <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 10 · 111 Tables · 815 Entities</Badge>
+          {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
         <ScrollArea className="flex-1">
