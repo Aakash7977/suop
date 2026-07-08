@@ -1175,3 +1175,62 @@ Stage Summary:
 - Build: Production build successful, no TypeScript errors in app code
 - Restaurant POS (MiniCentrinoLite_v1.9.10) cataloged at /home/z/my-project/upload/ — Python+Next.js+Supabase stack confirmed, will integrate in Phase 4 via the new Price Resolution API
 - Architecture alignment: The Price Resolution Service implements the Chief Architect's recommendation — POS apps will call POST /api/commercial/resolve-price instead of maintaining their own pricing logic
+
+---
+Task ID: SPRINT-9
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 9 — Enterprise Business Partner Platform (unified master for Customers, Suppliers, Transporters, Franchisees, Corporate Clients, Delivery Partners, Service Providers)
+
+Work Log:
+- Verified schema state at end of Sprint 8: 88 tables.
+- Added Sprint 9 schema (12 new tables, total now 100):
+  - BusinessPartner (unified master, supports 7 partner types: INDIVIDUAL, COMPANY, GOVERNMENT, NGO, TRUST, CORPORATE, FOREIGN_ENTITY)
+  - BusinessPartnerRole (multi-role per partner: CUSTOMER, SUPPLIER, DISTRIBUTOR, TRANSPORTER, DELIVERY_PARTNER, MANUFACTURER, RETAIL_OUTLET, RESTAURANT_OUTLET, FRANCHISE, SERVICE_PROVIDER, CONSULTANT)
+  - BusinessPartnerAddress (9 address types: REGISTERED_OFFICE, BILLING, SHIPPING, FACTORY, WAREHOUSE, BRANCH, RESTAURANT, PICKUP, RETURN)
+  - BusinessPartnerContact (per-partner contacts with multiple channels + preferred contact)
+  - BusinessPartnerFinancialProfile (credit limit, outstanding, payment terms, tax category, risk)
+  - BusinessPartnerCompliance (8 types: GST, PAN, MSME, FSSAI, IEC, ISO, AGREEMENT, INSURANCE with verification workflow)
+  - CustomerGroup (CUSTOMER or SUPPLIER type, with discount % and default payment terms)
+  - BusinessPartnerGroupMembership (join table partner ↔ group)
+  - PartnerTag (flexible labels)
+  - BusinessPartnerBankAccount (IFSC, SWIFT, IBAN, UPI, verification workflow, masked account numbers in UI)
+  - BusinessPartnerRelationship (9 types: PARENT_COMPANY, SUBSIDIARY, DISTRIBUTOR, DEALER, FRANCHISE, PREFERRED_SUPPLIER, STRATEGIC_PARTNER, SISTER_CONCERN, JV_PARTNER)
+  - BusinessPartnerScorecard (quarterly metrics: on-time delivery, accuracy, quality, complaints, payment, response; composite overall score + letter grade A+/A/B/C/D)
+- Validated schema: npx prisma validate passes (only expected env URL warning).
+- Updated backend (mini-services/suop-backend/index.ts):
+  - Added BP_DATA seed: 10 realistic partners (Tata Consumer, Konkan Cashew, Sri Balaji Sugar, Blue Dart, Reliance Retail, Sudhamrit Franchise, Amul, Infosys, Mumbai Packaging, Zomato) with realistic GST/PAN numbers, multiple roles per partner, credit limits, risk scores
+  - Added 10 customer/supplier groups (5 customer, 5 supplier) with discount tiers and payment terms
+  - Added 6 quarterly scorecards with grade distribution (A+, A, B, C)
+  - Added 5 partner relationships (Tata→Sudhamrit CUSTOMER_OF, Reliance→Reliance Industries SUBSIDIARY, etc.)
+  - Added 8 new endpoints under /api/business-partners/*: GET/POST partners, GET partner/:id, GET groups, GET scorecards, GET relationships, GET dashboard (with role/type/risk breakdown), GET info
+  - Validation: partner code uniqueness, GST/PAN duplicate detection, mandatory role check
+  - Updated /api/modules to show BP as active (sprint 9, 12 entities)
+  - Bumped backend version to 9.0.0
+- Updated frontend (src/app/page.tsx):
+  - Added 'partners' to ModuleKey type
+  - Added new Business Partners module to sidebar (Master Data section, Sprint 6-9)
+  - Added 11 new lucide-react icons: Users2, Handshake, Award, CreditCard, MapPinned, Phone, Building, Globe2, etc.
+  - Added BusinessPartnerModule with 10 tabs:
+    1. Overview — stats cards (10 partners, 5 customer groups, 5 supplier groups, ₹2.41Cr credit exposure, role breakdown bar chart, "Why Single Business Partner Master?" explainer card)
+    2. Partners — full table with 10 partners showing roles (multi-badge per row), GST, credit, risk score, status
+    3. Addresses — 9 address types with examples per partner
+    4. Contacts — contacts table with designation, email, mobile, primary flag
+    5. Financial — credit limit, outstanding, available, terms, tax category, risk per partner
+    6. Compliance — GST/PAN/MSME/FSSAI/ISO certificates with issue/expiry dates and verification status
+    7. Groups — 10 customer/supplier groups with discount tiers and member counts
+    8. Banking — masked bank accounts with IFSC, default flag, verification badge
+    9. Relationships — directional partner↔partner relationships with type badges
+    10. Scorecards — quarterly performance with 6 metric tiles + letter grade circle per partner
+  - Updated Dashboard module: now shows 9 sprints done, 100 database tables, Sprint 9 of 11
+  - Updated sidebar header and footer text
+- Fixed duplicate Mail import (was imported twice)
+- Verified: npx prisma validate passes. npx tsc --noEmit clean for src/app/page.tsx. npx next build succeeds in ~12s. bun build of backend succeeds.
+- Started Next.js production server (node .next/standalone/server.js) on port 3000 — verified listening with 200 OK response (HTML rendered with title "SUOP Admin — Sudhastar Unified Operating Platform").
+
+Stage Summary:
+- Database schema: 100 tables total (Sprint 9 added 12)
+- Backend: 8 new endpoints under /api/business-partners/* with full validation and duplicate detection
+- Frontend: New BusinessPartnerModule with 10 tabs (visible in sidebar as "Business Partners" under Master Data Sprint 6-9 section)
+- Build: Production build successful, no TypeScript errors in app code
+- Architecture: Implements the Chief Architect's recommendation — single unified Business Partner master where one organization can play multiple roles (Customer + Supplier + Transporter + Franchisee etc.) instead of separate Customer Master and Supplier Master. Same as SAP, Oracle, Microsoft Dynamics approach.
+- Next: Sprint 10 — Enterprise Identification & Traceability Platform (Barcode, QR, Batch, Lot, Serial, GS1, Label Templates)

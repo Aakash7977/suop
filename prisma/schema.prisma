@@ -2329,3 +2329,360 @@ model PriceResolutionLog {
   @@index([channelId], map: "idx_prl_channel")
   @@index([customerId], map: "idx_prl_customer")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 9 — ENTERPRISE BUSINESS PARTNER PLATFORM
+// Unified master for Customers, Suppliers, Transporters,
+// Franchisees, Corporate Clients, Delivery Partners, Service Providers
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Business Partner Master ─────────────────────
+model BusinessPartner {
+  id                  String   @id @default(uuid()) @db.Uuid
+  partnerCode         String   @unique @map("partner_code")
+  legalName           String   @map("legal_name")
+  displayName         String   @map("display_name")
+  // ─── Type ───
+  partnerType         String   @map("partner_type") // INDIVIDUAL, COMPANY, GOVERNMENT, NGO, TRUST, CORPORATE, FOREIGN_ENTITY
+  // ─── Status ───
+  status              String   @default("ACTIVE") // DRAFT, ACTIVE, INACTIVE, SUSPENDED, BLACKLISTED
+  // ─── Tax & Compliance Identifiers ───
+  gstNumber           String?  @map("gst_number")
+  panNumber           String?  @map("pan_number")
+  msmeNumber          String?  @map("msme_number")
+  fssaiNumber         String?  @map("fssai_number")
+  iecCode             String?  @map("iec_code") // Import Export Code
+  // ─── Commercial ───
+  currency            String   @default("INR") @db.Char(3)
+  creditLimit         Decimal? @db.Decimal(18, 2) @map("credit_limit")
+  creditDays          Int?     @map("credit_days")
+  paymentTermsId      String?  @map("payment_terms_id")
+  paymentMode         String?  @map("payment_mode") // CASH, CREDIT, ADVANCE, LC, BG
+  // ─── Profile ───
+  preferredLanguage   String?  @map("preferred_language")
+  website             String?
+  logoUrl             String?  @map("logo_url")
+  // ─── Risk ───
+  riskCategory        String?  @map("risk_category") // LOW, MEDIUM, HIGH, CRITICAL
+  riskScore           Decimal? @db.Decimal(5, 2) @map("risk_score")
+  // ─── Parent (for subsidiaries) ───
+  parentPartnerId     String?  @db.Uuid @map("parent_partner_id")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  roles               BusinessPartnerRole[]
+  addresses           BusinessPartnerAddress[]
+  contacts            BusinessPartnerContact[]
+  financialProfile    BusinessPartnerFinancialProfile?
+  complianceRecords   BusinessPartnerCompliance[]
+  bankAccounts        BusinessPartnerBankAccount[]
+  relationshipsFrom   BusinessPartnerRelationship[] @relation("BPRelFrom")
+  relationshipsTo     BusinessPartnerRelationship[] @relation("BPRelTo")
+  scorecards          BusinessPartnerScorecard[]
+  groupMemberships    BusinessPartnerGroupMembership[]
+
+  @@map("business_partners")
+  @@index([partnerType, status], map: "idx_bp_type_status")
+  @@index([gstNumber], map: "idx_bp_gst")
+  @@index([panNumber], map: "idx_bp_pan")
+  @@index([parentPartnerId], map: "idx_bp_parent")
+  @@index([status], map: "idx_bp_status")
+}
+
+// ─── Partner Roles (multiple per partner) ───────────────
+model BusinessPartnerRole {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  role            String   // CUSTOMER, SUPPLIER, DISTRIBUTOR, TRANSPORTER, DELIVERY_PARTNER, MANUFACTURER, RETAIL_OUTLET, RESTAURANT_OUTLET, FRANCHISE, SERVICE_PROVIDER, CONSULTANT
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  assignedById    String?  @db.Uuid @map("assigned_by_id")
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  notes           String?
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, role], map: "bpr_unique_partner_role")
+  @@map("business_partner_roles")
+  @@index([role, status], map: "idx_bpr_role_status")
+  @@index([partnerId], map: "idx_bpr_partner")
+}
+
+// ─── Epic 2: Address Management ─────────────────────────
+model BusinessPartnerAddress {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  addressType     String   @map("address_type") // REGISTERED_OFFICE, BILLING, SHIPPING, FACTORY, WAREHOUSE, BRANCH, RESTAURANT, PICKUP, RETURN
+  isDefault       Boolean  @default(false) @map("is_default")
+  // ─── Address fields ───
+  line1           String   @map("line_1")
+  line2           String?  @map("line_2")
+  city            String
+  district        String?
+  state           String
+  stateCode       String?  @map("state_code")
+  country         String   @default("India")
+  countryCode     String?  @map("country_code") @db.Char(2)
+  pincode         String
+  // ─── Geo ───
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+  // ─── Contact at this address ───
+  contactName     String?  @map("contact_name")
+  contactPhone    String?  @map("contact_phone")
+  contactEmail    String?  @map("contact_email")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("business_partner_addresses")
+  @@index([partnerId, addressType], map: "idx_bpa_partner_type")
+  @@index([city, state], map: "idx_bpa_city_state")
+  @@index([pincode], map: "idx_bpa_pincode")
+}
+
+// ─── Epic 3: Contact Management ─────────────────────────
+model BusinessPartnerContact {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  // ─── Identity ───
+  firstName       String   @map("first_name")
+  lastName        String?  @map("last_name")
+  designation     String?
+  department      String?
+  // ─── Contact channels ───
+  email           String?
+  mobile          String?
+  officePhone     String?  @map("office_phone")
+  whatsapp        String?
+  // ─── Preferences ───
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  preferredContact String? @map("preferred_contact") // EMAIL, MOBILE, WHATSAPP, PHONE
+  // ─── Linked user (optional) ───
+  linkedUserId    String?  @db.Uuid @map("linked_user_id")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("business_partner_contacts")
+  @@index([partnerId, status], map: "idx_bpc_partner_status")
+  @@index([email], map: "idx_bpc_email")
+  @@index([mobile], map: "idx_bpc_mobile")
+}
+
+// ─── Epic 4: Financial Profile ──────────────────────────
+model BusinessPartnerFinancialProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @unique @map("partner_id")
+  // ─── Credit ───
+  creditLimit     Decimal  @db.Decimal(18, 2) @default(0) @map("credit_limit")
+  outstandingAmount Decimal @db.Decimal(18, 2) @default(0) @map("outstanding_amount")
+  availableCredit Decimal? @db.Decimal(18, 2) @map("available_credit")
+  creditDays      Int      @default(0) @map("credit_days")
+  // ─── Payment ───
+  defaultCurrency String   @default("INR") @db.Char(3) @map("default_currency")
+  paymentMode     String   @default("CREDIT") @map("payment_mode") // CASH, CREDIT, ADVANCE, LC, BG
+  paymentTerms    String?  @map("payment_terms") // e.g., NET_30, NET_60, 2/10 NET 30
+  // ─── Tax ───
+  taxCategory     String?  @map("tax_category") // REGISTERED, UNREGISTERED, COMPOSITION, SEZ, EXPORT
+  // ─── Risk ───
+  riskCategory    String   @default("MEDIUM") @map("risk_category") // LOW, MEDIUM, HIGH, CRITICAL
+  riskScore       Decimal? @db.Decimal(5, 2) @map("risk_score")
+  // ─── Stats ───
+  totalOrders     Int      @default(0) @map("total_orders")
+  totalBusinessValue Decimal @db.Decimal(18, 2) @default(0) @map("total_business_value")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("business_partner_financial_profiles")
+  @@index([riskCategory], map: "idx_bpfp_risk")
+  @@index([paymentMode], map: "idx_bpfp_payment_mode")
+}
+
+// ─── Epic 5: Compliance Management ──────────────────────
+model BusinessPartnerCompliance {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  // ─── Compliance type ───
+  complianceType  String   @map("compliance_type") // GST, PAN, MSME, FSSAI, IEC, ISO, AGREEMENT, INSURANCE
+  // ─── Details ───
+  certificateNumber String @map("certificate_number")
+  issuingAuthority String? @map("issuing_authority")
+  issueDate       DateTime? @map("issue_date")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Document ───
+  documentUrl     String?  @map("document_url")
+  documentVerified Boolean @default(false) @map("document_verified")
+  verifiedById    String?  @db.Uuid @map("verified_by_id")
+  verifiedAt      DateTime? @map("verified_at")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, EXPIRED, PENDING_VERIFICATION, REJECTED
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, complianceType], map: "bpcomp_unique")
+  @@map("business_partner_compliance")
+  @@index([partnerId, status], map: "idx_bpcomp_partner_status")
+  @@index([complianceType, status], map: "idx_bpcomp_type_status")
+  @@index([expiryDate], map: "idx_bpcomp_expiry")
+}
+
+// ─── Epic 6: Customer & Supplier Classification ─────────
+model CustomerGroup {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupCode       String   @unique @map("group_code")
+  groupName       String   @map("group_name")
+  description     String?
+  groupType       String   @default("CUSTOMER") // CUSTOMER, SUPPLIER
+  discountPercent Decimal? @db.Decimal(5, 2) @map("discount_percent")
+  paymentTermsDefault String? @map("payment_terms_default")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  members         BusinessPartnerGroupMembership[]
+
+  @@map("customer_groups")
+  @@index([groupType, status], map: "idx_cg_type_status")
+}
+
+// Join table for partner ↔ group
+model BusinessPartnerGroupMembership {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  groupId         String   @db.Uuid @map("group_id")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  assignedById    String?  @db.Uuid @map("assigned_by_id")
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  group           CustomerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, groupId], map: "bpgm_unique")
+  @@map("business_partner_group_memberships")
+  @@index([groupId], map: "idx_bpgm_group")
+}
+
+// Partner Tags (flexible labels)
+model PartnerTag {
+  id              String   @id @default(uuid()) @db.Uuid
+  tagName         String   @unique @map("tag_name")
+  tagColor        String?  @map("tag_color")
+  description     String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("partner_tags")
+}
+
+// ─── Epic 7: Payment & Banking ──────────────────────────
+model BusinessPartnerBankAccount {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  // ─── Account details ───
+  accountName     String   @map("account_name")
+  accountNumber   String   @map("account_number") // encrypted in production
+  bankName        String   @map("bank_name")
+  branchName      String?  @map("branch_name")
+  ifscCode        String   @map("ifsc_code")
+  swiftCode       String?  @map("swift_code")
+  iban            String?
+  // ─── UPI ───
+  upiId           String?  @map("upi_id")
+  // ─── Account type ───
+  accountType     String   @default("SAVINGS") @map("account_type") // SAVINGS, CURRENT, CC, OD
+  // ─── Default ───
+  isDefault       Boolean  @default(false) @map("is_default")
+  // ─── Verification ───
+  isVerified      Boolean  @default(false) @map("is_verified")
+  verifiedAt      DateTime? @map("verified_at")
+  verifiedById    String?  @db.Uuid @map("verified_by_id")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  partner         BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("business_partner_bank_accounts")
+  @@index([partnerId, status], map: "idx_bpba_partner_status")
+  @@index([ifscCode], map: "idx_bpba_ifsc")
+}
+
+// ─── Epic 8: Business Partner Relationships ─────────────
+model BusinessPartnerRelationship {
+  id              String   @id @default(uuid()) @db.Uuid
+  fromPartnerId   String   @db.Uuid @map("from_partner_id")
+  toPartnerId     String   @db.Uuid @map("to_partner_id")
+  // ─── Relationship type ───
+  relationshipType String  @map("relationship_type") // PARENT_COMPANY, SUBSIDIARY, DISTRIBUTOR, DEALER, FRANCHISE, PREFERRED_SUPPLIER, STRATEGIC_PARTNER, SISTER_CONCERN, JV_PARTNER
+  // ─── Validity ───
+  validFrom       DateTime @default(now()) @map("valid_from")
+  validTo         DateTime? @map("valid_to")
+  // ─── Notes ───
+  notes           String?
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  fromPartner     BusinessPartner @relation("BPRelFrom", fields: [fromPartnerId], references: [id], onDelete: Cascade)
+  toPartner       BusinessPartner @relation("BPRelTo", fields: [toPartnerId], references: [id], onDelete: Cascade)
+
+  @@unique([fromPartnerId, toPartnerId, relationshipType], map: "bprel_unique")
+  @@map("business_partner_relationships")
+  @@index([fromPartnerId], map: "idx_bprel_from")
+  @@index([toPartnerId], map: "idx_bprel_to")
+  @@index([relationshipType], map: "idx_bprel_type")
+}
+
+// ─── Epic 9: Business Partner Evaluation (Scorecards) ───
+model BusinessPartnerScorecard {
+  id              String   @id @default(uuid()) @db.Uuid
+  partnerId       String   @db.Uuid @map("partner_id")
+  // ─── Period ───
+  periodYear      Int      @map("period_year")
+  periodQuarter   Int?     @map("period_quarter") // 1-4, null for annual
+  // ─── Metrics ───
+  onTimeDeliveryRating Decimal? @db.Decimal(5, 2) @map("on_time_delivery_rating") // 0-100
+  orderAccuracyRating  Decimal? @db.Decimal(5, 2) @map("order_accuracy_rating")
+  qualityRating        Decimal? @db.Decimal(5, 2) @map("quality_rating")
+  complaintRate        Decimal? @db.Decimal(5, 2) @map("complaint_rate") // % of orders with complaints
+  paymentHistoryRating Decimal? @db.Decimal(5, 2) @map("payment_history_rating")
+  responseTimeRating   Decimal? @db.Decimal(5, 2) @map("response_time_rating")
+  // ─── Computed ───
+  riskScore            Decimal? @db.Decimal(5, 2) @map("risk_score")
+  overallScore         Decimal? @db.Decimal(5, 2) @map("overall_score")
+  performanceGrade     String?  @map("performance_grade") // A+, A, B, C, D
+  // ─── Counts ───
+  totalOrders          Int      @default(0) @map("total_orders")
+  totalOrderValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_order_value")
+  totalComplaints      Int      @default(0) @map("total_complaints")
+  totalReturns         Int      @default(0) @map("total_returns")
+  // ─── Review ───
+  reviewedById         String?  @db.Uuid @map("reviewed_by_id")
+  reviewedAt           DateTime? @map("reviewed_at")
+  reviewNotes          String?  @map("review_notes")
+  // ─── Audit ───
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  partner              BusinessPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, periodYear, periodQuarter], map: "bps_unique_period")
+  @@map("business_partner_scorecards")
+  @@index([partnerId, periodYear], map: "idx_bps_partner_year")
+  @@index([overallScore], map: "idx_bps_score")
+  @@index([performanceGrade], map: "idx_bps_grade")
+}

@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "8.0.0"
+const VERSION = "9.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -198,6 +198,153 @@ const COMMERCIAL_DATA = {
     { id: 'cr-005', code: 'CONTRACT-TATA', name: 'Tata Corporate Contract Pricing', ruleType: 'CONTRACT_PRICING', enforcementMode: 'HARD_BLOCK', status: 'ACTIVE', ruleValue: { customerId: 'cust-tata-001', priceListId: 'pl-corporate-001' } },
   ],
   resolutionLogs: [] as any[],
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 9 — BUSINESS PARTNER SEED DATA (in-memory)
+// Unified master: Customers, Suppliers, Transporters, Franchisees,
+// Corporate Clients, Delivery Partners, Service Providers
+// ═══════════════════════════════════════════════════════════
+const BP_DATA = {
+  partners: [
+    {
+      id: 'bp-001', partnerCode: 'CUST-TATA-001', legalName: 'Tata Consumer Products Ltd.', displayName: 'Tata Consumer',
+      partnerType: 'CORPORATE', status: 'ACTIVE',
+      gstNumber: '27AAACT2727Q1ZW', panNumber: 'AAACT2727Q', msmeNumber: null, fssaiNumber: null,
+      currency: 'INR', creditLimit: 5000000, creditDays: 60, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.tataconsumer.com',
+      riskCategory: 'LOW', riskScore: 12.5, parentPartnerId: null,
+      roles: ['CUSTOMER', 'CORPORATE'],
+      addresses: 3, contacts: 4, bankAccounts: 2, complianceRecords: 5,
+      createdAt: '2026-01-15T00:00:00Z',
+    },
+    {
+      id: 'bp-002', partnerCode: 'SUP-CASHEW-01', legalName: 'Konkan Cashew Processors Pvt. Ltd.', displayName: 'Konkan Cashew',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '27AAGCK1234M1Z2', panNumber: 'AAGCK1234M', msmeNumber: 'UDYAM-MH-12-0044521', fssaiNumber: '11522034000123',
+      currency: 'INR', creditLimit: 1000000, creditDays: 30, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.konkancashew.in',
+      riskCategory: 'LOW', riskScore: 18.0, parentPartnerId: null,
+      roles: ['SUPPLIER', 'MANUFACTURER'],
+      addresses: 2, contacts: 3, bankAccounts: 1, complianceRecords: 4,
+      createdAt: '2026-01-20T00:00:00Z',
+    },
+    {
+      id: 'bp-003', partnerCode: 'SUP-SUGAR-AP', legalName: 'Sri Balaji Sugar Industries Ltd.', displayName: 'Sri Balaji Sugar',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '37AAECS7890P1Z5', panNumber: 'AAECS7890P', msmeNumber: null, fssaiNumber: null,
+      currency: 'INR', creditLimit: 2500000, creditDays: 45, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.sribalajisugar.com',
+      riskCategory: 'MEDIUM', riskScore: 35.0, parentPartnerId: null,
+      roles: ['SUPPLIER'],
+      addresses: 2, contacts: 2, bankAccounts: 1, complianceRecords: 3,
+      createdAt: '2026-02-01T00:00:00Z',
+    },
+    {
+      id: 'bp-004', partnerCode: 'TRANS-BLUE-01', legalName: 'Blue Dart Express Ltd.', displayName: 'Blue Dart',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '27AAACB1234M1Z6', panNumber: 'AAACB1234M', msmeNumber: null, fssaiNumber: null,
+      currency: 'INR', creditLimit: 500000, creditDays: 30, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.bluedart.com',
+      riskCategory: 'LOW', riskScore: 15.0, parentPartnerId: null,
+      roles: ['TRANSPORTER', 'DELIVERY_PARTNER'],
+      addresses: 5, contacts: 6, bankAccounts: 2, complianceRecords: 2,
+      createdAt: '2026-01-10T00:00:00Z',
+    },
+    {
+      id: 'bp-005', partnerCode: 'CUST-RELIANCE-01', legalName: 'Reliance Retail Ltd.', displayName: 'Reliance Retail',
+      partnerType: 'CORPORATE', status: 'ACTIVE',
+      gstNumber: '27AAACR5055K1ZA', panNumber: 'AAACR5055K', msmeNumber: null, fssaiNumber: null,
+      currency: 'INR', creditLimit: 8000000, creditDays: 45, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.relianceretail.com',
+      riskCategory: 'LOW', riskScore: 8.0, parentPartnerId: null,
+      roles: ['CUSTOMER', 'DISTRIBUTOR', 'RETAIL_OUTLET'],
+      addresses: 8, contacts: 12, bankAccounts: 3, complianceRecords: 5,
+      createdAt: '2026-01-12T00:00:00Z',
+    },
+    {
+      id: 'bp-006', partnerCode: 'FRANCH-MUM-01', legalName: 'Sudhamrit Franchise - Andheri West', displayName: 'Sudhamrit Andheri',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '27AAGCS5678P1Z9', panNumber: 'AAGCS5678P', msmeNumber: 'UDYAM-MH-27-0012345', fssaiNumber: '11522034567890',
+      currency: 'INR', creditLimit: 500000, creditDays: 15, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: null,
+      riskCategory: 'MEDIUM', riskScore: 28.0, parentPartnerId: 'bp-001' === 'bp-001' ? null : null,
+      roles: ['FRANCHISE', 'RETAIL_OUTLET'],
+      addresses: 1, contacts: 2, bankAccounts: 1, complianceRecords: 3,
+      createdAt: '2026-03-05T00:00:00Z',
+    },
+    {
+      id: 'bp-007', partnerCode: 'SUP-GHEE-AMUL', legalName: 'Amul (Gujarat Co-op Milk Marketing Federation)', displayName: 'Amul',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '24AAACG1234N1Z1', panNumber: 'AAACG1234N', msmeNumber: null, fssaiNumber: '10322034000111',
+      currency: 'INR', creditLimit: 3000000, creditDays: 30, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.amul.com',
+      riskCategory: 'LOW', riskScore: 10.0, parentPartnerId: null,
+      roles: ['SUPPLIER', 'DISTRIBUTOR'],
+      addresses: 4, contacts: 5, bankAccounts: 2, complianceRecords: 4,
+      createdAt: '2026-01-18T00:00:00Z',
+    },
+    {
+      id: 'bp-008', partnerCode: 'CUST-BLR-TECH', legalName: 'Infosys Technologies Ltd.', displayName: 'Infosys',
+      partnerType: 'CORPORATE', status: 'ACTIVE',
+      gstNumber: '29AAACI4798L1ZB', panNumber: 'AAACI4798L', msmeNumber: null, fssaiNumber: null,
+      currency: 'INR', creditLimit: 2000000, creditDays: 30, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.infosys.com',
+      riskCategory: 'LOW', riskScore: 5.0, parentPartnerId: null,
+      roles: ['CUSTOMER', 'CORPORATE', 'SERVICE_PROVIDER'],
+      addresses: 3, contacts: 8, bankAccounts: 2, complianceRecords: 4,
+      createdAt: '2026-02-15T00:00:00Z',
+    },
+    {
+      id: 'bp-009', partnerCode: 'SUP-PKG-MUMBAI', legalName: 'Mumbai Packaging Solutions', displayName: 'Mumbai Packaging',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '27AAFCM9012P1Z3', panNumber: 'AAFCM9012P', msmeNumber: 'UDYAM-MH-16-0099887', fssaiNumber: null,
+      currency: 'INR', creditLimit: 800000, creditDays: 30, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: null,
+      riskCategory: 'MEDIUM', riskScore: 32.0, parentPartnerId: null,
+      roles: ['SUPPLIER'],
+      addresses: 2, contacts: 3, bankAccounts: 1, complianceRecords: 3,
+      createdAt: '2026-02-20T00:00:00Z',
+    },
+    {
+      id: 'bp-010', partnerCode: 'DELIV-ZOMATO-01', legalName: 'Zomato Limited', displayName: 'Zomato',
+      partnerType: 'COMPANY', status: 'ACTIVE',
+      gstNumber: '29AAACZ4567Q1Z8', panNumber: 'AAACZ4567Q', msmeNumber: null, fssaiNumber: null,
+      currency: 'INR', creditLimit: 300000, creditDays: 15, paymentMode: 'CREDIT',
+      preferredLanguage: 'EN', website: 'https://www.zomato.com',
+      riskCategory: 'LOW', riskScore: 20.0, parentPartnerId: null,
+      roles: ['DELIVERY_PARTNER', 'SERVICE_PROVIDER'],
+      addresses: 6, contacts: 4, bankAccounts: 1, complianceRecords: 2,
+      createdAt: '2026-03-01T00:00:00Z',
+    },
+  ],
+  groups: [
+    { id: 'cg-001', groupCode: 'CG-RETAIL', groupName: 'Retail Customers', groupType: 'CUSTOMER', discountPercent: 0, paymentTermsDefault: 'CASH', memberCount: 1245, status: 'ACTIVE' },
+    { id: 'cg-002', groupCode: 'CG-WHOLESALE', groupName: 'Wholesale Customers', groupType: 'CUSTOMER', discountPercent: 5, paymentTermsDefault: 'NET_30', memberCount: 89, status: 'ACTIVE' },
+    { id: 'cg-003', groupCode: 'CG-CORPORATE', groupName: 'Corporate Customers', groupType: 'CUSTOMER', discountPercent: 8, paymentTermsDefault: 'NET_45', memberCount: 32, status: 'ACTIVE' },
+    { id: 'cg-004', groupCode: 'CG-VIP', groupName: 'VIP Customers', groupType: 'CUSTOMER', discountPercent: 12, paymentTermsDefault: 'NET_30', memberCount: 18, status: 'ACTIVE' },
+    { id: 'cg-005', groupCode: 'CG-EXPORT', groupName: 'Export Customers', groupType: 'CUSTOMER', discountPercent: 0, paymentTermsDefault: 'ADVANCE', memberCount: 7, status: 'ACTIVE' },
+    { id: 'cg-006', groupCode: 'SG-RAW-MATERIAL', groupName: 'Raw Material Suppliers', groupType: 'SUPPLIER', discountPercent: null, paymentTermsDefault: 'NET_30', memberCount: 24, status: 'ACTIVE' },
+    { id: 'cg-007', groupCode: 'SG-PACKAGING', groupName: 'Packaging Suppliers', groupType: 'SUPPLIER', discountPercent: null, paymentTermsDefault: 'NET_30', memberCount: 12, status: 'ACTIVE' },
+    { id: 'cg-008', groupCode: 'SG-TRANSPORT', groupName: 'Transport Services', groupType: 'SUPPLIER', discountPercent: null, paymentTermsDefault: 'NET_15', memberCount: 8, status: 'ACTIVE' },
+    { id: 'cg-009', groupCode: 'SG-MAINTENANCE', groupName: 'Maintenance Services', groupType: 'SUPPLIER', discountPercent: null, paymentTermsDefault: 'NET_30', memberCount: 6, status: 'ACTIVE' },
+    { id: 'cg-010', groupCode: 'SG-UTILITY', groupName: 'Utility Providers', groupType: 'SUPPLIER', discountPercent: null, paymentTermsDefault: 'NET_30', memberCount: 4, status: 'ACTIVE' },
+  ],
+  scorecards: [
+    { partnerId: 'bp-002', partnerName: 'Konkan Cashew Processors', periodYear: 2026, periodQuarter: 2, onTimeDeliveryRating: 94.5, orderAccuracyRating: 98.2, qualityRating: 96.0, complaintRate: 1.2, paymentHistoryRating: 92.0, responseTimeRating: 88.0, riskScore: 18.0, overallScore: 93.5, performanceGrade: 'A', totalOrders: 142, totalOrderValue: 3845000, totalComplaints: 2, totalReturns: 1 },
+    { partnerId: 'bp-003', partnerName: 'Sri Balaji Sugar', periodYear: 2026, periodQuarter: 2, onTimeDeliveryRating: 82.0, orderAccuracyRating: 88.5, qualityRating: 90.0, complaintRate: 3.5, paymentHistoryRating: 85.0, responseTimeRating: 78.0, riskScore: 35.0, overallScore: 83.5, performanceGrade: 'B', totalOrders: 56, totalOrderValue: 2890000, totalComplaints: 5, totalReturns: 3 },
+    { partnerId: 'bp-007', partnerName: 'Amul', periodYear: 2026, periodQuarter: 2, onTimeDeliveryRating: 97.8, orderAccuracyRating: 99.5, qualityRating: 98.5, complaintRate: 0.5, paymentHistoryRating: 96.0, responseTimeRating: 95.0, riskScore: 10.0, overallScore: 97.8, performanceGrade: 'A+', totalOrders: 218, totalOrderValue: 8450000, totalComplaints: 1, totalReturns: 0 },
+    { partnerId: 'bp-004', partnerName: 'Blue Dart Express', periodYear: 2026, periodQuarter: 2, onTimeDeliveryRating: 91.2, orderAccuracyRating: 96.8, qualityRating: 92.0, complaintRate: 2.8, paymentHistoryRating: 88.0, responseTimeRating: 90.5, riskScore: 15.0, overallScore: 91.6, performanceGrade: 'A', totalOrders: 485, totalOrderValue: 1240000, totalComplaints: 14, totalReturns: 0 },
+    { partnerId: 'bp-009', partnerName: 'Mumbai Packaging Solutions', periodYear: 2026, periodQuarter: 2, onTimeDeliveryRating: 75.5, orderAccuracyRating: 82.0, qualityRating: 85.0, complaintRate: 5.2, paymentHistoryRating: 78.0, responseTimeRating: 72.0, riskScore: 32.0, overallScore: 78.5, performanceGrade: 'C', totalOrders: 38, totalOrderValue: 580000, totalComplaints: 8, totalReturns: 4 },
+    { partnerId: 'bp-001', partnerName: 'Tata Consumer Products', periodYear: 2026, periodQuarter: 2, onTimeDeliveryRating: null, orderAccuracyRating: null, qualityRating: 95.0, complaintRate: 0.8, paymentHistoryRating: 99.0, responseTimeRating: null, riskScore: 12.5, overallScore: 96.2, performanceGrade: 'A+', totalOrders: 32, totalOrderValue: 12500000, totalComplaints: 0, totalReturns: 0 },
+  ],
+  relationships: [
+    { id: 'rel-001', fromPartner: 'Tata Consumer Products', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'CUSTOMER_OF', validFrom: '2026-01-15', status: 'ACTIVE' },
+    { id: 'rel-002', fromPartner: 'Reliance Retail', toPartner: 'Reliance Industries', relationshipType: 'SUBSIDIARY', validFrom: '2026-01-12', status: 'ACTIVE' },
+    { id: 'rel-003', fromPartner: 'Konkan Cashew Processors', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'PREFERRED_SUPPLIER', validFrom: '2026-01-20', status: 'ACTIVE' },
+    { id: 'rel-004', fromPartner: 'Amul', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'STRATEGIC_PARTNER', validFrom: '2026-01-18', status: 'ACTIVE' },
+    { id: 'rel-005', fromPartner: 'Sudhamrit Franchise - Andheri West', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'FRANCHISE', validFrom: '2026-03-05', status: 'ACTIVE' },
+  ],
 }
 
 // ─── HTTP Server ────────────────────────────────────────
@@ -581,7 +728,7 @@ const server = Bun.serve({
         { code: 'PRD', name: 'Product Foundation', status: 'active', entities: 12, sprint: 6 },
         { code: 'PIM', name: 'Product Information Management', status: 'active', entities: 10, sprint: 7 },
         { code: 'COM', name: 'Commercial Engine', status: 'active', entities: 16, sprint: 8 },
-        { code: 'BP', name: 'Business Partner', status: 'planned', entities: 14, sprint: 9 },
+        { code: 'BP', name: 'Business Partner', status: 'active', entities: 12, sprint: 9 },
         { code: 'INV', name: 'Inventory', status: 'planned', entities: 22, sprint: 10 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 11 },
       ], 'Modules')), { headers })
@@ -998,12 +1145,164 @@ const server = Bun.serve({
       }, 'SUOP Commercial Engine v8.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 9 — BUSINESS PARTNER ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Business Partners ─────────────────────────────────
+    // GET /api/business-partners
+    if (path === '/api/business-partners' && method === 'GET') {
+      const roleFilter = url.searchParams.get('role')
+      const typeFilter = url.searchParams.get('type')
+      let partners = BP_DATA.partners
+      if (roleFilter) partners = partners.filter(p => p.roles.includes(roleFilter.toUpperCase()))
+      if (typeFilter) partners = partners.filter(p => p.partnerType === typeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(partners, `${partners.length} business partners`)), { headers })
+    }
+    // POST /api/business-partners
+    if (path === '/api/business-partners' && method === 'POST') {
+      try {
+        const body = await req.json()
+        // Validate
+        if (!body.partnerCode || !body.legalName) {
+          return new Response(JSON.stringify(errorResponse('partnerCode and legalName are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        if (!body.roles || body.roles.length === 0) {
+          return new Response(JSON.stringify(errorResponse('At least one partner role is required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        // Check duplicate code
+        if (BP_DATA.partners.find(p => p.partnerCode === body.partnerCode)) {
+          return new Response(JSON.stringify(errorResponse('Partner code already exists', 'DUPLICATE', 409)), { status: 409, headers })
+        }
+        // Check duplicate GST/PAN
+        if (body.gstNumber && BP_DATA.partners.find(p => p.gstNumber === body.gstNumber)) {
+          return new Response(JSON.stringify(errorResponse('GST number already registered (duplicate detection)', 'DUPLICATE_GST', 409)), { status: 409, headers })
+        }
+        const bp = {
+          id: crypto.randomUUID(),
+          partnerCode: body.partnerCode,
+          legalName: body.legalName,
+          displayName: body.displayName || body.legalName,
+          partnerType: body.partnerType || 'COMPANY',
+          status: 'ACTIVE',
+          gstNumber: body.gstNumber || null,
+          panNumber: body.panNumber || null,
+          msmeNumber: body.msmeNumber || null,
+          fssaiNumber: body.fssaiNumber || null,
+          currency: body.currency || 'INR',
+          creditLimit: body.creditLimit || 0,
+          creditDays: body.creditDays || 0,
+          paymentMode: body.paymentMode || 'CREDIT',
+          preferredLanguage: body.preferredLanguage || 'EN',
+          website: body.website || null,
+          riskCategory: body.riskCategory || 'MEDIUM',
+          riskScore: body.riskScore || 50,
+          parentPartnerId: body.parentPartnerId || null,
+          roles: body.roles,
+          addresses: 0, contacts: 0, bankAccounts: 0, complianceRecords: 0,
+          createdAt: new Date().toISOString(),
+        }
+        BP_DATA.partners.push(bp)
+        log('info', 'Business partner created', { code: bp.partnerCode, roles: bp.roles })
+        return new Response(JSON.stringify(successResponse(bp, 'Business partner created')), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+
+    // GET /api/business-partners/:id
+    if (path.match(/^\/api\/business-partners\/[^/]+$/) && method === 'GET') {
+      const id = path.split('/')[3]
+      const bp = BP_DATA.partners.find(p => p.id === id)
+      if (!bp) return new Response(JSON.stringify(errorResponse('Partner not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      return new Response(JSON.stringify(successResponse(bp, 'Partner details')), { headers })
+    }
+
+    // GET /api/business-partners/groups
+    if (path === '/api/business-partners/groups' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(BP_DATA.groups, 'Partner groups')), { headers })
+    }
+
+    // GET /api/business-partners/scorecards
+    if (path === '/api/business-partners/scorecards' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(BP_DATA.scorecards, 'Partner scorecards')), { headers })
+    }
+
+    // GET /api/business-partners/relationships
+    if (path === '/api/business-partners/relationships' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(BP_DATA.relationships, 'Partner relationships')), { headers })
+    }
+
+    // GET /api/business-partners/dashboard
+    if (path === '/api/business-partners/dashboard' && method === 'GET') {
+      const roleCounts: Record<string, number> = {}
+      BP_DATA.partners.forEach(p => p.roles.forEach(r => { roleCounts[r] = (roleCounts[r] || 0) + 1 }))
+      const typeCounts: Record<string, number> = {}
+      BP_DATA.partners.forEach(p => { typeCounts[p.partnerType] = (typeCounts[p.partnerType] || 0) + 1 })
+      const riskCounts: Record<string, number> = {}
+      BP_DATA.partners.forEach(p => { riskCounts[p.riskCategory] = (riskCounts[p.riskCategory] || 0) + 1 })
+      const totalCredit = BP_DATA.partners.reduce((sum, p) => sum + (p.creditLimit || 0), 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          totalPartners: BP_DATA.partners.length,
+          activePartners: BP_DATA.partners.filter(p => p.status === 'ACTIVE').length,
+          customerGroups: BP_DATA.groups.filter(g => g.groupType === 'CUSTOMER').length,
+          supplierGroups: BP_DATA.groups.filter(g => g.groupType === 'SUPPLIER').length,
+          scorecards: BP_DATA.scorecards.length,
+          relationships: BP_DATA.relationships.length,
+        },
+        roleBreakdown: roleCounts,
+        typeBreakdown: typeCounts,
+        riskBreakdown: riskCounts,
+        totalCreditExposure: totalCredit,
+        topPartners: BP_DATA.partners
+          .slice()
+          .sort((a, b) => (b.creditLimit || 0) - (a.creditLimit || 0))
+          .slice(0, 5)
+          .map(p => ({ code: p.partnerCode, name: p.displayName, creditLimit: p.creditLimit, risk: p.riskCategory })),
+      }, 'Business Partner dashboard')), { headers })
+    }
+
+    // GET /api/business-partners/info
+    if (path === '/api/business-partners/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Business Partner Platform',
+        version: '9.0.0',
+        sprint: 9,
+        sprintName: 'Enterprise Business Partner Platform',
+        partnerTypes: ['INDIVIDUAL', 'COMPANY', 'GOVERNMENT', 'NGO', 'TRUST', 'CORPORATE', 'FOREIGN_ENTITY'],
+        partnerRoles: ['CUSTOMER', 'SUPPLIER', 'DISTRIBUTOR', 'TRANSPORTER', 'DELIVERY_PARTNER', 'MANUFACTURER', 'RETAIL_OUTLET', 'RESTAURANT_OUTLET', 'FRANCHISE', 'SERVICE_PROVIDER', 'CONSULTANT'],
+        complianceTypes: ['GST', 'PAN', 'MSME', 'FSSAI', 'IEC', 'ISO', 'AGREEMENT', 'INSURANCE'],
+        addressTypes: ['REGISTERED_OFFICE', 'BILLING', 'SHIPPING', 'FACTORY', 'WAREHOUSE', 'BRANCH', 'RESTAURANT', 'PICKUP', 'RETURN'],
+        relationshipTypes: ['PARENT_COMPANY', 'SUBSIDIARY', 'DISTRIBUTOR', 'DEALER', 'FRANCHISE', 'PREFERRED_SUPPLIER', 'STRATEGIC_PARTNER', 'SISTER_CONCERN', 'JV_PARTNER'],
+        endpoints: [
+          'GET    /api/business-partners',
+          'POST   /api/business-partners',
+          'GET    /api/business-partners/:id',
+          'GET    /api/business-partners/groups',
+          'GET    /api/business-partners/scorecards',
+          'GET    /api/business-partners/relationships',
+          'GET    /api/business-partners/dashboard',
+          'GET    /api/business-partners/info',
+        ],
+      }, 'SUOP Business Partner Platform v9.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 8, sprintName: 'Enterprise Pricing, Taxation & Commercial Engine' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 9, sprintName: 'Enterprise Business Partner Platform' })
+log('info', 'Business Partner endpoints available', {
+  partners: 'GET/POST /api/business-partners',
+  partnerById: 'GET /api/business-partners/:id',
+  groups: 'GET /api/business-partners/groups',
+  scorecards: 'GET /api/business-partners/scorecards',
+  relationships: 'GET /api/business-partners/relationships',
+  dashboard: 'GET /api/business-partners/dashboard',
+  info: 'GET /api/business-partners/info',
+})
 log('info', 'Commercial Engine endpoints available', {
   priceLists: 'GET/POST /api/commercial/price-lists',
   taxGroups: 'GET/POST /api/commercial/tax-groups',
