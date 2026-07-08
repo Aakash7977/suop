@@ -1396,3 +1396,26 @@ Stage Summary:
 - Frontend: New StockIssueModule with 5 tabs
 - Architecture: Implements Issue Request workflow — Production Order → Issue Request → Warehouse Approval → Picking Task → Barcode Scan → Stock Issue → Inventory Ledger. Prevents unauthorized stock withdrawals.
 - Next: Sprint 15 — Enterprise Stock Transfer Engine (warehouse-to-warehouse, branch-to-branch, bin-to-bin transfers with in-transit inventory)
+
+---
+Task ID: SPRINT-15
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 15 — Stock Transfer & In-Transit Inventory Engine
+
+Work Log:
+- Added Sprint 15 schema (4 new tables, total now 149):
+  - StockTransfer (11 transfer types: WH→WH, WH→Store, WH→Restaurant, Plant→WH, Plant→Store, Branch→Branch, Bin→Bin, Loc→Loc, Cold Storage, Transit Vehicle, Return; 10 statuses; source/dest company/branch/warehouse; logistics: vehicle, driver, carrier; ETA tracking)
+  - StockTransferLine (requested vs dispatched vs received quantities; source/dest locations + bins; receipt status: PENDING/PARTIALLY_RECEIVED/RECEIVED/SHORT_RECEIPT/OVER_RECEIPT/DAMAGED/REJECTED; variance tracking)
+  - InventoryInTransit (tracks stock between source and destination; transit status: IN_TRANSIT/DELIVERED/PARTIALLY_DELIVERED/LOST/DELAYED/CANCELLED; vehicle, driver, carrier, dispatch time, ETA)
+  - BinTransfer (within-warehouse moves: rack→rack, bin→bin, shelf→shelf; 6 reasons: REORGANIZATION, CONSOLIDATION, CAPACITY_OPTIMIZATION, CYCLE_COUNT_PREP, TEMP_CONTROL, MANUAL; barcode scan support)
+- Updated backend: ST_DATA seed (8 transfers, 5 in-transit items, 4 bin transfers). Added 8 endpoints: GET/POST /api/stock-transfers, POST /:id/approve, POST /:id/dispatch, POST /:id/receive, GET /api/stock-transfers/in-transit, GET /api/bin-transfers, GET /api/stock-transfers/dashboard, GET /api/stock-transfers/info. Backend version 15.0.0.
+- Updated frontend: Added StockTransferModule with 4 tabs (Dashboard, Transfers, In Transit, Bin Transfers). Dashboard shows transfer stats + 6-step workflow diagram. Transfers tab shows 11 type colors + requested/dispatched/received columns. In Transit tab shows amber-highlighted cards with route, vehicle, driver, ETA. Bin Transfers tab shows from→to bin moves with reason badges.
+- Updated sidebar: "Stock Transfer" added to Operations section. Dashboard shows 149 tables, 15 sprints.
+- Verified: npx prisma validate passes. npx tsc --noEmit clean. npx next build succeeds. Server running.
+
+Stage Summary:
+- Database: 149 tables (Sprint 15 added 4)
+- Backend: 8 new endpoints under /api/stock-transfers/*, /api/bin-transfers
+- Frontend: New StockTransferModule with 4 tabs
+- Architecture: Full transfer workflow: Request → Approve → Dispatch → In Transit → Receive → Complete. Source ≠ Destination enforced. In-transit inventory tracked separately (not available at either location).
+- Next: Sprint 16 — Inventory Adjustment, Stock Correction & Reconciliation Engine

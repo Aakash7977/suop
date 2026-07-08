@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "14.0.0"
+const VERSION = "15.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -706,6 +706,35 @@ const SI_DATA = {
   ],
 }
 
+// ═══════════════════════════════════════════════════════════
+// SPRINT 15 — STOCK TRANSFER & IN-TRANSIT ENGINE SEED DATA
+// ═══════════════════════════════════════════════════════════
+const ST_DATA = {
+  transfers: [
+    { id: 'st-001', transferNumber: 'ST-2026-0042', transferType: 'PLANT_TO_WAREHOUSE', date: '2026-07-03', sourceWh: 'Mumbai Plant Warehouse', destWh: 'Mumbai DC', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', status: 'COMPLETED', lines: 1, requested: 358, dispatched: 358, received: 358, value: 125300, requestedBy: 'Anita Desai', eta: '2026-07-03', actualArrival: '2026-07-03' },
+    { id: 'st-002', transferNumber: 'ST-2026-0043', transferType: 'WAREHOUSE_TO_STORE', date: '2026-07-06', sourceWh: 'Mumbai DC', destWh: 'Mumbai Retail Store 01', vehicle: 'MH-04-TR-1192', driver: 'Sandeep Kumar', carrier: 'Blue Dart Express', status: 'COMPLETED', lines: 2, requested: 72, dispatched: 72, received: 72, value: 38880, requestedBy: 'Vikram Iyer', eta: '2026-07-06', actualArrival: '2026-07-06' },
+    { id: 'st-003', transferNumber: 'ST-2026-0044', transferType: 'WAREHOUSE_TO_WAREHOUSE', date: '2026-07-08', sourceWh: 'Mumbai DC', destWh: 'Pune Warehouse', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', status: 'IN_TRANSIT', lines: 3, requested: 200, dispatched: 200, received: 0, value: 70000, requestedBy: 'Anita Desai', eta: '2026-07-09', actualArrival: null },
+    { id: 'st-004', transferNumber: 'ST-2026-0045', transferType: 'BRANCH_TO_BRANCH', date: '2026-07-09', sourceWh: 'Mumbai DC', destWh: 'Pune Warehouse', vehicle: null, driver: null, carrier: null, status: 'APPROVED', lines: 2, requested: 150, dispatched: 0, received: 0, value: 52500, requestedBy: 'Suresh Patil', eta: null, actualArrival: null },
+    { id: 'st-005', transferNumber: 'ST-2026-0046', transferType: 'WAREHOUSE_TO_RESTAURANT', date: '2026-07-09', sourceWh: 'Mumbai Plant Warehouse', destWh: 'Sudhamrit Restaurant Mumbai', vehicle: null, driver: null, carrier: null, status: 'SUBMITTED', lines: 5, requested: 45, dispatched: 0, received: 0, value: 0, requestedBy: 'Chef Rajesh', eta: null, actualArrival: null },
+    { id: 'st-006', transferNumber: 'ST-2026-0047', transferType: 'RETURN_TRANSFER', date: '2026-07-07', sourceWh: 'Mumbai Retail Store 01', destWh: 'Mumbai DC', vehicle: 'MH-04-TR-1192', driver: 'Sandeep Kumar', carrier: 'Blue Dart Express', status: 'PARTIALLY_RECEIVED', lines: 1, requested: 24, dispatched: 24, received: 22, value: 12960, requestedBy: 'Vikram Iyer', eta: '2026-07-07', actualArrival: '2026-07-07' },
+    { id: 'st-007', transferNumber: 'ST-2026-0048', transferType: 'COLD_STORAGE_TRANSFER', date: '2026-07-09', sourceWh: 'Mumbai Plant Warehouse', destWh: 'Mumbai DC', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', status: 'DISPATCHED', lines: 2, requested: 100, dispatched: 100, received: 0, value: 35000, requestedBy: 'Anita Desai', eta: '2026-07-09', actualArrival: null },
+    { id: 'st-008', transferNumber: 'ST-2026-0049', transferType: 'PLANT_TO_STORE', date: '2026-07-05', sourceWh: 'Mumbai Plant Warehouse', destWh: 'Mumbai Retail Store 01', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', status: 'COMPLETED', lines: 1, requested: 48, dispatched: 48, received: 48, value: 25920, requestedBy: 'Vikram Iyer', eta: '2026-07-05', actualArrival: '2026-07-05' },
+  ],
+  inTransit: [
+    { id: 'iit-001', transferNumber: 'ST-2026-0044', product: 'Kaju Katli 500g', batch: 'KK-2607-01', qty: 100, sourceWh: 'Mumbai DC', destWh: 'Pune Warehouse', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', dispatchedAt: '2026-07-08T14:00:00Z', eta: '2026-07-09T12:00:00Z', status: 'IN_TRANSIT', value: 35000 },
+    { id: 'iit-002', transferNumber: 'ST-2026-0044', product: 'Soan Cake 1kg', batch: 'SC-2606-04', qty: 50, sourceWh: 'Mumbai DC', destWh: 'Pune Warehouse', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', dispatchedAt: '2026-07-08T14:00:00Z', eta: '2026-07-09T12:00:00Z', status: 'IN_TRANSIT', value: 31250 },
+    { id: 'iit-003', transferNumber: 'ST-2026-0044', product: 'Mixed Namkeen 200g', batch: 'MN-2607-03', qty: 50, sourceWh: 'Mumbai DC', destWh: 'Pune Warehouse', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', dispatchedAt: '2026-07-08T14:00:00Z', eta: '2026-07-09T12:00:00Z', status: 'IN_TRANSIT', value: 2650 },
+    { id: 'iit-004', transferNumber: 'ST-2026-0047', product: 'Gulab Jamun 1kg', batch: 'GJ-2607-01', qty: 60, sourceWh: 'Mumbai Plant Warehouse', destWh: 'Mumbai DC', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', dispatchedAt: '2026-07-09T08:00:00Z', eta: '2026-07-09T10:00:00Z', status: 'IN_TRANSIT', value: 18240 },
+    { id: 'iit-005', transferNumber: 'ST-2026-0047', product: 'Kaju Katli 250g', batch: null, qty: 40, sourceWh: 'Mumbai Plant Warehouse', destWh: 'Mumbai DC', vehicle: 'MH-12-TR-8821', driver: 'Ramesh Yadav', carrier: 'In-House Logistics', dispatchedAt: '2026-07-09T08:00:00Z', eta: '2026-07-09T10:00:00Z', status: 'IN_TRANSIT', value: 16800 },
+  ],
+  binTransfers: [
+    { id: 'bt-001', binTransferNumber: 'BT-2026-0023', date: '2026-07-08', warehouse: 'Mumbai Plant Warehouse', product: 'Kaju Katli 500g', batch: 'KK-2607-01', qty: 100, fromZone: 'Receiving Area', fromBin: 'RCV-01', toZone: 'Zone C - Cold Storage', toBin: 'C2-03', reason: 'REORGANIZATION', status: 'COMPLETED', createdBy: 'Ramesh Yadav' },
+    { id: 'bt-002', binTransferNumber: 'BT-2026-0024', date: '2026-07-08', warehouse: 'Mumbai Plant Warehouse', product: 'Sugar (Raw)', batch: null, qty: 50, fromZone: 'Zone A - Raw Materials', fromBin: 'A2-01', toZone: 'Zone A - Raw Materials', toBin: 'A2-03', reason: 'CONSOLIDATION', status: 'COMPLETED', createdBy: 'Ramesh Yadav' },
+    { id: 'bt-003', binTransferNumber: 'BT-2026-0025', date: '2026-07-09', warehouse: 'Mumbai DC', product: 'Mixed Namkeen 200g', batch: 'MN-2607-03', qty: 200, fromZone: 'Zone B - General', fromBin: 'B1-02', toZone: 'Zone B - General', toBin: 'B3-05', reason: 'CAPACITY_OPTIMIZATION', status: 'PENDING', createdBy: 'Sandeep Kumar' },
+    { id: 'bt-004', binTransferNumber: 'BT-2026-0026', date: '2026-07-09', warehouse: 'Mumbai Plant Warehouse', product: 'Ghee (Raw)', batch: null, qty: 10, fromZone: 'Zone C - Cold Storage', fromBin: 'C1-01', toZone: 'Zone C - Cold Storage', toBin: 'C1-04', reason: 'TEMP_CONTROL', status: 'PENDING', createdBy: 'Suresh Patil' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1093,9 +1122,10 @@ const server = Bun.serve({
         { code: 'INV', name: 'Inventory Engine', status: 'active', entities: 8, sprint: 12 },
         { code: 'GRN', name: 'Goods Receipt & Putaway', status: 'active', entities: 5, sprint: 13 },
         { code: 'ISS', name: 'Stock Issue & Outbound', status: 'active', entities: 6, sprint: 14 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 15 },
-        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 16 },
-        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 17 },
+        { code: 'TRF', name: 'Stock Transfer & Transit', status: 'active', entities: 4, sprint: 15 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 16 },
+        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 17 },
+        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
     }
 
@@ -2595,28 +2625,81 @@ const server = Bun.serve({
       }, 'SUOP Outbound Engine v14.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 15 — STOCK TRANSFER & IN-TRANSIT ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    if (path === '/api/stock-transfers' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let transfers = ST_DATA.transfers
+      if (typeFilter) transfers = transfers.filter(t => t.transferType === typeFilter.toUpperCase())
+      if (statusFilter) transfers = transfers.filter(t => t.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(transfers, `${transfers.length} stock transfers`)), { headers })
+    }
+    if (path === '/api/stock-transfers' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.sourceWarehouseId || !body.destWarehouseId) return new Response(JSON.stringify(errorResponse('source and destination required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        if (body.sourceWarehouseId === body.destWarehouseId) return new Response(JSON.stringify(errorResponse('Source and destination cannot be the same', 'SAME_LOCATION', 400)), { status: 400, headers })
+        const transferNumber = `ST-2026-${String(50 + ST_DATA.transfers.length).padStart(4, '0')}`
+        const transfer = { id: crypto.randomUUID(), transferNumber, transferType: body.transferType || 'WAREHOUSE_TO_WAREHOUSE', date: body.date || new Date().toISOString().slice(0,10), sourceWh: body.sourceWarehouseName || 'Source', destWh: body.destWarehouseName || 'Destination', vehicle: body.vehicleNumber || null, driver: body.driverName || null, carrier: body.carrierName || null, status: 'DRAFT', lines: body.lines ? body.lines.length : 0, requested: body.lines ? body.lines.reduce((s:number,l:any)=>s+Number(l.requestedQty||0),0) : 0, dispatched: 0, received: 0, value: 0, requestedBy: body.requestedByName || 'System', eta: null, actualArrival: null }
+        ST_DATA.transfers.unshift(transfer)
+        log('info', 'Stock transfer created', { transferNumber })
+        return new Response(JSON.stringify(successResponse(transfer, `Transfer ${transferNumber} created`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    if (path.match(/^\/api\/stock-transfers\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]; const t = ST_DATA.transfers.find(x => x.id === id)
+      if (!t) return new Response(JSON.stringify(errorResponse('Not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (t.status !== 'SUBMITTED' && t.status !== 'DRAFT') return new Response(JSON.stringify(errorResponse(`Cannot approve in ${t.status}`)), { status: 400, headers })
+      t.status = 'APPROVED'; log('info', 'Transfer approved', { transferNumber: t.transferNumber })
+      return new Response(JSON.stringify(successResponse(t, 'Transfer approved')), { headers })
+    }
+    if (path.match(/^\/api\/stock-transfers\/[^/]+\/dispatch$/) && method === 'POST') {
+      const id = path.split('/')[3]; const t = ST_DATA.transfers.find(x => x.id === id)
+      if (!t) return new Response(JSON.stringify(errorResponse('Not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (t.status !== 'APPROVED') return new Response(JSON.stringify(errorResponse(`Cannot dispatch in ${t.status}`)), { status: 400, headers })
+      t.status = 'IN_TRANSIT'; t.dispatched = t.requested; log('info', 'Transfer dispatched', { transferNumber: t.transferNumber })
+      return new Response(JSON.stringify(successResponse(t, 'Transfer dispatched - in transit')), { headers })
+    }
+    if (path.match(/^\/api\/stock-transfers\/[^/]+\/receive$/) && method === 'POST') {
+      const id = path.split('/')[3]; const t = ST_DATA.transfers.find(x => x.id === id)
+      if (!t) return new Response(JSON.stringify(errorResponse('Not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (t.status !== 'IN_TRANSIT' && t.status !== 'DISPATCHED') return new Response(JSON.stringify(errorResponse(`Cannot receive in ${t.status}`)), { status: 400, headers })
+      t.status = 'COMPLETED'; t.received = t.dispatched; t.actualArrival = new Date().toISOString().slice(0,10); log('info', 'Transfer received', { transferNumber: t.transferNumber })
+      return new Response(JSON.stringify(successResponse(t, 'Transfer received and completed')), { headers })
+    }
+    if (path === '/api/stock-transfers/in-transit' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ST_DATA.inTransit, 'In-transit inventory')), { headers })
+    }
+    if (path === '/api/bin-transfers' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ST_DATA.binTransfers, 'Bin transfers')), { headers })
+    }
+    if (path === '/api/stock-transfers/dashboard' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        counts: { total: ST_DATA.transfers.length, completed: ST_DATA.transfers.filter(t=>t.status==='COMPLETED').length, inTransit: ST_DATA.transfers.filter(t=>t.status==='IN_TRANSIT').length, pendingApproval: ST_DATA.transfers.filter(t=>t.status==='SUBMITTED').length, dispatched: ST_DATA.transfers.filter(t=>t.status==='DISPATCHED').length, partialReceipt: ST_DATA.transfers.filter(t=>t.status==='PARTIALLY_RECEIVED').length },
+        transit: { inTransitItems: ST_DATA.inTransit.length, inTransitValue: ST_DATA.inTransit.reduce((s,i)=>s+i.value,0) },
+        binTransfers: { total: ST_DATA.binTransfers.length, pending: ST_DATA.binTransfers.filter(b=>b.status==='PENDING').length, completed: ST_DATA.binTransfers.filter(b=>b.status==='COMPLETED').length },
+      }, 'Transfer dashboard')), { headers })
+    }
+    if (path === '/api/stock-transfers/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Stock Transfer & In-Transit Engine', version: '15.0.0', sprint: 15,
+        sprintName: 'Enterprise Stock Transfer & In-Transit Inventory Engine',
+        transferTypes: ['WAREHOUSE_TO_WAREHOUSE','WAREHOUSE_TO_STORE','WAREHOUSE_TO_RESTAURANT','PLANT_TO_WAREHOUSE','PLANT_TO_STORE','BRANCH_TO_BRANCH','BIN_TO_BIN','LOCATION_TO_LOCATION','COLD_STORAGE_TRANSFER','TRANSIT_VEHICLE_TRANSFER','RETURN_TRANSFER'],
+        transferStatuses: ['DRAFT','SUBMITTED','APPROVED','REJECTED','CANCELLED','PARTIALLY_DISPATCHED','DISPATCHED','IN_TRANSIT','PARTIALLY_RECEIVED','COMPLETED'],
+        endpoints: ['GET/POST /api/stock-transfers','POST /:id/approve','POST /:id/dispatch','POST /:id/receive','GET /api/stock-transfers/in-transit','GET /api/bin-transfers','GET /api/stock-transfers/dashboard','GET /api/stock-transfers/info'],
+      }, 'SUOP Transfer Engine v15.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 14, sprintName: 'Stock Issue, Material Consumption & Outbound Engine' })
-log('info', 'Stock Issue & Outbound endpoints available', {
-  stockIssues: 'GET/POST /api/stock-issues',
-  approve: 'POST /api/stock-issues/:id/approve',
-  pickingTasks: 'GET /api/picking/tasks + POST /:id/complete',
-  scrapRecords: 'GET /api/scrap-records + POST /:id/approve',
-  damageRecords: 'GET /api/damage-records',
-  dashboard: 'GET /api/stock-issues/dashboard',
-})
-log('info', 'GRN & Putaway endpoints available', {
-  goodsReceipts: 'GET/POST /api/goods-receipts',
-  putawayTasks: 'GET /api/putaway/tasks',
-  qualityHolds: 'GET /api/quality-holds',
-})
-log('info', 'Inventory Engine endpoints available', {
-  transactions: 'GET/POST /api/inventory/transactions',
-  balances: 'GET /api/inventory/balances',
-  ledger: 'GET /api/inventory/ledger',
-  availability: 'GET /api/inventory/availability',
-})
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 15, sprintName: 'Stock Transfer & In-Transit Inventory Engine' })
+log('info', 'Transfer endpoints available', { transfers: 'GET/POST /api/stock-transfers', approve: 'POST /:id/approve', dispatch: 'POST /:id/dispatch', receive: 'POST /:id/receive', inTransit: 'GET /api/stock-transfers/in-transit', binTransfers: 'GET /api/bin-transfers', dashboard: 'GET /api/stock-transfers/dashboard' })
+log('info', 'Outbound endpoints available', { stockIssues: 'GET/POST /api/stock-issues', picking: 'GET /api/picking/tasks', scrap: 'GET /api/scrap-records', damage: 'GET /api/damage-records' })
+log('info', 'Receiving endpoints available', { goodsReceipts: 'GET/POST /api/goods-receipts', putaway: 'GET /api/putaway/tasks', quality: 'GET /api/quality-holds' })
+log('info', 'Inventory endpoints available', { transactions: 'GET/POST /api/inventory/transactions', balances: 'GET /api/inventory/balances', ledger: 'GET /api/inventory/ledger' })

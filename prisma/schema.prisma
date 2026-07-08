@@ -4368,3 +4368,209 @@ model DamageRecord {
   @@index([damageSeverity], map: "idx_dmg_severity")
   @@index([status], map: "idx_dmg_status")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 15 — STOCK TRANSFER & IN-TRANSIT INVENTORY ENGINE
+// Move inventory across warehouses, branches, bins, locations
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Stock Transfer Document ────────────────────
+model StockTransfer {
+  id              String   @id @default(uuid()) @db.Uuid
+  transferNumber  String   @unique @map("transfer_number")
+  transferDate    DateTime @map("transfer_date")
+  // ─── Type ───
+  transferType    String   @map("transfer_type") // WAREHOUSE_TO_WAREHOUSE, WAREHOUSE_TO_STORE, WAREHOUSE_TO_RESTAURANT, PLANT_TO_WAREHOUSE, PLANT_TO_STORE, BRANCH_TO_BRANCH, BIN_TO_BIN, LOCATION_TO_LOCATION, COLD_STORAGE_TRANSFER, TRANSIT_VEHICLE_TRANSFER, RETURN_TRANSFER
+  // ─── Source ───
+  sourceCompanyId    String? @db.Uuid @map("source_company_id")
+  sourceBranchId     String? @db.Uuid @map("source_branch_id")
+  sourceWarehouseId  String? @db.Uuid @map("source_warehouse_id")
+  sourceWarehouseName String? @map("source_warehouse_name")
+  // ─── Destination ───
+  destCompanyId      String? @db.Uuid @map("dest_company_id")
+  destBranchId       String? @db.Uuid @map("dest_branch_id")
+  destWarehouseId    String? @db.Uuid @map("dest_warehouse_id")
+  destWarehouseName  String? @map("dest_warehouse_name")
+  // ─── Logistics ───
+  vehicleNumber   String?  @map("vehicle_number")
+  driverName      String?  @map("driver_name")
+  carrierId       String?  @db.Uuid @map("carrier_id")
+  carrierName     String?  @map("carrier_name")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED, CANCELLED, PARTIALLY_DISPATCHED, DISPATCHED, IN_TRANSIT, PARTIALLY_RECEIVED, COMPLETED
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  totalRequestedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_requested_qty")
+  totalDispatchedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_dispatched_qty")
+  totalReceivedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_received_qty")
+  totalValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_value")
+  // ─── Workflow timestamps ───
+  submittedAt     DateTime? @map("submitted_at")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  dispatchedAt    DateTime? @map("dispatched_at")
+  dispatchedById  String?  @db.Uuid @map("dispatched_by_id")
+  inTransitAt     DateTime? @map("in_transit_at")
+  receivedAt      DateTime? @map("received_at")
+  receivedById    String?  @db.Uuid @map("received_by_id")
+  completedAt     DateTime? @map("completed_at")
+  // ─── Transit ───
+  estimatedArrival DateTime? @map("estimated_arrival")
+  actualArrival    DateTime? @map("actual_arrival")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  requestedById   String?  @db.Uuid @map("requested_by_id")
+  requestedByName String?  @map("requested_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           StockTransferLine[]
+  transitRecords  InventoryInTransit[]
+
+  @@map("stock_transfers")
+  @@index([transferType, status], map: "idx_st_type_status")
+  @@index([sourceWarehouseId, destWarehouseId], map: "idx_st_route")
+  @@index([status, transferDate], map: "idx_st_status_date")
+}
+
+model StockTransferLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  stockTransferId String   @db.Uuid @map("stock_transfer_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Quantities ───
+  requestedQty    Decimal  @db.Decimal(18, 4) @map("requested_qty")
+  dispatchedQty   Decimal  @db.Decimal(18, 4) @default(0) @map("dispatched_qty")
+  receivedQty     Decimal  @db.Decimal(18, 4) @default(0) @map("received_qty")
+  // ─── Locations ───
+  sourceLocationId String? @db.Uuid @map("source_location_id")
+  sourceLocationName String? @map("source_location_name")
+  sourceBin       String?  @map("source_bin")
+  destLocationId  String?  @db.Uuid @map("dest_location_id")
+  destLocationName String? @map("dest_location_name")
+  destBin         String?  @map("dest_bin")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalCost       Decimal? @db.Decimal(18, 4) @map("total_cost")
+  // ─── Receipt status ───
+  receiptStatus   String   @default("PENDING") @map("receipt_status") // PENDING, PARTIALLY_RECEIVED, RECEIVED, SHORT_RECEIPT, OVER_RECEIPT, DAMAGED, REJECTED
+  varianceQty     Decimal  @db.Decimal(18, 4) @default(0) @map("variance_qty")
+  varianceReason  String?  @map("variance_reason")
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+
+  @@map("stock_transfer_lines")
+  @@index([stockTransferId, lineOrder], map: "idx_stl_st_order")
+  @@index([productId, batchId], map: "idx_stl_product_batch")
+  @@index([receiptStatus], map: "idx_stl_receipt")
+}
+
+// ─── Epic 3: In-Transit Inventory ──────────────────────
+model InventoryInTransit {
+  id              String   @id @default(uuid()) @db.Uuid
+  stockTransferId String?  @db.Uuid @map("stock_transfer_id")
+  transferNumber  String?  @map("transfer_number")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  quantity        Decimal  @db.Decimal(18, 4)
+  // ─── Route ───
+  sourceWarehouseId   String? @db.Uuid @map("source_warehouse_id")
+  sourceWarehouseName String? @map("source_warehouse_name")
+  destWarehouseId     String? @db.Uuid @map("dest_warehouse_id")
+  destWarehouseName   String? @map("dest_warehouse_name")
+  // ─── Logistics ───
+  vehicleNumber   String?  @map("vehicle_number")
+  driverName      String?  @map("driver_name")
+  carrierName     String?  @map("carrier_name")
+  // ─── Timing ───
+  dispatchedAt    DateTime @map("dispatched_at")
+  estimatedArrival DateTime? @map("estimated_arrival")
+  actualArrival   DateTime? @map("actual_arrival")
+  // ─── Status ───
+  transitStatus   String   @default("IN_TRANSIT") @map("transit_status") // IN_TRANSIT, DELIVERED, PARTIALLY_DELIVERED, LOST, DELAYED, CANCELLED
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_value")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  stockTransfer   StockTransfer? @relation(fields: [stockTransferId], references: [id], onDelete: SetNull)
+
+  @@map("inventory_in_transit")
+  @@index([stockTransferId], map: "idx_iit_transfer")
+  @@index([transitStatus], map: "idx_iit_status")
+  @@index([sourceWarehouseId, destWarehouseId], map: "idx_iit_route")
+  @@index([estimatedArrival], map: "idx_iit_eta")
+}
+
+// ─── Epic 6: Bin & Location Transfer ───────────────────
+model BinTransfer {
+  id              String   @id @default(uuid()) @db.Uuid
+  binTransferNumber String  @unique @map("bin_transfer_number")
+  transferDate    DateTime @map("transfer_date")
+  // ─── Warehouse ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  quantity        Decimal  @db.Decimal(18, 4)
+  // ─── From ───
+  fromZone        String?  @map("from_zone")
+  fromRack        String?  @map("from_rack")
+  fromBin         String   @map("from_bin")
+  fromLocationName String? @map("from_location_name")
+  // ─── To ───
+  toZone          String?  @map("to_zone")
+  toRack          String?  @map("to_rack")
+  toBin           String   @map("to_bin")
+  toLocationName  String?  @map("to_location_name")
+  // ─── Reason ───
+  transferReason  String?  @map("transfer_reason") // REORGANIZATION, CONSOLIDATION, CAPACITY_OPTIMIZATION, CYCLE_COUNT_PREP, TEMP_CONTROL, MANUAL
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  completedAt     DateTime? @map("completed_at")
+  completedById   String?  @db.Uuid @map("completed_by_id")
+  completedByName String?  @map("completed_by_name")
+  // ─── Barcode ───
+  barcodeScanned  String?  @map("barcode_scanned")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("bin_transfers")
+  @@index([warehouseId, status], map: "idx_bt_warehouse_status")
+  @@index([productId, batchId], map: "idx_bt_product_batch")
+  @@index([fromBin, toBin], map: "idx_bt_bins")
+  @@index([status], map: "idx_bt_status")
+}
