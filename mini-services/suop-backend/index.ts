@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "20.0.0"
+const VERSION = "21.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -999,6 +999,160 @@ const COST_DATA = {
   ],
 }
 
+// ─── Sprint 21: Inventory Analytics, AI Insights & Mission Control Seed Data ───
+const ANALYTICS_DATA = {
+  kpis: [
+    { id: 'kpi-001', name: 'Inventory Turnover', code: 'INVENTORY_TURNOVER', value: 8.4, unit: 'turns/year', target: 10, targetMin: 8, targetMax: 12, trend: 'up', trendPercent: 6.2, onTarget: false, category: 'EFFICIENCY', description: 'COGS / Average Inventory — measures how many times inventory is sold & replaced in a year', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-002', name: 'Avg Days in Inventory', code: 'DAYS_IN_INVENTORY', value: 43.5, unit: 'days', target: 35, targetMin: 30, targetMax: 45, trend: 'down', trendPercent: 4.1, onTarget: true, category: 'EFFICIENCY', description: '365 / Inventory Turnover — average number of days stock sits before being sold', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-003', name: 'Inventory Accuracy', code: 'INVENTORY_ACCURACY', value: 94.2, unit: '%', target: 98, targetMin: 95, targetMax: 99, trend: 'up', trendPercent: 1.8, onTarget: false, category: 'QUALITY', description: '% of inventory locations where system qty = physical count qty (cycle count driven)', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-004', name: 'Stock Availability', code: 'STOCK_AVAILABILITY', value: 96.8, unit: '%', target: 98, targetMin: 95, targetMax: 99, trend: 'up', trendPercent: 0.9, onTarget: false, category: 'SERVICE', description: '% of order lines fulfillable from on-hand stock without backorder', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-005', name: 'Warehouse Utilization', code: 'WAREHOUSE_UTILIZATION', value: 78.5, unit: '%', target: 80, targetMin: 70, targetMax: 85, trend: 'stable', trendPercent: 0.3, onTarget: true, category: 'CAPACITY', description: 'Used storage volume / Total available storage volume across all warehouses', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-006', name: 'Stock-Out %', code: 'STOCK_OUT_PERCENT', value: 3.2, unit: '%', target: 2, targetMin: 1, targetMax: 3, trend: 'down', trendPercent: 1.1, onTarget: false, category: 'SERVICE', description: '% of SKUs with zero on-hand at the time of order — lower is better', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-007', name: 'Overstock %', code: 'OVERSTOCK_PERCENT', value: 12.4, unit: '%', target: 8, targetMin: 5, targetMax: 10, trend: 'up', trendPercent: 2.6, onTarget: false, category: 'EFFICIENCY', description: '% of SKUs where on-hand > 1.5 × reorder point — capital locked in slow movers', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-008', name: 'Damaged Stock %', code: 'DAMAGED_STOCK_PERCENT', value: 0.8, unit: '%', target: 0.5, targetMin: 0.3, targetMax: 1.0, trend: 'stable', trendPercent: 0.1, onTarget: true, category: 'QUALITY', description: 'Damage report qty / Total issued qty — warehouse handling quality indicator', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-009', name: 'Expired Stock %', code: 'EXPIRED_STOCK_PERCENT', value: 1.5, unit: '%', target: 0.8, targetMin: 0.5, targetMax: 1.2, trend: 'down', trendPercent: 0.4, onTarget: false, category: 'QUALITY', description: 'Expired batch qty / Total on-hand qty — FEFO effectiveness indicator', lastUpdated: '2026-07-09T08:00:00Z' },
+    { id: 'kpi-010', name: 'Order Fill Rate', code: 'ORDER_FILL_RATE', value: 98.1, unit: '%', target: 99, targetMin: 97, targetMax: 99.5, trend: 'up', trendPercent: 0.6, onTarget: true, category: 'SERVICE', description: 'Order lines shipped complete on first attempt / Total order lines', lastUpdated: '2026-07-09T08:00:00Z' },
+  ],
+  ageing: [
+    { id: 'age-001', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', totalQty: 980, totalValue: 819600, avgDaysInStock: 12, buckets: [
+      { bucket: '0-30', qty: 850, value: 710800, percent: 86.7 },
+      { bucket: '31-60', qty: 100, value: 83600, percent: 10.2 },
+      { bucket: '61-90', qty: 30, value: 25200, percent: 3.1 },
+      { bucket: '91-180', qty: 0, value: 0, percent: 0 },
+      { bucket: '181-365', qty: 0, value: 0, percent: 0 },
+      { bucket: '365+', qty: 0, value: 0, percent: 0 },
+    ] },
+    { id: 'age-002', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', totalQty: 878, totalValue: 522610, avgDaysInStock: 8, buckets: [
+      { bucket: '0-30', qty: 820, value: 488300, percent: 93.4 },
+      { bucket: '31-60', qty: 50, value: 29800, percent: 5.7 },
+      { bucket: '61-90', qty: 8, value: 4510, percent: 0.9 },
+      { bucket: '91-180', qty: 0, value: 0, percent: 0 },
+      { bucket: '181-365', qty: 0, value: 0, percent: 0 },
+      { bucket: '365+', qty: 0, value: 0, percent: 0 },
+    ] },
+    { id: 'age-003', productId: 'prod-mn-200', productName: 'Mixed Namkeen 200g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', totalQty: 850, totalValue: 45050, avgDaysInStock: 45, buckets: [
+      { bucket: '0-30', qty: 200, value: 10600, percent: 23.5 },
+      { bucket: '31-60', qty: 450, value: 23850, percent: 52.9 },
+      { bucket: '61-90', qty: 150, value: 7950, percent: 17.6 },
+      { bucket: '91-180', qty: 50, value: 2650, percent: 5.9 },
+      { bucket: '181-365', qty: 0, value: 0, percent: 0 },
+      { bucket: '365+', qty: 0, value: 0, percent: 0 },
+    ] },
+    { id: 'age-004', productId: 'prod-sc-1kg', productName: 'Soan Cake 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', totalQty: 150, totalValue: 93750, avgDaysInStock: 75, buckets: [
+      { bucket: '0-30', qty: 30, value: 18750, percent: 20.0 },
+      { bucket: '31-60', qty: 40, value: 25000, percent: 26.7 },
+      { bucket: '61-90', qty: 60, value: 37500, percent: 40.0 },
+      { bucket: '91-180', qty: 20, value: 12500, percent: 13.3 },
+      { bucket: '181-365', qty: 0, value: 0, percent: 0 },
+      { bucket: '365+', qty: 0, value: 0, percent: 0 },
+    ] },
+    { id: 'age-005', productId: 'prod-gj-1kg', productName: 'Gulab Jamun 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', totalQty: 24, totalValue: 7296, avgDaysInStock: 142, buckets: [
+      { bucket: '0-30', qty: 0, value: 0, percent: 0 },
+      { bucket: '31-60', qty: 0, value: 0, percent: 0 },
+      { bucket: '61-90', qty: 4, value: 1216, percent: 16.7 },
+      { bucket: '91-180', qty: 14, value: 4256, percent: 58.3 },
+      { bucket: '181-365', qty: 6, value: 1824, percent: 25.0 },
+      { bucket: '365+', qty: 0, value: 0, percent: 0 },
+    ] },
+    { id: 'age-006', productId: 'prod-sug-raw', productName: 'Sugar (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', totalQty: 0, totalValue: 0, avgDaysInStock: 210, buckets: [
+      { bucket: '0-30', qty: 0, value: 0, percent: 0 },
+      { bucket: '31-60', qty: 0, value: 0, percent: 0 },
+      { bucket: '61-90', qty: 0, value: 0, percent: 0 },
+      { bucket: '91-180', qty: 0, value: 0, percent: 0 },
+      { bucket: '181-365', qty: 0, value: 0, percent: 0 },
+      { bucket: '365+', qty: 0, value: 0, percent: 0 },
+    ] },
+  ],
+  classifications: [
+    { id: 'cls-001', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', abcClass: 'A', xyzClass: 'X', fsnClass: 'FAST', combinedClass: 'AX', valuePercent: 49.5, annualConsumptionValue: 6234520, demandVariability: 0.12, lastMovementDate: '2026-07-09', daysSinceLastMovement: 0, totalQty: 980, unitCost: 836.33, totalValue: 819600, classificationDate: '2026-07-09' },
+    { id: 'cls-002', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', abcClass: 'A', xyzClass: 'X', fsnClass: 'FAST', combinedClass: 'AX', valuePercent: 31.6, annualConsumptionValue: 3975000, demandVariability: 0.18, lastMovementDate: '2026-07-08', daysSinceLastMovement: 1, totalQty: 878, unitCost: 595.18, totalValue: 522610, classificationDate: '2026-07-09' },
+    { id: 'cls-003', productId: 'prod-ghee-raw', productName: 'Ghee (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', abcClass: 'A', xyzClass: 'Y', fsnClass: 'FAST', combinedClass: 'AY', valuePercent: 2.5, annualConsumptionValue: 312000, demandVariability: 0.34, lastMovementDate: '2026-07-07', daysSinceLastMovement: 2, totalQty: 80, unitCost: 520, totalValue: 41600, classificationDate: '2026-07-09' },
+    { id: 'cls-004', productId: 'prod-sc-1kg', productName: 'Soan Cake 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', abcClass: 'B', xyzClass: 'Y', fsnClass: 'SLOW', combinedClass: 'BY', valuePercent: 5.7, annualConsumptionValue: 712500, demandVariability: 0.42, lastMovementDate: '2026-06-25', daysSinceLastMovement: 14, totalQty: 150, unitCost: 625, totalValue: 93750, classificationDate: '2026-07-09' },
+    { id: 'cls-005', productId: 'prod-mn-200', productName: 'Mixed Namkeen 200g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', abcClass: 'B', xyzClass: 'Y', fsnClass: 'SLOW', combinedClass: 'BY', valuePercent: 2.7, annualConsumptionValue: 342000, demandVariability: 0.38, lastMovementDate: '2026-07-05', daysSinceLastMovement: 4, totalQty: 850, unitCost: 53, totalValue: 45050, classificationDate: '2026-07-09' },
+    { id: 'cls-006', productId: 'prod-pkg-box', productName: 'Printed Box 500g (Packaging)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', abcClass: 'C', xyzClass: 'X', fsnClass: 'FAST', combinedClass: 'CX', valuePercent: 4.1, annualConsumptionValue: 516000, demandVariability: 0.15, lastMovementDate: '2026-07-09', daysSinceLastMovement: 0, totalQty: 8500, unitCost: 8, totalValue: 68000, classificationDate: '2026-07-09' },
+    { id: 'cls-007', productId: 'prod-gj-1kg', productName: 'Gulab Jamun 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', abcClass: 'C', xyzClass: 'Z', fsnClass: 'NON_MOVING', combinedClass: 'CZ', valuePercent: 0.4, annualConsumptionValue: 52320, demandVariability: 0.89, lastMovementDate: '2026-02-18', daysSinceLastMovement: 141, totalQty: 24, unitCost: 304, totalValue: 7296, classificationDate: '2026-07-09' },
+    { id: 'cls-008', productId: 'prod-sug-raw', productName: 'Sugar (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', abcClass: 'C', xyzClass: 'Z', fsnClass: 'NON_MOVING', combinedClass: 'CZ', valuePercent: 0.0, annualConsumptionValue: 0, demandVariability: 1.0, lastMovementDate: '2025-12-11', daysSinceLastMovement: 210, totalQty: 0, unitCost: 45, totalValue: 0, classificationDate: '2026-07-09' },
+  ],
+  reorderRules: [
+    { id: 'rr-001', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', supplierName: 'Mumbai Dry Fruits Co.', minStock: 200, maxStock: 1500, safetyStock: 150, reorderPoint: 350, reorderQty: 800, currentStock: 980, leadTimeDays: 7, avgDailyConsumption: 28, daysOfSupply: 35, suggestedReorderQty: 0, urgency: 'OK', lastReorderDate: '2026-06-20', expectedDelivery: '2026-06-27', rule: 'Reorder when stock ≤ 350 (safety + 7 days × 28/day) → buy 800 kg' },
+    { id: 'rr-002', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', supplierName: 'In-house Production', minStock: 150, maxStock: 1200, safetyStock: 100, reorderPoint: 280, reorderQty: 500, currentStock: 175, leadTimeDays: 2, avgDailyConsumption: 65, daysOfSupply: 2.7, suggestedReorderQty: 605, urgency: 'CRITICAL', lastReorderDate: '2026-07-01', expectedDelivery: '2026-07-11', rule: 'Production MO triggered when FG ≤ 280 (safety + 2 days × 65/day) → run MO for 500 boxes' },
+    { id: 'rr-003', productId: 'prod-ghee-raw', productName: 'Ghee (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', supplierName: 'Anand Dairy Ltd.', minStock: 40, maxStock: 200, safetyStock: 30, reorderPoint: 60, reorderQty: 100, currentStock: 80, leadTimeDays: 5, avgDailyConsumption: 6, daysOfSupply: 13.3, suggestedReorderQty: 0, urgency: 'OK', lastReorderDate: '2026-06-15', expectedDelivery: '2026-06-20', rule: 'Reorder when stock ≤ 60 (safety + 5 days × 6/day) → buy 100 kg' },
+    { id: 'rr-004', productId: 'prod-sc-1kg', productName: 'Soan Cake 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', supplierName: 'In-house Production', minStock: 60, maxStock: 400, safetyStock: 50, reorderPoint: 90, reorderQty: 200, currentStock: 150, leadTimeDays: 3, avgDailyConsumption: 8, daysOfSupply: 18.8, suggestedReorderQty: 0, urgency: 'LOW', lastReorderDate: '2026-07-04', expectedDelivery: '2026-07-07', rule: 'Production MO when stock ≤ 90 → run MO for 200 boxes' },
+    { id: 'rr-005', productId: 'prod-mn-200', productName: 'Mixed Namkeen 200g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', supplierName: 'In-house Production', minStock: 200, maxStock: 1500, safetyStock: 150, reorderPoint: 400, reorderQty: 700, currentStock: 850, leadTimeDays: 2, avgDailyConsumption: 22, daysOfSupply: 38.6, suggestedReorderQty: 0, urgency: 'OK', lastReorderDate: '2026-06-20', expectedDelivery: '2026-06-22', rule: 'Production MO when stock ≤ 400 → run MO for 700 pouches' },
+    { id: 'rr-006', productId: 'prod-gj-1kg', productName: 'Gulab Jamun 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', supplierName: 'In-house Production', minStock: 20, maxStock: 150, safetyStock: 25, reorderPoint: 50, reorderQty: 100, currentStock: 24, leadTimeDays: 3, avgDailyConsumption: 4, daysOfSupply: 6.0, suggestedReorderQty: 100, urgency: 'HIGH', lastReorderDate: '2026-06-25', expectedDelivery: '2026-06-28', rule: 'Production MO when stock ≤ 50 → run MO for 100 boxes (currently below reorder point)' },
+  ],
+  missionControl: {
+    id: 'mcs-2026-07-09',
+    snapshotDate: '2026-07-09T08:00:00Z',
+    headline: 'PART 3 COMPLETE — Enterprise Inventory Engine 21/21 sprints delivered',
+    inventory: {
+      totalInventoryValue: 1656006,
+      totalSkuCount: 8,
+      activeBatches: 24,
+      activeWarehouses: 2,
+      totalOnHandQty: 11462,
+      avgDaysInStock: 21.3,
+    },
+    operations: {
+      todaysTransactions: 142,
+      pendingApprovals: 7,
+      openPutawayTasks: 12,
+      openPickingTasks: 18,
+      openReceivingTasks: 5,
+      openTransfers: 3,
+    },
+    alerts: {
+      expiredStock: 18,
+      nearExpiry7Days: 24,
+      blockedBatches: 3,
+      quarantinedItems: 5,
+      deadStockItems: 2,
+      stockOutItems: 1,
+    },
+    recalls: {
+      activeRecalls: 1,
+      affectedBatches: 2,
+      recalledQty: 280,
+      affectedCustomers: 14,
+    },
+    reorder: {
+      criticalItems: 1,
+      highItems: 1,
+      mediumItems: 0,
+      lowItems: 1,
+      okItems: 3,
+      totalReorderValue: 184800,
+    },
+    kpis: {
+      inventoryTurnover: 8.4,
+      inventoryAccuracy: 94.2,
+      stockAvailability: 96.8,
+      warehouseUtilization: 78.5,
+      orderFillRate: 98.1,
+      stockOutPercent: 3.2,
+      overstockPercent: 12.4,
+      expiredStockPercent: 1.5,
+    },
+    classification: {
+      classAItems: 3,
+      classBItems: 2,
+      classCItems: 3,
+      fastMovingItems: 4,
+      slowMovingItems: 2,
+      nonMovingItems: 2,
+      deadStockValue: 7296,
+    },
+    generatedAt: '2026-07-09T08:00:00Z',
+    generatedBy: 'system-scheduler',
+  },
+  reports: [
+    { id: 'rpt-001', reportType: 'INVENTORY_VALUATION', title: 'Monthly Inventory Valuation Report — July 2026', description: 'Period-end inventory valuation by costing method, ABC class, warehouse & product category. Reconciled to GL Inventory Asset account.', status: 'READY', format: 'PDF', generatedAt: '2026-07-09T06:00:00Z', generatedBy: 'CFO Anjali Mehta', fileSize: '2.4 MB', pageCount: 48, summary: 'Total inventory value ₹16.56L across 8 SKUs. FIFO layers ₹12.41L (74.9%), Weighted Avg ₹0.45L (2.7%), Moving Avg ₹3.70L (22.4%). Class A items hold 83.6% of value.' },
+    { id: 'rpt-002', reportType: 'ABC_REPORT', title: 'ABC/XYZ/FSN Classification Report — Q2 2026', description: 'Pareto-based ABC (value), XYZ (demand variability), FSN (movement) classification with combined class matrix for all SKUs.', status: 'READY', format: 'XLSX', generatedAt: '2026-07-08T17:30:00Z', generatedBy: 'Supply Chain Head Rohit Kumar', fileSize: '512 KB', pageCount: 12, summary: '3 Class A items (49.5% + 31.6% + 2.5% = 83.6% value), 2 Class B (8.4% value), 3 Class C (8.0% value). 2 NON_MOVING CZ items flagged for write-off review.' },
+    { id: 'rpt-003', reportType: 'DEAD_STOCK', title: 'Dead Stock & Slow-Mover Analysis — H1 2026', description: 'Items with zero consumption in 180+ days. Includes value-at-risk, last movement date, suggested action (write-off / discount / scrap).', status: 'PENDING', format: 'PDF', generatedAt: null, generatedBy: null, fileSize: null, pageCount: null, summary: null },
+    { id: 'rpt-004', reportType: 'NEAR_EXPIRY', title: 'Near-Expiry & FEFO Compliance Report — July 2026', description: 'Batches expiring in next 7/15/30 days. FEFO adherence %, blocked batches, expiry disposal recommendations.', status: 'SCHEDULED', format: 'PDF', generatedAt: null, generatedBy: null, fileSize: null, pageCount: null, summary: null },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1392,6 +1546,7 @@ const server = Bun.serve({
         { code: 'CC', name: 'Cycle Count & Audit', status: 'active', entities: 6, sprint: 18 },
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
+        { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
         { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 19 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
@@ -3716,12 +3871,151 @@ const server = Bun.serve({
       }, 'SUOP Costing & Valuation Engine v20.0.0')), { headers })
     }
 
+    // ─── Sprint 21: Inventory Analytics & Mission Control Endpoints ───
+    if (path === '/api/inventory-analytics/kpis' && method === 'GET') {
+      const categoryFilter = url.searchParams.get('category')
+      const onTargetFilter = url.searchParams.get('onTarget')
+      let kpis = ANALYTICS_DATA.kpis
+      if (categoryFilter) kpis = kpis.filter(k => k.category === categoryFilter.toUpperCase())
+      if (onTargetFilter === 'true') kpis = kpis.filter(k => k.onTarget)
+      if (onTargetFilter === 'false') kpis = kpis.filter(k => !k.onTarget)
+      return new Response(JSON.stringify(successResponse(kpis, `${kpis.length} inventory KPIs`)), { headers })
+    }
+    if (path === '/api/inventory-analytics/ageing' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let ageing = ANALYTICS_DATA.ageing
+      if (warehouseFilter) ageing = ageing.filter(a => a.warehouseId === warehouseFilter || a.warehouseName.toLowerCase().includes(warehouseFilter.toLowerCase()))
+      return new Response(JSON.stringify(successResponse(ageing, `${ageing.length} inventory ageing records`)), { headers })
+    }
+    if (path === '/api/inventory-analytics/classifications' && method === 'GET') {
+      const abcFilter = url.searchParams.get('abc')
+      const xyzFilter = url.searchParams.get('xyz')
+      const fsnFilter = url.searchParams.get('fsn')
+      const combinedFilter = url.searchParams.get('combined')
+      let cls = ANALYTICS_DATA.classifications
+      if (abcFilter) cls = cls.filter(c => c.abcClass === abcFilter.toUpperCase())
+      if (xyzFilter) cls = cls.filter(c => c.xyzClass === xyzFilter.toUpperCase())
+      if (fsnFilter) cls = cls.filter(c => c.fsnClass === fsnFilter.toUpperCase())
+      if (combinedFilter) cls = cls.filter(c => c.combinedClass === combinedFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(cls, `${cls.length} inventory classification records`)), { headers })
+    }
+    if (path === '/api/inventory-analytics/reorder' && method === 'GET') {
+      const urgencyFilter = url.searchParams.get('urgency')
+      let rules = ANALYTICS_DATA.reorderRules
+      if (urgencyFilter) rules = rules.filter(r => r.urgency === urgencyFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(rules, `${rules.length} reorder rules`)), { headers })
+    }
+    if (path === '/api/inventory-analytics/mission-control' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ANALYTICS_DATA.missionControl, 'Mission control snapshot (live)')), { headers })
+    }
+    if (path === '/api/inventory-analytics/reports' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let reports = ANALYTICS_DATA.reports
+      if (typeFilter) reports = reports.filter(r => r.reportType === typeFilter.toUpperCase())
+      if (statusFilter) reports = reports.filter(r => r.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(reports, `${reports.length} executive reports`)), { headers })
+    }
+    if (path.match(/^\/api\/inventory-analytics\/reports\/[^/]+\/generate$/) && method === 'POST') {
+      const id = path.split('/')[4]
+      const rpt = ANALYTICS_DATA.reports.find(r => r.id === id)
+      if (!rpt) return new Response(JSON.stringify(errorResponse('Executive report not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (rpt.status === 'READY') return new Response(JSON.stringify(errorResponse(`Report already READY: ${rpt.title}`, 'INVALID_TRANSITION', 400)), { status: 400, headers })
+      const prevStatus = rpt.status
+      rpt.status = 'READY'
+      rpt.generatedAt = new Date().toISOString()
+      rpt.generatedBy = 'CEO Vikram'
+      rpt.fileSize = '1.8 MB'
+      rpt.pageCount = 24
+      rpt.summary = `Generated on-demand from sprint 21 analytics engine. Source: ${rpt.reportType}. Snapshot reconciled to GL.`
+      log('info', 'Executive report generated', { reportId: rpt.id, type: rpt.reportType, was: prevStatus, now: 'READY' })
+      return new Response(JSON.stringify(successResponse(rpt, `Report ${rpt.title} generated: ${prevStatus} → READY`)), { headers })
+    }
+    if (path === '/api/inventory-analytics/dashboard' && method === 'GET') {
+      const totalInventoryValue = ANALYTICS_DATA.classifications.reduce((s, c) => s + c.totalValue, 0)
+      const classAItems = ANALYTICS_DATA.classifications.filter(c => c.abcClass === 'A').length
+      const classBItems = ANALYTICS_DATA.classifications.filter(c => c.abcClass === 'B').length
+      const classCItems = ANALYTICS_DATA.classifications.filter(c => c.abcClass === 'C').length
+      const fastMoving = ANALYTICS_DATA.classifications.filter(c => c.fsnClass === 'FAST').length
+      const slowMoving = ANALYTICS_DATA.classifications.filter(c => c.fsnClass === 'SLOW').length
+      const nonMoving = ANALYTICS_DATA.classifications.filter(c => c.fsnClass === 'NON_MOVING').length
+      const criticalReorders = ANALYTICS_DATA.reorderRules.filter(r => r.urgency === 'CRITICAL').length
+      const highReorders = ANALYTICS_DATA.reorderRules.filter(r => r.urgency === 'HIGH').length
+      const totalReorderValue = ANALYTICS_DATA.reorderRules.filter(r => r.suggestedReorderQty > 0).reduce((s, r) => s + r.suggestedReorderQty, 0)
+      const onTargetKpis = ANALYTICS_DATA.kpis.filter(k => k.onTarget).length
+      const avgAgeingDays = ANALYTICS_DATA.ageing.reduce((s, a) => s + a.avgDaysInStock, 0) / ANALYTICS_DATA.ageing.length
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          kpis: ANALYTICS_DATA.kpis.length,
+          ageingRecords: ANALYTICS_DATA.ageing.length,
+          classifications: ANALYTICS_DATA.classifications.length,
+          reorderRules: ANALYTICS_DATA.reorderRules.length,
+          reports: ANALYTICS_DATA.reports.length,
+        },
+        kpiOnTarget: { onTarget: onTargetKpis, offTarget: ANALYTICS_DATA.kpis.length - onTargetKpis },
+        abcBreakdown: { A: classAItems, B: classBItems, C: classCItems },
+        fsnBreakdown: { FAST: fastMoving, SLOW: slowMoving, NON_MOVING: nonMoving },
+        reorderUrgency: {
+          CRITICAL: criticalReorders,
+          HIGH: highReorders,
+          MEDIUM: ANALYTICS_DATA.reorderRules.filter(r => r.urgency === 'MEDIUM').length,
+          LOW: ANALYTICS_DATA.reorderRules.filter(r => r.urgency === 'LOW').length,
+          OK: ANALYTICS_DATA.reorderRules.filter(r => r.urgency === 'OK').length,
+        },
+        reportStatus: {
+          READY: ANALYTICS_DATA.reports.filter(r => r.status === 'READY').length,
+          PENDING: ANALYTICS_DATA.reports.filter(r => r.status === 'PENDING').length,
+          SCHEDULED: ANALYTICS_DATA.reports.filter(r => r.status === 'SCHEDULED').length,
+        },
+        totalInventoryValue,
+        totalReorderValue,
+        avgAgeingDays: parseFloat(avgAgeingDays.toFixed(1)),
+        deadStockValue: ANALYTICS_DATA.classifications.filter(c => c.fsnClass === 'NON_MOVING').reduce((s, c) => s + c.totalValue, 0),
+        missionControlHeadline: ANALYTICS_DATA.missionControl.headline,
+        snapshotDate: ANALYTICS_DATA.missionControl.snapshotDate,
+        part3Complete: true,
+        sprint: 21,
+        analyticsCategories: ['EFFICIENCY', 'QUALITY', 'SERVICE', 'CAPACITY'],
+        urgencyLevels: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'OK'],
+        reportTypes: ['INVENTORY_VALUATION', 'ABC_REPORT', 'DEAD_STOCK', 'NEAR_EXPIRY'],
+        abcPrinciple: 'Pareto principle — Class A: top 20% items contribute 80% value (tight control). Class B: next 30% items, 15% value (standard control). Class C: bottom 50% items, 5% value (minimal control).',
+        xyzPrinciple: 'XYZ classification by demand variability (coefficient of variation). X: stable demand (CV<0.25). Y: variable demand (CV 0.25-0.5). Z: irregular demand (CV>0.5).',
+        fsnPrinciple: 'FSN classification by movement velocity. FAST: moved in last 30 days. SLOW: moved in 30-180 days. NON_MOVING: no movement in 180+ days (dead stock candidate).',
+        reorderPrinciple: 'Reorder point = Safety Stock + (Avg Daily Consumption × Lead Time). When on-hand ≤ reorder point, trigger replenishment. Urgency escalates as days of supply drop.',
+      }, 'Inventory analytics dashboard')), { headers })
+    }
+    if (path === '/api/inventory-analytics/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Inventory Analytics & Mission Control Engine', version: '21.0.0', sprint: 21,
+        sprintName: 'Inventory Analytics, AI Insights & Mission Control — PART 3 COMPLETE',
+        kpiCategories: ['EFFICIENCY', 'QUALITY', 'SERVICE', 'CAPACITY'],
+        trendDirections: ['up', 'down', 'stable'],
+        abcClasses: ['A', 'B', 'C'],
+        xyzClasses: ['X', 'Y', 'Z'],
+        fsnClasses: ['FAST', 'SLOW', 'NON_MOVING'],
+        combinedClasses: ['AX', 'AY', 'AZ', 'BX', 'BY', 'BZ', 'CX', 'CY', 'CZ'],
+        ageingBuckets: ['0-30', '31-60', '61-90', '91-180', '181-365', '365+'],
+        urgencyLevels: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'OK'],
+        reportTypes: ['INVENTORY_VALUATION', 'ABC_REPORT', 'DEAD_STOCK', 'NEAR_EXPIRY'],
+        reportStatuses: ['SCHEDULED', 'PENDING', 'GENERATING', 'READY', 'FAILED', 'ARCHIVED'],
+        reportFormats: ['PDF', 'XLSX', 'CSV', 'JSON'],
+        missionControlPrinciple: 'Single-pane-of-glass command center aggregating KPIs, alerts, operations, recalls, and reorder signals into a real-time snapshot for executive decision-making.',
+        kpiPrinciple: 'Each KPI has value, target, targetMin, targetMax, trend, trendPercent, onTarget flag. Trend direction (up/down/stable) + percent change shows week-over-week momentum.',
+        ageingPrinciple: 'Stock bucketed into 6 age ranges (0-30, 31-60, 61-90, 91-180, 181-365, 365+ days) with qty, value, and % distribution. Drives dead-stock identification.',
+        endpoints: ['GET /api/inventory-analytics/kpis', 'GET /api/inventory-analytics/ageing', 'GET /api/inventory-analytics/classifications', 'GET /api/inventory-analytics/reorder', 'GET /api/inventory-analytics/mission-control', 'GET /api/inventory-analytics/reports', 'POST /api/inventory-analytics/reports/:id/generate', 'GET /api/inventory-analytics/dashboard', 'GET /api/inventory-analytics/info'],
+        part3Complete: true,
+        part3Sprints: 21,
+        part3Tables: 185,
+      }, 'SUOP Inventory Analytics & Mission Control Engine v21.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 20, sprintName: 'Cost Layers, Landed Cost, Revaluation, GL Integration & Inventory Valuation' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 21, sprintName: 'Inventory Analytics, AI Insights & Mission Control — PART 3 COMPLETE (21/21 sprints)' })
+log('info', 'Analytics & mission control endpoints available', { kpis: 'GET /api/inventory-analytics/kpis', ageing: 'GET /api/inventory-analytics/ageing', classifications: 'GET /api/inventory-analytics/classifications', reorder: 'GET /api/inventory-analytics/reorder', missionControl: 'GET /api/inventory-analytics/mission-control', reports: 'GET /api/inventory-analytics/reports', reportGenerate: 'POST /:id/generate', dashboard: 'GET /api/inventory-analytics/dashboard', info: 'GET /api/inventory-analytics/info' })
 log('info', 'Costing & valuation endpoints available', { costLayers: 'GET /api/cost-layers', costHistory: 'GET /api/cost-history', landedCosts: 'GET /api/landed-costs', landedCostAllocate: 'POST /:id/allocate', revaluations: 'GET /api/inventory-revaluations', revaluationApprove: 'POST /:id/approve', glPostings: 'GET /api/inventory-gl-postings', valuation: 'GET /api/inventory-valuation', dashboard: 'GET /api/costing/dashboard', info: 'GET /api/costing/info' })
 log('info', 'Batch & expiry endpoints available', { batchMaster: 'GET /api/batch-master', history: 'GET /:id/history', shelfLifeRules: 'GET /api/shelf-life-rules', expiryAlerts: 'GET /api/expiry-alerts', alertAction: 'POST /:id/action', recalls: 'GET /api/product-recalls', recallAdvance: 'POST /:id/advance', genealogy: 'GET /api/batch-genealogy', dashboard: 'GET /api/batch-master/dashboard', info: 'GET /api/batch-master/info' })
 log('info', 'Cycle count endpoints available', { physicalInventory: 'GET/POST /api/physical-inventory', approve: 'POST /:id/approve', plans: 'GET /api/cycle-count/plans', schedules: 'GET /api/cycle-count/schedules', teams: 'GET /api/count-teams', variances: 'GET /api/count-variances', dashboard: 'GET /api/physical-inventory/dashboard', info: 'GET /api/physical-inventory/info' })

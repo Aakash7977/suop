@@ -5787,3 +5787,232 @@ model InventoryValuation {
   @@index([valuationDate], map: "idx_iv_date")
   @@index([ageingCategory], map: "idx_iv_ageing")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 21 — INVENTORY ANALYTICS, AI INSIGHTS & MISSION CONTROL
+// Executive decision platform for inventory management
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 2: Inventory KPIs ─────────────────────────────
+model InventoryKPI {
+  id              String   @id @default(uuid()) @db.Uuid
+  kpiCode         String   @unique @map("kpi_code")
+  kpiName         String   @map("kpi_name")
+  description     String?
+  // ─── Value ───
+  kpiValue        Decimal  @db.Decimal(18, 4) @map("kpi_value")
+  kpiUnit         String   @default("PERCENT") @map("kpi_unit") // PERCENT, COUNT, DAYS, RUPEES, RATIO
+  previousValue   Decimal? @db.Decimal(18, 4) @map("previous_value")
+  trendDirection  String?  @map("trend_direction") // UP, DOWN, STABLE
+  trendPercent    Decimal? @db.Decimal(8, 2) @map("trend_percent")
+  // ─── Target ───
+  targetValue     Decimal? @db.Decimal(18, 4) @map("target_value")
+  isOnTarget      Boolean? @map("is_on_target")
+  // ─── Period ───
+  periodType      String   @map("period_type") // DAILY, WEEKLY, MONTHLY, YEARLY
+  periodDate      DateTime @map("period_date")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Category ───
+  kpiCategory     String   @map("kpi_category") // TURNOVER, ACCURACY, AVAILABILITY, UTILIZATION, QUALITY, FINANCIAL
+  // ─── Audit ───
+  calculatedAt    DateTime @default(now()) @map("calculated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_kpis")
+  @@index([kpiCode, periodDate], map: "idx_ik_kpi_date")
+  @@index([periodType, periodDate], map: "idx_ik_period_date")
+  @@index([warehouseId], map: "idx_ik_warehouse")
+  @@index([kpiCategory], map: "idx_ik_category")
+}
+
+// ─── Epic 3: Inventory Ageing ──────────────────────────
+model InventoryAgeing {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  productCategoryId String? @db.Uuid @map("product_category_id")
+  brandId         String?  @db.Uuid @map("brand_id")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Age buckets ───
+  qty0to30        Decimal  @db.Decimal(18, 4) @default(0) @map("qty_0_30")
+  value0to30      Decimal  @db.Decimal(18, 2) @default(0) @map("value_0_30")
+  qty31to60       Decimal  @db.Decimal(18, 4) @default(0) @map("qty_31_60")
+  value31to60     Decimal  @db.Decimal(18, 2) @default(0) @map("value_31_60")
+  qty61to90       Decimal  @db.Decimal(18, 4) @default(0) @map("qty_61_90")
+  value61to90     Decimal  @db.Decimal(18, 2) @default(0) @map("value_61_90")
+  qty91to180      Decimal  @db.Decimal(18, 4) @default(0) @map("qty_91_180")
+  value91to180    Decimal  @db.Decimal(18, 2) @default(0) @map("value_91_180")
+  qty181to365     Decimal  @db.Decimal(18, 4) @default(0) @map("qty_181_365")
+  value181to365   Decimal  @db.Decimal(18, 2) @default(0) @map("value_181_365")
+  qty365plus      Decimal  @db.Decimal(18, 4) @default(0) @map("qty_365_plus")
+  value365plus    Decimal  @db.Decimal(18, 2) @default(0) @map("value_365_plus")
+  // ─── Totals ───
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  totalValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_value")
+  avgDaysInStock  Int      @default(0) @map("avg_days_in_stock")
+  // ─── Snapshot ───
+  snapshotDate    DateTime @map("snapshot_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_ageing")
+  @@index([productId, warehouseId], map: "idx_iag_product_wh")
+  @@index([warehouseId, snapshotDate], map: "idx_iag_wh_date")
+  @@index([snapshotDate], map: "idx_iag_date")
+}
+
+// ─── Epic 4/5/6: ABC/XYZ/FSN Classification ────────────
+model InventoryClassification {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  // ─── ABC ───
+  abcClass        String   @map("abc_class") // A, B, C
+  abcValuePercent Decimal  @db.Decimal(8, 2) @map("abc_value_percent") // % of total inventory value
+  abcCumulativePercent Decimal @db.Decimal(8, 2) @map("abc_cumulative_percent")
+  // ─── XYZ ───
+  xyzClass        String   @map("xyz_class") // X (stable), Y (seasonal), Z (irregular)
+  xyzDemandVariability Decimal @db.Decimal(8, 2) @map("xyz_demand_variability") // coefficient of variation
+  // ─── FSN ───
+  fsnClass        String   @map("fsn_class") // FAST_MOVING, SLOW_MOVING, NON_MOVING
+  fsnDaysSinceLastMovement Int @map("fsn_days_since_last_movement")
+  fsnTransactionCount Int   @map("fsn_transaction_count")
+  // ─── Combined ───
+  combinedClass   String   @map("combined_class") // e.g., AX, BY, CZ, AZ, etc.
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Period ───
+  classificationDate DateTime @map("classification_date")
+  periodType      String   @map("period_type") // MONTHLY, QUARTARTERLY, YEARLY
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_classifications")
+  @@index([productId, warehouseId], map: "idx_icl2_product_wh")
+  @@index([abcClass], map: "idx_icl2_abc")
+  @@index([xyzClass], map: "idx_icl2_xyz")
+  @@index([fsnClass], map: "idx_icl2_fsn")
+  @@index([combinedClass], map: "idx_icl2_combined")
+  @@index([classificationDate], map: "idx_icl2_date")
+}
+
+// ─── Epic 7: Reorder Intelligence ──────────────────────
+model ReorderRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Reorder parameters ───
+  minStock        Decimal  @db.Decimal(18, 4) @map("min_stock")
+  maxStock        Decimal  @db.Decimal(18, 4) @map("max_stock")
+  safetyStock     Decimal  @db.Decimal(18, 4) @map("safety_stock")
+  reorderPoint    Decimal  @db.Decimal(18, 4) @map("reorder_point")
+  economicOrderQty Decimal? @db.Decimal(18, 4) @map("economic_order_qty")
+  // ─── Lead time ───
+  leadTimeDays    Int      @map("lead_time_days")
+  supplierId      String?  @db.Uuid @map("supplier_id")
+  supplierName    String?  @map("supplier_name")
+  // ─── Consumption ───
+  avgDailyConsumption Decimal @db.Decimal(18, 4) @default(0) @map("avg_daily_consumption")
+  avgWeeklyConsumption Decimal @db.Decimal(18, 4) @default(0) @map("avg_weekly_consumption")
+  avgMonthlyConsumption Decimal @db.Decimal(18, 4) @default(0) @map("avg_monthly_consumption")
+  // ─── Current status ───
+  currentStock    Decimal  @db.Decimal(18, 4) @default(0) @map("current_stock")
+  availableStock  Decimal  @db.Decimal(18, 4) @default(0) @map("available_stock")
+  inTransitQty    Decimal  @db.Decimal(18, 4) @default(0) @map("in_transit_qty")
+  // ─── Reorder suggestion ───
+  reorderRequired Boolean  @default(false) @map("reorder_required")
+  suggestedQty    Decimal? @db.Decimal(18, 4) @map("suggested_qty")
+  daysOfSupply    Int?     @map("days_of_supply") // how many days current stock will last
+  urgencyLevel    String?  @map("urgency_level") // CRITICAL, HIGH, MEDIUM, LOW, OK
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  lastCalculatedAt DateTime? @map("last_calculated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("reorder_rules")
+  @@index([productId, warehouseId], map: "idx_rr_product_wh")
+  @@index([reorderRequired, urgencyLevel], map: "idx_rr_reorder_urgency")
+  @@index([urgencyLevel], map: "idx_rr_urgency")
+  @@index([status], map: "idx_rr_status")
+}
+
+// ─── Epic 1: Mission Control Snapshot ──────────────────
+model MissionControlSnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  snapshotDate    DateTime @map("snapshot_date")
+  // ─── Overall ───
+  totalInventoryValue Decimal @db.Decimal(18, 2) @map("total_inventory_value")
+  totalProducts   Int      @map("total_products")
+  totalWarehouses Int      @map("total_warehouses")
+  totalBatches    Int      @map("total_batches")
+  // ─── Today's activity ───
+  todayTransactions Int    @map("today_transactions")
+  todayReceipts   Int      @map("today_receipts")
+  todayIssues     Int      @map("today_issues")
+  todayTransfers  Int      @map("today_transfers")
+  todayAdjustments Int     @map("today_adjustments")
+  // ─── Pending ───
+  pendingApprovals Int     @map("pending_approvals")
+  pendingPutaway  Int      @map("pending_putaway")
+  pendingPicking  Int      @map("pending_picking")
+  pendingReceiving Int     @map("pending_receiving")
+  // ─── Alerts ───
+  expiredStock    Int      @map("expired_stock")
+  nearExpiryStock Int      @map("near_expiry_stock")
+  blockedBatches  Int      @map("blocked_batches")
+  quarantinedStock Int     @map("quarantined_stock")
+  deadStockItems  Int      @map("dead_stock_items")
+  stockOutItems   Int      @map("stock_out_items")
+  reorderRequired Int      @map("reorder_required")
+  // ─── KPIs ───
+  inventoryAccuracy Decimal @db.Decimal(5, 2) @map("inventory_accuracy")
+  warehouseUtilization Decimal @db.Decimal(5, 2) @map("warehouse_utilization")
+  stockAvailability Decimal @db.Decimal(5, 2) @map("stock_availability")
+  orderFillRate   Decimal  @db.Decimal(5, 2) @map("order_fill_rate")
+  inventoryTurnover Decimal @db.Decimal(8, 2) @map("inventory_turnover")
+  // ─── Recalls ───
+  activeRecalls   Int      @map("active_recalls")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("mission_control_snapshots")
+  @@index([snapshotDate], map: "idx_mcs_date")
+}
+
+// ─── Epic 8: Executive Reports ─────────────────────────
+model ExecutiveReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  reportCode      String   @unique @map("report_code")
+  reportName      String   @map("report_name")
+  reportType      String   @map("report_type") // INVENTORY_VALUATION, STOCK_AGEING, ABC_REPORT, XYZ_REPORT, FSN_REPORT, DEAD_STOCK, NEAR_EXPIRY, WAREHOUSE_COMPARISON, INVENTORY_ACCURACY, COST_ANALYSIS
+  description     String?
+  // ─── Parameters ───
+  parameters      Json     @default("{}")
+  // ─── Format ───
+  exportFormat    String   @default("PDF") @map("export_format") // PDF, EXCEL, CSV, POWERPOINT
+  // ─── Result ───
+  fileUrl         String?  @map("file_url")
+  fileSizeBytes   Int?     @map("file_size_bytes")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, GENERATING, COMPLETED, FAILED, EXPIRED
+  generatedAt     DateTime? @map("generated_at")
+  // ─── Summary ───
+  summaryData     Json?    @map("summary_data")
+  // ─── Audit ───
+  requestedById   String?  @db.Uuid @map("requested_by_id")
+  requestedByName String?  @map("requested_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("executive_reports")
+  @@index([reportType, status], map: "idx_er_type_status")
+  @@index([status], map: "idx_er_status")
+  @@index([createdAt], map: "idx_er_date")
+}
