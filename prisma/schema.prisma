@@ -5524,3 +5524,266 @@ model BatchGenealogy {
   @@index([relationshipType], map: "idx_bg_relation")
   @@index([productionOrderId], map: "idx_bg_production")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 20 — INVENTORY COSTING, VALUATION & FINANCE INTEGRATION
+// Connects inventory quantities with financial values
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Cost Layer (FIFO tracking) ────────────────
+model InventoryCostLayer {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Costing method ───
+  costingMethod   String   @map("costing_method") // FIFO, WEIGHTED_AVERAGE, MOVING_AVERAGE, STANDARD, ACTUAL, SPECIFIC_IDENTIFICATION
+  // ─── Layer details ───
+  layerNumber     Int      @map("layer_number")
+  // ─── Receipt reference ───
+  receiptType     String   @map("receipt_type") // PURCHASE, PRODUCTION, TRANSFER, OPENING, ADJUSTMENT
+  receiptNumber   String?  @map("receipt_number")
+  receiptDate     DateTime @map("receipt_date")
+  // ─── Quantities ───
+  originalQty     Decimal  @db.Decimal(18, 4) @map("original_qty")
+  consumedQty     Decimal  @db.Decimal(18, 4) @default(0) @map("consumed_qty")
+  remainingQty    Decimal  @db.Decimal(18, 4) @default(0) @map("remaining_qty")
+  // ─── Cost ───
+  unitCost        Decimal  @db.Decimal(18, 4) @map("unit_cost")
+  totalOriginalValue Decimal @db.Decimal(18, 2) @map("total_original_value")
+  totalConsumedValue Decimal @db.Decimal(18, 2) @default(0) @map("total_consumed_value")
+  totalRemainingValue Decimal @db.Decimal(18, 2) @default(0) @map("total_remaining_value")
+  // ─── Landed cost ───
+  landedUnitCost  Decimal? @db.Decimal(18, 4) @map("landed_unit_cost")
+  hasLandedCost   Boolean  @default(false) @map("has_landed_cost")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, PARTIALLY_CONSUMED, FULLY_CONSUMED, EXPIRED, CLOSED
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("inventory_cost_layers")
+  @@index([productId, warehouseId, status], map: "idx_icl_product_wh_status")
+  @@index([costingMethod, status], map: "idx_icl_method_status")
+  @@index([receiptDate], map: "idx_icl_receipt_date")
+  @@index([batchId], map: "idx_icl_batch")
+  @@index([status], map: "idx_icl_status")
+}
+
+// ─── Epic 1: Cost History (immutable) ──────────────────
+model InventoryCostHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Cost snapshot ───
+  costingMethod   String   @map("costing_method")
+  unitCost        Decimal  @db.Decimal(18, 4) @map("unit_cost")
+  totalQty        Decimal  @db.Decimal(18, 4) @map("total_qty")
+  totalValue      Decimal  @db.Decimal(18, 2) @map("total_value")
+  // ─── Trigger ───
+  changeType      String   @map("change_type") // RECEIPT, ISSUE, ADJUSTMENT, REVALUATION, LANDED_COST, TRANSFER
+  changeReference String?  @map("change_reference")
+  changeDate      DateTime @map("change_date")
+  // ─── Previous ───
+  previousUnitCost Decimal? @db.Decimal(18, 4) @map("previous_unit_cost")
+  previousTotalValue Decimal? @db.Decimal(18, 2) @map("previous_total_value")
+  // ─── Variance ───
+  costVariance    Decimal? @db.Decimal(18, 4) @map("cost_variance")
+  valueVariance   Decimal? @db.Decimal(18, 2) @map("value_variance")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_cost_history")
+  @@index([productId, warehouseId, changeDate], map: "idx_ich_product_wh_date")
+  @@index([changeType], map: "idx_ich_type")
+  @@index([changeDate], map: "idx_ich_date")
+}
+
+// ─── Epic 6: Landed Cost ───────────────────────────────
+model LandedCostDocument {
+  id              String   @id @default(uuid()) @db.Uuid
+  documentNumber  String   @unique @map("document_number")
+  documentDate    DateTime @map("document_date")
+  // ─── Reference ───
+  referenceType   String   @map("reference_type") // PURCHASE_ORDER, GRN, SHIPMENT, CONTAINER
+  referenceNumber String   @map("reference_number")
+  // ─── Supplier ───
+  supplierId      String?  @db.Uuid @map("supplier_id")
+  supplierName    String?  @map("supplier_name")
+  // ─── Total costs ───
+  productCost     Decimal  @db.Decimal(18, 2) @map("product_cost")
+  totalLandedCost Decimal  @db.Decimal(18, 2) @default(0) @map("total_landed_cost")
+  totalAllocatedCost Decimal @db.Decimal(18, 2) @default(0) @map("total_allocated_cost")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ALLOCATED, POSTED, CANCELLED
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  allocations     LandedCostAllocation[]
+
+  @@map("landed_cost_documents")
+  @@index([referenceType, referenceNumber], map: "idx_lcd_reference")
+  @@index([status], map: "idx_lcd_status")
+  @@index([documentDate], map: "idx_lcd_date")
+}
+
+model LandedCostAllocation {
+  id              String   @id @default(uuid()) @db.Uuid
+  documentId      String   @db.Uuid @map("document_id")
+  // ─── Cost component ───
+  costComponent   String   @map("cost_component") // FREIGHT, INSURANCE, CUSTOM_DUTY, LOADING, UNLOADING, TRANSPORT, HANDLING, BROKERAGE
+  description     String?
+  // ─── Amount ───
+  amount          Decimal  @db.Decimal(18, 2)
+  currency        String   @default("INR") @db.Char(3)
+  // ─── Allocation method ───
+  allocationMethod String  @map("allocation_method") // QUANTITY, WEIGHT, VOLUME, VALUE, EQUAL
+  allocationPercent Decimal @db.Decimal(8, 4) @default(0) @map("allocation_percent")
+  // ─── Vendor ───
+  vendorId        String?  @db.Uuid @map("vendor_id")
+  vendorName      String?  @map("vendor_name")
+  vendorInvoiceNo String?  @map("vendor_invoice_no")
+  // ─── Status ───
+  isAllocated     Boolean  @default(false) @map("is_allocated")
+  allocatedAt     DateTime? @map("allocated_at")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  document        LandedCostDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("landed_cost_allocations")
+  @@index([documentId], map: "idx_lca_document")
+  @@index([costComponent], map: "idx_lca_component")
+}
+
+// ─── Epic 7: Inventory Revaluation ─────────────────────
+model InventoryRevaluation {
+  id              String   @id @default(uuid()) @db.Uuid
+  revaluationNumber String  @unique @map("revaluation_number")
+  revaluationDate DateTime @map("revaluation_date")
+  // ─── Scope ───
+  productId       String?  @db.Uuid @map("product_id")
+  productName     String?  @map("product_name")
+  productCategoryId String? @db.Uuid @map("product_category_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Type ───
+  revaluationType String   @map("revaluation_type") // INCREASE, DECREASE, MARKET_ADJUSTMENT, POLICY_CHANGE, STANDARD_COST_UPDATE
+  reason          String
+  description     String?
+  // ─── Values ───
+  oldUnitCost     Decimal  @db.Decimal(18, 4) @map("old_unit_cost")
+  newUnitCost     Decimal  @db.Decimal(18, 4) @map("new_unit_cost")
+  costDifference  Decimal  @db.Decimal(18, 4) @map("cost_difference")
+  totalQty        Decimal  @db.Decimal(18, 4) @map("total_qty")
+  totalValueChange Decimal @db.Decimal(18, 2) @map("total_value_change")
+  // ─── GL ───
+  glPostingNumber String?  @map("gl_posting_number")
+  glPosted        Boolean  @default(false) @map("gl_posted")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, POSTED, REJECTED, CANCELLED
+  // ─── Approval ───
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  postedAt        DateTime? @map("posted_at")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("inventory_revaluations")
+  @@index([revaluationType, status], map: "idx_irv_type_status")
+  @@index([productId], map: "idx_irv_product")
+  @@index([status], map: "idx_irv_status")
+  @@index([revaluationDate], map: "idx_irv_date")
+}
+
+// ─── Epic 8: GL Integration ────────────────────────────
+model InventoryGLPosting {
+  id              String   @id @default(uuid()) @db.Uuid
+  postingNumber   String   @unique @map("posting_number")
+  postingDate     DateTime @map("posting_date")
+  // ─── Source ───
+  sourceType      String   @map("source_type") // INVENTORY_TRANSACTION, REVALUATION, LANDED_COST, ADJUSTMENT, WRITE_OFF
+  sourceId        String?  @db.Uuid @map("source_id")
+  sourceNumber    String?  @map("source_number")
+  // ─── Item ───
+  productId       String?  @db.Uuid @map("product_id")
+  productName     String?  @map("product_name")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  // ─── Entry ───
+  entryType       String   @map("entry_type") // DEBIT, CREDIT
+  // ─── Accounts ───
+  inventoryAccount String  @map("inventory_account") // INVENTORY_ASSET, RAW_MATERIAL, FINISHED_GOODS, WIP
+  offsetAccount   String   @map("offset_account") // COGS, GRNI, WIP, PURCHASE_VARIANCE, SCRAP, WRITE_OFF
+  // ─── Amount ───
+  quantity        Decimal? @db.Decimal(18, 4)
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  amount          Decimal  @db.Decimal(18, 2)
+  // ─── Description ───
+  description     String?
+  // ─── Status ───
+  status          String   @default("POSTED") // POSTED, REVERSED
+  reversedBy      String?  @db.Uuid @map("reversed_by")
+  reversedAt      DateTime? @map("reversed_at")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_gl_postings")
+  @@index([sourceType, sourceId], map: "idx_igp_source")
+  @@index([postingDate], map: "idx_igp_date")
+  @@index([inventoryAccount], map: "idx_igp_account")
+  @@index([status], map: "idx_igp_status")
+}
+
+// ─── Epic 9: Valuation Summary ─────────────────────────
+model InventoryValuation {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Scope ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  productCategoryId String? @db.Uuid @map("product_category_id")
+  // ─── Costing ───
+  costingMethod   String   @map("costing_method")
+  // ─── Quantities ───
+  onHandQty       Decimal  @db.Decimal(18, 4) @default(0) @map("on_hand_qty")
+  // ─── Cost ───
+  unitCost        Decimal  @db.Decimal(18, 4) @map("unit_cost")
+  totalValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_value")
+  // ─── ABC/XYZ ───
+  abcClass        String?  @map("abc_class") // A, B, C
+  xyzClass        String?  @map("xyz_class") // X (stable), Y (variable), Z (irregular)
+  // ─── Movement ───
+  movementCategory String? @map("movement_category") // FAST_MOVING, SLOW_MOVING, DEAD_STOCK, NORMAL
+  // ─── Ageing ───
+  daysInStock     Int?     @map("days_in_stock")
+  ageingCategory  String?  @map("ageing_category") // 0-30, 31-60, 61-90, 91-180, 180+
+  // ─── Snapshot ───
+  valuationDate   DateTime @map("valuation_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("inventory_valuations")
+  @@index([productId, warehouseId], map: "idx_iv_product_wh")
+  @@index([abcClass], map: "idx_iv_abc")
+  @@index([movementCategory], map: "idx_iv_movement")
+  @@index([valuationDate], map: "idx_iv_date")
+  @@index([ageingCategory], map: "idx_iv_ageing")
+}

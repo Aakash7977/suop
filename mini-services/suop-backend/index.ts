@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "19.0.0"
+const VERSION = "20.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -913,6 +913,92 @@ const BATCH_DATA = {
   ],
 }
 
+// ─── Sprint 20: Costing & Valuation Seed Data ───────────
+const COST_DATA = {
+  costLayers: [
+    { id: 'icl-001', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', batchId: 'bm-006', batchNumber: 'CASHEW-RM-2606', uomId: 'uom-kg', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', layerNumber: 1, receiptType: 'PURCHASE', receiptNumber: 'GRN-2026-00142', receiptDate: '2026-06-20', originalQty: 500, consumedQty: 0, remainingQty: 500, unitCost: 850, totalOriginalValue: 425000, totalConsumedValue: 0, totalRemainingValue: 425000, landedUnitCost: 901.50, hasLandedCost: true, status: 'ACTIVE', createdAt: '2026-06-20T10:00:00Z', updatedAt: '2026-07-09T08:00:00Z' },
+    { id: 'icl-002', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', batchId: null, batchNumber: null, uomId: 'uom-kg', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', layerNumber: 2, receiptType: 'PURCHASE', receiptNumber: 'GRN-2026-00098', receiptDate: '2026-05-15', originalQty: 800, consumedQty: 320, remainingQty: 480, unitCost: 820, totalOriginalValue: 656000, totalConsumedValue: 262400, totalRemainingValue: 393600, landedUnitCost: 868.20, hasLandedCost: true, status: 'PARTIALLY_CONSUMED', createdAt: '2026-05-15T11:00:00Z', updatedAt: '2026-07-01T16:00:00Z' },
+    { id: 'icl-003', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', batchId: null, batchNumber: null, uomId: 'uom-kg', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', layerNumber: 3, receiptType: 'PURCHASE', receiptNumber: 'GRN-2026-00071', receiptDate: '2026-04-22', originalQty: 600, consumedQty: 600, remainingQty: 0, unitCost: 780, totalOriginalValue: 468000, totalConsumedValue: 468000, totalRemainingValue: 0, landedUnitCost: 823.40, hasLandedCost: true, status: 'FULLY_CONSUMED', createdAt: '2026-04-22T09:00:00Z', updatedAt: '2026-06-20T18:00:00Z' },
+    { id: 'icl-004', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', batchId: 'bm-001', batchNumber: 'KK-2607-01', uomId: 'uom-box', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'FIFO', layerNumber: 4, receiptType: 'PRODUCTION', receiptNumber: 'MO-2026-0089', receiptDate: '2026-07-01', originalQty: 500, consumedQty: 0, remainingQty: 500, unitCost: 600, totalOriginalValue: 300000, totalConsumedValue: 0, totalRemainingValue: 300000, landedUnitCost: null, hasLandedCost: false, status: 'ACTIVE', createdAt: '2026-07-01T16:00:00Z', updatedAt: '2026-07-09T08:00:00Z' },
+    { id: 'icl-005', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', batchId: 'bm-002', batchNumber: 'KK-2607-02', uomId: 'uom-box', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'FIFO', layerNumber: 5, receiptType: 'PRODUCTION', receiptNumber: 'MO-2026-0090', receiptDate: '2026-07-05', originalQty: 400, consumedQty: 20, remainingQty: 380, unitCost: 580, totalOriginalValue: 232000, totalConsumedValue: 11600, totalRemainingValue: 220400, landedUnitCost: null, hasLandedCost: false, status: 'PARTIALLY_CONSUMED', createdAt: '2026-07-05T17:00:00Z', updatedAt: '2026-07-08T10:00:00Z' },
+    { id: 'icl-006', productId: 'prod-ghee-raw', productName: 'Ghee (Raw Material)', batchId: 'bm-007', batchNumber: 'GHEE-RM-2606-A', uomId: 'uom-kg', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', layerNumber: 6, receiptType: 'PURCHASE', receiptNumber: 'GRN-2026-00080', receiptDate: '2026-06-15', originalQty: 100, consumedQty: 0, remainingQty: 100, unitCost: 520, totalOriginalValue: 52000, totalConsumedValue: 0, totalRemainingValue: 52000, landedUnitCost: 559, hasLandedCost: true, status: 'ACTIVE', createdAt: '2026-06-15T09:30:00Z', updatedAt: '2026-07-09T08:00:00Z' },
+    { id: 'icl-007', productId: 'prod-sc-1kg', productName: 'Soan Cake 1kg', batchId: 'bm-005', batchNumber: 'SC-2606-15', uomId: 'uom-box', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'MOVING_AVERAGE', layerNumber: 7, receiptType: 'PRODUCTION', receiptNumber: 'MO-2026-0070', receiptDate: '2026-07-04', originalQty: 150, consumedQty: 0, remainingQty: 150, unitCost: 625, totalOriginalValue: 93750, totalConsumedValue: 0, totalRemainingValue: 93750, landedUnitCost: null, hasLandedCost: false, status: 'ACTIVE', createdAt: '2026-07-04T15:00:00Z', updatedAt: '2026-07-09T08:00:00Z' },
+    { id: 'icl-008', productId: 'prod-gj-1kg', productName: 'Gulab Jamun 1kg', batchId: 'bm-004', batchNumber: 'GJ-2606-12', uomId: 'uom-box', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'WEIGHTED_AVERAGE', layerNumber: 8, receiptType: 'PRODUCTION', receiptNumber: 'MO-2026-0078', receiptDate: '2026-06-25', originalQty: 200, consumedQty: 176, remainingQty: 24, unitCost: 304, totalOriginalValue: 60800, totalConsumedValue: 53504, totalRemainingValue: 7296, landedUnitCost: 324, hasLandedCost: true, status: 'PARTIALLY_CONSUMED', createdAt: '2026-06-25T18:00:00Z', updatedAt: '2026-07-09T08:00:00Z' },
+  ],
+  costHistory: [
+    { id: 'ich-001', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', unitCost: 820, totalQty: 480, totalValue: 393600, changeType: 'RECEIPT', changeReference: 'GRN-2026-00098', changeDate: '2026-05-15T11:00:00Z', previousUnitCost: 780, previousTotalValue: 468000, costVariance: 40, valueVariance: -74400, createdById: 'usr-005', createdAt: '2026-05-15T11:00:00Z' },
+    { id: 'ich-002', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', unitCost: 820, totalQty: 320, totalValue: 262400, changeType: 'ISSUE', changeReference: 'MO-2026-0089', changeDate: '2026-07-01T16:00:00Z', previousUnitCost: 820, previousTotalValue: 393600, costVariance: 0, valueVariance: -131200, createdById: 'usr-005', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'ich-003', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'FIFO', unitCost: 600, totalQty: 500, totalValue: 300000, changeType: 'LANDED_COST', changeReference: 'LC-2026-002', changeDate: '2026-07-03T10:30:00Z', previousUnitCost: 580, previousTotalValue: 290000, costVariance: 20, valueVariance: 10000, createdById: 'usr-002', createdAt: '2026-07-03T10:30:00Z' },
+    { id: 'ich-004', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'FIFO', unitCost: 625, totalQty: 500, totalValue: 312500, changeType: 'REVALUATION', changeReference: 'REV-2026-003', changeDate: '2026-07-06T14:00:00Z', previousUnitCost: 600, previousTotalValue: 300000, costVariance: 25, valueVariance: 12500, createdById: 'usr-001', createdAt: '2026-07-06T14:00:00Z' },
+    { id: 'ich-005', productId: 'prod-ghee-raw', productName: 'Ghee (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', costingMethod: 'FIFO', unitCost: 520, totalQty: 100, totalValue: 52000, changeType: 'RECEIPT', changeReference: 'GRN-2026-00080', changeDate: '2026-06-15T09:30:00Z', previousUnitCost: 495, previousTotalValue: 49500, costVariance: 25, valueVariance: 2500, createdById: 'usr-005', createdAt: '2026-06-15T09:30:00Z' },
+    { id: 'ich-006', productId: 'prod-sc-1kg', productName: 'Soan Cake 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', costingMethod: 'MOVING_AVERAGE', unitCost: 625, totalQty: 150, totalValue: 93750, changeType: 'RECEIPT', changeReference: 'MO-2026-0070', changeDate: '2026-07-04T15:00:00Z', previousUnitCost: 610, previousTotalValue: 91500, costVariance: 15, valueVariance: 2250, createdById: 'usr-003', createdAt: '2026-07-04T15:00:00Z' },
+  ],
+  landedCostDocuments: [
+    {
+      id: 'lcd-001', documentNumber: 'LC-2026-001', documentDate: '2026-06-20T10:00:00Z',
+      referenceType: 'PURCHASE_ORDER', referenceNumber: 'PO-2026-0456',
+      supplierId: 'sup-001', supplierName: 'Mumbai Dry Fruits Co.',
+      productCost: 425000, totalLandedCost: 450250, totalAllocatedCost: 25250,
+      status: 'POSTED', createdById: 'usr-005', approvedById: 'usr-002', approvedAt: '2026-06-20T12:00:00Z',
+      createdAt: '2026-06-20T10:00:00Z', updatedAt: '2026-06-20T12:00:00Z',
+      allocations: [
+        { id: 'lca-001', documentId: 'lcd-001', costComponent: 'FREIGHT', description: 'Truck freight Mumbai→Plant', amount: 12500, currency: 'INR', allocationMethod: 'VALUE', allocationPercent: 49.50, vendorId: 'sup-014', vendorName: 'VRL Logistics', vendorInvoiceNo: 'VRL-2026-1187', isAllocated: true, allocatedAt: '2026-06-20T12:00:00Z', createdAt: '2026-06-20T10:00:00Z' },
+        { id: 'lca-002', documentId: 'lcd-001', costComponent: 'INSURANCE', description: 'Marine insurance — cashew shipment', amount: 4250, currency: 'INR', allocationMethod: 'VALUE', allocationPercent: 16.83, vendorId: 'sup-021', vendorName: 'TATA AIG', vendorInvoiceNo: 'TAIG-MAR-2026-0456', isAllocated: true, allocatedAt: '2026-06-20T12:00:00Z', createdAt: '2026-06-20T10:00:00Z' },
+        { id: 'lca-003', documentId: 'lcd-001', costComponent: 'CUSTOM_DUTY', description: 'Import duty — Mozambique cashew', amount: 8500, currency: 'INR', allocationMethod: 'VALUE', allocationPercent: 33.66, vendorId: 'sup-099', vendorName: 'Mumbai Customs', vendorInvoiceNo: 'CUS-2026-7741', isAllocated: true, allocatedAt: '2026-06-20T12:00:00Z', createdAt: '2026-06-20T10:00:00Z' },
+      ],
+    },
+    {
+      id: 'lcd-002', documentNumber: 'LC-2026-002', documentDate: '2026-06-15T09:30:00Z',
+      referenceType: 'GRN', referenceNumber: 'GRN-2026-00080',
+      supplierId: 'sup-002', supplierName: 'Anand Dairy Ltd.',
+      productCost: 52000, totalLandedCost: 55900, totalAllocatedCost: 3900,
+      status: 'ALLOCATED', createdById: 'usr-005', approvedById: 'usr-002', approvedAt: '2026-06-15T13:00:00Z',
+      createdAt: '2026-06-15T09:30:00Z', updatedAt: '2026-06-15T13:00:00Z',
+      allocations: [
+        { id: 'lca-004', documentId: 'lcd-002', costComponent: 'FREIGHT', description: 'Refrigerated transport Anand→Mumbai', amount: 2600, currency: 'INR', allocationMethod: 'QUANTITY', allocationPercent: 66.67, vendorId: 'sup-014', vendorName: 'ColdEx Logistics', vendorInvoiceNo: 'CE-2026-8821', isAllocated: true, allocatedAt: '2026-06-15T13:00:00Z', createdAt: '2026-06-15T09:30:00Z' },
+        { id: 'lca-005', documentId: 'lcd-002', costComponent: 'LOADING', description: 'Loading charges at Anand plant', amount: 500, currency: 'INR', allocationMethod: 'EQUAL', allocationPercent: 12.82, vendorId: null, vendorName: null, vendorInvoiceNo: null, isAllocated: true, allocatedAt: '2026-06-15T13:00:00Z', createdAt: '2026-06-15T09:30:00Z' },
+        { id: 'lca-006', documentId: 'lcd-002', costComponent: 'UNLOADING', description: 'Unloading at Mumbai Plant', amount: 500, currency: 'INR', allocationMethod: 'EQUAL', allocationPercent: 12.82, vendorId: null, vendorName: null, vendorInvoiceNo: null, isAllocated: true, allocatedAt: '2026-06-15T13:00:00Z', createdAt: '2026-06-15T09:30:00Z' },
+        { id: 'lca-007', documentId: 'lcd-002', costComponent: 'HANDLING', description: 'Refrigerated handling at dock', amount: 300, currency: 'INR', allocationMethod: 'EQUAL', allocationPercent: 7.69, vendorId: null, vendorName: null, vendorInvoiceNo: null, isAllocated: true, allocatedAt: '2026-06-15T13:00:00Z', createdAt: '2026-06-15T09:30:00Z' },
+      ],
+    },
+    {
+      id: 'lcd-003', documentNumber: 'LC-2026-003', documentDate: '2026-07-08T11:00:00Z',
+      referenceType: 'SHIPMENT', referenceNumber: 'SHP-2026-0123',
+      supplierId: null, supplierName: null,
+      productCost: 60800, totalLandedCost: 64800, totalAllocatedCost: 0,
+      status: 'DRAFT', createdById: 'usr-006', approvedById: null, approvedAt: null,
+      createdAt: '2026-07-08T11:00:00Z', updatedAt: '2026-07-08T11:00:00Z',
+      allocations: [
+        { id: 'lca-008', documentId: 'lcd-003', costComponent: 'TRANSPORT', description: 'Refrigerated transport Mumbai DC→Bengaluru', amount: 3200, currency: 'INR', allocationMethod: 'WEIGHT', allocationPercent: 80, vendorId: 'sup-014', vendorName: 'SnowMan Cold Chain', vendorInvoiceNo: 'SNW-2026-4452', isAllocated: false, allocatedAt: null, createdAt: '2026-07-08T11:00:00Z' },
+        { id: 'lca-009', documentId: 'lcd-003', costComponent: 'INSURANCE', description: 'Transit insurance for Gulab Jamun', amount: 800, currency: 'INR', allocationMethod: 'VALUE', allocationPercent: 20, vendorId: 'sup-021', vendorName: 'ICICI Lombard', vendorInvoiceNo: 'ICL-TRN-2026-0921', isAllocated: false, allocatedAt: null, createdAt: '2026-07-08T11:00:00Z' },
+      ],
+    },
+  ],
+  revaluations: [
+    { id: 'irv-001', revaluationNumber: 'REV-2026-001', revaluationDate: '2026-07-09T10:00:00Z', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', productCategoryId: 'cat-raw-dryfruit', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', revaluationType: 'INCREASE', reason: 'Supplier price increase — new stock procured at higher rate', description: 'Q2 cashew market up 3.6% due to Mozambique crop shortage. Revaluing existing stock to current market rate.', oldUnitCost: 820, newUnitCost: 850, costDifference: 30, totalQty: 480, totalValueChange: 14400, glPostingNumber: null, glPosted: false, status: 'PENDING_APPROVAL', approvedById: null, approvedAt: null, postedAt: null, createdById: 'usr-005', createdByName: 'Ramesh Yadav', createdAt: '2026-07-09T10:00:00Z', updatedAt: '2026-07-09T10:00:00Z' },
+    { id: 'irv-002', revaluationNumber: 'REV-2026-002', revaluationDate: '2026-07-07T15:00:00Z', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', productCategoryId: 'cat-sweets', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', revaluationType: 'DECREASE', reason: 'Standard cost revision — BOM optimization reduces cashew content by 4%', description: 'After R&D reformulation (BOM v2.1), standard cost reduced. Revaluing finished stock to new standard cost.', oldUnitCost: 600, newUnitCost: 580, costDifference: -20, totalQty: 380, totalValueChange: -7600, glPostingNumber: 'GL-2026-0912', glPosted: true, status: 'POSTED', approvedById: 'usr-002', approvedAt: '2026-07-07T15:30:00Z', postedAt: '2026-07-07T16:00:00Z', createdById: 'usr-003', createdByName: 'Sandeep Kumar', createdAt: '2026-07-07T15:00:00Z', updatedAt: '2026-07-07T16:00:00Z' },
+    { id: 'irv-003', revaluationNumber: 'REV-2026-003', revaluationDate: '2026-07-06T14:00:00Z', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', productCategoryId: 'cat-sweets', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', revaluationType: 'MARKET_ADJUSTMENT', reason: 'Festive season demand spike — market price adjustment (Raksha Bandhan + Diwali)', description: 'Wholesale market rate up 4.2% due to festive demand. Adjusting inventory to NRV per Ind AS 2.', oldUnitCost: 600, newUnitCost: 625, costDifference: 25, totalQty: 500, totalValueChange: 12500, glPostingNumber: 'GL-2026-0905', glPosted: true, status: 'APPROVED', approvedById: 'usr-001', approvedAt: '2026-07-06T14:30:00Z', postedAt: null, createdById: 'usr-001', createdByName: 'CEO Vikram', createdAt: '2026-07-06T14:00:00Z', updatedAt: '2026-07-06T14:30:00Z' },
+  ],
+  glPostings: [
+    { id: 'igp-001', postingNumber: 'GL-2026-0881', postingDate: '2026-06-20T12:00:00Z', sourceType: 'INVENTORY_TRANSACTION', sourceId: 'icl-001', sourceNumber: 'GRN-2026-00142', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', entryType: 'DEBIT', inventoryAccount: 'RAW_MATERIAL', offsetAccount: 'GRNI', quantity: 500, unitCost: 850, amount: 425000, description: 'Goods receipt — cashew 500 kg @ ₹850', status: 'POSTED', reversedBy: null, reversedAt: null, createdById: 'usr-005', createdAt: '2026-06-20T12:00:00Z' },
+    { id: 'igp-002', postingNumber: 'GL-2026-0882', postingDate: '2026-06-20T12:00:00Z', sourceType: 'INVENTORY_TRANSACTION', sourceId: 'icl-001', sourceNumber: 'GRN-2026-00142', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', entryType: 'CREDIT', inventoryAccount: 'GRNI', offsetAccount: 'RAW_MATERIAL', quantity: 500, unitCost: 850, amount: 425000, description: 'GRNI clearing — cashew 500 kg @ ₹850', status: 'POSTED', reversedBy: null, reversedAt: null, createdById: 'usr-005', createdAt: '2026-06-20T12:00:00Z' },
+    { id: 'igp-003', postingNumber: 'GL-2026-0895', postingDate: '2026-07-01T16:00:00Z', sourceType: 'INVENTORY_TRANSACTION', sourceId: 'icl-004', sourceNumber: 'MO-2026-0089', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', entryType: 'DEBIT', inventoryAccount: 'FINISHED_GOODS', offsetAccount: 'WIP', quantity: 500, unitCost: 600, amount: 300000, description: 'Production receipt — Kaju Katli 500 BOX @ ₹600', status: 'POSTED', reversedBy: null, reversedAt: null, createdById: 'usr-003', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'igp-004', postingNumber: 'GL-2026-0896', postingDate: '2026-07-01T16:00:00Z', sourceType: 'INVENTORY_TRANSACTION', sourceId: 'icl-004', sourceNumber: 'MO-2026-0089', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', entryType: 'CREDIT', inventoryAccount: 'WIP', offsetAccount: 'FINISHED_GOODS', quantity: 500, unitCost: 600, amount: 300000, description: 'WIP clearing — Kaju Katli production order MO-2026-0089', status: 'POSTED', reversedBy: null, reversedAt: null, createdById: 'usr-003', createdAt: '2026-07-01T16:00:00Z' },
+    { id: 'igp-005', postingNumber: 'GL-2026-0918', postingDate: '2026-07-05T14:00:00Z', sourceType: 'INVENTORY_TRANSACTION', sourceId: null, sourceNumber: 'INV-2026-00892', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', entryType: 'DEBIT', inventoryAccount: 'COGS', offsetAccount: 'FINISHED_GOODS', quantity: 100, unitCost: 510, amount: 51000, description: 'COGS for sales invoice INV-2026-00892 — 100 BOX @ ₹510 (FIFO)', status: 'POSTED', reversedBy: null, reversedAt: null, createdById: 'usr-006', createdAt: '2026-07-05T14:00:00Z' },
+    { id: 'igp-006', postingNumber: 'GL-2026-0919', postingDate: '2026-07-05T14:00:00Z', sourceType: 'INVENTORY_TRANSACTION', sourceId: null, sourceNumber: 'INV-2026-00892', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', entryType: 'CREDIT', inventoryAccount: 'FINISHED_GOODS', offsetAccount: 'COGS', quantity: 100, unitCost: 510, amount: 51000, description: 'Inventory relief for sales invoice INV-2026-00892 — 100 BOX', status: 'POSTED', reversedBy: null, reversedAt: null, createdById: 'usr-006', createdAt: '2026-07-05T14:00:00Z' },
+  ],
+  valuations: [
+    { id: 'iv-001', productId: 'prod-cas-raw', productName: 'Cashew Nuts (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', productCategoryId: 'cat-raw-dryfruit', costingMethod: 'FIFO', onHandQty: 980, unitCost: 836.33, totalValue: 819600, abcClass: 'A', xyzClass: 'X', movementCategory: 'FAST_MOVING', daysInStock: 12, ageingCategory: '0-30', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-002', productId: 'prod-kk-500', productName: 'Kaju Katli 500g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', productCategoryId: 'cat-sweets', costingMethod: 'FIFO', onHandQty: 878, unitCost: 595.18, totalValue: 522610, abcClass: 'A', xyzClass: 'X', movementCategory: 'FAST_MOVING', daysInStock: 8, ageingCategory: '0-30', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-003', productId: 'prod-mn-200', productName: 'Mixed Namkeen 200g', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', productCategoryId: 'cat-namkeen', costingMethod: 'WEIGHTED_AVERAGE', onHandQty: 850, unitCost: 53, totalValue: 45050, abcClass: 'B', xyzClass: 'Y', movementCategory: 'NORMAL', daysInStock: 45, ageingCategory: '31-60', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-004', productId: 'prod-sc-1kg', productName: 'Soan Cake 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', productCategoryId: 'cat-sweets', costingMethod: 'MOVING_AVERAGE', onHandQty: 150, unitCost: 625, totalValue: 93750, abcClass: 'B', xyzClass: 'Y', movementCategory: 'SLOW_MOVING', daysInStock: 75, ageingCategory: '61-90', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-005', productId: 'prod-gj-1kg', productName: 'Gulab Jamun 1kg', warehouseId: 'wh-002', warehouseName: 'Mumbai DC', productCategoryId: 'cat-sweets', costingMethod: 'WEIGHTED_AVERAGE', onHandQty: 24, unitCost: 304, totalValue: 7296, abcClass: 'C', xyzClass: 'Z', movementCategory: 'DEAD_STOCK', daysInStock: 142, ageingCategory: '91-180', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-006', productId: 'prod-ghee-raw', productName: 'Ghee (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', productCategoryId: 'cat-raw-dairy', costingMethod: 'FIFO', onHandQty: 80, unitCost: 520, totalValue: 41600, abcClass: 'A', xyzClass: 'X', movementCategory: 'FAST_MOVING', daysInStock: 24, ageingCategory: '0-30', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-007', productId: 'prod-pkg-box', productName: 'Printed Box 500g (Packaging)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', productCategoryId: 'cat-packaging', costingMethod: 'MOVING_AVERAGE', onHandQty: 8500, unitCost: 8, totalValue: 68000, abcClass: 'C', xyzClass: 'X', movementCategory: 'NORMAL', daysInStock: 38, ageingCategory: '31-60', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+    { id: 'iv-008', productId: 'prod-sug-raw', productName: 'Sugar (Raw Material)', warehouseId: 'wh-001', warehouseName: 'Mumbai Plant Warehouse', productCategoryId: 'cat-raw-sugar', costingMethod: 'FIFO', onHandQty: 0, unitCost: 45, totalValue: 0, abcClass: 'C', xyzClass: 'Z', movementCategory: 'DEAD_STOCK', daysInStock: 210, ageingCategory: '180+', valuationDate: '2026-07-09T08:00:00Z', createdAt: '2026-07-09T08:00:00Z' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1305,6 +1391,7 @@ const server = Bun.serve({
         { code: 'RES', name: 'Reservation & Allocation', status: 'active', entities: 4, sprint: 17 },
         { code: 'CC', name: 'Cycle Count & Audit', status: 'active', entities: 6, sprint: 18 },
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
+        { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 19 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
@@ -3448,12 +3535,194 @@ const server = Bun.serve({
       }, 'SUOP Batch & Expiry Management Engine v19.0.0')), { headers })
     }
 
+    // ─── Sprint 20: Costing & Valuation Endpoints ──────────
+    if (path === '/api/cost-layers' && method === 'GET') {
+      const productFilter = url.searchParams.get('product')
+      const methodFilter = url.searchParams.get('method')
+      const statusFilter = url.searchParams.get('status')
+      let layers = COST_DATA.costLayers
+      if (productFilter) layers = layers.filter(l => l.productName.toLowerCase().includes(productFilter.toLowerCase()))
+      if (methodFilter) layers = layers.filter(l => l.costingMethod === methodFilter.toUpperCase())
+      if (statusFilter) layers = layers.filter(l => l.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(layers, `${layers.length} cost layer records`)), { headers })
+    }
+    if (path === '/api/cost-history' && method === 'GET') {
+      const changeTypeFilter = url.searchParams.get('changeType')
+      const productFilter = url.searchParams.get('product')
+      let history = COST_DATA.costHistory
+      if (changeTypeFilter) history = history.filter(h => h.changeType === changeTypeFilter.toUpperCase())
+      if (productFilter) history = history.filter(h => h.productName.toLowerCase().includes(productFilter.toLowerCase()))
+      return new Response(JSON.stringify(successResponse(history, `${history.length} cost history records`)), { headers })
+    }
+    if (path === '/api/landed-costs' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let docs = COST_DATA.landedCostDocuments
+      if (statusFilter) docs = docs.filter(d => d.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(docs, `${docs.length} landed cost documents`)), { headers })
+    }
+    if (path.match(/^\/api\/landed-costs\/[^/]+\/allocate$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const doc = COST_DATA.landedCostDocuments.find(d => d.id === id)
+      if (!doc) return new Response(JSON.stringify(errorResponse('Landed cost document not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (doc.status === 'POSTED') return new Response(JSON.stringify(errorResponse(`Document already in terminal status: ${doc.status}`, 'INVALID_TRANSITION', 400)), { status: 400, headers })
+      const prevStatus = doc.status
+      doc.allocations.forEach(a => { a.isAllocated = true; a.allocatedAt = new Date().toISOString() })
+      doc.totalAllocatedCost = doc.allocations.reduce((s, a) => s + a.amount, 0)
+      doc.totalLandedCost = doc.productCost + doc.totalAllocatedCost
+      doc.status = 'ALLOCATED'
+      log('info', 'Landed cost document allocated', { docNumber: doc.documentNumber, was: prevStatus, now: 'ALLOCATED', totalAllocated: doc.totalAllocatedCost })
+      return new Response(JSON.stringify(successResponse(doc, `Landed cost ${doc.documentNumber} allocated: ${prevStatus} → ALLOCATED (${doc.allocations.length} components, total ₹${doc.totalAllocatedCost})`)), { headers })
+    }
+    if (path === '/api/inventory-revaluations' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let revs = COST_DATA.revaluations
+      if (typeFilter) revs = revs.filter(r => r.revaluationType === typeFilter.toUpperCase())
+      if (statusFilter) revs = revs.filter(r => r.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(revs, `${revs.length} inventory revaluations`)), { headers })
+    }
+    if (path.match(/^\/api\/inventory-revaluations\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const rev = COST_DATA.revaluations.find(r => r.id === id)
+      if (!rev) return new Response(JSON.stringify(errorResponse('Revaluation not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (rev.status === 'POSTED' || rev.status === 'REJECTED') return new Response(JSON.stringify(errorResponse(`Revaluation already in terminal status: ${rev.status}`, 'INVALID_TRANSITION', 400)), { status: 400, headers })
+      const prevStatus = rev.status
+      rev.status = 'APPROVED'
+      rev.approvedById = 'usr-001'
+      rev.approvedAt = new Date().toISOString()
+      log('info', 'Inventory revaluation approved', { revaluationNumber: rev.revaluationNumber, was: prevStatus, now: 'APPROVED', valueChange: rev.totalValueChange })
+      return new Response(JSON.stringify(successResponse(rev, `Revaluation ${rev.revaluationNumber} approved: ${prevStatus} → APPROVED (value change ₹${rev.totalValueChange})`)), { headers })
+    }
+    if (path === '/api/inventory-gl-postings' && method === 'GET') {
+      const entryTypeFilter = url.searchParams.get('entryType')
+      const accountFilter = url.searchParams.get('account')
+      const sourceTypeFilter = url.searchParams.get('sourceType')
+      let postings = COST_DATA.glPostings
+      if (entryTypeFilter) postings = postings.filter(p => p.entryType === entryTypeFilter.toUpperCase())
+      if (accountFilter) postings = postings.filter(p => p.inventoryAccount === accountFilter.toUpperCase() || p.offsetAccount === accountFilter.toUpperCase())
+      if (sourceTypeFilter) postings = postings.filter(p => p.sourceType === sourceTypeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(postings, `${postings.length} GL postings`)), { headers })
+    }
+    if (path === '/api/inventory-valuation' && method === 'GET') {
+      const abcFilter = url.searchParams.get('abc')
+      const movementFilter = url.searchParams.get('movement')
+      const ageingFilter = url.searchParams.get('ageing')
+      let vals = COST_DATA.valuations
+      if (abcFilter) vals = vals.filter(v => v.abcClass === abcFilter.toUpperCase())
+      if (movementFilter) vals = vals.filter(v => v.movementCategory === movementFilter.toUpperCase())
+      if (ageingFilter) vals = vals.filter(v => v.ageingCategory === ageingFilter)
+      return new Response(JSON.stringify(successResponse(vals, `${vals.length} inventory valuation records`)), { headers })
+    }
+    if (path === '/api/costing/dashboard' && method === 'GET') {
+      const totalInventoryValue = COST_DATA.valuations.reduce((s, v) => s + v.totalValue, 0)
+      const fifoLayers = COST_DATA.costLayers.filter(l => l.costingMethod === 'FIFO').length
+      const avgUnitCost = COST_DATA.valuations.reduce((s, v) => s + v.unitCost, 0) / COST_DATA.valuations.length
+      const deadStockValue = COST_DATA.valuations.filter(v => v.movementCategory === 'DEAD_STOCK').reduce((s, v) => s + v.totalValue, 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          costLayers: COST_DATA.costLayers.length,
+          costHistory: COST_DATA.costHistory.length,
+          landedCostDocuments: COST_DATA.landedCostDocuments.length,
+          revaluations: COST_DATA.revaluations.length,
+          glPostings: COST_DATA.glPostings.length,
+          valuations: COST_DATA.valuations.length,
+        },
+        layerStatus: {
+          ACTIVE: COST_DATA.costLayers.filter(l => l.status === 'ACTIVE').length,
+          PARTIALLY_CONSUMED: COST_DATA.costLayers.filter(l => l.status === 'PARTIALLY_CONSUMED').length,
+          FULLY_CONSUMED: COST_DATA.costLayers.filter(l => l.status === 'FULLY_CONSUMED').length,
+        },
+        costingMethods: {
+          FIFO: COST_DATA.costLayers.filter(l => l.costingMethod === 'FIFO').length,
+          WEIGHTED_AVERAGE: COST_DATA.costLayers.filter(l => l.costingMethod === 'WEIGHTED_AVERAGE').length,
+          MOVING_AVERAGE: COST_DATA.costLayers.filter(l => l.costingMethod === 'MOVING_AVERAGE').length,
+          STANDARD: COST_DATA.costLayers.filter(l => l.costingMethod === 'STANDARD').length,
+        },
+        landedCostStatus: {
+          DRAFT: COST_DATA.landedCostDocuments.filter(d => d.status === 'DRAFT').length,
+          ALLOCATED: COST_DATA.landedCostDocuments.filter(d => d.status === 'ALLOCATED').length,
+          POSTED: COST_DATA.landedCostDocuments.filter(d => d.status === 'POSTED').length,
+        },
+        revaluationStatus: {
+          PENDING_APPROVAL: COST_DATA.revaluations.filter(r => r.status === 'PENDING_APPROVAL').length,
+          APPROVED: COST_DATA.revaluations.filter(r => r.status === 'APPROVED').length,
+          POSTED: COST_DATA.revaluations.filter(r => r.status === 'POSTED').length,
+        },
+        glByAccount: {
+          RAW_MATERIAL: COST_DATA.glPostings.filter(g => g.inventoryAccount === 'RAW_MATERIAL').length,
+          FINISHED_GOODS: COST_DATA.glPostings.filter(g => g.inventoryAccount === 'FINISHED_GOODS').length,
+          WIP: COST_DATA.glPostings.filter(g => g.inventoryAccount === 'WIP').length,
+          COGS: COST_DATA.glPostings.filter(g => g.inventoryAccount === 'COGS').length,
+          GRNI: COST_DATA.glPostings.filter(g => g.inventoryAccount === 'GRNI').length,
+        },
+        abcClasses: {
+          A: COST_DATA.valuations.filter(v => v.abcClass === 'A').length,
+          B: COST_DATA.valuations.filter(v => v.abcClass === 'B').length,
+          C: COST_DATA.valuations.filter(v => v.abcClass === 'C').length,
+        },
+        movementCategories: {
+          FAST_MOVING: COST_DATA.valuations.filter(v => v.movementCategory === 'FAST_MOVING').length,
+          NORMAL: COST_DATA.valuations.filter(v => v.movementCategory === 'NORMAL').length,
+          SLOW_MOVING: COST_DATA.valuations.filter(v => v.movementCategory === 'SLOW_MOVING').length,
+          DEAD_STOCK: COST_DATA.valuations.filter(v => v.movementCategory === 'DEAD_STOCK').length,
+        },
+        ageingCategories: {
+          '0-30': COST_DATA.valuations.filter(v => v.ageingCategory === '0-30').length,
+          '31-60': COST_DATA.valuations.filter(v => v.ageingCategory === '31-60').length,
+          '61-90': COST_DATA.valuations.filter(v => v.ageingCategory === '61-90').length,
+          '91-180': COST_DATA.valuations.filter(v => v.ageingCategory === '91-180').length,
+          '180+': COST_DATA.valuations.filter(v => v.ageingCategory === '180+').length,
+        },
+        totalInventoryValue,
+        totalLandedCostValue: COST_DATA.landedCostDocuments.reduce((s, d) => s + d.totalLandedCost, 0),
+        totalRevaluationImpact: COST_DATA.revaluations.reduce((s, r) => s + r.totalValueChange, 0),
+        totalGLDebit: COST_DATA.glPostings.filter(g => g.entryType === 'DEBIT').reduce((s, g) => s + g.amount, 0),
+        totalGLCredit: COST_DATA.glPostings.filter(g => g.entryType === 'CREDIT').reduce((s, g) => s + g.amount, 0),
+        fifoLayers,
+        avgUnitCost: parseFloat(avgUnitCost.toFixed(2)),
+        deadStockValue,
+        landedCostComponents: ['FREIGHT', 'INSURANCE', 'CUSTOM_DUTY', 'LOADING', 'UNLOADING', 'TRANSPORT', 'HANDLING', 'BROKERAGE'],
+      }, 'Costing & Valuation dashboard')), { headers })
+    }
+    if (path === '/api/costing/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Costing & Valuation Engine', version: '20.0.0', sprint: 20,
+        sprintName: 'Cost Layers, Landed Cost, Revaluation, GL Integration & Inventory Valuation',
+        costingMethods: ['FIFO', 'WEIGHTED_AVERAGE', 'MOVING_AVERAGE', 'STANDARD', 'ACTUAL', 'SPECIFIC_IDENTIFICATION'],
+        layerStatuses: ['ACTIVE', 'PARTIALLY_CONSUMED', 'FULLY_CONSUMED', 'EXPIRED', 'CLOSED'],
+        receiptTypes: ['PURCHASE', 'PRODUCTION', 'TRANSFER', 'OPENING', 'ADJUSTMENT'],
+        changeTypes: ['RECEIPT', 'ISSUE', 'ADJUSTMENT', 'REVALUATION', 'LANDED_COST', 'TRANSFER'],
+        referenceTypes: ['PURCHASE_ORDER', 'GRN', 'SHIPMENT', 'CONTAINER'],
+        costComponents: ['FREIGHT', 'INSURANCE', 'CUSTOM_DUTY', 'LOADING', 'UNLOADING', 'TRANSPORT', 'HANDLING', 'BROKERAGE'],
+        allocationMethods: ['QUANTITY', 'WEIGHT', 'VOLUME', 'VALUE', 'EQUAL'],
+        documentStatuses: ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'ALLOCATED', 'POSTED', 'CANCELLED'],
+        revaluationTypes: ['INCREASE', 'DECREASE', 'MARKET_ADJUSTMENT', 'POLICY_CHANGE', 'STANDARD_COST_UPDATE'],
+        revaluationStatuses: ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'POSTED', 'REJECTED', 'CANCELLED'],
+        sourceTypes: ['INVENTORY_TRANSACTION', 'REVALUATION', 'LANDED_COST', 'ADJUSTMENT', 'WRITE_OFF'],
+        entryTypes: ['DEBIT', 'CREDIT'],
+        inventoryAccounts: ['INVENTORY_ASSET', 'RAW_MATERIAL', 'FINISHED_GOODS', 'WIP'],
+        offsetAccounts: ['COGS', 'GRNI', 'WIP', 'PURCHASE_VARIANCE', 'SCRAP', 'WRITE_OFF'],
+        glStatuses: ['POSTED', 'REVERSED'],
+        abcClasses: ['A', 'B', 'C'],
+        xyzClasses: ['X', 'Y', 'Z'],
+        movementCategories: ['FAST_MOVING', 'SLOW_MOVING', 'DEAD_STOCK', 'NORMAL'],
+        ageingCategories: ['0-30', '31-60', '61-90', '91-180', '180+'],
+        costingStrategy: 'Raw Materials → FIFO (preserve actual procurement cost). Finished Goods → FIFO (track batch production cost). Trading → Weighted Average (smoothen price volatility). Machinery → Moving Average (recalculate on each receipt).',
+        fifoPrinciple: 'First In First Out — oldest cost layer (by receipt_date) consumed first during issue. Older unitCost exits inventory first.',
+        landedCostPrinciple: 'Product Cost + Cost Components (FREIGHT, INSURANCE, CUSTOM_DUTY, etc.) allocated to receipt lines via QUANTITY/WEIGHT/VOLUME/VALUE/EQUAL method.',
+        revaluationPrinciple: 'Cost adjustments via INCREASE/DECREASE/MARKET_ADJUSTMENT/POLICY_CHANGE/STANDARD_COST_UPDATE — generates GL postings to inventory & offset (revaluation reserve) accounts.',
+        abcPrinciple: 'Pareto-based classification — Class A (top 20% items, 80% value) tight control; Class B (next 30% items, 15% value) standard control; Class C (bottom 50% items, 5% value) minimal control.',
+        endpoints: ['GET /api/cost-layers', 'GET /api/cost-history', 'GET /api/landed-costs', 'POST /api/landed-costs/:id/allocate', 'GET /api/inventory-revaluations', 'POST /api/inventory-revaluations/:id/approve', 'GET /api/inventory-gl-postings', 'GET /api/inventory-valuation', 'GET /api/costing/dashboard', 'GET /api/costing/info'],
+      }, 'SUOP Costing & Valuation Engine v20.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 19, sprintName: 'Batch Lifecycle, Shelf-Life, Expiry Monitoring, Recall Engine & Genealogy' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 20, sprintName: 'Cost Layers, Landed Cost, Revaluation, GL Integration & Inventory Valuation' })
+log('info', 'Costing & valuation endpoints available', { costLayers: 'GET /api/cost-layers', costHistory: 'GET /api/cost-history', landedCosts: 'GET /api/landed-costs', landedCostAllocate: 'POST /:id/allocate', revaluations: 'GET /api/inventory-revaluations', revaluationApprove: 'POST /:id/approve', glPostings: 'GET /api/inventory-gl-postings', valuation: 'GET /api/inventory-valuation', dashboard: 'GET /api/costing/dashboard', info: 'GET /api/costing/info' })
 log('info', 'Batch & expiry endpoints available', { batchMaster: 'GET /api/batch-master', history: 'GET /:id/history', shelfLifeRules: 'GET /api/shelf-life-rules', expiryAlerts: 'GET /api/expiry-alerts', alertAction: 'POST /:id/action', recalls: 'GET /api/product-recalls', recallAdvance: 'POST /:id/advance', genealogy: 'GET /api/batch-genealogy', dashboard: 'GET /api/batch-master/dashboard', info: 'GET /api/batch-master/info' })
 log('info', 'Cycle count endpoints available', { physicalInventory: 'GET/POST /api/physical-inventory', approve: 'POST /:id/approve', plans: 'GET /api/cycle-count/plans', schedules: 'GET /api/cycle-count/schedules', teams: 'GET /api/count-teams', variances: 'GET /api/count-variances', dashboard: 'GET /api/physical-inventory/dashboard', info: 'GET /api/physical-inventory/info' })
 log('info', 'Reservation endpoints available', { reservations: 'GET/POST /api/reservations', release: 'POST /:id/release', allocate: 'GET /:id/allocate', rules: 'GET /api/allocation-rules', availability: 'GET /api/reservations/availability', dashboard: 'GET /api/reservations/dashboard', info: 'GET /api/reservations/info' })
