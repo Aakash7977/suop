@@ -2686,3 +2686,357 @@ model BusinessPartnerScorecard {
   @@index([overallScore], map: "idx_bps_score")
   @@index([performanceGrade], map: "idx_bps_grade")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 10 — ENTERPRISE IDENTIFICATION, BARCODE & TRACEABILITY
+// Barcodes, QR Codes, Batches, Lots, Serial Numbers, GS1,
+// Label Templates, Print Jobs, Traceability Engine
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Barcode Master ─────────────────────────────
+model BarcodeType {
+  id              String   @id @default(uuid()) @db.Uuid
+  code            String   @unique // EAN_13, EAN_8, UPC_A, UPC_E, CODE_128, CODE_39, GS1_128, ITF_14, INTERNAL
+  name            String
+  description     String?
+  format          String?  // Regex pattern or length rule
+  length          Int?
+  requiresChecksum Boolean @default(false) @map("requires_checksum")
+  isGs1Standard   Boolean  @default(false) @map("is_gs1_standard")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  barcodes        Barcode[]
+
+  @@map("barcode_types")
+}
+
+model Barcode {
+  id              String   @id @default(uuid()) @db.Uuid
+  barcode         String   @unique
+  barcodeTypeId   String   @db.Uuid @map("barcode_type_id")
+  // ─── Link to product/variant ───
+  productId       String?  @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Flags ───
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, RECALLED
+  // ─── Validity ───
+  effectiveDate   DateTime @default(now()) @map("effective_date")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  barcodeType     BarcodeType @relation(fields: [barcodeTypeId], references: [id])
+  assignments     BarcodeAssignment[]
+
+  @@map("barcodes")
+  @@index([productId, isPrimary], map: "idx_bc_product_primary")
+  @@index([barcodeTypeId], map: "idx_bc_type")
+  @@index([status], map: "idx_bc_status")
+}
+
+model BarcodeAssignment {
+  id              String   @id @default(uuid()) @db.Uuid
+  barcodeId       String   @db.Uuid @map("barcode_id")
+  // ─── Context ───
+  entityType      String   @map("entity_type") // PRODUCT, VARIANT, BATCH, LOT, SERIAL, LOCATION, ASSET
+  entityId        String   @db.Uuid @map("entity_id")
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  assignedById    String?  @db.Uuid @map("assigned_by_id")
+
+  barcode         Barcode  @relation(fields: [barcodeId], references: [id], onDelete: Cascade)
+
+  @@map("barcode_assignments")
+  @@index([entityType, entityId], map: "idx_bca_entity")
+  @@index([barcodeId], map: "idx_bca_barcode")
+}
+
+// ─── Epic 2: QR Code Platform ──────────────────────────
+model QrCode {
+  id              String   @id @default(uuid()) @db.Uuid
+  qrCode          String   @unique
+  // ─── Purpose ───
+  purpose         String   // PRODUCT, BATCH, WAREHOUSE, LOCATION, ASSET, ORDER, INVOICE
+  // ─── Link ───
+  entityType      String   @map("entity_type")
+  entityId        String?  @db.Uuid @map("entity_id")
+  // ─── Data ───
+  qrData          Json     @map("qr_data") // Encoded payload
+  // ─── Encryption ───
+  isEncrypted     Boolean  @default(false) @map("is_encrypted")
+  encryptionMethod String? @map("encryption_method")
+  // ─── Validity ───
+  effectiveDate   DateTime @default(now()) @map("effective_date")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Scan tracking ───
+  scanCount       Int      @default(0) @map("scan_count")
+  lastScannedAt   DateTime? @map("last_scanned_at")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("qr_codes")
+  @@index([purpose, status], map: "idx_qr_purpose_status")
+  @@index([entityType, entityId], map: "idx_qr_entity")
+  @@index([expiryDate], map: "idx_qr_expiry")
+}
+
+// ─── Epic 3: Batch Management ──────────────────────────
+model Batch {
+  id              String   @id @default(uuid()) @db.Uuid
+  batchNumber     String   @unique
+  // ─── Product link ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  // ─── Dates ───
+  manufacturingDate DateTime @map("manufacturing_date")
+  expiryDate      DateTime @map("expiry_date")
+  bestBeforeDate  DateTime? @map("best_before_date")
+  // ─── Quantity ───
+  quantityProduced Decimal @db.Decimal(18, 4) @map("quantity_produced")
+  quantityRemaining Decimal @db.Decimal(18, 4) @default(0) @map("quantity_remaining")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Origin ───
+  manufacturingOrderId String? @map("manufacturing_order_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  // ─── Status ───
+  status          String   @default("PLANNED") // PLANNED, PRODUCED, RELEASED, QUARANTINED, BLOCKED, CONSUMED, EXPIRED
+  statusReason    String?  @map("status_reason")
+  // ─── Quality ───
+  qualityGrade    String?  @map("quality_grade") // A, B, C, REJECT
+  inspectedBy     String?  @db.Uuid @map("inspected_by")
+  inspectedAt     DateTime? @map("inspected_at")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lots            Lot[]
+  traceabilityLogs TraceabilityLog[]
+
+  @@map("batches")
+  @@index([productId, status], map: "idx_batch_product_status")
+  @@index([batchNumber], map: "idx_batch_number")
+  @@index([expiryDate], map: "idx_batch_expiry")
+  @@index([manufacturingDate], map: "idx_batch_mfg")
+  @@index([status], map: "idx_batch_status")
+}
+
+// ─── Epic 4: Lot Management ────────────────────────────
+model Lot {
+  id              String   @id @default(uuid()) @db.Uuid
+  lotNumber       String   @unique
+  // ─── Hierarchy ───
+  batchId         String?  @db.Uuid @map("batch_id")
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  // ─── Lot type ───
+  lotType         String   @map("lot_type") // SUPPLIER_LOT, PRODUCTION_LOT, WAREHOUSE_LOT, RETURN_LOT, INSPECTION_LOT
+  // ─── Supplier (for SUPPLIER_LOT) ───
+  supplierId      String?  @db.Uuid @map("supplier_id")
+  supplierInvoiceNumber String? @map("supplier_invoice_number")
+  // ─── Quantity ───
+  quantityReceived Decimal @db.Decimal(18, 4) @map("quantity_received")
+  quantityRemaining Decimal @db.Decimal(18, 4) @default(0) @map("quantity_remaining")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Dates ───
+  receivedDate    DateTime? @map("received_date")
+  manufacturingDate DateTime? @map("manufacturing_date")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Quality ───
+  qualityStatus   String   @default("PENDING") // PENDING, PASSED, FAILED, QUARANTINED
+  inspectionNotes String?  @map("inspection_notes")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  batch           Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@map("lots")
+  @@index([batchId], map: "idx_lot_batch")
+  @@index([productId], map: "idx_lot_product")
+  @@index([lotType, status], map: "idx_lot_type_status")
+  @@index([supplierId], map: "idx_lot_supplier")
+}
+
+// ─── Epic 5: Serial Number Management ──────────────────
+model SerialNumber {
+  id              String   @id @default(uuid()) @db.Uuid
+  serialNumber    String   @unique
+  // ─── Asset/product ───
+  productId       String   @db.Uuid @map("product_id")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  // ─── Context ───
+  entityType      String   @map("entity_type") // MACHINE, EQUIPMENT, ELECTRONICS, HIGH_VALUE_ITEM
+  entityId        String?  @db.Uuid @map("entity_id")
+  // ─── Warranty ───
+  warrantyStart   DateTime? @map("warranty_start")
+  warrantyEnd     DateTime? @map("warranty_end")
+  warrantyDays    Int?
+  // ─── Service ───
+  serviceHistory  Json     @default("[]") @map("service_history")
+  lastServiceDate DateTime? @map("last_service_date")
+  nextServiceDate DateTime? @map("next_service_date")
+  // ─── Location ───
+  currentLocation String?  @map("current_location")
+  currentBranchId String?  @db.Uuid @map("current_branch_id")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, IN_SERVICE, UNDER_REPAIR, RETIRED, LOST, STOLEN
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("serial_numbers")
+  @@index([productId, status], map: "idx_sn_product_status")
+  @@index([serialNumber], map: "idx_sn_serial")
+  @@index([entityType], map: "idx_sn_entity_type")
+  @@index([warrantyEnd], map: "idx_sn_warranty_end")
+}
+
+// ─── Epic 6: GS1 Standards ─────────────────────────────
+model Gs1Identifier {
+  id              String   @id @default(uuid()) @db.Uuid
+  gs1Type         String   @map("gs1_type") // GTIN, GLN, SSCC, GS1_128
+  identifier      String   @unique
+  // ─── Application Identifiers (for GS1-128) ───
+  applicationIdentifiers Json? @map("application_identifiers")
+  // ─── Link ───
+  entityType      String   @map("entity_type") // PRODUCT, LOCATION, LOGISTIC_UNIT, ASSET
+  entityId        String?  @db.Uuid @map("entity_id")
+  // ─── Company prefix ───
+  companyPrefix   String   @map("company_prefix")
+  checkDigit      String   @map("check_digit")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("gs1_identifiers")
+  @@index([gs1Type, status], map: "idx_gs1_type_status")
+  @@index([companyPrefix], map: "idx_gs1_company")
+  @@index([entityType, entityId], map: "idx_gs1_entity")
+}
+
+// ─── Epic 7: Label Management ──────────────────────────
+model LabelTemplate {
+  id              String   @id @default(uuid()) @db.Uuid
+  templateCode    String   @unique @map("template_code")
+  templateName    String   @map("template_name")
+  // ─── Type ───
+  labelType       String   @map("label_type") // PRODUCT, SHELF, PALLET, BATCH, LOCATION, SHIPPING, QR, BARCODE
+  // ─── Format ───
+  printFormat     String   @map("print_format") // A4, THERMAL, ZEBRA, BROTHER, PDF
+  widthMm         Decimal  @db.Decimal(10, 2) @map("width_mm")
+  heightMm        Decimal  @db.Decimal(10, 2) @map("height_mm")
+  // ─── Layout ───
+  layout          Json     // { fields: [...], positions: [...], styling: {...} }
+  // ─── Content ───
+  fields          Json     @default("[]") // Array of { name, source, format }
+  // ─── Approval ───
+  status          String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, PUBLISHED, ARCHIVED
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Version ───
+  version         Int      @default(1)
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  printJobs       LabelPrintJob[]
+
+  @@map("label_templates")
+  @@index([labelType, status], map: "idx_lt_type_status")
+  @@index([printFormat], map: "idx_lt_format")
+}
+
+model LabelPrintJob {
+  id              String   @id @default(uuid()) @db.Uuid
+  templateId      String   @db.Uuid @map("template_id")
+  // ─── Print context ───
+  printMode       String   @map("print_mode") // SINGLE, BULK, AUTO, SCHEDULED, REPRINT
+  // ─── Target ───
+  entityType      String   @map("entity_type") // PRODUCT, BATCH, LOT, LOCATION, ASSET
+  entityIds       String[] @default([]) @map("entity_ids")
+  // ─── Printer ───
+  printerType     String   @map("printer_type") // THERMAL, LASER, INKJET, BLUETOOTH, NETWORK
+  printerName     String   @map("printer_name")
+  // ─── Counts ───
+  copiesPerEntity Int      @default(1) @map("copies_per_entity")
+  totalCopies     Int      @default(0) @map("total_copies")
+  printedCopies   Int      @default(0) @map("printed_copies")
+  // ─── Status ───
+  status          String   @default("QUEUED") // QUEUED, PRINTING, COMPLETED, FAILED, CANCELLED
+  errorMessage    String?  @map("error_message")
+  // ─── Schedule ───
+  scheduledAt     DateTime? @map("scheduled_at")
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  // ─── Audit ───
+  requestedById   String?  @db.Uuid @map("requested_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  template        LabelTemplate @relation(fields: [templateId], references: [id])
+
+  @@map("label_print_jobs")
+  @@index([templateId, status], map: "idx_lpj_template_status")
+  @@index([status, scheduledAt], map: "idx_lpj_status_scheduled")
+  @@index([printerName], map: "idx_lpj_printer")
+}
+
+// ─── Epic 9: Traceability Engine ───────────────────────
+model TraceabilityLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  // ─── Entity being tracked ───
+  entityType      String   @map("entity_type") // RAW_MATERIAL, BATCH, LOT, SERIAL, FINISHED_GOOD, INVOICE, CUSTOMER
+  entityId        String   @db.Uuid @map("entity_id")
+  entityName      String   @map("entity_name")
+  // ─── Batch link (most common traceability unit) ───
+  batchId         String?  @db.Uuid @map("batch_id")
+  // ─── Movement ───
+  eventType       String   @map("event_type") // PURCHASE_RECEIPT, WAREHOUSE_IN, PRODUCTION_INPUT, PRODUCTION_OUTPUT, WAREHOUSE_TRANSFER, SALES_DISPATCH, CUSTOMER_DELIVERY, RETURN, RECALL, QUALITY_HOLD, DISPOSAL
+  // ─── From / To ───
+  fromEntityType  String?  @map("from_entity_type")
+  fromEntityId    String?  @db.Uuid @map("from_entity_id")
+  fromEntityName  String?  @map("from_entity_name")
+  toEntityType    String?  @map("to_entity_type")
+  toEntityId      String?  @db.Uuid @map("to_entity_id")
+  toEntityName    String?  @map("to_entity_name")
+  // ─── Quantity ───
+  quantity        Decimal? @db.Decimal(18, 4)
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── References ───
+  referenceType   String?  @map("reference_type") // PURCHASE_ORDER, PRODUCTION_ORDER, SALES_ORDER, INVOICE, TRANSFER_ORDER
+  referenceNumber String?  @map("reference_number")
+  // ─── Location ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Notes ───
+  notes           String?
+  // ─── Audit ───
+  eventDate       DateTime @default(now()) @map("event_date")
+  recordedById    String?  @db.Uuid @map("recorded_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  batch           Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@map("traceability_logs")
+  @@index([entityType, entityId], map: "idx_tl_entity")
+  @@index([batchId], map: "idx_tl_batch")
+  @@index([eventType], map: "idx_tl_event_type")
+  @@index([eventDate], map: "idx_tl_event_date")
+  @@index([partnerId], map: "idx_tl_partner")
+  @@index([referenceNumber], map: "idx_tl_reference")
+}

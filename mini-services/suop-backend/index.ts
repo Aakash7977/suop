@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "9.0.0"
+const VERSION = "10.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -344,6 +344,107 @@ const BP_DATA = {
     { id: 'rel-003', fromPartner: 'Konkan Cashew Processors', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'PREFERRED_SUPPLIER', validFrom: '2026-01-20', status: 'ACTIVE' },
     { id: 'rel-004', fromPartner: 'Amul', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'STRATEGIC_PARTNER', validFrom: '2026-01-18', status: 'ACTIVE' },
     { id: 'rel-005', fromPartner: 'Sudhamrit Franchise - Andheri West', toPartner: 'Sudhamrit Foods Ltd.', relationshipType: 'FRANCHISE', validFrom: '2026-03-05', status: 'ACTIVE' },
+  ],
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 10 — IDENTIFICATION & TRACEABILITY SEED DATA
+// Barcodes, QR Codes, Batches, Lots, Serial Numbers, GS1,
+// Label Templates, Print Jobs, Traceability Logs
+// ═══════════════════════════════════════════════════════════
+const ID_DATA = {
+  barcodeTypes: [
+    { code: 'EAN_13', name: 'EAN-13', isGs1Standard: true, length: 13, requiresChecksum: true },
+    { code: 'EAN_8', name: 'EAN-8', isGs1Standard: true, length: 8, requiresChecksum: true },
+    { code: 'UPC_A', name: 'UPC-A', isGs1Standard: true, length: 12, requiresChecksum: true },
+    { code: 'UPC_E', name: 'UPC-E', isGs1Standard: true, length: 8, requiresChecksum: true },
+    { code: 'CODE_128', name: 'Code 128', isGs1Standard: false, length: null, requiresChecksum: true },
+    { code: 'CODE_39', name: 'Code 39', isGs1Standard: false, length: null, requiresChecksum: false },
+    { code: 'GS1_128', name: 'GS1-128', isGs1Standard: true, length: null, requiresChecksum: true },
+    { code: 'ITF_14', name: 'ITF-14', isGs1Standard: true, length: 14, requiresChecksum: true },
+    { code: 'INTERNAL', name: 'Internal Barcode', isGs1Standard: false, length: null, requiresChecksum: false },
+  ],
+  barcodes: [
+    { id: 'bc-001', barcode: '8901234567890', barcodeType: 'EAN_13', productName: 'Kaju Katli 500g', productId: 'prd-kaju-katli', isPrimary: true, status: 'ACTIVE' },
+    { id: 'bc-002', barcode: '8901234567891', barcodeType: 'EAN_13', productName: 'Kaju Katli 250g', productId: 'prd-kaju-katli-250', isPrimary: true, status: 'ACTIVE' },
+    { id: 'bc-003', barcode: '8901234567892', barcodeType: 'EAN_13', productName: 'Soan Cake 1kg', productId: 'prd-soan-cake', isPrimary: true, status: 'ACTIVE' },
+    { id: 'bc-004', barcode: '8901234567893', barcodeType: 'EAN_13', productName: 'Mixed Namkeen 200g', productId: 'prd-mix-namkeen', isPrimary: true, status: 'ACTIVE' },
+    { id: 'bc-005', barcode: '8901234567894', barcodeType: 'EAN_13', productName: 'Gulab Jamun 1kg', productId: 'prd-gulab-jamun', isPrimary: true, status: 'ACTIVE' },
+    { id: 'bc-006', barcode: 'SUDH-INT-KK-500', barcodeType: 'INTERNAL', productName: 'Kaju Katli 500g (Internal)', productId: 'prd-kaju-katli', isPrimary: false, status: 'ACTIVE' },
+    { id: 'bc-007', barcode: 'SUDH-INT-SC-1000', barcodeType: 'INTERNAL', productName: 'Soan Cake 1kg (Internal)', productId: 'prd-soan-cake', isPrimary: false, status: 'ACTIVE' },
+    { id: 'bc-008', barcode: '00012345600012', barcodeType: 'ITF_14', productName: 'Kaju Katli Carton (12 pcs)', productId: 'prd-kaju-katli', isPrimary: false, status: 'ACTIVE' },
+  ],
+  qrCodes: [
+    { id: 'qr-001', qrCode: 'QR-PROD-KK-001', purpose: 'PRODUCT', entityType: 'PRODUCT', entityName: 'Kaju Katli 500g', scanCount: 1247, lastScannedAt: '2026-07-08T15:23:00Z', isEncrypted: false, status: 'ACTIVE' },
+    { id: 'qr-002', qrCode: 'QR-BATCH-KK-2607-01', purpose: 'BATCH', entityType: 'BATCH', entityName: 'Kaju Katli Batch KK-2607-01', scanCount: 384, lastScannedAt: '2026-07-09T11:15:00Z', isEncrypted: true, encryptionMethod: 'AES-256', status: 'ACTIVE' },
+    { id: 'qr-003', qrCode: 'QR-WHSE-MUM-DC', purpose: 'WAREHOUSE', entityType: 'WAREHOUSE', entityName: 'Mumbai Distribution Center', scanCount: 5421, lastScannedAt: '2026-07-09T09:00:00Z', isEncrypted: false, status: 'ACTIVE' },
+    { id: 'qr-004', qrCode: 'QR-LOC-A1-03', purpose: 'LOCATION', entityType: 'LOCATION', entityName: 'Rack A1, Bin 03 (Cold Storage)', scanCount: 892, lastScannedAt: '2026-07-09T14:30:00Z', isEncrypted: false, status: 'ACTIVE' },
+    { id: 'qr-005', qrCode: 'QR-ASSET-MIXER-01', purpose: 'ASSET', entityType: 'ASSET', entityName: 'Industrial Mixer M-01', scanCount: 156, lastScannedAt: '2026-07-07T16:45:00Z', isEncrypted: true, encryptionMethod: 'AES-256', status: 'ACTIVE' },
+    { id: 'qr-006', qrCode: 'QR-INV-2026-00892', purpose: 'INVOICE', entityType: 'INVOICE', entityName: 'Invoice INV-2026-00892 (Tata)', scanCount: 12, lastScannedAt: '2026-07-08T18:00:00Z', isEncrypted: false, status: 'ACTIVE' },
+  ],
+  batches: [
+    { id: 'bat-001', batchNumber: 'KK-2607-01', productName: 'Kaju Katli 500g', productId: 'prd-kaju-katli', manufacturingDate: '2026-07-01', expiryDate: '2026-07-31', bestBeforeDate: '2026-07-25', quantityProduced: 500, quantityRemaining: 142, status: 'RELEASED', qualityGrade: 'A', lots: 3 },
+    { id: 'bat-002', batchNumber: 'KK-2607-02', productName: 'Kaju Katli 500g', productId: 'prd-kaju-katli', manufacturingDate: '2026-07-05', expiryDate: '2026-08-04', bestBeforeDate: '2026-07-29', quantityProduced: 800, quantityRemaining: 800, status: 'QUARANTINED', qualityGrade: null, lots: 0, statusReason: 'Quality check pending' },
+    { id: 'bat-003', batchNumber: 'SC-2606-04', productName: 'Soan Cake 1kg', productId: 'prd-soan-cake', manufacturingDate: '2026-06-15', expiryDate: '2026-09-15', bestBeforeDate: '2026-08-30', quantityProduced: 300, quantityRemaining: 89, status: 'RELEASED', qualityGrade: 'A', lots: 2 },
+    { id: 'bat-004', batchNumber: 'MN-2607-03', productName: 'Mixed Namkeen 200g', productId: 'prd-mix-namkeen', manufacturingDate: '2026-07-08', expiryDate: '2026-08-22', bestBeforeDate: '2026-08-15', quantityProduced: 1200, quantityRemaining: 1180, status: 'PRODUCED', qualityGrade: 'B', lots: 4 },
+    { id: 'bat-005', batchNumber: 'GJ-2606-02', productName: 'Gulab Jamun 1kg', productId: 'prd-gulab-jamun', manufacturingDate: '2026-06-20', expiryDate: '2026-07-20', bestBeforeDate: '2026-07-15', quantityProduced: 400, quantityRemaining: 0, status: 'EXPIRED', qualityGrade: null, lots: 2, statusReason: 'Past expiry - dispose' },
+    { id: 'bat-006', batchNumber: 'GJ-2607-01', productName: 'Gulab Jamun 1kg', productId: 'prd-gulab-jamun', manufacturingDate: '2026-07-05', expiryDate: '2026-08-05', bestBeforeDate: '2026-07-30', quantityProduced: 600, quantityRemaining: 412, status: 'RELEASED', qualityGrade: 'A', lots: 3 },
+    { id: 'bat-007', batchNumber: 'KK-2606-05', productName: 'Kaju Katli 500g', productId: 'prd-kaju-katli', manufacturingDate: '2026-06-25', expiryDate: '2026-07-25', bestBeforeDate: '2026-07-20', quantityProduced: 700, quantityRemaining: 56, status: 'BLOCKED', qualityGrade: 'C', lots: 2, statusReason: 'Customer complaint - investigation' },
+    { id: 'bat-008', batchNumber: 'SC-2607-01', productName: 'Soan Cake 1kg', productId: 'prd-soan-cake', manufacturingDate: '2026-07-10', expiryDate: '2026-10-10', bestBeforeDate: '2026-09-25', quantityProduced: 0, quantityRemaining: 0, status: 'PLANNED', qualityGrade: null, lots: 0 },
+  ],
+  lots: [
+    { id: 'lot-001', lotNumber: 'CASHEW-KK-2606', lotType: 'SUPPLIER_LOT', productName: 'Cashew Nuts (Raw Material)', supplier: 'Konkan Cashew Processors', supplierInvoice: 'PO-2026-0142', batch: 'KK-2607-01', quantity: 200, remaining: 35, quality: 'PASSED' },
+    { id: 'lot-002', lotNumber: 'SUGAR-SB-2606', lotType: 'SUPPLIER_LOT', productName: 'Sugar (Raw Material)', supplier: 'Sri Balaji Sugar', supplierInvoice: 'PO-2026-0156', batch: 'KK-2607-01', quantity: 150, remaining: 28, quality: 'PASSED' },
+    { id: 'lot-003', lotNumber: 'GHEE-AM-2606', lotType: 'SUPPLIER_LOT', productName: 'Ghee (Raw Material)', supplier: 'Amul', supplierInvoice: 'PO-2026-0178', batch: 'KK-2607-01', quantity: 50, remaining: 12, quality: 'PASSED' },
+    { id: 'lot-004', lotNumber: 'PROD-KK-2607-01-A', lotType: 'PRODUCTION_LOT', productName: 'Kaju Katli (Production Run A)', supplier: null, supplierInvoice: null, batch: 'KK-2607-01', quantity: 250, remaining: 78, quality: 'PASSED' },
+    { id: 'lot-005', lotNumber: 'PROD-KK-2607-01-B', lotType: 'PRODUCTION_LOT', productName: 'Kaju Katli (Production Run B)', supplier: null, supplierInvoice: null, batch: 'KK-2607-01', quantity: 250, remaining: 64, quality: 'PASSED' },
+    { id: 'lot-006', lotNumber: 'PKG-MB-2607', lotType: 'SUPPLIER_LOT', productName: 'Packaging Boxes', supplier: 'Mumbai Packaging Solutions', supplierInvoice: 'PO-2026-0203', batch: null, quantity: 5000, remaining: 2840, quality: 'PASSED' },
+    { id: 'lot-007', lotNumber: 'RET-KK-2606-05', lotType: 'RETURN_LOT', productName: 'Kaju Katli (Returned Batch)', supplier: null, supplierInvoice: null, batch: 'KK-2606-05', quantity: 24, remaining: 24, quality: 'QUARANTINED', inspectionNotes: 'Customer complaint: taste deviation' },
+  ],
+  serialNumbers: [
+    { id: 'sn-001', serialNumber: 'SUDH-MIX-M01', productName: 'Industrial Dough Mixer', entityType: 'MACHINE', warrantyStart: '2025-04-01', warrantyEnd: '2027-04-01', status: 'IN_SERVICE', currentLocation: 'Mumbai Plant - Production Line 1', lastServiceDate: '2026-06-15', nextServiceDate: '2026-09-15' },
+    { id: 'sn-002', serialNumber: 'SUDH-PACK-P02', productName: 'Automatic Packaging Machine', entityType: 'MACHINE', warrantyStart: '2025-04-01', warrantyEnd: '2027-04-01', status: 'IN_SERVICE', currentLocation: 'Mumbai Plant - Packaging Line 2', lastServiceDate: '2026-06-20', nextServiceDate: '2026-09-20' },
+    { id: 'sn-003', serialNumber: 'SUDH-COLD-S01', productName: 'Walk-in Cold Storage Unit', entityType: 'EQUIPMENT', warrantyStart: '2024-01-15', warrantyEnd: '2026-01-15', status: 'UNDER_REPAIR', currentLocation: 'Mumbai DC - Cold Zone', lastServiceDate: '2026-07-01', nextServiceDate: '2026-07-12' },
+    { id: 'sn-004', serialNumber: 'SUDH-FORL-F03', productName: 'Electric Forklift', entityType: 'EQUIPMENT', warrantyStart: '2024-08-01', warrantyEnd: '2026-08-01', status: 'IN_SERVICE', currentLocation: 'Pune Warehouse', lastServiceDate: '2026-05-10', nextServiceDate: '2026-08-10' },
+    { id: 'sn-005', serialNumber: 'SUDH-POS-R001', productName: 'POS Terminal (Retail)', entityType: 'ELECTRONICS', warrantyStart: '2025-10-01', warrantyEnd: '2026-10-01', status: 'ACTIVE', currentLocation: 'Mumbai Retail Store 01', lastServiceDate: null, nextServiceDate: null },
+  ],
+  gs1Identifiers: [
+    { id: 'gs1-001', gs1Type: 'GTIN', identifier: '08901234567890', entityType: 'PRODUCT', entityName: 'Kaju Katli 500g', companyPrefix: '8901234', checkDigit: '0' },
+    { id: 'gs1-002', gs1Type: 'GTIN', identifier: '08901234567891', entityType: 'PRODUCT', entityName: 'Kaju Katli 250g', companyPrefix: '8901234', checkDigit: '1' },
+    { id: 'gs1-003', gs1Type: 'GLN', identifier: '8901234000017', entityType: 'LOCATION', entityName: 'Mumbai Plant', companyPrefix: '8901234', checkDigit: '7' },
+    { id: 'gs1-004', gs1Type: 'GLN', identifier: '8901234000024', entityType: 'LOCATION', entityName: 'Mumbai Distribution Center', companyPrefix: '8901234', checkDigit: '4' },
+    { id: 'gs1-005', gs1Type: 'SSCC', identifier: '008901234000000018', entityType: 'LOGISTIC_UNIT', entityName: 'Pallet PAL-2026-001', companyPrefix: '8901234', checkDigit: '8' },
+    { id: 'gs1-006', gs1Type: 'GS1_128', identifier: '(01)08901234567890(17)260731(10)KK260701', entityType: 'PRODUCT', entityName: 'Kaju Katli 500g with batch+expiry', companyPrefix: '8901234', checkDigit: '0' },
+  ],
+  labelTemplates: [
+    { id: 'lt-001', templateCode: 'LBL-PROD-STD', templateName: 'Product Label (Standard)', labelType: 'PRODUCT', printFormat: 'THERMAL', widthMm: 100, heightMm: 60, status: 'PUBLISHED', version: 3, fields: 8 },
+    { id: 'lt-002', templateCode: 'LBL-SHELF-STD', templateName: 'Shelf Label', labelType: 'SHELF', printFormat: 'THERMAL', widthMm: 80, heightMm: 40, status: 'PUBLISHED', version: 2, fields: 5 },
+    { id: 'lt-003', templateCode: 'LBL-PALLET-STD', templateName: 'Pallet Label (GS1)', labelType: 'PALLET', printFormat: 'ZEBRA', widthMm: 150, heightMm: 100, status: 'PUBLISHED', version: 4, fields: 10 },
+    { id: 'lt-004', templateCode: 'LBL-BATCH-EXP', templateName: 'Batch Label with Expiry', labelType: 'BATCH', printFormat: 'THERMAL', widthMm: 100, heightMm: 50, status: 'PUBLISHED', version: 2, fields: 6 },
+    { id: 'lt-005', templateCode: 'LBL-LOC-QR', templateName: 'Location QR Label', labelType: 'LOCATION', printFormat: 'PDF', widthMm: 90, heightMm: 90, status: 'PUBLISHED', version: 1, fields: 4 },
+    { id: 'lt-006', templateCode: 'LBL-SHIP-DISPATCH', templateName: 'Shipping Dispatch Label', labelType: 'SHIPPING', printFormat: 'A4', widthMm: 210, heightMm: 100, status: 'PUBLISHED', version: 5, fields: 12 },
+    { id: 'lt-007', templateCode: 'LBL-QR-PROD', templateName: 'Product QR Code Label', labelType: 'QR', printFormat: 'THERMAL', widthMm: 60, heightMm: 60, status: 'PUBLISHED', version: 1, fields: 3 },
+    { id: 'lt-008', templateCode: 'LBL-BC-EAN13', templateName: 'EAN-13 Barcode Label', labelType: 'BARCODE', printFormat: 'THERMAL', widthMm: 50, heightMm: 30, status: 'PENDING_APPROVAL', version: 1, fields: 2 },
+  ],
+  printJobs: [
+    { id: 'lpj-001', templateName: 'Product Label (Standard)', printMode: 'BULK', entityType: 'PRODUCT', printerType: 'THERMAL', printerName: 'Zebra ZD420 - Plant 1', totalCopies: 500, printedCopies: 500, status: 'COMPLETED', requestedAt: '2026-07-08T10:00:00Z', completedAt: '2026-07-08T11:30:00Z' },
+    { id: 'lpj-002', templateName: 'Batch Label with Expiry', printMode: 'SINGLE', entityType: 'BATCH', printerType: 'THERMAL', printerName: 'Brother TD-4520 - Plant 1', totalCopies: 50, printedCopies: 32, status: 'PRINTING', requestedAt: '2026-07-09T08:00:00Z' },
+    { id: 'lpj-003', templateName: 'Pallet Label (GS1)', printMode: 'BULK', entityType: 'LOGISTIC_UNIT', printerType: 'ZEBRA', printerName: 'Zebra ZT411 - DC', totalCopies: 24, printedCopies: 0, status: 'QUEUED', requestedAt: '2026-07-09T09:15:00Z', scheduledAt: '2026-07-09T14:00:00Z' },
+    { id: 'lpj-004', templateName: 'Location QR Label', printMode: 'BULK', entityType: 'LOCATION', printerType: 'LASER', printerName: 'HP LaserJet - Office', totalCopies: 120, printedCopies: 120, status: 'COMPLETED', requestedAt: '2026-07-07T15:00:00Z', completedAt: '2026-07-07T16:20:00Z' },
+    { id: 'lpj-005', templateName: 'Shipping Dispatch Label', printMode: 'AUTO', entityType: 'INVOICE', printerType: 'NETWORK', printerName: 'Network Printer - Dispatch', totalCopies: 12, printedCopies: 8, status: 'PRINTING', requestedAt: '2026-07-09T11:00:00Z' },
+    { id: 'lpj-006', templateName: 'Product Label (Standard)', printMode: 'REPRINT', entityType: 'PRODUCT', printerType: 'THERMAL', printerName: 'Zebra ZD420 - Plant 1', totalCopies: 100, printedCopies: 0, status: 'QUEUED', requestedAt: '2026-07-09T12:00:00Z' },
+  ],
+  traceabilityLogs: [
+    { id: 'tl-001', entityType: 'RAW_MATERIAL', entityName: 'Cashew Lot CASHEW-KK-2606', eventType: 'PURCHASE_RECEIPT', fromEntityName: 'Konkan Cashew Processors', toEntityName: 'Mumbai Plant Warehouse', quantity: 200, referenceType: 'PURCHASE_ORDER', referenceNumber: 'PO-2026-0142', eventDate: '2026-06-28T09:00:00Z' },
+    { id: 'tl-002', entityType: 'RAW_MATERIAL', entityName: 'Cashew Lot CASHEW-KK-2606', eventType: 'QUALITY_HOLD', fromEntityName: 'Mumbai Plant Warehouse', toEntityName: 'Quality Lab', quantity: 5, referenceType: 'QUALITY_ORDER', referenceNumber: 'QC-2026-0234', eventDate: '2026-06-28T14:00:00Z', notes: 'Sample for quality check' },
+    { id: 'tl-003', entityType: 'RAW_MATERIAL', entityName: 'Cashew Lot CASHEW-KK-2606', eventType: 'PRODUCTION_INPUT', fromEntityName: 'Mumbai Plant Warehouse', toEntityName: 'Production Line 1 (Mixer M-01)', quantity: 180, referenceType: 'PRODUCTION_ORDER', referenceNumber: 'MO-2026-0089', eventDate: '2026-07-01T08:00:00Z' },
+    { id: 'tl-004', entityType: 'BATCH', entityName: 'Batch KK-2607-01', batchId: 'bat-001', eventType: 'PRODUCTION_OUTPUT', fromEntityName: 'Production Line 1', toEntityName: 'Mumbai Plant Warehouse (Cold Zone)', quantity: 500, referenceType: 'PRODUCTION_ORDER', referenceNumber: 'MO-2026-0089', eventDate: '2026-07-01T16:00:00Z' },
+    { id: 'tl-005', entityType: 'BATCH', entityName: 'Batch KK-2607-01', batchId: 'bat-001', eventType: 'WAREHOUSE_TRANSFER', fromEntityName: 'Mumbai Plant Warehouse', toEntityName: 'Mumbai Distribution Center', quantity: 358, referenceType: 'TRANSFER_ORDER', referenceNumber: 'TO-2026-0042', eventDate: '2026-07-03T10:00:00Z' },
+    { id: 'tl-006', entityType: 'BATCH', entityName: 'Batch KK-2607-01', batchId: 'bat-001', eventType: 'SALES_DISPATCH', fromEntityName: 'Mumbai Distribution Center', toEntityName: 'Tata Consumer Products', quantity: 100, referenceType: 'INVOICE', referenceNumber: 'INV-2026-00892', eventDate: '2026-07-05T14:00:00Z' },
+    { id: 'tl-007', entityType: 'BATCH', entityName: 'Batch KK-2607-01', batchId: 'bat-001', eventType: 'SALES_DISPATCH', fromEntityName: 'Mumbai Distribution Center', toEntityName: 'Reliance Retail (Andheri)', quantity: 48, referenceType: 'INVOICE', referenceNumber: 'INV-2026-00915', eventDate: '2026-07-06T11:30:00Z' },
+    { id: 'tl-008', entityType: 'BATCH', entityName: 'Batch KK-2607-01', batchId: 'bat-001', eventType: 'SALES_DISPATCH', fromEntityName: 'Mumbai Distribution Center', toEntityName: 'Sudhamrit Retail Store 01', quantity: 24, referenceType: 'INVOICE', referenceNumber: 'INV-2026-00921', eventDate: '2026-07-06T15:45:00Z' },
+    { id: 'tl-009', entityType: 'BATCH', entityName: 'Batch KK-2606-05', batchId: 'bat-007', eventType: 'RECALL', fromEntityName: 'Multiple Customers', toEntityName: 'Mumbai Plant Quality Lab', quantity: 56, referenceType: 'RECALL_ORDER', referenceNumber: 'RC-2026-001', eventDate: '2026-07-08T09:00:00Z', notes: 'Customer complaint: taste deviation - recall initiated' },
+    { id: 'tl-010', entityType: 'BATCH', entityName: 'Batch KK-2606-05', batchId: 'bat-007', eventType: 'QUALITY_HOLD', fromEntityName: 'Quality Lab', toEntityName: 'Quarantine Zone', quantity: 56, referenceType: 'QUALITY_ORDER', referenceNumber: 'QC-2026-0351', eventDate: '2026-07-08T11:00:00Z', notes: 'Investigation: possible sugar proportion issue' },
   ],
 }
 
@@ -729,8 +830,9 @@ const server = Bun.serve({
         { code: 'PIM', name: 'Product Information Management', status: 'active', entities: 10, sprint: 7 },
         { code: 'COM', name: 'Commercial Engine', status: 'active', entities: 16, sprint: 8 },
         { code: 'BP', name: 'Business Partner', status: 'active', entities: 12, sprint: 9 },
-        { code: 'INV', name: 'Inventory', status: 'planned', entities: 22, sprint: 10 },
-        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 11 },
+        { code: 'ID', name: 'Identification & Traceability', status: 'active', entities: 11, sprint: 10 },
+        { code: 'INV', name: 'Inventory', status: 'planned', entities: 22, sprint: 11 },
+        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 12 },
       ], 'Modules')), { headers })
     }
 
@@ -1288,12 +1390,259 @@ const server = Bun.serve({
       }, 'SUOP Business Partner Platform v9.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 10 — IDENTIFICATION & TRACEABILITY ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Barcode Types ─────────────────────────────────────
+    if (path === '/api/identification/barcode-types' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.barcodeTypes, 'Barcode types')), { headers })
+    }
+
+    // ─── Barcodes ──────────────────────────────────────────
+    if (path === '/api/identification/barcodes' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.barcodes, 'Barcodes')), { headers })
+    }
+    if (path === '/api/identification/barcodes' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.barcode) return new Response(JSON.stringify(errorResponse('barcode is required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        if (ID_DATA.barcodes.find(b => b.barcode === body.barcode)) {
+          return new Response(JSON.stringify(errorResponse('Barcode must be unique', 'DUPLICATE', 409)), { status: 409, headers })
+        }
+        const bc = { id: crypto.randomUUID(), barcode: body.barcode, barcodeType: body.barcodeType || 'INTERNAL', productName: body.productName || 'Unknown', productId: body.productId || null, isPrimary: body.isPrimary || false, status: 'ACTIVE' }
+        ID_DATA.barcodes.push(bc)
+        log('info', 'Barcode created', { barcode: bc.barcode, type: bc.barcodeType })
+        return new Response(JSON.stringify(successResponse(bc, 'Barcode created')), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── QR Codes ──────────────────────────────────────────
+    if (path === '/api/identification/qr-codes' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.qrCodes, 'QR codes')), { headers })
+    }
+
+    // ─── Batches ───────────────────────────────────────────
+    if (path === '/api/identification/batches' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.batches, 'Batches')), { headers })
+    }
+    if (path === '/api/identification/batches' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.batchNumber || !body.productId || !body.manufacturingDate || !body.expiryDate) {
+          return new Response(JSON.stringify(errorResponse('batchNumber, productId, manufacturingDate, expiryDate required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        if (new Date(body.expiryDate) <= new Date(body.manufacturingDate)) {
+          return new Response(JSON.stringify(errorResponse('Expiry date must be after manufacturing date', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        if (ID_DATA.batches.find(b => b.batchNumber === body.batchNumber)) {
+          return new Response(JSON.stringify(errorResponse('Batch number must be unique within product', 'DUPLICATE', 409)), { status: 409, headers })
+        }
+        const batch = { id: crypto.randomUUID(), batchNumber: body.batchNumber, productName: body.productName || 'Product', productId: body.productId, manufacturingDate: body.manufacturingDate, expiryDate: body.expiryDate, bestBeforeDate: body.bestBeforeDate || null, quantityProduced: body.quantityProduced || 0, quantityRemaining: body.quantityProduced || 0, status: 'PLANNED', qualityGrade: null, lots: 0 }
+        ID_DATA.batches.push(batch)
+        log('info', 'Batch created', { batchNumber: batch.batchNumber, productId: batch.productId })
+        return new Response(JSON.stringify(successResponse(batch, 'Batch created')), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── Lots ──────────────────────────────────────────────
+    if (path === '/api/identification/lots' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.lots, 'Lots')), { headers })
+    }
+
+    // ─── Serial Numbers ────────────────────────────────────
+    if (path === '/api/identification/serial-numbers' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.serialNumbers, 'Serial numbers')), { headers })
+    }
+    if (path === '/api/identification/serial-numbers' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.serialNumber) return new Response(JSON.stringify(errorResponse('serialNumber is required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        if (ID_DATA.serialNumbers.find(s => s.serialNumber === body.serialNumber)) {
+          return new Response(JSON.stringify(errorResponse('Serial number must be globally unique', 'DUPLICATE', 409)), { status: 409, headers })
+        }
+        const sn = { id: crypto.randomUUID(), serialNumber: body.serialNumber, productName: body.productName || 'Asset', entityType: body.entityType || 'EQUIPMENT', warrantyStart: body.warrantyStart || null, warrantyEnd: body.warrantyEnd || null, status: 'ACTIVE', currentLocation: body.currentLocation || null, lastServiceDate: null, nextServiceDate: null }
+        ID_DATA.serialNumbers.push(sn)
+        log('info', 'Serial number assigned', { serial: sn.serialNumber })
+        return new Response(JSON.stringify(successResponse(sn, 'Serial number assigned')), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── GS1 Identifiers ───────────────────────────────────
+    if (path === '/api/identification/gs1' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.gs1Identifiers, 'GS1 identifiers')), { headers })
+    }
+
+    // ─── Label Templates ───────────────────────────────────
+    if (path === '/api/identification/label-templates' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.labelTemplates, 'Label templates')), { headers })
+    }
+
+    // ─── Print Jobs ────────────────────────────────────────
+    if (path === '/api/identification/print-jobs' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.printJobs, 'Print jobs')), { headers })
+    }
+
+    // ─── Traceability Logs ─────────────────────────────────
+    if (path === '/api/identification/traceability-logs' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(ID_DATA.traceabilityLogs, 'Traceability logs')), { headers })
+    }
+
+    // ─── Traceability Resolver (FORWARD & BACKWARD) ────────
+    // POST /api/identification/trace
+    // Body: { batchId?, direction: 'forward' | 'backward' }
+    //   forward  = batch → finished goods → invoices → customers
+    //   backward = customer complaint → invoice → batch → production → raw material → supplier
+    if (path === '/api/identification/trace' && method === 'POST') {
+      try {
+        const body = await req.json()
+        const direction = body.direction || 'forward'
+        const batchId = body.batchId
+        const batch = ID_DATA.batches.find(b => b.id === batchId || b.batchNumber === body.batchNumber)
+        if (!batch) {
+          return new Response(JSON.stringify(errorResponse('Batch not found', 'NOT_FOUND', 404)), { status: 404, headers })
+        }
+        const relatedLogs = ID_DATA.traceabilityLogs.filter(l => l.batchId === batch.id)
+        const relatedLots = ID_DATA.lots.filter(l => l.batch === batch.batchNumber)
+
+        let chain: any[] = []
+        if (direction === 'forward') {
+          // Forward: Production Output → Warehouse → Sales → Customers
+          chain = [
+            { step: 1, stage: 'PRODUCTION_OUTPUT', entity: `Batch ${batch.batchNumber}`, detail: `${batch.productName} manufactured`, quantity: batch.quantityProduced, date: batch.manufacturingDate },
+            ...relatedLogs
+              .filter(l => ['PRODUCTION_OUTPUT', 'WAREHOUSE_TRANSFER', 'SALES_DISPATCH', 'CUSTOMER_DELIVERY', 'RECALL'].includes(l.eventType))
+              .map((l, i) => ({
+                step: i + 2,
+                stage: l.eventType,
+                entity: l.toEntityName || l.entityName,
+                from: l.fromEntityName,
+                to: l.toEntityName,
+                quantity: l.quantity,
+                reference: l.referenceNumber,
+                date: l.eventDate,
+                notes: l.notes,
+              })),
+          ]
+        } else {
+          // Backward: Customer → Invoice → Batch → Production → Raw Material → Supplier
+          const supplierLots = ID_DATA.lots.filter(l => l.batch === batch.batchNumber && l.lotType === 'SUPPLIER_LOT')
+          chain = [
+            { step: 1, stage: 'CUSTOMER', entity: 'Customer Complaint / Recall', detail: batch.status === 'BLOCKED' ? 'Investigation triggered' : 'Starting point', date: '2026-07-08' },
+            { step: 2, stage: 'BATCH', entity: `Batch ${batch.batchNumber}`, detail: `${batch.productName} (Quality: ${batch.qualityGrade || 'N/A'})`, quantity: batch.quantityRemaining, status: batch.status, date: batch.manufacturingDate },
+            { step: 3, stage: 'PRODUCTION_ORDER', entity: relatedLogs.find(l => l.eventType === 'PRODUCTION_OUTPUT')?.referenceNumber || 'N/A', detail: 'Manufacturing order that produced this batch', date: batch.manufacturingDate },
+            ...supplierLots.map((l, i) => ({
+              step: 4 + i,
+              stage: 'RAW_MATERIAL',
+              entity: l.lotNumber,
+              detail: l.productName,
+              supplier: l.supplier,
+              supplierInvoice: l.supplierInvoice,
+              quantity: l.quantity,
+              remaining: l.remaining,
+              quality: l.quality,
+            })),
+          ]
+        }
+
+        log('info', 'Traceability resolved', { batchId: batch.id, direction, chainLength: chain.length })
+        return new Response(JSON.stringify(successResponse({
+          batch: { id: batch.id, batchNumber: batch.batchNumber, productName: batch.productName, manufacturingDate: batch.manufacturingDate, expiryDate: batch.expiryDate, status: batch.status, qualityGrade: batch.qualityGrade, quantityProduced: batch.quantityProduced, quantityRemaining: batch.quantityRemaining },
+          direction,
+          relatedLots: relatedLots.length,
+          relatedLogs: relatedLogs.length,
+          chain,
+        }, `Traceability ${direction} resolved`)), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Traceability resolution failed')), { status: 500, headers })
+      }
+    }
+
+    // ─── Dashboard ─────────────────────────────────────────
+    if (path === '/api/identification/dashboard' && method === 'GET') {
+      const batchStatusCounts: Record<string, number> = {}
+      ID_DATA.batches.forEach(b => { batchStatusCounts[b.status] = (batchStatusCounts[b.status] || 0) + 1 })
+      const lotTypeCounts: Record<string, number> = {}
+      ID_DATA.lots.forEach(l => { lotTypeCounts[l.lotType] = (lotTypeCounts[l.lotType] || 0) + 1 })
+      const traceEventTypeCounts: Record<string, number> = {}
+      ID_DATA.traceabilityLogs.forEach(t => { traceEventTypeCounts[t.eventType] = (traceEventTypeCounts[t.eventType] || 0) + 1 })
+      const expiringBatches = ID_DATA.batches.filter(b => new Date(b.expiryDate) > new Date() && new Date(b.expiryDate) < new Date(Date.now() + 15 * 86400000))
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          barcodeTypes: ID_DATA.barcodeTypes.length,
+          barcodes: ID_DATA.barcodes.length,
+          qrCodes: ID_DATA.qrCodes.length,
+          batches: ID_DATA.batches.length,
+          lots: ID_DATA.lots.length,
+          serialNumbers: ID_DATA.serialNumbers.length,
+          gs1Identifiers: ID_DATA.gs1Identifiers.length,
+          labelTemplates: ID_DATA.labelTemplates.length,
+          printJobs: ID_DATA.printJobs.length,
+          traceabilityLogs: ID_DATA.traceabilityLogs.length,
+        },
+        batchStatusBreakdown: batchStatusCounts,
+        lotTypeBreakdown: lotTypeCounts,
+        traceEventBreakdown: traceEventTypeCounts,
+        expiringSoon: expiringBatches.length,
+        quarantineBatches: ID_DATA.batches.filter(b => b.status === 'QUARANTINED').length,
+        blockedBatches: ID_DATA.batches.filter(b => b.status === 'BLOCKED').length,
+        pendingPrintJobs: ID_DATA.printJobs.filter(p => p.status === 'QUEUED' || p.status === 'PRINTING').length,
+      }, 'Identification dashboard')), { headers })
+    }
+
+    // ─── Info ──────────────────────────────────────────────
+    if (path === '/api/identification/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Identification & Traceability Platform',
+        version: '10.0.0',
+        sprint: 10,
+        sprintName: 'Enterprise Identification, Barcode & Traceability Platform',
+        barcodeTypes: ['EAN_13', 'EAN_8', 'UPC_A', 'UPC_E', 'CODE_128', 'CODE_39', 'GS1_128', 'ITF_14', 'INTERNAL'],
+        qrPurposes: ['PRODUCT', 'BATCH', 'WAREHOUSE', 'LOCATION', 'ASSET', 'ORDER', 'INVOICE'],
+        batchStatuses: ['PLANNED', 'PRODUCED', 'RELEASED', 'QUARANTINED', 'BLOCKED', 'CONSUMED', 'EXPIRED'],
+        lotTypes: ['SUPPLIER_LOT', 'PRODUCTION_LOT', 'WAREHOUSE_LOT', 'RETURN_LOT', 'INSPECTION_LOT'],
+        gs1Types: ['GTIN', 'GLN', 'SSCC', 'GS1_128'],
+        labelTypes: ['PRODUCT', 'SHELF', 'PALLET', 'BATCH', 'LOCATION', 'SHIPPING', 'QR', 'BARCODE'],
+        printFormats: ['A4', 'THERMAL', 'ZEBRA', 'BROTHER', 'PDF'],
+        traceabilityEventTypes: ['PURCHASE_RECEIPT', 'WAREHOUSE_IN', 'PRODUCTION_INPUT', 'PRODUCTION_OUTPUT', 'WAREHOUSE_TRANSFER', 'SALES_DISPATCH', 'CUSTOMER_DELIVERY', 'RETURN', 'RECALL', 'QUALITY_HOLD', 'DISPOSAL'],
+        traceabilityDirections: ['forward (Batch → Customers)', 'backward (Customer → Supplier)'],
+        endpoints: [
+          'GET    /api/identification/barcode-types',
+          'GET/POST /api/identification/barcodes',
+          'GET    /api/identification/qr-codes',
+          'GET/POST /api/identification/batches',
+          'GET    /api/identification/lots',
+          'GET/POST /api/identification/serial-numbers',
+          'GET    /api/identification/gs1',
+          'GET    /api/identification/label-templates',
+          'GET    /api/identification/print-jobs',
+          'GET    /api/identification/traceability-logs',
+          'POST   /api/identification/trace  (forward/backward)',
+          'GET    /api/identification/dashboard',
+          'GET    /api/identification/info',
+        ],
+      }, 'SUOP Identification Platform v10.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 9, sprintName: 'Enterprise Business Partner Platform' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 10, sprintName: 'Enterprise Identification, Barcode & Traceability Platform' })
+log('info', 'Identification & Traceability endpoints available', {
+  barcodes: 'GET/POST /api/identification/barcodes',
+  qrCodes: 'GET /api/identification/qr-codes',
+  batches: 'GET/POST /api/identification/batches',
+  lots: 'GET /api/identification/lots',
+  serialNumbers: 'GET/POST /api/identification/serial-numbers',
+  gs1: 'GET /api/identification/gs1',
+  labelTemplates: 'GET /api/identification/label-templates',
+  printJobs: 'GET /api/identification/print-jobs',
+  traceabilityLogs: 'GET /api/identification/traceability-logs',
+  trace: 'POST /api/identification/trace (forward/backward)',
+  dashboard: 'GET /api/identification/dashboard',
+})
 log('info', 'Business Partner endpoints available', {
   partners: 'GET/POST /api/business-partners',
   partnerById: 'GET /api/business-partners/:id',
