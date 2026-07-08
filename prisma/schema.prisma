@@ -4058,3 +4058,313 @@ model QualityHold {
   @@index([productId, batchId], map: "idx_qh_product_batch")
   @@index([holdReason], map: "idx_qh_reason")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 14 — STOCK ISSUE, MATERIAL CONSUMPTION & OUTBOUND
+// Every movement where inventory leaves stock
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Stock Issue Document ───────────────────────
+model StockIssue {
+  id              String   @id @default(uuid()) @db.Uuid
+  issueNumber     String   @unique @map("issue_number")
+  // ─── Dates ───
+  issueDate       DateTime @map("issue_date")
+  issuedAt        DateTime @default(now()) @map("issued_at")
+  // ─── Issue type ───
+  issueType       String   @map("issue_type") // PRODUCTION_ISSUE, KITCHEN_ISSUE, SALES_ISSUE, SAMPLE_ISSUE, DAMAGE_ISSUE, SCRAP_ISSUE, INTERNAL_CONSUMPTION, MAINTENANCE_ISSUE, TRANSFER_ISSUE, RETURN_TO_SUPPLIER, ADJUSTMENT_ISSUE
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // PRODUCTION_ORDER, SALES_ORDER, SALES_INVOICE, MATERIAL_REQUISITION, MAINTENANCE_ORDER, PURCHASE_RETURN
+  referenceNumber String?  @map("reference_number")
+  // ─── Scope ───
+  companyId       String?  @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Requester / Approver ───
+  requestedById   String?  @db.Uuid @map("requested_by_id")
+  requestedByName String?  @map("requested_by_name")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedByName  String?  @map("approved_by_name")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Destination ───
+  destinationType String?  @map("destination_type") // PRODUCTION_LINE, KITCHEN, CUSTOMER, SUPPLIER, DEPARTMENT, WAREHOUSE
+  destinationName String?  @map("destination_name")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, PICKING_IN_PROGRESS, ISSUED, PARTIALLY_ISSUED, REJECTED, CANCELLED
+  rejectionReason String?  @map("rejection_reason")
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  totalRequestedQty Decimal @db.Decimal(18, 4) @default(0) @map("total_requested_qty")
+  totalIssuedQty  Decimal  @db.Decimal(18, 4) @default(0) @map("total_issued_qty")
+  totalValue      Decimal  @db.Decimal(18, 2) @default(0) @map("total_value")
+  // ─── Inventory posting ───
+  inventoryPosted Boolean  @default(false) @map("inventory_posted")
+  inventoryTransactionId String? @db.Uuid @map("inventory_transaction_id")
+  postedAt        DateTime? @map("posted_at")
+  // ─── Picking ───
+  pickingRequired Boolean  @default(true) @map("picking_required")
+  pickingCompleted Boolean @default(false) @map("picking_completed")
+  pickingCompletedAt DateTime? @map("picking_completed_at")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  issuedById      String?  @db.Uuid @map("issued_by_id")
+  issuedByName    String?  @map("issued_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           StockIssueLine[]
+  pickingTasks    PickingTask[]
+
+  @@map("stock_issues")
+  @@index([issueType, status], map: "idx_si_type_status")
+  @@index([warehouseId, issueDate], map: "idx_si_warehouse_date")
+  @@index([referenceType, referenceNumber], map: "idx_si_reference")
+  @@index([status, issueDate], map: "idx_si_status_date")
+  @@index([requestedById], map: "idx_si_requester")
+}
+
+model StockIssueLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  stockIssueId    String   @db.Uuid @map("stock_issue_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Batch/Lot/Serial ───
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  serialNumber    String?  @map("serial_number")
+  // ─── Quantities ───
+  requestedQty    Decimal  @db.Decimal(18, 4) @map("requested_qty")
+  issuedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("issued_qty")
+  // ─── Location ───
+  storageLocationId String? @db.Uuid @map("storage_location_id")
+  storageLocationName String? @map("storage_location_name")
+  bin             String?
+  // ─── Barcode ───
+  barcodeScanned  String?  @map("barcode_scanned")
+  barcodeVerified Boolean  @default(false) @map("barcode_verified")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalCost       Decimal? @db.Decimal(18, 4) @map("total_cost")
+  // ─── Picking status ───
+  pickingStatus   String   @default("PENDING") @map("picking_status") // PENDING, PICKED, SHORT_PICKED, SKIPPED
+  pickedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("picked_qty")
+  // ─── Reason ───
+  reason          String?
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  stockIssue      StockIssue @relation(fields: [stockIssueId], references: [id], onDelete: Cascade)
+
+  @@map("stock_issue_lines")
+  @@index([stockIssueId, lineOrder], map: "idx_sil_si_order")
+  @@index([productId, batchId], map: "idx_sil_product_batch")
+  @@index([pickingStatus], map: "idx_sil_picking")
+}
+
+// ─── Epic 4: Picking Tasks ─────────────────────────────
+model PickingTask {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskNumber      String   @unique @map("task_number")
+  stockIssueId    String?  @db.Uuid @map("stock_issue_id")
+  issueNumber     String?  @map("issue_number")
+  // ─── Strategy ───
+  pickingStrategy String   @map("picking_strategy") // FIFO, FEFO, NEAREST_BIN, WAVE, ZONE, PRIORITY
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  zone            String?
+  // ─── Assignment ───
+  assignedToId    String?  @db.Uuid @map("assigned_to_id")
+  assignedToName  String?  @map("assigned_to_name")
+  assignedAt      DateTime? @map("assigned_at")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, PARTIALLY_COMPLETED, CANCELLED
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  pickedLines     Int      @default(0) @map("picked_lines")
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  pickedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("picked_qty")
+  // ─── Timing ───
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  stockIssue      StockIssue? @relation(fields: [stockIssueId], references: [id], onDelete: SetNull)
+  lines           PickingTaskLine[]
+
+  @@map("picking_tasks")
+  @@index([stockIssueId], map: "idx_pickts_si")
+  @@index([status, assignedToId], map: "idx_pickts_status_assignee")
+  @@index([warehouseId, zone], map: "idx_pickts_warehouse_zone")
+}
+
+model PickingTaskLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  pickingTaskId   String   @db.Uuid @map("picking_task_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Pick location ───
+  pickLocationId  String?  @db.Uuid @map("pick_location_id")
+  pickLocationName String? @map("pick_location_name")
+  pickBin         String?  @map("pick_bin")
+  pickZone        String?  @map("pick_zone")
+  // ─── Quantities ───
+  requiredQty     Decimal  @db.Decimal(18, 4) @map("required_qty")
+  pickedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("picked_qty")
+  // ─── Barcode ───
+  barcodeScanned  String?  @map("barcode_scanned")
+  barcodeVerified Boolean  @default(false) @map("barcode_verified")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, PICKED, SHORT_PICKED, SKIPPED
+  shortPickReason String?  @map("short_pick_reason")
+  // ─── Timing ───
+  pickedAt        DateTime? @map("picked_at")
+  pickedById      String?  @db.Uuid @map("picked_by_id")
+  pickedByName    String?  @map("picked_by_name")
+  // ─── Remarks ───
+  remarks         String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  pickingTask     PickingTask @relation(fields: [pickingTaskId], references: [id], onDelete: Cascade)
+
+  @@map("picking_task_lines")
+  @@index([pickingTaskId, lineOrder], map: "idx_ptl_pt_order")
+  @@index([productId, batchId], map: "idx_ptl_product_batch")
+  @@index([status], map: "idx_ptl_status")
+}
+
+// ─── Epic 6: Scrap & Damage ────────────────────────────
+model ScrapRecord {
+  id              String   @id @default(uuid()) @db.Uuid
+  scrapNumber     String   @unique @map("scrap_number")
+  // ─── Date ───
+  scrapDate       DateTime @map("scrap_date")
+  // ─── Source ───
+  scrapType       String   @map("scrap_type") // PRODUCTION_SCRAP, WAREHOUSE_DAMAGE, TRANSPORT_DAMAGE, EXPIRED_PRODUCTS, CUSTOMER_DAMAGE_RETURNS, QUALITY_REJECTION
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // PRODUCTION_ORDER, GRN, BATCH, SALES_RETURN
+  referenceNumber String?  @map("reference_number")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  scrapQty        Decimal  @db.Decimal(18, 4) @map("scrap_qty")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalScrapValue Decimal  @db.Decimal(18, 2) @default(0) @map("total_scrap_value")
+  // ─── Reason ───
+  scrapReason     String   @map("scrap_reason")
+  scrapReasonDetail String? @map("scrap_reason_detail")
+  // ─── Disposal ───
+  disposalMethod  String?  @map("disposal_method") // DESTROYED, RECYCLED, SOLD_AS_SCRAP, DONATED, RETURNED_TO_SUPPLIER, ANIMAL_FEED
+  disposalDate    DateTime? @map("disposal_date")
+  disposalWitnessId String? @db.Uuid @map("disposal_witness_id")
+  disposalWitnessName String? @map("disposal_witness_name")
+  // ─── Status ───
+  status          String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, POSTED, DISPOSED, CANCELLED
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Inventory ───
+  inventoryPosted Boolean  @default(false) @map("inventory_posted")
+  inventoryTransactionId String? @db.Uuid @map("inventory_transaction_id")
+  postedAt        DateTime? @map("posted_at")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("scrap_records")
+  @@index([scrapType, status], map: "idx_sr_type_status")
+  @@index([productId, batchId], map: "idx_sr_product_batch")
+  @@index([warehouseId, scrapDate], map: "idx_sr_warehouse_date")
+  @@index([status], map: "idx_sr_status")
+}
+
+model DamageRecord {
+  id              String   @id @default(uuid()) @db.Uuid
+  damageNumber    String   @unique @map("damage_number")
+  // ─── Date ───
+  damageDate      DateTime @map("damage_date")
+  reportedAt      DateTime @default(now()) @map("reported_at")
+  // ─── Source ───
+  damageType      String   @map("damage_type") // WAREHOUSE_DAMAGE, TRANSPORT_DAMAGE, HANDLING_DAMAGE, STORAGE_DAMAGE, CUSTOMER_RETURN_DAMAGE, PRODUCTION_DAMAGE
+  damageSeverity  String   @map("damage_severity") // MINOR, MODERATE, SEVERE, TOTAL_LOSS
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // GRN, TRANSFER, SALES_RETURN, PRODUCTION_ORDER
+  referenceNumber String?  @map("reference_number")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  // ─── Quantity ───
+  damagedQty      Decimal  @db.Decimal(18, 4) @map("damaged_qty")
+  // ─── Cost ───
+  unitCost        Decimal? @db.Decimal(18, 4) @map("unit_cost")
+  totalDamageValue Decimal @db.Decimal(18, 2) @default(0) @map("total_damage_value")
+  // ─── Insurance ───
+  insuranceClaimable Boolean @default(false) @map("insurance_claimable")
+  insuranceClaimNumber String? @map("insurance_claim_number")
+  insuranceClaimAmount Decimal? @db.Decimal(18, 2) @map("insurance_claim_amount")
+  // ─── Reason ───
+  damageReason    String   @map("damage_reason")
+  damageDescription String? @map("damage_description")
+  // ─── Disposition ───
+  disposition     String   @default("PENDING_REVIEW") @map("disposition") // PENDING_REVIEW, REPAIRABLE, SCRAP, DONATE, RETURN_TO_SUPPLIER, WRITE_OFF, REPACK
+  // ─── Status ───
+  status          String   @default("REPORTED") // REPORTED, UNDER_REVIEW, APPROVED, POSTED, DISPOSED, CANCELLED
+  reviewedById    String?  @db.Uuid @map("reviewed_by_id")
+  reviewedAt      DateTime? @map("reviewed_at")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedAt      DateTime? @map("approved_at")
+  // ─── Inventory ───
+  inventoryPosted Boolean  @default(false) @map("inventory_posted")
+  inventoryTransactionId String? @db.Uuid @map("inventory_transaction_id")
+  postedAt        DateTime? @map("posted_at")
+  // ─── Remarks ───
+  remarks         String?
+  // ─── Audit ───
+  reportedById    String?  @db.Uuid @map("reported_by_id")
+  reportedByName  String?  @map("reported_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("damage_records")
+  @@index([damageType, status], map: "idx_dmg_type_status")
+  @@index([productId, batchId], map: "idx_dmg_product_batch")
+  @@index([warehouseId, damageDate], map: "idx_dmg_warehouse_date")
+  @@index([damageSeverity], map: "idx_dmg_severity")
+  @@index([status], map: "idx_dmg_status")
+}

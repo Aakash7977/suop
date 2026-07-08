@@ -1371,3 +1371,28 @@ Stage Summary:
 - Frontend: New GoodsReceiptModule with 5 tabs
 - Architecture: Implements Chief Architect's recommendation — separating Receiving from Putaway with Quality Hold in between. Stock is NOT available until quality release + putaway completion. Matches food manufacturing best practices.
 - Next: Sprint 14 — Stock Issue, Material Consumption & Inventory Outbound Engine
+
+---
+Task ID: SPRINT-14
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 14 — Stock Issue, Material Consumption & Outbound Engine
+
+Work Log:
+- Added Sprint 14 schema (6 new tables, total now 145):
+  - StockIssue (11 issue types: PRODUCTION_ISSUE, KITCHEN_ISSUE, SALES_ISSUE, SAMPLE_ISSUE, DAMAGE_ISSUE, SCRAP_ISSUE, INTERNAL_CONSUMPTION, MAINTENANCE_ISSUE, TRANSFER_ISSUE, RETURN_TO_SUPPLIER, ADJUSTMENT_ISSUE; 8 statuses; requester/approver; destination; picking required flag)
+  - StockIssueLine (requested vs issued quantities; batch/lot/serial; storage location; barcode scanned + verified; picking status: PENDING/PICKED/SHORT_PICKED/SKIPPED)
+  - PickingTask (6 strategies: FIFO, FEFO, NEAREST_BIN, WAVE, ZONE, PRIORITY; assignment; progress tracking; duration)
+  - PickingTaskLine (pick location; required vs picked qty; barcode verification; short-pick reason)
+  - ScrapRecord (6 scrap types: PRODUCTION_SCRAP, WAREHOUSE_DAMAGE, TRANSPORT_DAMAGE, EXPIRED_PRODUCTS, CUSTOMER_DAMAGE_RETURNS, QUALITY_REJECTION; 6 disposal methods: DESTROYED, RECYCLED, SOLD_AS_SCRAP, DONATED, RETURNED_TO_SUPPLIER, ANIMAL_FEED; witness tracking)
+  - DamageRecord (6 damage types; 4 severity levels: MINOR, MODERATE, SEVERE, TOTAL_LOSS; insurance claim tracking; 7 dispositions: REPAIRABLE, SCRAP, DONATE, RETURN_TO_SUPPLIER, WRITE_OFF, REPACK, PENDING_REVIEW)
+- Updated backend: SI_DATA seed (8 stock issues, 5 picking tasks, 5 scrap records, 4 damage records). Added 10 endpoints: GET/POST /api/stock-issues, POST /:id/approve, GET /api/picking/tasks + POST /:id/complete, GET /api/scrap-records + POST /:id/approve, GET /api/damage-records, GET /api/stock-issues/dashboard, GET /api/stock-issues/info. Backend version 14.0.0.
+- Updated frontend: Added StockIssueModule with 5 tabs (Dashboard, Stock Issues, Picking Tasks, Scrap Records, Damage Records). Dashboard shows outbound stats + 7-step flow diagram. Issues tab shows 11 type colors + requested/issued/posted columns. Picking tab shows progress bars + strategy badges + complete buttons. Scrap tab shows 6 types with disposal methods + approve buttons for pending. Damage tab shows severity coloring + insurance claim badges.
+- Updated sidebar: "Stock Issue" added to Operations section. Dashboard shows 145 tables, 14 sprints.
+- Verified: npx prisma validate passes. npx tsc --noEmit clean. npx next build succeeds. Server running.
+
+Stage Summary:
+- Database: 145 tables (Sprint 14 added 6)
+- Backend: 10 new endpoints under /api/stock-issues/*, /api/picking/*, /api/scrap-records/*, /api/damage-records/*
+- Frontend: New StockIssueModule with 5 tabs
+- Architecture: Implements Issue Request workflow — Production Order → Issue Request → Warehouse Approval → Picking Task → Barcode Scan → Stock Issue → Inventory Ledger. Prevents unauthorized stock withdrawals.
+- Next: Sprint 15 — Enterprise Stock Transfer Engine (warehouse-to-warehouse, branch-to-branch, bin-to-bin transfers with in-transit inventory)

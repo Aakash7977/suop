@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "13.0.0"
+const VERSION = "14.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -669,6 +669,43 @@ const GRN_DATA = {
   ],
 }
 
+// ═══════════════════════════════════════════════════════════
+// SPRINT 14 — STOCK ISSUE & OUTBOUND ENGINE SEED DATA
+// Every movement where inventory leaves stock
+// ═══════════════════════════════════════════════════════════
+const SI_DATA = {
+  stockIssues: [
+    { id: 'si-001', issueNumber: 'SI-2026-00234', issueType: 'PRODUCTION_ISSUE', date: '2026-07-01', refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', destination: 'Production Line 1', status: 'ISSUED', lines: 3, requestedQty: 180, issuedQty: 180, totalValue: 153000, inventoryPosted: true, pickingCompleted: true, requestedBy: 'Anita Desai', approvedBy: 'Anita Desai' },
+    { id: 'si-002', issueNumber: 'SI-2026-00235', issueType: 'SALES_ISSUE', date: '2026-07-05', refType: 'SALES_INVOICE', refNumber: 'INV-2026-00892', warehouse: 'Mumbai DC', destination: 'Tata Consumer Products', status: 'ISSUED', lines: 1, requestedQty: 100, issuedQty: 100, totalValue: 54000, inventoryPosted: true, pickingCompleted: true, requestedBy: 'Vikram Iyer', approvedBy: 'Vikram Iyer' },
+    { id: 'si-003', issueNumber: 'SI-2026-00236', issueType: 'SALES_ISSUE', date: '2026-07-06', refType: 'SALES_INVOICE', refNumber: 'INV-2026-00915', warehouse: 'Mumbai DC', destination: 'Reliance Retail', status: 'ISSUED', lines: 1, requestedQty: 48, issuedQty: 48, totalValue: 25920, inventoryPosted: true, pickingCompleted: true, requestedBy: 'Vikram Iyer', approvedBy: 'Vikram Iyer' },
+    { id: 'si-004', issueNumber: 'SI-2026-00237', issueType: 'PRODUCTION_ISSUE', date: '2026-07-09', refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0095', warehouse: 'Mumbai Plant Warehouse', destination: 'Production Line 2', status: 'PICKING_IN_PROGRESS', lines: 4, requestedQty: 250, issuedQty: 0, totalValue: 0, inventoryPosted: false, pickingCompleted: false, requestedBy: 'Anita Desai', approvedBy: 'Anita Desai' },
+    { id: 'si-005', issueNumber: 'SI-2026-00238', issueType: 'KITCHEN_ISSUE', date: '2026-07-09', refType: 'MATERIAL_REQUISITION', refNumber: 'MR-2026-0042', warehouse: 'Mumbai Plant Warehouse', destination: 'Restaurant Kitchen', status: 'PENDING_APPROVAL', lines: 5, requestedQty: 35, issuedQty: 0, totalValue: 0, inventoryPosted: false, pickingCompleted: false, requestedBy: 'Chef Rajesh', approvedBy: null },
+    { id: 'si-006', issueNumber: 'SI-2026-00239', issueType: 'INTERNAL_CONSUMPTION', date: '2026-07-08', refType: 'MATERIAL_REQUISITION', refNumber: 'MR-2026-0039', warehouse: 'Mumbai Plant Warehouse', destination: 'Maintenance Dept', status: 'ISSUED', lines: 2, requestedQty: 12, issuedQty: 12, totalValue: 3400, inventoryPosted: true, pickingCompleted: true, requestedBy: 'Maintenance Team', approvedBy: 'Anita Desai' },
+    { id: 'si-007', issueNumber: 'SI-2026-00240', issueType: 'SAMPLE_ISSUE', date: '2026-07-07', refType: 'MATERIAL_REQUISITION', refNumber: 'MR-2026-0036', warehouse: 'Mumbai DC', destination: 'Sales Team (Trade Show)', status: 'ISSUED', lines: 3, requestedQty: 15, issuedQty: 15, totalValue: 8100, inventoryPosted: true, pickingCompleted: true, requestedBy: 'Vikram Iyer', approvedBy: 'Vikram Iyer' },
+    { id: 'si-008', issueNumber: 'SI-2026-00241', issueType: 'RETURN_TO_SUPPLIER', date: '2026-07-06', refType: 'PURCHASE_RETURN', refNumber: 'PR-2026-0012', warehouse: 'Mumbai Plant Warehouse', destination: 'Sri Balaji Sugar', status: 'ISSUED', lines: 1, requestedQty: 50, issuedQty: 50, totalValue: 2250, inventoryPosted: true, pickingCompleted: true, requestedBy: 'Suresh Patil', approvedBy: 'Anita Desai' },
+  ],
+  pickingTasks: [
+    { id: 'pk-001', taskNumber: 'PK-2026-00234', issueNumber: 'SI-2026-00234', strategy: 'FEFO', warehouse: 'Mumbai Plant Warehouse', zone: 'Zone A - Raw Materials', status: 'COMPLETED', totalLines: 3, pickedLines: 3, totalQty: 180, pickedQty: 180, assignedTo: 'Ramesh Yadav', duration: 18, completedAt: '2026-07-01 08:18' },
+    { id: 'pk-002', taskNumber: 'PK-2026-00235', issueNumber: 'SI-2026-00235', strategy: 'FEFO', warehouse: 'Mumbai DC', zone: 'Zone C - Cold Storage', status: 'COMPLETED', totalLines: 1, pickedLines: 1, totalQty: 100, pickedQty: 100, assignedTo: 'Ramesh Yadav', duration: 8, completedAt: '2026-07-05 13:50' },
+    { id: 'pk-003', taskNumber: 'PK-2026-00236', issueNumber: 'SI-2026-00236', strategy: 'FEFO', warehouse: 'Mumbai DC', zone: 'Zone C - Cold Storage', status: 'COMPLETED', totalLines: 1, pickedLines: 1, totalQty: 48, pickedQty: 48, assignedTo: 'Ramesh Yadav', duration: 6, completedAt: '2026-07-06 11:20' },
+    { id: 'pk-004', taskNumber: 'PK-2026-00237', issueNumber: 'SI-2026-00237', strategy: 'FIFO', warehouse: 'Mumbai Plant Warehouse', zone: 'Zone A - Raw Materials', status: 'IN_PROGRESS', totalLines: 4, pickedLines: 2, totalQty: 250, pickedQty: 120, assignedTo: 'Sandeep Kumar', duration: null, completedAt: null },
+    { id: 'pk-005', taskNumber: 'PK-2026-00240', issueNumber: 'SI-2026-00240', strategy: 'FEFO', warehouse: 'Mumbai Plant Warehouse', zone: 'Zone A - Raw Materials', status: 'COMPLETED', totalLines: 1, pickedLines: 1, totalQty: 50, pickedQty: 50, assignedTo: 'Ramesh Yadav', duration: 5, completedAt: '2026-07-06 15:30' },
+  ],
+  scrapRecords: [
+    { id: 'scrap-001', scrapNumber: 'SCRAP-2026-0012', scrapType: 'PRODUCTION_SCRAP', date: '2026-07-01', product: 'Kaju Katli 500g', batch: 'KK-2607-01', warehouse: 'Mumbai Plant Warehouse', qty: 8, value: 2800, reason: 'Shape deformation during molding', disposal: 'DESTROYED', status: 'POSTED', createdBy: 'Anita Desai' },
+    { id: 'scrap-002', scrapNumber: 'SCRAP-2026-0013', scrapType: 'EXPIRED_PRODUCTS', date: '2026-07-08', product: 'Kaju Katli 500g', batch: 'KK-2606-05', warehouse: 'Mumbai Plant Warehouse', qty: 56, value: 19320, reason: 'Past expiry date - recall batch', disposal: 'DESTROYED', status: 'PENDING_APPROVAL', createdBy: 'Anita Desai' },
+    { id: 'scrap-003', scrapNumber: 'SCRAP-2026-0014', scrapType: 'WAREHOUSE_DAMAGE', date: '2026-07-07', product: 'Mixed Namkeen 200g', batch: 'MN-2607-03', warehouse: 'Mumbai DC', qty: 12, value: 636, reason: 'Rat damage in storage bin B3', disposal: 'DESTROYED', status: 'POSTED', createdBy: 'Ramesh Yadav' },
+    { id: 'scrap-004', scrapNumber: 'SCRAP-2026-0015', scrapType: 'QUALITY_REJECTION', date: '2026-07-09', product: 'Cashew Nuts (Raw)', batch: null, warehouse: 'Mumbai Plant Warehouse', qty: 5, value: 4250, reason: 'Damaged in transit - packaging crushed', disposal: 'RETURNED_TO_SUPPLIER', status: 'APPROVED', createdBy: 'Suresh Patil' },
+    { id: 'scrap-005', scrapNumber: 'SCRAP-2026-0016', scrapType: 'PRODUCTION_SCRAP', date: '2026-07-05', product: 'Soan Cake 1kg', batch: 'SC-2606-04', warehouse: 'Mumbai Plant Warehouse', qty: 3, value: 1875, reason: 'Sugar crystallization - quality fail', disposal: 'RECYCLED', status: 'POSTED', createdBy: 'Anita Desai' },
+  ],
+  damageRecords: [
+    { id: 'dmg-001', damageNumber: 'DMG-2026-0012', damageType: 'TRANSPORT_DAMAGE', severity: 'MODERATE', date: '2026-07-09', product: 'Cashew Nuts (Raw)', batch: null, warehouse: 'Mumbai Plant Warehouse', qty: 5, value: 4250, reason: 'Packaging crushed during transit', disposition: 'RETURN_TO_SUPPLIER', status: 'POSTED', insuranceClaim: true, claimAmount: 4250, reportedBy: 'Suresh Patil' },
+    { id: 'dmg-002', damageNumber: 'DMG-2026-0013', damageType: 'STORAGE_DAMAGE', severity: 'MINOR', date: '2026-07-07', product: 'Mixed Namkeen 200g', batch: 'MN-2607-03', warehouse: 'Mumbai DC', qty: 12, value: 636, reason: 'Rat damage in storage bin B3', disposition: 'SCRAP', status: 'POSTED', insuranceClaim: false, reportedBy: 'Ramesh Yadav' },
+    { id: 'dmg-003', damageNumber: 'DMG-2026-0014', damageType: 'HANDLING_DAMAGE', severity: 'MINOR', date: '2026-07-08', product: 'Kaju Katli 500g', batch: 'KK-2607-01', warehouse: 'Mumbai DC', qty: 4, value: 2160, reason: 'Box dropped during putaway', disposition: 'REPACK', status: 'APPROVED', insuranceClaim: false, reportedBy: 'Sandeep Kumar' },
+    { id: 'dmg-004', damageNumber: 'DMG-2026-0015', damageType: 'CUSTOMER_RETURN_DAMAGE', severity: 'MODERATE', date: '2026-07-07', product: 'Kaju Katli 500g', batch: 'KK-2606-05', warehouse: 'Mumbai DC', qty: 24, value: 12960, reason: 'Customer returned - taste deviation', disposition: 'PENDING_REVIEW', status: 'UNDER_REVIEW', insuranceClaim: false, reportedBy: 'Vikram Iyer' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1055,9 +1092,10 @@ const server = Bun.serve({
         { code: 'GOV', name: 'Data Governance & Quality', status: 'active', entities: 15, sprint: 11 },
         { code: 'INV', name: 'Inventory Engine', status: 'active', entities: 8, sprint: 12 },
         { code: 'GRN', name: 'Goods Receipt & Putaway', status: 'active', entities: 5, sprint: 13 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 14 },
-        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 15 },
-        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 16 },
+        { code: 'ISS', name: 'Stock Issue & Outbound', status: 'active', entities: 6, sprint: 14 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 15 },
+        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 16 },
+        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 17 },
       ], 'Modules')), { headers })
     }
 
@@ -2412,19 +2450,169 @@ const server = Bun.serve({
       }, 'SUOP GRN Engine v13.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 14 — STOCK ISSUE & OUTBOUND ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Stock Issues ──────────────────────────────────────
+    if (path === '/api/stock-issues' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let issues = SI_DATA.stockIssues
+      if (typeFilter) issues = issues.filter(s => s.issueType === typeFilter.toUpperCase())
+      if (statusFilter) issues = issues.filter(s => s.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(issues, `${issues.length} stock issues`)), { headers })
+    }
+    if (path === '/api/stock-issues' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.warehouseId || !body.issueType) return new Response(JSON.stringify(errorResponse('warehouseId and issueType required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        const issueNumber = `SI-2026-${String(242 + SI_DATA.stockIssues.length).padStart(5, '0')}`
+        const issue = {
+          id: crypto.randomUUID(),
+          issueNumber,
+          issueType: body.issueType,
+          date: body.date || new Date().toISOString().slice(0, 10),
+          refType: body.refType || null,
+          refNumber: body.refNumber || null,
+          warehouse: body.warehouseName || 'Warehouse',
+          destination: body.destinationName || null,
+          status: 'DRAFT',
+          lines: body.lines ? body.lines.length : 0,
+          requestedQty: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.requestedQty || 0), 0) : 0,
+          issuedQty: 0,
+          totalValue: 0,
+          inventoryPosted: false,
+          pickingCompleted: false,
+          requestedBy: body.requestedByName || 'System',
+          approvedBy: null,
+        }
+        SI_DATA.stockIssues.unshift(issue)
+        log('info', 'Stock issue created', { issueNumber: issue.issueNumber, type: issue.issueType })
+        return new Response(JSON.stringify(successResponse(issue, `Stock issue ${issue.issueNumber} created`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    // POST /api/stock-issues/:id/approve
+    if (path.match(/^\/api\/stock-issues\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const issue = SI_DATA.stockIssues.find(s => s.id === id)
+      if (!issue) return new Response(JSON.stringify(errorResponse('Stock issue not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (issue.status !== 'PENDING_APPROVAL' && issue.status !== 'DRAFT') {
+        return new Response(JSON.stringify(errorResponse(`Cannot approve in ${issue.status} status`, 'INVALID_STATE', 400)), { status: 400, headers })
+      }
+      issue.status = 'APPROVED'
+      log('info', 'Stock issue approved', { issueNumber: issue.issueNumber })
+      return new Response(JSON.stringify(successResponse(issue, `Stock issue ${issue.issueNumber} approved`)), { headers })
+    }
+
+    // ─── Picking Tasks ─────────────────────────────────────
+    if (path === '/api/picking/tasks' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let tasks = SI_DATA.pickingTasks
+      if (statusFilter) tasks = tasks.filter(t => t.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(tasks, `${tasks.length} picking tasks`)), { headers })
+    }
+    // POST /api/picking/tasks/:id/complete
+    if (path.match(/^\/api\/picking\/tasks\/[^/]+\/complete$/) && method === 'POST') {
+      const id = path.split('/')[4]
+      const task = SI_DATA.pickingTasks.find(t => t.id === id)
+      if (!task) return new Response(JSON.stringify(errorResponse('Task not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      task.status = 'COMPLETED'
+      task.pickedLines = task.totalLines
+      task.pickedQty = task.totalQty
+      task.completedAt = new Date().toISOString()
+      log('info', 'Picking task completed', { taskNumber: task.taskNumber })
+      return new Response(JSON.stringify(successResponse(task, 'Picking task completed')), { headers })
+    }
+
+    // ─── Scrap Records ─────────────────────────────────────
+    if (path === '/api/scrap-records' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(SI_DATA.scrapRecords, 'Scrap records')), { headers })
+    }
+    // POST /api/scrap-records/:id/approve
+    if (path.match(/^\/api\/scrap-records\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const scrap = SI_DATA.scrapRecords.find(s => s.id === id)
+      if (!scrap) return new Response(JSON.stringify(errorResponse('Scrap record not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      scrap.status = 'POSTED'
+      log('info', 'Scrap record approved & posted', { scrapNumber: scrap.scrapNumber })
+      return new Response(JSON.stringify(successResponse(scrap, 'Scrap record posted to inventory')), { headers })
+    }
+
+    // ─── Damage Records ────────────────────────────────────
+    if (path === '/api/damage-records' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(SI_DATA.damageRecords, 'Damage records')), { headers })
+    }
+
+    // ─── Outbound Dashboard ────────────────────────────────
+    if (path === '/api/stock-issues/dashboard' && method === 'GET') {
+      const today = SI_DATA.stockIssues.filter(s => s.date === '2026-07-09')
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          totalIssues: SI_DATA.stockIssues.length,
+          todayIssues: today.length,
+          pendingApproval: SI_DATA.stockIssues.filter(s => s.status === 'PENDING_APPROVAL').length,
+          pickingInProgress: SI_DATA.stockIssues.filter(s => s.status === 'PICKING_IN_PROGRESS').length,
+          issued: SI_DATA.stockIssues.filter(s => s.status === 'ISSUED').length,
+          pickingTasks: SI_DATA.pickingTasks.length,
+          pendingPicks: SI_DATA.pickingTasks.filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length,
+          scrapRecords: SI_DATA.scrapRecords.length,
+          pendingScrap: SI_DATA.scrapRecords.filter(s => s.status === 'PENDING_APPROVAL').length,
+          damageRecords: SI_DATA.damageRecords.length,
+          underReviewDamage: SI_DATA.damageRecords.filter(d => d.status === 'UNDER_REVIEW' || d.status === 'REPORTED').length,
+        },
+        outbound: {
+          totalIssuedToday: today.reduce((s, i) => s + i.issuedQty, 0),
+          totalValueToday: today.reduce((s, i) => s + i.totalValue, 0),
+          totalScrapValue: SI_DATA.scrapRecords.reduce((s, r) => s + r.value, 0),
+          totalDamageValue: SI_DATA.damageRecords.reduce((s, d) => s + d.value, 0),
+        },
+      }, 'Outbound dashboard')), { headers })
+    }
+
+    // ─── Info ──────────────────────────────────────────────
+    if (path === '/api/stock-issues/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Stock Issue & Outbound Engine',
+        version: '14.0.0',
+        sprint: 14,
+        sprintName: 'Stock Issue, Material Consumption & Outbound Engine',
+        issueTypes: ['PRODUCTION_ISSUE', 'KITCHEN_ISSUE', 'SALES_ISSUE', 'SAMPLE_ISSUE', 'DAMAGE_ISSUE', 'SCRAP_ISSUE', 'INTERNAL_CONSUMPTION', 'MAINTENANCE_ISSUE', 'TRANSFER_ISSUE', 'RETURN_TO_SUPPLIER', 'ADJUSTMENT_ISSUE'],
+        pickingStrategies: ['FIFO', 'FEFO', 'NEAREST_BIN', 'WAVE', 'ZONE', 'PRIORITY'],
+        scrapTypes: ['PRODUCTION_SCRAP', 'WAREHOUSE_DAMAGE', 'TRANSPORT_DAMAGE', 'EXPIRED_PRODUCTS', 'CUSTOMER_DAMAGE_RETURNS', 'QUALITY_REJECTION'],
+        damageTypes: ['WAREHOUSE_DAMAGE', 'TRANSPORT_DAMAGE', 'HANDLING_DAMAGE', 'STORAGE_DAMAGE', 'CUSTOMER_RETURN_DAMAGE', 'PRODUCTION_DAMAGE'],
+        endpoints: [
+          'GET/POST /api/stock-issues',
+          'POST   /api/stock-issues/:id/approve',
+          'GET    /api/picking/tasks',
+          'POST   /api/picking/tasks/:id/complete',
+          'GET    /api/scrap-records',
+          'POST   /api/scrap-records/:id/approve',
+          'GET    /api/damage-records',
+          'GET    /api/stock-issues/dashboard',
+          'GET    /api/stock-issues/info',
+        ],
+      }, 'SUOP Outbound Engine v14.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 13, sprintName: 'Goods Receipt & Intelligent Putaway Engine' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 14, sprintName: 'Stock Issue, Material Consumption & Outbound Engine' })
+log('info', 'Stock Issue & Outbound endpoints available', {
+  stockIssues: 'GET/POST /api/stock-issues',
+  approve: 'POST /api/stock-issues/:id/approve',
+  pickingTasks: 'GET /api/picking/tasks + POST /:id/complete',
+  scrapRecords: 'GET /api/scrap-records + POST /:id/approve',
+  damageRecords: 'GET /api/damage-records',
+  dashboard: 'GET /api/stock-issues/dashboard',
+})
 log('info', 'GRN & Putaway endpoints available', {
   goodsReceipts: 'GET/POST /api/goods-receipts',
-  approve: 'POST /api/goods-receipts/:id/approve',
-  putawayRules: 'GET /api/putaway/rules',
-  putawayTasks: 'GET /api/putaway/tasks + POST /:id/complete',
-  qualityHolds: 'GET /api/quality-holds + POST /:id/release',
-  dashboard: 'GET /api/goods-receipts/dashboard',
+  putawayTasks: 'GET /api/putaway/tasks',
+  qualityHolds: 'GET /api/quality-holds',
 })
 log('info', 'Inventory Engine endpoints available', {
   transactions: 'GET/POST /api/inventory/transactions',
