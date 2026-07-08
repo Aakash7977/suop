@@ -1347,3 +1347,27 @@ Stage Summary:
 - Build: Production build successful, server running
 - Architecture: Implements the Chief Architect's most critical recommendation — NEVER update stock directly. Every stock change creates an immutable ledger transaction. Stock balances are DERIVED from the ledger (cache only). Available = Received − Issued − Reserved − Damaged.
 - Next: Sprint 13 — Goods Receipt & Putaway Engine (GRN, Production Receipt, Supplier Delivery Verification, Barcode Receiving, Quality Hold, Putaway Rules, Bin Allocation, Storage Optimization, Receiving Dashboard, Receiving Approval Workflow)
+
+---
+Task ID: SPRINT-13
+Agent: Main Agent (Super Z)
+Task: Implement Sprint 13 — Goods Receipt & Intelligent Putaway Engine (first real inventory operation)
+
+Work Log:
+- Added Sprint 13 schema (5 new tables, total now 139):
+  - GoodsReceipt (10 receipt types: PURCHASE_RECEIPT, MANUFACTURING_RECEIPT, SALES_RETURN, CUSTOMER_RETURN, OPENING_STOCK, INTER_BRANCH_RECEIPT, WAREHOUSE_TRANSFER_RECEIPT, STOCK_CORRECTION, DONATION_RECEIPT, SAMPLE_RECEIPT; 7 statuses: DRAFT→PENDING_APPROVAL→APPROVED→PUTAWAY_IN_PROGRESS→COMPLETED/REJECTED/CANCELLED; quality hold tracking; inventory posting flag; putaway completion flag)
+  - GoodsReceiptLine (ordered vs received vs accepted vs rejected quantities; variance; batch/supplier batch; barcode scanned; quality status; putaway location suggested vs actual)
+  - PutawayRule (5 strategies: FIFO, FEFO, ABC, ZONE, TEMPERATURE; product type conditions; target zone + temperature zone; capacity check; priority)
+  - PutawayTask (from→to location tracking; assignment; status: PENDING→ASSIGNED→IN_PROGRESS→COMPLETED; inventory posting link)
+  - QualityHold (6 reasons: QUALITY_CHECK, SUPPLIER_ISSUE, DAMAGE_SUSPECTED, EXPIRY_CHECK, SPEC_VERIFICATION, RANDOM_SAMPLE; 4 inspection types: VISUAL, LAB_TEST, SAMPLE_TEST, FULL_INSPECTION; resolution: RELEASED/REJECTED/PARTIAL_RELEASE/SCRAPPED)
+- Updated backend: GRN_DATA seed (8 GRNs with realistic suppliers, vehicles, gate entries, quality holds; 5 putaway rules; 6 putaway tasks; 5 quality holds). Added 10 endpoints: GET/POST /api/goods-receipts, POST /:id/approve, GET /api/putaway/rules, GET /api/putaway/tasks + POST /:id/complete, GET /api/quality-holds + POST /:id/release, GET /api/goods-receipts/dashboard, GET /api/goods-receipts/info. Backend version 13.0.0.
+- Updated frontend: Added GoodsReceiptModule with 5 tabs (Dashboard, Goods Receipts, Putaway Tasks, Quality Holds, Putaway Rules). Dashboard shows receiving stats + 7-step flow diagram. GRN list shows 10 type colors + ordered/received/accepted/rejected columns + quality status + posted indicator. Putaway tasks show from→to with strategy badges + complete buttons. Quality holds show active (red) vs resolved with release/reject/partial actions. Putaway rules show 5 strategies with temperature zone coloring.
+- Updated sidebar: "Goods Receipt" added to Operations section. Dashboard shows 139 tables, 13 sprints.
+- Verified: npx prisma validate passes. npx tsc --noEmit clean. npx next build succeeds. Server running.
+
+Stage Summary:
+- Database: 139 tables (Sprint 13 added 5)
+- Backend: 10 new endpoints under /api/goods-receipts/*, /api/putaway/*, /api/quality-holds/*
+- Frontend: New GoodsReceiptModule with 5 tabs
+- Architecture: Implements Chief Architect's recommendation — separating Receiving from Putaway with Quality Hold in between. Stock is NOT available until quality release + putaway completion. Matches food manufacturing best practices.
+- Next: Sprint 14 — Stock Issue, Material Consumption & Inventory Outbound Engine

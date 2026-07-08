@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "12.0.0"
+const VERSION = "13.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -630,6 +630,45 @@ const INV_DATA = {
   ],
 }
 
+// ═══════════════════════════════════════════════════════════
+// SPRINT 13 — GOODS RECEIPT & PUTAWAY ENGINE SEED DATA
+// First real inventory operation: stock physically enters SUOP
+// ═══════════════════════════════════════════════════════════
+const GRN_DATA = {
+  goodsReceipts: [
+    { id: 'gr-001', grnNumber: 'GRN-2026-00142', receiptType: 'PURCHASE_RECEIPT', date: '2026-07-08', supplier: 'Konkan Cashew Processors', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-12-AB-4521', driver: 'Ramesh Patil', gateEntry: 'GE-2026-0089', status: 'COMPLETED', qualityHold: true, qualityStatus: 'APPROVED', lines: 3, orderedQty: 380, receivedQty: 380, acceptedQty: 380, rejectedQty: 0, totalValue: 114000, inventoryPosted: true, putawayCompleted: true, receivedBy: 'Suresh Patil' },
+    { id: 'gr-002', grnNumber: 'GRN-2026-00143', receiptType: 'PURCHASE_RECEIPT', date: '2026-07-08', supplier: 'Sri Balaji Sugar', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', vehicle: 'AP-09-CD-8832', driver: 'Lakshmi Naidu', gateEntry: 'GE-2026-0090', status: 'COMPLETED', qualityHold: false, qualityStatus: 'APPROVED', lines: 1, orderedQty: 500, receivedQty: 500, acceptedQty: 500, rejectedQty: 0, totalValue: 25000, inventoryPosted: true, putawayCompleted: true, receivedBy: 'Suresh Patil' },
+    { id: 'gr-003', grnNumber: 'GRN-2026-00144', receiptType: 'MANUFACTURING_RECEIPT', date: '2026-07-01', supplier: null, refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', vehicle: null, driver: null, gateEntry: null, status: 'COMPLETED', qualityHold: true, qualityStatus: 'APPROVED', lines: 1, orderedQty: 500, receivedQty: 500, acceptedQty: 500, rejectedQty: 0, totalValue: 175000, inventoryPosted: true, putawayCompleted: true, receivedBy: 'Anita Desai' },
+    { id: 'gr-004', grnNumber: 'GRN-2026-00145', receiptType: 'PURCHASE_RECEIPT', date: '2026-07-09', supplier: 'Amul', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0178', warehouse: 'Mumbai Plant Warehouse', vehicle: 'GJ-01-EF-1192', driver: 'Bharat Patel', gateEntry: 'GE-2026-0091', status: 'APPROVED', qualityHold: true, qualityStatus: 'INSPECTION', lines: 2, orderedQty: 100, receivedQty: 98, acceptedQty: 0, rejectedQty: 0, totalValue: 52000, inventoryPosted: false, putawayCompleted: false, receivedBy: 'Suresh Patil', qualityNotes: 'Ghee sample sent for lab test - awaiting results' },
+    { id: 'gr-005', grnNumber: 'GRN-2026-00146', receiptType: 'PURCHASE_RECEIPT', date: '2026-07-09', supplier: 'Mumbai Packaging Solutions', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0203', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-04-GH-7745', driver: 'Sandeep Kumar', gateEntry: 'GE-2026-0092', status: 'PUTAWAY_IN_PROGRESS', qualityHold: false, qualityStatus: 'APPROVED', lines: 1, orderedQty: 5000, receivedQty: 5000, acceptedQty: 5000, rejectedQty: 0, totalValue: 60000, inventoryPosted: true, putawayCompleted: false, receivedBy: 'Suresh Patil' },
+    { id: 'gr-006', grnNumber: 'GRN-2026-00147', receiptType: 'SALES_RETURN', date: '2026-07-07', supplier: null, refType: 'INVOICE', refNumber: 'INV-2026-00789', warehouse: 'Mumbai DC', vehicle: null, driver: null, gateEntry: null, status: 'APPROVED', qualityHold: true, qualityStatus: 'PENDING', lines: 1, orderedQty: 0, receivedQty: 24, acceptedQty: 0, rejectedQty: 0, totalValue: 12960, inventoryPosted: false, putawayCompleted: false, receivedBy: 'Vikram Iyer', qualityNotes: 'Customer return - quality check required before restocking' },
+    { id: 'gr-007', grnNumber: 'GRN-2026-00148', receiptType: 'PURCHASE_RECEIPT', date: '2026-07-09', supplier: 'Konkan Cashew Processors', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0210', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-12-AB-4521', driver: 'Ramesh Patil', gateEntry: 'GE-2026-0093', status: 'PENDING_APPROVAL', qualityHold: true, qualityStatus: 'PENDING', lines: 2, orderedQty: 300, receivedQty: 295, acceptedQty: 0, rejectedQty: 5, totalValue: 250750, inventoryPosted: false, putawayCompleted: false, receivedBy: 'Suresh Patil', qualityNotes: '5 units damaged in transit - rejected at receiving' },
+    { id: 'gr-008', grnNumber: 'GRN-2026-00149', receiptType: 'OPENING_STOCK', date: '2026-01-01', supplier: null, refType: 'OPENING_STOCK', refNumber: 'OS-2026-001', warehouse: 'Mumbai Plant Warehouse', vehicle: null, driver: null, gateEntry: null, status: 'COMPLETED', qualityHold: false, qualityStatus: 'APPROVED', lines: 12, orderedQty: 0, receivedQty: 2400, acceptedQty: 2400, rejectedQty: 0, totalValue: 840000, inventoryPosted: true, putawayCompleted: true, receivedBy: 'System' },
+  ],
+  putawayRules: [
+    { code: 'PA-RAW-FIFO', name: 'Raw Materials → FIFO Zone A', strategy: 'FIFO', productType: 'RAW_MATERIAL', targetZone: 'Zone A - Raw Materials', tempZone: 'AMBIENT', priority: 50, status: 'ACTIVE' },
+    { code: 'PA-FG-FEFO', name: 'Finished Goods → FEFO Cold Storage', strategy: 'FEFO', productType: 'FINISHED_GOOD', targetZone: 'Zone C - Cold Storage', tempZone: 'REFRIGERATED', priority: 30, status: 'ACTIVE' },
+    { code: 'PA-PKG-ZONE', name: 'Packaging → Zone B Bulk', strategy: 'ZONE', productType: 'PACKAGING', targetZone: 'Zone B - Packaging Bulk', tempZone: 'AMBIENT', priority: 100, status: 'ACTIVE' },
+    { code: 'PA-ABC-HIGH', name: 'High-Value Items → Secure Zone', strategy: 'ABC', productType: 'FINISHED_GOOD', targetZone: 'Zone D - Secure', tempZone: 'AMBIENT', priority: 20, status: 'ACTIVE' },
+    { code: 'PA-FROZEN', name: 'Frozen Items → Freezer Zone', strategy: 'TEMPERATURE', productType: 'FINISHED_GOOD', targetZone: 'Zone E - Freezer', tempZone: 'FROZEN', priority: 10, status: 'ACTIVE' },
+  ],
+  putawayTasks: [
+    { id: 'pt-001', taskNumber: 'PT-2026-00142', grnNumber: 'GRN-2026-00142', product: 'Cashew Nuts (Raw)', batch: null, qty: 200, from: 'Receiving Dock 1', to: 'Zone A - Rack A1, Bin 03', zone: 'Zone A - Raw Materials', strategy: 'FIFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-08 11:30' },
+    { id: 'pt-002', taskNumber: 'PT-2026-00143', grnNumber: 'GRN-2026-00142', product: 'Sugar (Raw)', batch: null, qty: 150, from: 'Receiving Dock 1', to: 'Zone A - Rack A2, Bin 01', zone: 'Zone A - Raw Materials', strategy: 'FIFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-08 11:45' },
+    { id: 'pt-003', taskNumber: 'PT-2026-00144', grnNumber: 'GRN-2026-00142', product: 'Ghee (Raw)', batch: null, qty: 30, from: 'Receiving Dock 1', to: 'Zone C - Cold Storage, Rack C1', zone: 'Zone C - Cold Storage', strategy: 'FEFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-08 12:00' },
+    { id: 'pt-004', taskNumber: 'PT-2026-00145', grnNumber: 'GRN-2026-00144', product: 'Kaju Katli 500g', batch: 'KK-2607-01', qty: 500, from: 'Production Line 1', to: 'Zone C - Cold Storage, Rack C2', zone: 'Zone C - Cold Storage', strategy: 'FEFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-01 17:00' },
+    { id: 'pt-005', taskNumber: 'PT-2026-00146', grnNumber: 'GRN-2026-00146', product: 'Packaging Boxes', batch: null, qty: 5000, from: 'Receiving Dock 2', to: 'Zone B - Rack B1, Bin 01-05', zone: 'Zone B - Packaging Bulk', strategy: 'ZONE', status: 'IN_PROGRESS', assignedTo: 'Sandeep Kumar', completedAt: null },
+    { id: 'pt-006', taskNumber: 'PT-2026-00147', grnNumber: 'GRN-2026-00145', product: 'Ghee (Raw)', batch: null, qty: 98, from: 'Receiving Dock 1', to: 'PENDING - Quality Hold', zone: null, strategy: 'FEFO', status: 'PENDING', assignedTo: null, completedAt: null },
+  ],
+  qualityHolds: [
+    { id: 'qh-001', holdNumber: 'QH-2026-0012', grnNumber: 'GRN-2026-00145', product: 'Ghee (Raw)', batch: null, qtyHeld: 98, reason: 'QUALITY_CHECK', inspectionType: 'LAB_TEST', result: 'PENDING', status: 'ACTIVE', resolution: 'PENDING', createdBy: 'Suresh Patil', notes: 'Sample sent to external lab for adulteration test' },
+    { id: 'qh-002', holdNumber: 'QH-2026-0013', grnNumber: 'GRN-2026-00147', product: 'Customer Return Kaju Katli', batch: 'KK-2606-05', qtyHeld: 24, reason: 'SUPPLIER_ISSUE', inspectionType: 'VISUAL', result: 'PENDING', status: 'ACTIVE', resolution: 'PENDING', createdBy: 'Vikram Iyer', notes: 'Customer returned - taste deviation complaint. Awaiting investigation.' },
+    { id: 'qh-003', holdNumber: 'QH-2026-0011', grnNumber: 'GRN-2026-00142', product: 'Cashew Nuts (Raw)', batch: null, qtyHeld: 200, reason: 'QUALITY_CHECK', inspectionType: 'SAMPLE_TEST', result: 'PASSED', status: 'RESOLVED', resolution: 'RELEASED', releasedQty: 200, rejectedQty: 0, createdBy: 'Suresh Patil', resolvedBy: 'Anita Desai', notes: 'Sample tested - quality approved. Released for production.' },
+    { id: 'qh-004', holdNumber: 'QH-2026-0010', grnNumber: 'GRN-2026-00144', product: 'Kaju Katli 500g', batch: 'KK-2607-01', qtyHeld: 500, reason: 'QUALITY_CHECK', inspectionType: 'VISUAL', result: 'PASSED', status: 'RESOLVED', resolution: 'RELEASED', releasedQty: 500, rejectedQty: 0, createdBy: 'Anita Desai', resolvedBy: 'Anita Desai', notes: 'Production batch quality check passed. Grade A.' },
+    { id: 'qh-005', holdNumber: 'QH-2026-0014', grnNumber: 'GRN-2026-00147', product: 'Cashew Nuts (Raw)', batch: null, qtyHeld: 5, reason: 'DAMAGE_SUSPECTED', inspectionType: 'VISUAL', result: 'FAILED', status: 'RESOLVED', resolution: 'REJECTED', releasedQty: 0, rejectedQty: 5, createdBy: 'Suresh Patil', resolvedBy: 'Anita Desai', notes: '5 units damaged in transit - packaging crushed. Rejected and scrapped.' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1015,9 +1054,10 @@ const server = Bun.serve({
         { code: 'ID', name: 'Identification & Traceability', status: 'active', entities: 11, sprint: 10 },
         { code: 'GOV', name: 'Data Governance & Quality', status: 'active', entities: 15, sprint: 11 },
         { code: 'INV', name: 'Inventory Engine', status: 'active', entities: 8, sprint: 12 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 13 },
-        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 14 },
-        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 15 },
+        { code: 'GRN', name: 'Goods Receipt & Putaway', status: 'active', entities: 5, sprint: 13 },
+        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 14 },
+        { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 15 },
+        { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 16 },
       ], 'Modules')), { headers })
     }
 
@@ -2210,34 +2250,185 @@ const server = Bun.serve({
       }, 'SUOP Inventory Engine v12.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 13 — GOODS RECEIPT & PUTAWAY ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Goods Receipts ────────────────────────────────────
+    if (path === '/api/goods-receipts' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let grns = GRN_DATA.goodsReceipts
+      if (typeFilter) grns = grns.filter(g => g.receiptType === typeFilter.toUpperCase())
+      if (statusFilter) grns = grns.filter(g => g.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(grns, `${grns.length} goods receipts`)), { headers })
+    }
+    if (path === '/api/goods-receipts' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.warehouseId) return new Response(JSON.stringify(errorResponse('warehouseId is required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        const grnNumber = `GRN-2026-${String(150 + GRN_DATA.goodsReceipts.length).padStart(5, '0')}`
+        const grn = {
+          id: crypto.randomUUID(),
+          grnNumber,
+          receiptType: body.receiptType || 'PURCHASE_RECEIPT',
+          date: body.date || new Date().toISOString().slice(0, 10),
+          supplier: body.supplierName || null,
+          refType: body.refType || null,
+          refNumber: body.refNumber || null,
+          warehouse: body.warehouseName || 'Warehouse',
+          vehicle: body.vehicleNumber || null,
+          driver: body.driverName || null,
+          gateEntry: body.gateEntryNumber || null,
+          status: 'DRAFT',
+          qualityHold: body.qualityHoldRequired || false,
+          qualityStatus: body.qualityHoldRequired ? 'PENDING' : 'APPROVED',
+          lines: body.lines ? body.lines.length : 0,
+          orderedQty: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.orderedQty || 0), 0) : 0,
+          receivedQty: body.lines ? body.lines.reduce((s: number, l: any) => s + Number(l.receivedQty || 0), 0) : 0,
+          acceptedQty: 0,
+          rejectedQty: 0,
+          totalValue: 0,
+          inventoryPosted: false,
+          putawayCompleted: false,
+          receivedBy: body.receivedByName || 'System',
+        }
+        GRN_DATA.goodsReceipts.unshift(grn)
+        log('info', 'GRN created', { grnNumber: grn.grnNumber, type: grn.receiptType })
+        return new Response(JSON.stringify(successResponse(grn, `GRN ${grn.grnNumber} created`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+    // POST /api/goods-receipts/:id/approve
+    if (path.match(/^\/api\/goods-receipts\/[^/]+\/approve$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const grn = GRN_DATA.goodsReceipts.find(g => g.id === id)
+      if (!grn) return new Response(JSON.stringify(errorResponse('GRN not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (grn.status !== 'PENDING_APPROVAL' && grn.status !== 'DRAFT') {
+        return new Response(JSON.stringify(errorResponse(`Cannot approve GRN in ${grn.status} status`, 'INVALID_STATE', 400)), { status: 400, headers })
+      }
+      grn.status = grn.qualityHold && grn.qualityStatus !== 'APPROVED' ? 'APPROVED' : 'APPROVED'
+      grn.inventoryPosted = true
+      grn.putawayCompleted = !grn.qualityHold
+      log('info', 'GRN approved', { grnNumber: grn.grnNumber })
+      return new Response(JSON.stringify(successResponse(grn, `GRN ${grn.grnNumber} approved and posted to inventory`)), { headers })
+    }
+
+    // ─── Putaway Rules ─────────────────────────────────────
+    if (path === '/api/putaway/rules' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GRN_DATA.putawayRules, 'Putaway rules')), { headers })
+    }
+
+    // ─── Putaway Tasks ─────────────────────────────────────
+    if (path === '/api/putaway/tasks' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let tasks = GRN_DATA.putawayTasks
+      if (statusFilter) tasks = tasks.filter(t => t.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(tasks, `${tasks.length} putaway tasks`)), { headers })
+    }
+    // POST /api/putaway/tasks/:id/complete
+    if (path.match(/^\/api\/putaway\/tasks\/[^/]+\/complete$/) && method === 'POST') {
+      const id = path.split('/')[4]
+      const task = GRN_DATA.putawayTasks.find(t => t.id === id)
+      if (!task) return new Response(JSON.stringify(errorResponse('Task not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (task.status === 'COMPLETED') return new Response(JSON.stringify(errorResponse('Already completed')), { status: 400, headers })
+      task.status = 'COMPLETED'
+      task.completedAt = new Date().toISOString()
+      log('info', 'Putaway task completed', { taskNumber: task.taskNumber })
+      return new Response(JSON.stringify(successResponse(task, 'Putaway task completed')), { headers })
+    }
+
+    // ─── Quality Holds ─────────────────────────────────────
+    if (path === '/api/quality-holds' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse(GRN_DATA.qualityHolds, 'Quality holds')), { headers })
+    }
+    // POST /api/quality-holds/:id/release
+    if (path.match(/^\/api\/quality-holds\/[^/]+\/release$/) && method === 'POST') {
+      try {
+        const id = path.split('/')[3]
+        const body = await req.json()
+        const qh = GRN_DATA.qualityHolds.find(q => q.id === id)
+        if (!qh) return new Response(JSON.stringify(errorResponse('Quality hold not found', 'NOT_FOUND', 404)), { status: 404, headers })
+        if (qh.status !== 'ACTIVE') return new Response(JSON.stringify(errorResponse('Already resolved')), { status: 400, headers })
+        qh.status = 'RESOLVED'
+        qh.resolution = body.resolution || 'RELEASED'
+        qh.result = body.result || 'PASSED'
+        qh.releasedQty = body.releasedQty || qh.qtyHeld
+        qh.rejectedQty = body.rejectedQty || 0
+        qh.resolvedBy = body.resolvedByName || 'System'
+        qh.resolvedAt = new Date().toISOString()
+        log('info', 'Quality hold resolved', { holdNumber: qh.holdNumber, resolution: qh.resolution })
+        return new Response(JSON.stringify(successResponse(qh, `Quality hold ${qh.resolution.toLowerCase()}`)), { headers })
+      } catch { return new Response(JSON.stringify(errorResponse('Invalid body')), { status: 400, headers }) }
+    }
+
+    // ─── Receiving Dashboard ───────────────────────────────
+    if (path === '/api/goods-receipts/dashboard' && method === 'GET') {
+      const today = GRN_DATA.goodsReceipts.filter(g => g.date === '2026-07-09')
+      const pendingPutaway = GRN_DATA.goodsReceipts.filter(g => !g.putawayCompleted && g.status !== 'DRAFT')
+      const qualityHoldActive = GRN_DATA.qualityHolds.filter(q => q.status === 'ACTIVE')
+      const rejected = GRN_DATA.goodsReceipts.reduce((s, g) => s + g.rejectedQty, 0)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          totalGRNs: GRN_DATA.goodsReceipts.length,
+          todayReceipts: today.length,
+          pendingApproval: GRN_DATA.goodsReceipts.filter(g => g.status === 'PENDING_APPROVAL').length,
+          pendingPutaway: pendingPutaway.length,
+          qualityHoldsActive: qualityHoldActive.length,
+          completedToday: GRN_DATA.goodsReceipts.filter(g => g.status === 'COMPLETED' && g.date === '2026-07-09').length,
+          putawayTasks: GRN_DATA.putawayTasks.length,
+          pendingTasks: GRN_DATA.putawayTasks.filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS').length,
+        },
+        receiving: {
+          totalReceivedToday: today.reduce((s, g) => s + g.receivedQty, 0),
+          totalValueToday: today.reduce((s, g) => s + g.totalValue, 0),
+          totalRejected: rejected,
+        },
+        putawayStrategies: GRN_DATA.putawayRules.map(r => ({ strategy: r.strategy, rule: r.name, zone: r.targetZone })),
+      }, 'Receiving dashboard')), { headers })
+    }
+
+    // ─── Info ──────────────────────────────────────────────
+    if (path === '/api/goods-receipts/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Goods Receipt & Putaway Engine',
+        version: '13.0.0',
+        sprint: 13,
+        sprintName: 'Goods Receipt & Intelligent Putaway Engine',
+        receiptTypes: ['PURCHASE_RECEIPT', 'MANUFACTURING_RECEIPT', 'SALES_RETURN', 'CUSTOMER_RETURN', 'OPENING_STOCK', 'INTER_BRANCH_RECEIPT', 'WAREHOUSE_TRANSFER_RECEIPT', 'STOCK_CORRECTION', 'DONATION_RECEIPT', 'SAMPLE_RECEIPT'],
+        grnStatuses: ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PUTAWAY_IN_PROGRESS', 'COMPLETED', 'REJECTED', 'CANCELLED'],
+        putawayStrategies: ['FIFO', 'FEFO', 'ABC', 'ZONE', 'TEMPERATURE', 'MANUAL'],
+        qualityHoldReasons: ['QUALITY_CHECK', 'SUPPLIER_ISSUE', 'DAMAGE_SUSPECTED', 'EXPIRY_CHECK', 'SPEC_VERIFICATION', 'RANDOM_SAMPLE'],
+        endpoints: [
+          'GET/POST /api/goods-receipts',
+          'POST   /api/goods-receipts/:id/approve',
+          'GET    /api/goods-receipts/dashboard',
+          'GET    /api/putaway/rules',
+          'GET    /api/putaway/tasks',
+          'POST   /api/putaway/tasks/:id/complete',
+          'GET    /api/quality-holds',
+          'POST   /api/quality-holds/:id/release',
+          'GET    /api/goods-receipts/info',
+        ],
+      }, 'SUOP GRN Engine v13.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 12, sprintName: 'Enterprise Inventory Foundation — Universal Stock Ledger (PART 3 BEGUN)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 13, sprintName: 'Goods Receipt & Intelligent Putaway Engine' })
+log('info', 'GRN & Putaway endpoints available', {
+  goodsReceipts: 'GET/POST /api/goods-receipts',
+  approve: 'POST /api/goods-receipts/:id/approve',
+  putawayRules: 'GET /api/putaway/rules',
+  putawayTasks: 'GET /api/putaway/tasks + POST /:id/complete',
+  qualityHolds: 'GET /api/quality-holds + POST /:id/release',
+  dashboard: 'GET /api/goods-receipts/dashboard',
+})
 log('info', 'Inventory Engine endpoints available', {
   transactions: 'GET/POST /api/inventory/transactions',
   balances: 'GET /api/inventory/balances',
   ledger: 'GET /api/inventory/ledger',
-  movements: 'GET /api/inventory/movements',
-  journal: 'GET /api/inventory/journal',
   availability: 'GET /api/inventory/availability',
-  dashboard: 'GET /api/inventory/dashboard',
-  info: 'GET /api/inventory/info',
-})
-log('info', 'Governance endpoints available', {
-  lifecycles: 'GET /api/governance/lifecycles',
-  approvals: 'GET /api/governance/approvals',
-  dashboard: 'GET /api/governance/dashboard',
-})
-log('info', 'Identification & Traceability endpoints available', {
-  barcodes: 'GET /api/identification/barcodes',
-  trace: 'POST /api/identification/trace',
-})
-log('info', 'Business Partner endpoints available', {
-  partners: 'GET/POST /api/business-partners',
-})
-log('info', 'Commercial Engine endpoints available', {
-  resolvePrice: 'POST /api/commercial/resolve-price',
 })
