@@ -909,3 +909,82 @@ Cumulative status:
 - Foundation Services: 66 + Platform Kernel (Q189/Q192) as meta-architecture
 
 Ready for next batch: Volume 0.75 Batch 2 — Parts 6-10 (Frontend Architecture, Mobile Architecture, API Standards, Event-Driven Architecture, Infrastructure & Kubernetes Architecture)
+
+---
+Task ID: 16
+Agent: Main (Super Z)
+Task: Process SUOP Volume 0.75 Batch 2 — Parts 6-10 (Frontend, Mobile, API, Event-Driven, Infrastructure Architecture). Lock Backend-for-Frontend (BFF) pattern as Q211.
+
+Work Log:
+- Received Volume 0.75 Batch 2 content from Chief Enterprise Architect covering:
+  - Part 6: Enterprise Frontend Architecture
+  - Part 7: Enterprise Mobile Architecture
+  - Part 8: Enterprise API Architecture
+  - Part 9: Enterprise Event-Driven Architecture
+  - Part 10: Infrastructure, Cloud & Kubernetes Architecture
+- Acknowledged Chief Architect's emphasis: "This batch transforms SUOP from an application into a cloud-native enterprise platform"
+- Created comprehensive technical architecture document at:
+  /home/z/my-project/volume-0.75-eta/batch-2-parts-6-10-frontend-mobile-api-events-infrastructure.md
+- Acknowledged and locked Chief Architect's Critical Decision: Backend-for-Frontend (BFF) Pattern
+- Locked BFF Pattern as Architectural Decision Q211
+- Documented BFF architecture:
+  - Position: Between client applications and API Gateway
+  - 6 dedicated BFFs: Admin BFF, Warehouse BFF, Retail BFF, Restaurant BFF, Executive BFF, Mobile BFF
+  - Anti-pattern (FORBIDDEN): Every client calls all backend services directly
+  - Locked pattern: Dedicated BFFs mediate between clients and business services
+- Locked BFF responsibilities:
+  1. Aggregate data from multiple business services into client-optimized responses
+  2. Transform data to match client-specific formats
+  3. Enforce client-specific security and rate limiting
+  4. Cache responses for performance
+  5. Handle client-specific error formatting
+  6. Provide client-specific WebSocket subscriptions
+- Locked BFF implementation rules:
+  - Each BFF is a lightweight NestJS service (not a full business module)
+  - BFFs call Business Modules via internal API or in-process calls
+  - BFFs do NOT contain business logic — only aggregation, transformation, caching
+  - BFFs are optional (clients can still call API Gateway directly)
+  - BFFs deployed as separate containers for independent scaling
+- Locked 12 new Architectural Decisions (Q211-Q222):
+  - Q211: Backend-for-Frontend (BFF) Pattern
+  - Q212: Frontend Server State via React Query (no Redux for business data)
+  - Q213: Mobile Offline-First Architecture (WatermelonDB + SQLite)
+  - Q214: Mobile Sync: Server Authority with Conflict Detection
+  - Q215: API Response Standard (success/message/data/meta/errors)
+  - Q216: WebSocket for Real-Time (dashboards, notifications, chat)
+  - Q217: Event-Driven Module Communication via RabbitMQ
+  - Q218: Domain Event Naming Convention (EntityAction PascalCase)
+  - Q219: Kubernetes Multi-Namespace Architecture
+  - Q220: CI/CD Pipeline with Security Scans and Manual Production Approval
+  - Q221: High Availability: 99.9% SLO with < 30 min RTO
+  - Q222: Infrastructure as Code (Terraform + Helm + GitHub Actions)
+- Documented Part 6: Frontend Architecture (Next.js App Router, Feature Modules, React Query for server state, Zustand for client state, Shadcn UI, AG Grid, ECharts, strict UI folder structure, desktop-first ERP, keyboard-first nav, WCAG accessibility, multi-language)
+- Documented Part 7: Mobile Architecture (React Native, 7 mobile apps: Warehouse/POS/Restaurant/ESS/MSS/Maintenance/Delivery, offline-first with SQLite+WatermelonDB, sync engine with conflict detection, device capabilities: camera/barcode/QR/RFID/GPS/Bluetooth printer/push/biometric, sync rules with local_id/server_id/sync_status/retry_count)
+- Documented Part 8: API Architecture (REST + WebSocket + OpenAPI, URL convention /api/v1/{module}, response standard with success/message/data/meta/errors, cursor pagination, filtering/sorting/search, rate limiting, WebSocket channels for dashboards/mission control/manufacturing/warehouse/notifications/chat, HTTP status codes)
+- Documented Part 9: Event-Driven Architecture (RabbitMQ event bus, 5 event categories: Domain/Integration/Platform/System/AI, event structure with 7 required fields, communication pattern: Publisher→RabbitMQ→Consumers→Audit, queue types: FIFO/Priority/Retry/DLQ/Delayed, naming convention: EntityAction PascalCase, 10 modules with 50+ standard domain events)
+- Documented Part 10: Infrastructure Architecture (Cloudflare→Nginx→Kubernetes→Containers→Stateful Services, container standards with Dockerfile/health/readiness/liveness/non-root, 5 K8s namespaces: platform/business/monitoring/analytics/ingress, infrastructure components: PostgreSQL+Redis+RabbitMQ+OpenSearch+MinIO+Prometheus+Grafana+Loki+Tempo, CI/CD pipeline with 12 stages, backup strategy with daily/PITR/versioning/monthly/DR, HA strategy with 99.9% SLO and <30min RTO/<1min RPO)
+
+Stage Summary:
+- Volume 0.75 Batch 2 (Parts 6-10) is LOCKED
+- BFF Pattern (Q211) is LOCKED as critical infrastructure decision
+- Volume 0.75 is 50% complete (10 of ~20 parts)
+- 12 new Architectural Decisions locked (Q211-Q222)
+- Cumulative Architectural Decisions: 222 (Q1-Q222)
+- SUOP is now defined as a cloud-native enterprise platform with:
+  - Desktop-first ERP frontend (Next.js)
+  - Offline-first mobile apps (React Native + WatermelonDB)
+  - Standardized API architecture (REST + WebSocket + BFF)
+  - Event-driven inter-module communication (RabbitMQ)
+  - Cloud-native infrastructure (Kubernetes + Docker + Terraform + CI/CD)
+- Next: Volume 0.75 Batch 3 — Parts 11-15 (Security, DevOps, Observability, AI Platform, Performance)
+
+Artifacts Produced:
+- /home/z/my-project/volume-0.75-eta/batch-2-parts-6-10-frontend-mobile-api-events-infrastructure.md (~2,200 lines)
+
+Cumulative status:
+- Volume 0.5: COMPLETE (815 entities, 66 Foundation Services, 198 QDs)
+- Volume 0.75: 50% complete (10 of ~20 parts, 24 new QDs Q199-Q222)
+- Architectural Decisions: 222 (Q1-Q222)
+- Foundation Services: 66 + Platform Kernel (Q189/Q192) as meta-architecture
+
+Ready for next batch: Volume 0.75 Batch 3 — Parts 11-15 (Security Architecture, DevOps Standards, Observability Architecture, AI Platform Architecture, Performance Architecture)
