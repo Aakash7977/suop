@@ -280,3 +280,484 @@ model SystemSetting {
   @@map("system_settings")
   @@index([configKey, status], map: "idx_settings_key_status")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ORGANIZATION PLATFORM — Sprint 4
+// Epics 1-8: Enterprise, Company, BU, Division, Branch, Plant,
+//            Warehouse (Master), Department, Cost Center
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Enterprises (Epic 1) ─────────────────────────────────────
+model Enterprise {
+  id              String   @id @default(uuid()) @db.Uuid
+  enterpriseCode  String   @unique @map("enterprise_code")
+  name            String
+  legalName       String?  @map("legal_name")
+  gstNumber       String?  @map("gst_number") @db.VarChar(15)
+  panNumber       String?  @map("pan_number") @db.VarChar(10)
+  country         String   @default("IN") @db.Char(2)
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  timezone        String   @default("Asia/Kolkata")
+  locale          String   @default("en-IN")
+  logoUrl         String?  @map("logo_url")
+  website         String?
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  companies       Company[]
+  contacts        EnterpriseContact[]
+  settings        EnterpriseSetting[]
+
+  @@map("enterprises")
+  @@index([status], map: "idx_enterprise_status")
+}
+
+model EnterpriseSetting {
+  id              String   @id @default(uuid()) @db.Uuid
+  enterpriseId    String   @db.Uuid @map("enterprise_id")
+  settingKey      String   @map("setting_key")
+  settingValue    String   @map("setting_value")
+  dataType        String   @default("STRING")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  enterprise      Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+
+  @@unique([enterpriseId, settingKey], map: "enterprise_setting_unique")
+  @@map("enterprise_settings")
+}
+
+model EnterpriseContact {
+  id              String   @id @default(uuid()) @db.Uuid
+  enterpriseId    String   @db.Uuid @map("enterprise_id")
+  contactName     String   @map("contact_name")
+  contactType     String   @default("PRIMARY") @map("contact_type")
+  email           String?
+  phone           String?
+  mobile          String?
+  designation     String?
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  enterprise      Enterprise @relation(fields: [enterpriseId], references: [id], onDelete: Cascade)
+
+  @@map("enterprise_contacts")
+  @@index([enterpriseId, contactType], map: "idx_ec_enterprise_type")
+}
+
+// ─── Companies (Epic 2) ───────────────────────────────────────
+model Company {
+  id              String   @id @default(uuid()) @db.Uuid
+  enterpriseId    String   @db.Uuid @map("enterprise_id")
+  companyCode     String   @unique @map("company_code")
+  companyName     String   @map("company_name")
+  legalName       String?  @map("legal_name")
+  companyType     String   @default("PRIVATE_LIMITED") @map("company_type")
+  gstin           String?  @db.VarChar(15)
+  pan             String?  @db.VarChar(10)
+  cin             String?
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  timezone        String   @default("Asia/Kolkata")
+  locale          String   @default("en-IN")
+  fiscalYearStart Int      @default(4) @map("fiscal_year_start")
+  fiscalYearEnd   Int      @default(3) @map("fiscal_year_end")
+  website         String?
+  logoUrl         String?  @map("logo_url")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  enterprise      Enterprise     @relation(fields: [enterpriseId], references: [id])
+  addresses       CompanyAddress[]
+  taxProfiles     CompanyTaxProfile[]
+  bankAccounts    CompanyBankAccount[]
+  businessUnits   BusinessUnit[]
+  branches        Branch[]
+  departments     Department[]
+  costCenters     CostCenter[]
+
+  @@map("companies")
+  @@index([enterpriseId, status], map: "idx_company_enterprise_status")
+  @@index([gstin], map: "idx_company_gstin")
+}
+
+model CompanyAddress {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  addressType     String   @default("REGISTERED") @map("address_type") // REGISTERED, OPERATIONAL, BRANCH
+  addressLine1    String   @map("address_line_1")
+  addressLine2    String?  @map("address_line_2")
+  city            String
+  state           String
+  country         String   @default("India")
+  postalCode      String   @map("postal_code")
+  stateCode       String?  @map("state_code")
+  countryCode     String   @default("IN") @map("country_code") @db.Char(2)
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+  isDefault       Boolean  @default(false) @map("is_default")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_addresses")
+  @@index([companyId, addressType], map: "idx_ca_company_type")
+}
+
+model CompanyTaxProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  taxType         String   @map("tax_type") // GST, INCOME_TAX, PROFESSIONAL_TAX, LWF, TDS
+  taxNumber       String   @map("tax_number")
+  registrationDate DateTime? @map("registration_date")
+  jurisdiction    String?
+  filingFrequency String?  @map("filing_frequency")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_tax_profiles")
+  @@index([companyId, taxType], map: "idx_ctp_company_type")
+}
+
+model CompanyBankAccount {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  accountName     String   @map("account_name")
+  accountNumber   String   @map("account_number")
+  bankName        String   @map("bank_name")
+  branchName      String?  @map("branch_name")
+  ifscCode        String   @map("ifsc_code") @db.VarChar(11)
+  accountType     String   @default("CURRENT") @map("account_type") // CURRENT, SAVINGS, ESCROW
+  isDefault       Boolean  @default(false) @map("is_default")
+  upiId           String?  @map("upi_id")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_bank_accounts")
+  @@index([companyId, status], map: "idx_cba_company_status")
+}
+
+// ─── Business Units & Divisions (Epic 3) ──────────────────────
+model BusinessUnit {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  buCode          String   @unique @map("bu_code")
+  buName          String   @map("bu_name")
+  buType          String   @default("MANUFACTURING") @map("bu_type") // MANUFACTURING, RETAIL, RESTAURANT, DISTRIBUTION, CORPORATE, ECOMMERCE
+  description     String?
+  headUserId      String?  @db.Uuid @map("head_user_id")
+  parentId        String?  @db.Uuid @map("parent_id") // For nested BUs
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  company         Company     @relation(fields: [companyId], references: [id])
+  divisions       Division[]
+  branches        Branch[]
+  parent          BusinessUnit?  @relation("BUHierarchy", fields: [parentId], references: [id])
+  children        BusinessUnit[] @relation("BUHierarchy")
+
+  @@map("business_units")
+  @@index([companyId, status], map: "idx_bu_company_status")
+  @@index([buType, status], map: "idx_bu_type_status")
+}
+
+model Division {
+  id              String   @id @default(uuid()) @db.Uuid
+  buId            String   @db.Uuid @map("bu_id")
+  divisionCode    String   @unique @map("division_code")
+  divisionName    String   @map("division_name")
+  description     String?
+  headUserId      String?  @db.Uuid @map("head_user_id")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  businessUnit    BusinessUnit @relation(fields: [buId], references: [id])
+  branches        Branch[]
+
+  @@map("divisions")
+  @@index([buId, status], map: "idx_div_bu_status")
+}
+
+// ─── Branches (Epic 4) ────────────────────────────────────────
+model Branch {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  buId            String?  @db.Uuid @map("bu_id")
+  divisionId      String?  @db.Uuid @map("division_id")
+  branchCode      String   @unique @map("branch_code")
+  branchName      String   @map("branch_name")
+  branchType      String   @default("OFFICE") @map("branch_type") // HEAD_OFFICE, PLANT, WAREHOUSE, STORE, RESTAURANT, OFFICE, DISTRIBUTION_CENTER
+  branchManagerId String?  @db.Uuid @map("branch_manager_id")
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  timezone        String   @default("Asia/Kolkata")
+  locale          String   @default("en-IN")
+  taxRegionCode   String?  @map("tax_region_code")
+  gstin           String?  @db.VarChar(15)
+  stateCode       String?  @map("state_code")
+  countryCode     String   @default("IN") @map("country_code") @db.Char(2)
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+  isOperational   Boolean  @default(true) @map("is_operational")
+  workingHours    Json?    @map("working_hours")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  company         Company       @relation(fields: [companyId], references: [id])
+  businessUnit    BusinessUnit? @relation(fields: [buId], references: [id])
+  division        Division?     @relation(fields: [divisionId], references: [id])
+  addresses       BranchAddress[]
+  contacts        BranchContact[]
+  plants          Plant[]
+  warehouses      Warehouse[]
+  departments     Department[]
+  costCenters     CostCenter[]
+
+  @@map("branches")
+  @@index([companyId, status], map: "idx_branch_company_status")
+  @@index([branchType, status], map: "idx_branch_type_status")
+  @@index([buId, status], map: "idx_branch_bu_status")
+}
+
+model BranchAddress {
+  id              String   @id @default(uuid()) @db.Uuid
+  branchId        String   @db.Uuid @map("branch_id")
+  addressType     String   @default("OPERATIONAL") @map("address_type")
+  addressLine1    String   @map("address_line_1")
+  addressLine2    String?  @map("address_line_2")
+  city            String
+  state           String
+  country         String   @default("India")
+  postalCode      String   @map("postal_code")
+  latitude        Decimal? @db.Decimal(10, 7)
+  longitude       Decimal? @db.Decimal(10, 7)
+  isDefault       Boolean  @default(false) @map("is_default")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@map("branch_addresses")
+  @@index([branchId, addressType], map: "idx_ba_branch_type")
+}
+
+model BranchContact {
+  id              String   @id @default(uuid()) @db.Uuid
+  branchId        String   @db.Uuid @map("branch_id")
+  contactName     String   @map("contact_name")
+  contactType     String   @default("PRIMARY") @map("contact_type")
+  email           String?
+  phone           String?
+  mobile          String?
+  designation     String?
+  isPrimary       Boolean  @default(false) @map("is_primary")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@map("branch_contacts")
+  @@index([branchId, contactType], map: "idx_bc_branch_type")
+}
+
+// ─── Plants (Epic 5) ──────────────────────────────────────────
+model Plant {
+  id              String   @id @default(uuid()) @db.Uuid
+  branchId        String   @db.Uuid @map("branch_id")
+  plantCode       String   @unique @map("plant_code")
+  plantName       String   @map("plant_name")
+  plantType       String   @default("MANUFACTURING") @map("plant_type") // MANUFACTURING, PACKING, COLD_STORAGE, DISTRIBUTION
+  capacityPerDay  Decimal? @map("capacity_per_day") @db.Decimal(15, 3)
+  capacityUnit    String?  @map("capacity_unit")
+  shiftModel      String   @default("SINGLE") @map("shift_model") // SINGLE, DOUBLE, TRIPLE
+  workingDays     String[] @default(["MON", "TUE", "WED", "THU", "FRI"]) @map("working_days")
+  calendarId      String?  @db.Uuid @map("calendar_id")
+  plantManagerId  String?  @db.Uuid @map("plant_manager_id")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  settings        PlantSetting[]
+  warehouses      Warehouse[]
+
+  @@map("plants")
+  @@index([branchId, status], map: "idx_plant_branch_status")
+  @@index([plantType, status], map: "idx_plant_type_status")
+}
+
+model PlantSetting {
+  id              String   @id @default(uuid()) @db.Uuid
+  plantId         String   @db.Uuid @map("plant_id")
+  settingKey      String   @map("setting_key")
+  settingValue    String   @map("setting_value")
+  dataType        String   @default("STRING")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  plant           Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@unique([plantId, settingKey], map: "plant_setting_unique")
+  @@map("plant_settings")
+}
+
+// ─── Warehouses — Master Data Only (Epic 6) ───────────────────
+model Warehouse {
+  id              String   @id @default(uuid()) @db.Uuid
+  branchId        String   @db.Uuid @map("branch_id")
+  plantId         String?  @db.Uuid @map("plant_id")
+  warehouseCode   String   @unique @map("warehouse_code")
+  warehouseName   String   @map("warehouse_name")
+  warehouseType   String   @default("FINISHED_GOODS") @map("warehouse_type") // FINISHED_GOODS, RAW_MATERIAL, PACKAGING, RETURN, TRANSIT, COLD_STORAGE, PRODUCTION, RETAIL, RESTAURANT
+  capacityVolume  Decimal? @map("capacity_volume") @db.Decimal(15, 3)
+  capacityWeight  Decimal? @map("capacity_weight") @db.Decimal(15, 3)
+  capacityUnit    String?  @map("capacity_unit")
+  temperatureZone String?  @map("temperature_zone") // AMBIENT, CHILLED, FROZEN
+  temperatureMin  Decimal? @map("temperature_min") @db.Decimal(5, 2)
+  temperatureMax  Decimal? @map("temperature_max") @db.Decimal(5, 2)
+  warehouseManagerId String? @db.Uuid @map("warehouse_manager_id")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  plant           Plant?   @relation(fields: [plantId], references: [id])
+  settings        WarehouseSetting[]
+
+  @@map("warehouses")
+  @@index([branchId, status], map: "idx_wh_branch_status")
+  @@index([warehouseType, status], map: "idx_wh_type_status")
+  @@index([plantId, status], map: "idx_wh_plant_status")
+}
+
+model WarehouseSetting {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  settingKey      String   @map("setting_key")
+  settingValue    String   @map("setting_value")
+  dataType        String   @default("STRING")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, settingKey], map: "warehouse_setting_unique")
+  @@map("warehouse_settings")
+}
+
+// ─── Departments (Epic 7) ─────────────────────────────────────
+model Department {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  deptCode        String   @unique @map("dept_code")
+  deptName        String   @map("dept_name")
+  description     String?
+  parentId        String?  @db.Uuid @map("parent_id") // For nested departments
+  headUserId      String?  @db.Uuid @map("head_user_id")
+  costCenterId    String?  @db.Uuid @map("cost_center_id")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  company         Company     @relation(fields: [companyId], references: [id])
+  branch          Branch?     @relation(fields: [branchId], references: [id])
+  costCenter      CostCenter? @relation(fields: [costCenterId], references: [id])
+  parent          Department? @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children        Department[] @relation("DeptHierarchy")
+  heads           DepartmentHead[]
+
+  @@map("departments")
+  @@index([companyId, status], map: "idx_dept_company_status")
+  @@index([branchId, status], map: "idx_dept_branch_status")
+  @@index([parentId], map: "idx_dept_parent")
+}
+
+model DepartmentHead {
+  id              String   @id @default(uuid()) @db.Uuid
+  deptId          String   @db.Uuid @map("dept_id")
+  userId          String   @db.Uuid @map("user_id")
+  role            String   @default("HEAD") // HEAD, DEPUTY, ACTING
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  endDate         DateTime? @map("end_date")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  department      Department @relation(fields: [deptId], references: [id], onDelete: Cascade)
+
+  @@unique([deptId, userId, role], map: "dept_head_unique")
+  @@map("department_heads")
+  @@index([deptId, status], map: "idx_dh_dept_status")
+}
+
+// ─── Cost Centers (Epic 8) ────────────────────────────────────
+model CostCenter {
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid @map("company_id")
+  branchId        String?  @db.Uuid @map("branch_id")
+  costCenterCode  String   @unique @map("cost_center_code")
+  costCenterName  String   @map("cost_center_name")
+  costCenterType  String   @default("OPERATIONAL") @map("cost_center_type") // OPERATIONAL, ADMINISTRATIVE, SUPPORT, PROFIT_CENTER
+  description     String?
+  parentId        String?  @db.Uuid @map("parent_id")
+  glAccountCode   String?  @map("gl_account_code")
+  budgetAnnual    Decimal? @map("budget_annual") @db.Decimal(18, 4)
+  currencyCode    String   @default("INR") @map("currency_code") @db.Char(3)
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  company         Company     @relation(fields: [companyId], references: [id])
+  branch          Branch?     @relation(fields: [branchId], references: [id])
+  departments     Department[]
+  parent          CostCenter? @relation("CostCenterHierarchy", fields: [parentId], references: [id])
+  children        CostCenter[] @relation("CostCenterHierarchy")
+
+  @@map("cost_centers")
+  @@index([companyId, status], map: "idx_cc_company_status")
+  @@index([branchId, status], map: "idx_cc_branch_status")
+  @@index([costCenterType, status], map: "idx_cc_type_status")
+}
+
+// ─── Organization Tree View (Materialized for performance) ────
+model OrganizationTreeNode {
+  id              String   @id @default(uuid()) @db.Uuid
+  entityType      String   @map("entity_type") // ENTERPRISE, COMPANY, BU, DIVISION, BRANCH, PLANT, WAREHOUSE, DEPARTMENT, COST_CENTER
+  entityId        String   @db.Uuid @map("entity_id")
+  entityCode      String   @map("entity_code")
+  entityName      String   @map("entity_name")
+  parentId        String?  @db.Uuid @map("parent_id")
+  parentType      String?  @map("parent_type")
+  hierarchyLevel  Int      @map("hierarchy_level")
+  hierarchyPath   String   @map("hierarchy_path")
+  childrenCount   Int      @default(0) @map("children_count")
+  status          String   @default("ACTIVE")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("organization_tree_nodes")
+  @@unique([entityType, entityId], map: "org_tree_entity_unique")
+  @@index([parentType, parentId], map: "idx_otn_parent")
+  @@index([hierarchyLevel], map: "idx_otn_level")
+  @@index([entityType, status], map: "idx_otn_type_status")
+}
