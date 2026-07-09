@@ -13910,3 +13910,448 @@ model ExecutiveDashboardSnapshot {
   @@index([scopeType, scopeCode, periodStart], map: "idx_eds44_scope_period")
   @@index([periodType, periodStart], map: "idx_eds44_period")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 45 — WASTE, SCRAP, YIELD, BY-PRODUCT & REWORK MANAGEMENT ENGINE
+// Part 5: MES · 12 new models · Epic 1-8 (waste categories, scrap, yield,
+// by-products, rework, disposal, sustainability)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Waste Classification Master ────────────────────────────────
+model WasteCategory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  categoryCode        String   @unique @map("category_code") // PROC, QUAL, PACK, MAT, UTIL, CLEAN, FOOD, HAZ, GEN
+  categoryName        String   @map("category_name")
+  // ─── Classification ───
+  wasteType           String   @map("waste_type") // PROCESS_WASTE, QUALITY_WASTE, PACKAGING_WASTE, MATERIAL_WASTE, UTILITY_WASTE, CLEANING_WASTE, FOOD_WASTE, HAZARDOUS_WASTE, GENERAL_WASTE
+  description         String?
+  // ─── Handling ───
+  defaultDisposition  String   @default("DISPOSE") @map("default_disposition") // REUSE, REWORK, SELL, DESTROY, DISPOSE, DONATE
+  isRecoverable       Boolean  @default(false) @map("is_recoverable")
+  isByProductSource   Boolean  @default(false) @map("is_by_product_source")
+  // ─── Accounting ───
+  costImpact          String   @default("MATERIAL_LOSS") @map("cost_impact") // MATERIAL_LOSS, LABOR_LOSS, MACHINE_LOSS, ENERGY_LOSS, PACKAGING_LOSS
+  // ─── Status ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  records             WasteRecord[]
+
+  @@map("waste_categories")
+  @@index([wasteType, status], map: "idx_wc45_type_status")
+  @@index([defaultDisposition], map: "idx_wc45_disposition")
+}
+
+model WasteRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recordCode          String   @unique @map("record_code") // WR-2026-000001
+  // ─── Links ───
+  productionBatchNumber String?  @map("production_batch_number")
+  productionOrderNumber String? @map("production_order_number")
+  workOrderNumber     String?  @map("work_order_number")
+  packagingOrderNumber String? @map("packaging_order_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  // ─── Category ───
+  categoryId          String?  @db.Uuid @map("category_id")
+  categoryCode        String   @map("category_code")
+  categoryName        String   @map("category_name")
+  wasteType           String   @map("waste_type")
+  // ─── Specific Reason ───
+  lossReason          String   @map("loss_reason") // COOKING_LOSS, MOISTURE_LOSS, BURNT_PRODUCT, BROKEN_PRODUCT, PACKAGING_DAMAGE, EXPIRED_MATERIAL, CLEANING_WASTE, SAMPLING_LOSS, REJECTED_BATCH, OPERATOR_ERROR, MACHINE_FAILURE, UTILITY_LOSS
+  lossDescription     String?  @map("loss_description")
+  // ─── Quantity ───
+  inputQty            Decimal? @db.Decimal(14, 3) @map("input_qty")
+  lostQty             Decimal  @db.Decimal(14, 3) @map("lost_qty")
+  recoveredQty        Decimal  @db.Decimal(14, 3) @default(0) @map("recovered_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Cost ───
+  materialCost        Decimal  @db.Decimal(14, 2) @default(0) @map("material_cost")
+  laborCost           Decimal  @db.Decimal(14, 2) @default(0) @map("labor_cost")
+  machineCost         Decimal  @db.Decimal(14, 2) @default(0) @map("machine_cost")
+  energyCost          Decimal  @db.Decimal(14, 2) @default(0) @map("energy_cost")
+  packagingCost       Decimal  @db.Decimal(14, 2) @default(0) @map("packaging_cost")
+  totalWasteCost      Decimal  @db.Decimal(14, 2) @default(0) @map("total_waste_cost")
+  // ─── Disposition ───
+  disposition         String   @default("DISPOSE") @map("disposition") // REUSE, REWORK, SELL, DESTROY, DISPOSE, DONATE
+  dispositionReason   String?  @map("disposition_reason")
+  // ─── Location ───
+  plantCode           String?  @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  workCenterCode      String?  @map("work_center_code")
+  machineCode         String?  @map("machine_code")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  shiftCode           String?  @map("shift_code")
+  // ─── Audit ───
+  recordedAt          DateTime @default(now()) @map("recorded_at")
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  category            WasteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@map("waste_records")
+  @@index([productionBatchNumber], map: "idx_wr45_batch")
+  @@index([categoryCode, wasteType], map: "idx_wr45_category")
+  @@index([lossReason], map: "idx_wr45_reason")
+  @@index([disposition], map: "idx_wr45_disposition")
+  @@index([recordedAt], map: "idx_wr45_time")
+}
+
+// ─── Epic 2: Scrap Management ───────────────────────────────────────────
+model MfgScrapRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scrapCode           String   @unique @map("scrap_code") // MSC-2026-000001
+  // ─── Links ───
+  productionBatchNumber String? @map("production_batch_number")
+  wasteRecordId       String?  @db.Uuid @map("waste_record_id")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Scrap Details ───
+  scrapReason         String   @map("scrap_reason") // BURNT_PRODUCT, BROKEN_PRODUCT, EXPIRED, CONTAMINATED, QUALITY_REJECT, PACKAGING_DAMAGE, OPERATOR_ERROR, MACHINE_FAILURE
+  scrapDescription    String?  @map("scrap_description")
+  // ─── Quantity ───
+  scrapQty            Decimal  @db.Decimal(14, 3) @map("scrap_qty")
+  uom                 String   @default("KG") @map("uom")
+  scrapValue          Decimal  @db.Decimal(14, 2) @default(0) @map("scrap_value")
+  // ─── Disposition ───
+  disposition         String   @default("DESTROY") @map("disposition") // REUSE, REWORK, SELL, DESTROY, DISPOSE, DONATE
+  dispositionNotes    String?  @map("disposition_notes")
+  // ─── Location ───
+  plantCode           String   @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  machineCode         String?  @map("machine_code")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  shiftCode           String?  @map("shift_code")
+  // ─── Status ───
+  status              String   @default("RECORDED") @map("status") // RECORDED, IN_SCRAP_INVENTORY, DISPOSED, RECOVERED, SOLD, DONATED
+  // ─── Audit ───
+  recordedAt          DateTime @default(now()) @map("recorded_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("mfg_scrap_records")
+  @@index([productionBatchNumber], map: "idx_msr45_batch")
+  @@index([scrapReason, status], map: "idx_msr45_reason_status")
+  @@index([disposition], map: "idx_msr45_disposition")
+}
+
+model MfgScrapInventory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inventoryCode       String   @unique @map("inventory_code") // MSI-2026-000001
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Quantity ───
+  totalQty            Decimal  @db.Decimal(14, 3) @default(0) @map("total_qty")
+  uom                 String   @default("KG") @map("uom")
+  totalValue          Decimal  @db.Decimal(14, 2) @default(0) @map("total_value")
+  // ─── Location ───
+  plantCode           String   @map("plant_code")
+  warehouseCode       String?  @map("warehouse_code")
+  binCode             String?  @map("bin_code") // Scrap quarantine bin
+  // ─── Status ───
+  status              String   @default("QUARANTINE") @map("status") // QUARANTINE, AWAITING_DISPOSAL, SCHEDULED_FOR_DESTRUCTION, RECOVERABLE
+  // ─── Audit ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("mfg_scrap_inventory")
+  @@index([productSku], map: "idx_msi45_sku")
+  @@index([plantCode, status], map: "idx_msi45_plant_status")
+}
+
+// ─── Epic 3: Yield Management ───────────────────────────────────────────
+model YieldResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  yieldCode           String   @unique @map("yield_code") // YLD-2026-000001
+  // ─── Links ───
+  productionBatchNumber String   @unique @map("production_batch_number")
+  productionOrderNumber String?  @map("production_order_number")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  recipeCode          String?  @map("recipe_code")
+  recipeVersion       String?  @map("recipe_version")
+  // ─── Yield ───
+  inputMaterialQty    Decimal  @db.Decimal(14, 3) @map("input_material_qty")
+  expectedOutputQty   Decimal  @db.Decimal(14, 3) @map("expected_output_qty")
+  actualOutputQty     Decimal  @db.Decimal(14, 3) @map("actual_output_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Yield % ───
+  expectedYieldPercent Decimal @db.Decimal(6, 2) @map("expected_yield_percent")
+  actualYieldPercent  Decimal  @db.Decimal(6, 2) @map("actual_yield_percent")
+  yieldVariancePercent Decimal @db.Decimal(6, 2) @default(0) @map("yield_variance_percent")
+  // ─── Loss ───
+  yieldLossQty        Decimal  @db.Decimal(14, 3) @default(0) @map("yield_loss_qty")
+  yieldLossPercent    Decimal  @db.Decimal(6, 2) @default(0) @map("yield_loss_percent")
+  // ─── Loss Breakdown ───
+  cookingLossQty      Decimal  @db.Decimal(14, 3) @default(0) @map("cooking_loss_qty")
+  moistureLossQty     Decimal  @db.Decimal(14, 3) @default(0) @map("moisture_loss_qty")
+  trimmingLossQty     Decimal  @db.Decimal(14, 3) @default(0) @map("trimming_loss_qty")
+  scrapLossQty        Decimal  @db.Decimal(14, 3) @default(0) @map("scrap_loss_qty")
+  reworkLossQty       Decimal  @db.Decimal(14, 3) @default(0) @map("rework_loss_qty")
+  // ─── Status ───
+  yieldStatus         String   @default("WITHIN_THRESHOLD") @map("yield_status") // WITHIN_THRESHOLD, BELOW_THRESHOLD, CRITICAL
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  calculationDurationMs Int?   @map("calculation_duration_ms") // target <2000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("yield_results")
+  @@index([productionBatchNumber], map: "idx_yr45_batch")
+  @@index([productSku], map: "idx_yr45_sku")
+  @@index([yieldStatus], map: "idx_yr45_status")
+}
+
+model YieldTarget {
+  id                  String   @id @default(uuid()) @db.Uuid
+  targetCode          String   @unique @map("target_code")
+  // ─── Scope ───
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  recipeCode          String?  @map("recipe_code")
+  recipeVersion       String?  @map("recipe_version")
+  // ─── Targets ───
+  expectedYieldPercent Decimal @db.Decimal(6, 2) @map("expected_yield_percent")
+  minimumYieldPercent Decimal  @db.Decimal(6, 2) @map("minimum_yield_percent")
+  criticalYieldPercent Decimal  @db.Decimal(6, 2) @map("critical_yield_percent")
+  // ─── Allowable Losses ───
+  maxCookingLossPercent Decimal @db.Decimal(6, 2) @default(5) @map("max_cooking_loss_percent")
+  maxMoistureLossPercent Decimal @db.Decimal(6, 2) @default(3) @map("max_moisture_loss_percent")
+  maxScrapPercent     Decimal  @db.Decimal(6, 2) @default(2) @map("max_scrap_percent")
+  // ─── Period ───
+  effectiveFrom       DateTime @map("effective_from")
+  effectiveTo         DateTime? @map("effective_to")
+  // ─── Status ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("yield_targets")
+  @@index([productSku, status], map: "idx_yt45_sku_status")
+}
+
+// ─── Epic 4: By-Product Management ──────────────────────────────────────
+model ByProduct {
+  id                  String   @id @default(uuid()) @db.Uuid
+  byProductCode       String   @unique @map("by_product_code") // BP-2026-000001
+  // ─── Source ───
+  sourceBatchNumber   String   @map("source_batch_number")
+  sourceProductSku    String   @map("source_product_sku")
+  sourceProductName   String   @map("source_product_name")
+  // ─── By-Product ───
+  byProductSku        String   @map("by_product_sku")
+  byProductName       String   @map("by_product_name")
+  byProductType       String   @map("by_product_type") // BROKEN_CASHEWS, SUGAR_SYRUP_RECOVERY, TRIM_PIECES, MILK_SOLIDS, REUSABLE_PACKAGING, OIL_RECOVERY
+  // ─── Quantity ───
+  quantity            Decimal  @db.Decimal(14, 3) @map("quantity")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Value ───
+  unitValue           Decimal  @db.Decimal(10, 2) @default(0) @map("unit_value")
+  totalValue          Decimal  @db.Decimal(14, 2) @default(0) @map("total_value")
+  // ─── Disposition ───
+  disposition         String   @default("INTERNAL_REUSE") @map("disposition") // INTERNAL_REUSE, SALE, TRANSFER, DISPOSE
+  dispositionNotes    String?  @map("disposition_notes")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") @map("status") // AVAILABLE, IN_INVENTORY, REUSED, SOLD, TRANSFERRED, DISPOSED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("by_products")
+  @@index([sourceBatchNumber], map: "idx_bp45_source_batch")
+  @@index([byProductType, status], map: "idx_bp45_type_status")
+  @@index([disposition], map: "idx_bp45_disposition")
+}
+
+model ByProductInventory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inventoryCode       String   @unique @map("inventory_code")
+  byProductSku        String   @map("by_product_sku")
+  byProductName       String   @map("by_product_name")
+  byProductType       String   @map("by_product_type")
+  // ─── Quantity ───
+  totalQty            Decimal  @db.Decimal(14, 3) @default(0) @map("total_qty")
+  availableQty        Decimal  @db.Decimal(14, 3) @default(0) @map("available_qty")
+  uom                 String   @default("KG") @map("uom")
+  totalValue          Decimal  @db.Decimal(14, 2) @default(0) @map("total_value")
+  // ─── Location ───
+  plantCode           String   @map("plant_code")
+  warehouseCode       String?  @map("warehouse_code")
+  binCode             String?  @map("bin_code")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") @map("status") // AVAILABLE, LOW_STOCK, OUT_OF_STOCK
+  // ─── Audit ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("by_product_inventory")
+  @@index([byProductSku], map: "idx_bpi45_sku")
+  @@index([plantCode, status], map: "idx_bpi45_plant_status")
+}
+
+// ─── Epic 5: Rework Management ──────────────────────────────────────────
+model ReworkOrder {
+  id                  String   @id @default(uuid()) @db.Uuid
+  reworkOrderNumber   String   @unique @map("rework_order_number") // RWO-2026-000001
+  // ─── Source ───
+  sourceBatchNumber   String   @map("source_batch_number")
+  sourceProductionOrder String? @map("source_production_order")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Rework ───
+  reworkType          String   @map("rework_type") // PARTIAL_REWORK, FULL_REWORK
+  reworkReason        String   @map("rework_reason") // PACKAGING_DEFECT, QUALITY_HOLD, RECIPE_DEVIATION, TEMPERATURE_DEVIATION, SHAPE_DEFECT, TASTE_DEVIATION
+  reworkDescription   String?  @map("rework_description")
+  // ─── Quantity ───
+  originalQty         Decimal  @db.Decimal(14, 3) @map("original_qty")
+  reworkQty           Decimal  @db.Decimal(14, 3) @map("rework_qty")
+  recoveredQty        Decimal  @db.Decimal(14, 3) @default(0) @map("recovered_qty")
+  scrappedQty         Decimal  @db.Decimal(14, 3) @default(0) @map("scrapped_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Recipe Adjustment ───
+  recipeAdjustment    String?  @map("recipe_adjustment")
+  adjustedRecipeVersion String? @map("adjusted_recipe_version")
+  // ─── Approval ───
+  supervisorId        String?  @db.Uuid @map("supervisor_id")
+  supervisorName      String?  @map("supervisor_name")
+  approvedAt          DateTime? @map("approved_at")
+  approvalNotes       String?  @map("approval_notes")
+  // ─── Execution ───
+  workCenterCode      String?  @map("work_center_code")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  // ─── Quality ───
+  qualityCheckStatus  String   @default("PENDING") @map("quality_check_status") // PENDING, PASSED, FAILED
+  qualityCheckNotes   String?  @map("quality_check_notes")
+  // ─── Cost ───
+  reworkCost          Decimal  @db.Decimal(14, 2) @default(0) @map("rework_cost")
+  // ─── Status ───
+  status              String   @default("PENDING_APPROVAL") @map("status") // PENDING_APPROVAL, APPROVED, IN_PROGRESS, COMPLETED, REJECTED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  history             ReworkHistory[]
+
+  @@map("rework_orders")
+  @@index([sourceBatchNumber], map: "idx_ro45_source_batch")
+  @@index([reworkReason, status], map: "idx_ro45_reason_status")
+  @@index([status], map: "idx_ro45_status")
+}
+
+model ReworkHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  reworkOrderId       String   @db.Uuid @map("rework_order_id")
+  // ─── Event ───
+  eventType           String   @map("event_type") // CREATED, APPROVED, REJECTED, STARTED, COMPLETED, QUALITY_CHECKED, CANCELLED
+  fromStatus          String?  @map("from_status")
+  toStatus            String   @map("to_status")
+  // ─── Actor ───
+  performedById       String?  @db.Uuid @map("performed_by_id")
+  performedByName     String?  @map("performed_by_name")
+  // ─── Notes ───
+  notes               String?
+  // ─── Audit ───
+  eventTime           DateTime @default(now()) @map("event_time")
+
+  reworkOrder         ReworkOrder @relation(fields: [reworkOrderId], references: [id], onDelete: Cascade)
+
+  @@map("rework_history")
+  @@index([reworkOrderId, eventTime], map: "idx_rh45_order_time")
+}
+
+// ─── Epic 6: Disposal Management ────────────────────────────────────────
+model WasteDisposal {
+  id                  String   @id @default(uuid()) @db.Uuid
+  disposalCode        String   @unique @map("disposal_code") // WDP-2026-000001
+  // ─── Links ───
+  wasteRecordId       String?  @db.Uuid @map("waste_record_id")
+  scrapRecordId       String?  @db.Uuid @map("scrap_record_id")
+  productionBatchNumber String? @map("production_batch_number")
+  // ─── Waste ───
+  wasteType           String   @map("waste_type")
+  wasteDescription    String   @map("waste_description")
+  // ─── Quantity ───
+  disposalQty         Decimal  @db.Decimal(14, 3) @map("disposal_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Disposal Method ───
+  disposalMethod      String   @map("disposal_method") // INCINERATION, COMPOSTING, RECYCLING, MUNICIPAL_DISPOSAL, AUTHORIZED_VENDOR_DISPOSAL
+  disposalVendor      String?  @map("disposal_vendor")
+  vendorLicenseNumber String?  @map("vendor_license_number")
+  // ─── Cost ───
+  disposalCost        Decimal  @db.Decimal(14, 2) @default(0) @map("disposal_cost")
+  // ─── Authorization ───
+  authorizedById      String?  @db.Uuid @map("authorized_by_id")
+  authorizedByName    String?  @map("authorized_by_name")
+  authorizedAt        DateTime? @map("authorized_at")
+  authorizationNotes  String?  @map("authorization_notes")
+  // ─── Evidence ───
+  certificateNumber   String?  @map("certificate_number")
+  certificateUrl      String?  @map("certificate_url")
+  photoEvidenceUrls   String?  @map("photo_evidence_urls") // JSON array
+  // ─── Time ───
+  disposalDate        DateTime @map("disposal_date")
+  // ─── Status ───
+  status              String   @default("COMPLETED") @map("status") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("waste_disposals")
+  @@index([disposalMethod, disposalDate], map: "idx_wd45_method_date")
+  @@index([productionBatchNumber], map: "idx_wd45_batch")
+  @@index([status], map: "idx_wd45_status")
+}
+
+// ─── Epic 8: Sustainability Metrics ─────────────────────────────────────
+model SustainabilityMetric {
+  id                  String   @id @default(uuid()) @db.Uuid
+  metricCode          String   @unique @map("metric_code") // SM-2026-000001
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  plantName           String   @map("plant_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUAL
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Food Waste ───
+  totalFoodWasteKg    Decimal  @db.Decimal(14, 3) @default(0) @map("total_food_waste_kg")
+  foodWastePercent    Decimal  @db.Decimal(6, 2) @default(0) @map("food_waste_percent")
+  // ─── Recovery ───
+  totalRecoveredKg    Decimal  @db.Decimal(14, 3) @default(0) @map("total_recovered_kg")
+  recoveryPercent     Decimal  @db.Decimal(6, 2) @default(0) @map("recovery_percent")
+  // ─── Recycling ───
+  totalRecycledKg     Decimal  @db.Decimal(14, 3) @default(0) @map("total_recycled_kg")
+  recyclingPercent    Decimal  @db.Decimal(6, 2) @default(0) @map("recycling_percent")
+  // ─── Resources ───
+  waterUsageLiters    Decimal  @db.Decimal(14, 3) @default(0) @map("water_usage_liters")
+  energyUsageKwh      Decimal  @db.Decimal(14, 3) @default(0) @map("energy_usage_kwh")
+  // ─── Trends ───
+  wasteReductionPercent Decimal @db.Decimal(6, 2) @default(0) @map("waste_reduction_percent")
+  // ─── Future ESG ───
+  carbonFootprintKgCo2e Decimal? @db.Decimal(14, 3) @map("carbon_footprint_kg_co2e")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("sustainability_metrics")
+  @@index([plantCode, periodStart], map: "idx_sm45_plant_period")
+  @@index([periodType, periodStart], map: "idx_sm45_period")
+}
