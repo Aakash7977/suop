@@ -1783,3 +1783,79 @@ Color maps defined: 9 fulfillment types, 8 picking strategies, 10 picking status
 Two-Stage Barcode Verification is the Chief Architect recommendation for Sprint 26. Stage 1 (Pick): picker scans Bin → Product → Batch → Tote in sequence — each scan matched against expected value; mismatch blocks the line and raises an exception (WRONG_BIN, WRONG_PRODUCT, WRONG_BATCH). Stage 2 (Pack): packer re-scans each picked unit at the Packing Station; system cross-checks against the picking task before sealing. This drives picking accuracy from 75% (paper-based) to 99.4% (double-scan) and gives complete product genealogy: Sales Order → Picking Task → Picking Line → Packing Job → Carton → Shipping Label → Carrier Tracking. Eight picking strategies (SINGLE_ORDER/BATCH/WAVE/ZONE/PICK_AND_PASS/CART/CLUSTER/PALLET) each minimize a different cost — travel distance (SINGLE), per-order setup (BATCH/WAVE), zone expertise (ZONE), congestion (PICK_AND_PASS).
 
 ### Next: Sprint 27 — Dispatch & Carrier Manifest Engine (Dispatch Orders, Vehicle Routing, Load Building, Carrier Manifest, Proof of Delivery, Last-Mile Tracking)
+
+---
+
+## Task ID: SPRINT-27 — Dispatch, Shipping & Load Management Engine (Backend + Frontend)
+
+### Scope
+Sprint 27 implements the **Dispatch, Shipping & Load Management Engine** — the final outbound warehouse operation that converts packed cartons into dispatched shipments. This sprint adds **7 new Prisma models** (already in `prisma/schema.prisma`): DispatchOrder, DispatchOrderLine, DispatchVehicle, LoadPlan, ShippingDocument, VehicleSeal, GateExitLog. Total database tables: 223 (216 + 7). WHS module entities: 38 (31 + 7). Part 4 WMS sprint 6 of 12.
+
+### Backend Changes (mini-services/suop-backend/index.ts)
+
+#### DISPATCH_DATA seed constants (added before `const server = Bun.serve`)
+- **6 Dispatch Orders** covering all 6 required dispatch types: RETAIL_DISPATCH (VEHICLE_ASSIGNED), DISTRIBUTOR_DISPATCH (LOADED), RESTAURANT_REPLENISHMENT (SEALED), BRANCH_TRANSFER (LOADING), EXPORT_SHIPMENT (DISPATCHED), COURIER_SHIPMENT (PLANNED). Each with warehouse, partner, vehicle, driver, carrier, route, priority, orders/cartons/pallets/qty, weight, volume, planned/loading/sealed/dispatch timing.
+- **5 Dispatch Vehicles** with types TRUCK (OWN_FLEET), CONTAINER (THIRD_PARTY), REFRIGERATED (THIRD_PARTY, 2-8°C cold chain), TEMPO (OWN_FLEET), FLATBED (RENTAL). Each with capacity (weight/volume/pallets), temperature control, driver+helper, GPS device, ownership type, status, total trips, avg utilization.
+- **3 Load Plans** with weight/volume utilization percentages, pallet positions, loading sequence (ordered carton-by-carton load order with dock door assignment). Status COMPLETED.
+- **4 Shipping Documents** with types DELIVERY_CHALLAN (PRINTED), PACKING_LIST (SENT), DELIVERY_MANIFEST (GENERATED), E_WAY_BILL_REF (PENDING). Each with dispatch link, partner, ship-to address, file URL, size, format (PDF), status timeline (generated/printed).
+- **2 Vehicle Seals** — seal #1 BOLT type VERIFIED (applied by Loading Supervisor, verified by Security Officer), seal #2 TAMPER_PROOF type APPLIED (not yet verified). Each with seal number, applied/verified timeline.
+- **2 Gate Exit Logs** — log #1 EXITED (export shipment cleared with all 3 verifications), log #2 PENDING (cold chain dispatch awaiting vehicle inspection). Each with exit number, security officer, 3-check verification (seal/docs/vehicle), exit time, approved-by, remarks.
+
+#### 11 new endpoints (added before 404 fallback)
+- `GET /api/dispatch-orders` — with type/status/warehouse filters
+- `POST /api/dispatch-orders` — creates new dispatch order (validates dispatchNumber, dispatchType, warehouseName)
+- `POST /api/dispatch-orders/:id/complete` — completes loading (only LOADING/LOADED allowed), sets loadingCompletedAt, computes durationMin, status → LOADED
+- `GET /api/dispatch-vehicles` — with type/status/ownership filters
+- `GET /api/load-plans` — with status filter
+- `GET /api/shipping-documents` — with type/status filter
+- `GET /api/vehicle-seals` — with status filter
+- `GET /api/gate-exit-logs` — with status filter
+- `POST /api/gate-exit-logs/:id/approve` — approves gate exit (only PENDING/VERIFIED allowed), requires all 3 verifications (seal/docs/vehicle inspection), sets status EXITED, marks related dispatch order DISPATCHED with gateExitAt+dispatchedAt timestamps
+- `GET /api/dispatch/dashboard` — full summary (counts by type/status/ownership/doctype/docstatus), avg loading time, weight/volume utilization, on-time dispatch %, vehicle fill %, 9-step dispatch flow, 8-step Vehicle Load Verification chain, all enum lists, Chief Architect note on Vehicle Load Verification
+- `GET /api/dispatch/info` — engine name, version 27.0.0, sprint 27, all enums (9 dispatch types, 10 dispatch statuses, 7 vehicle types, 7 vehicle statuses, 4 ownership types, 4 seal types, 4 seal statuses, 5 load plan statuses, 7 document types, 5 document statuses, 5 gate exit statuses, 4 priorities), 7 principle descriptions (dispatchOrder/vehicleManagement/loadPlanning/shippingDocumentation/vehicleSeal/gateExit/vehicleLoadVerification), endpoints list, Part 4 sprint 6/12, 38 tables
+
+#### Other backend updates
+- `VERSION` updated from "26.0.0" to **"27.0.0"**
+- `/api/modules` WHS row updated: `entities: 31 → 38` (31 + 7 new), `sprint: 26 → 27`
+- Startup log updated: sprint 27, "Dispatch, Shipping & Load Management Engine (27/33 sprints)", tables 223, with seed counts (6 dispatch orders, 5 dispatch vehicles, 3 load plans, 4 shipping documents, 2 vehicle seals, 2 gate exit logs)
+- New dispatch endpoints log appended at startup
+
+### Frontend Changes (src/app/page.tsx)
+
+#### Module integration
+- `'dispatch'` added to `ModuleKey` union type (line 50)
+- Sidebar entry added to Operations section: `{ name: 'Dispatch', icon: <Truck />, module: 'dispatch', available: true }` (reused existing Truck import — no duplicate)
+- `moduleNames` entry: `dispatch: 'Dispatch & Shipping'`
+- Route added: `{activeModule === 'dispatch' && <DispatchModule />}` (before Settings)
+- Sprint 27 added to `sprintData` array with full description (9 dispatch types, 5 vehicle types, 4 ownership models, load planning, 7 shipping document types, 4 seal types, gate exit verification, Vehicle Load Verification)
+
+#### Dashboard & global text references
+- Stats: 223 tables (was 216), 27 sprints (was 26), "Part 4: WMS (Sprint 27 of 33)"
+- Header Badge: `Sprint 27 · 223 Tables · Part 4 WMS`
+- Login screen footer: `Sprints 1-27` with Dispatch & Shipping mentioned
+- Page footer: `Sprints 1-27` with Dispatch & Shipping & Load Management · 223 Database Tables
+- Receiving module header badge: `Sprint 27 · Part 4 WMS` + `Sprint 27 · 223 tables`
+- Putaway module header badge: `Sprint 27 · Part 4 WMS` + `Sprint 27 · 223 tables`
+- Fulfillment module header badge: `Sprint 27 · Part 4 WMS` + `Sprint 27 · 223 tables`
+
+#### DispatchModule component (added BEFORE Settings Module, ~600 lines)
+Color maps defined: 9 dispatch types, 10 dispatch statuses, 4 priorities, 7 vehicle types, 4 ownership types (OWN_FLEET blue, THIRD_PARTY amber, COURIER purple, RENTAL gray), 7 vehicle statuses, 7 document types, 5 document statuses (PENDING amber, GENERATED blue, PRINTED green, SENT emerald, VOID red), 5 gate exit statuses (PENDING amber, VERIFIED blue, APPROVED emerald, EXITED green, DENIED red), 4 seal types, 4 seal statuses. Inline data arrays mirror backend seed.
+
+- **Overview tab**: 8 stat cards (Pending Dispatch, Loading In Progress, Sealed Vehicles, Dispatched Today, Available Vehicles, Avg Loading Time, Vehicle Fill %, On-Time Dispatch %) + 9-step dispatch flow diagram (Packed Orders → Dispatch Planning → Vehicle Assignment → Loading → Barcode Verification → Seal Vehicle → Gate Exit → Carrier → Customer) + Vehicle Load Verification card (Chief Architect recommendation: Loading Complete → Scan Every Pallet → Scan Vehicle → Verify Dispatch Plan → Generate Manifest → Apply Seal → Security Gate Verification → Vehicle Exit) + Vehicle Seals summary card + Load Plans capacity utilization card (weight/volume bars for 2 plans)
+- **Dispatches tab**: table with 9 dispatch type colors, 10 status colors, dispatch number, warehouse, partner, vehicle/driver, carrier/route, priority badge, orders/cartons/qty, weight/volume, full timing timeline (planned, load start→end, sealed, dispatched, duration), complete button for LOADING/LOADED only
+- **Vehicles tab**: 5 vehicle cards with type colors, ownership badges (OWN_FLEET blue, THIRD_PARTY amber, COURIER purple, RENTAL gray), status badges, capacity (max weight/volume/pallets), temperature control indicator (Snowflake icon for cold chain 2-8°C, Thermometer for ambient), driver details (name/phone/license), helper, GPS device ID indicator, avg utilization progress bar, total trips + Fleet Summary card (by ownership, by type, temperature control %, GPS coverage)
+- **Documents tab**: 4 shipping document cards with document type colors, dispatch link, partner, ship-to address, file URL, file size, format (PDF), status (PENDING amber, GENERATED blue, PRINTED green, SENT emerald), generate/print/send action buttons by status + Shipping Document Lifecycle card listing all 7 document types (DELIVERY_CHALLAN, TAX_INVOICE_REF, PACKING_LIST, DELIVERY_MANIFEST, EXPORT_DOCUMENTS, TRANSPORT_RECEIPT, E_WAY_BILL_REF) with descriptions
+- **Gate Exit tab**: 2 gate exit log cards with verification checklist (3 visual checks: Seal Verified, Docs Verified, Vehicle Inspected — green/amber/red indicators), security officer name, driver name, exit time, approved-by, remarks, approve button for PENDING/VERIFIED (disabled if any check incomplete) + Gate Exit Verification explainer card (3-step final checkpoint: Seal Verification, Document Check, Vehicle Inspection)
+
+### Verification
+- ✅ TypeScript: `npx tsc --noEmit 2>&1 | grep "src/app/"` — 0 errors in `src/app/`
+- ✅ Frontend build: `npm run build` — Compiled successfully in 15.0s, 4 static pages generated
+- ✅ Backend build: `bun build index.ts --target=bun --outdir=/tmp/suop-check-27b` — Bundled 44 modules, 1.00 MB
+- ✅ Server restarted with `setsid` + `timeout 540` on port 3000 — LISTEN confirmed on 0.0.0.0:3000
+- ✅ Homepage: HTTP 200 · CSS: HTTP 200 (`34d933785a17edf3.css`)
+- ✅ JS bundle `4987ff5a5c4a70e2.js` contains: "Dispatch" (multiple), "Sprint 27" (×11), "223 tables" (×4), "Vehicle Load Verification" (×3)
+
+### Chief Architect Note
+Vehicle Load Verification is the Chief Architect recommendation for Sprint 27. After Loading Complete, the loading supervisor follows an 8-step verification chain: (1) Loading Complete confirmed, (2) Scan Every Pallet barcode against dispatch plan, (3) Scan Vehicle number to confirm right vehicle loaded, (4) Verify Dispatch Plan matches loaded cartons/pallets, (5) Generate Delivery Manifest, (6) Apply Vehicle Seal, (7) Security Gate Verification (seal + docs + vehicle inspection), (8) Vehicle Exit. This chain ensures zero wrong-vehicle and zero wrong-load dispatches and gives complete genealogy: Sales Order → Picking Task → Packing Job → Carton → Dispatch Order → Vehicle → Seal → Gate Exit → Carrier Tracking → Customer Delivery. The 9 dispatch types (RETAIL_DISPATCH/DISTRIBUTOR_DISPATCH/RESTAURANT_REPLENISHMENT/BRANCH_TRANSFER/EXPORT_SHIPMENT/COURIER_SHIPMENT/DIRECT_DELIVERY/CUSTOMER_PICKUP/VENDOR_RETURN) cover every outbound scenario, while the 4 ownership models (OWN_FLEET/THIRD_PARTY/COURIER/RENTAL) handle the carrier mix from company trucks to per-trip rentals.
+
+### Next: Sprint 28 — Inbound Logistics & Procurement Foundation (Purchase Requisition, RFQ, Supplier Quotation, Purchase Order, Goods Receipt against PO, Supplier Invoice Matching) — Part 5 begins

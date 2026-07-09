@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils'
 // ─── Types ──────────────────────────────────────────────
 type ModuleKey =
   | 'dashboard' | 'organization' | 'rbac' | 'products' | 'pim' | 'commercial' | 'partners' | 'identification' | 'governance' | 'inventory' | 'goodsreceipt' | 'stockissue' | 'transfer' | 'adjustment' | 'reservation' | 'cyclecount' | 'batchmgmt' | 'costing'
-  | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'manufacturing' | 'quality'
+  | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'dispatch' | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
 
@@ -101,7 +101,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
           <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
             <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
           </Button>
-          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-26 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence, Picking & Packing)</p>
+          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-27 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence, Picking & Packing, Dispatch & Shipping)</p>
         </Card>
       </div>
     </div>
@@ -153,6 +153,7 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Receiving', icon: <Truck className="h-4 w-4" />, module: 'receiving', available: true },
       { name: 'Putaway', icon: <PackageOpen className="h-4 w-4" />, module: 'putaway', available: true },
       { name: 'Picking & Packing', icon: <ClipboardCheck className="h-4 w-4" />, module: 'fulfillment', available: true },
+      { name: 'Dispatch', icon: <Truck className="h-4 w-4" />, module: 'dispatch', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -210,6 +211,7 @@ function DashboardModule() {
     { sprint: 'Sprint 24', name: 'Receiving Operations, Dock Management & ASN Engine', status: 'done', desc: 'Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — 9-step receiving flow (Supplier→ASN→Appt→Gate→Dock→Unload→Verify→GRN→Putaway), pallet-level receiving' },
     { sprint: 'Sprint 25', name: 'Directed Putaway, Storage Optimization & Bin Intelligence Engine', status: 'done', desc: 'WmsPutawayTask, PutawayRules (FEFO/FIFO/ABC/CLOSEST_EMPTY/FAST_MOVING_ZONE), WarehousePallet, ForkliftTask — system-directed bin recommendation, 5-factor bin scoring (Capacity + Distance + Compatibility + Temperature + Picking Efficiency), pallet-level putaway, cross-dock & cold-storage flows' },
     { sprint: 'Sprint 26', name: 'Picking, Packing & Order Fulfillment Engine', status: 'done', desc: 'WmsPickingTask, WmsPickingTaskLine, PackingStation, PackingJob, CartonType, Carton, ShippingLabel — 6 fulfillment types (RETAIL/WHOLESALE/DISTRIBUTOR/RESTAURANT/BRANCH_TRANSFER/EXPORT), 8 picking strategies (SINGLE_ORDER/BATCH/WAVE/ZONE/PICK_AND_PASS/CART/CLUSTER/PALLET), two-stage barcode verification (Pick: Scan Bin→Product→Batch→Tote; Pack: second-scan verification→pack→label→dispatch), cartonization engine, multi-carrier shipping label generation (Shiprocket, Blue Dart, Delhivery, DTDC, FedEx, DHL)' },
+    { sprint: 'Sprint 27', name: 'Dispatch, Shipping & Load Management Engine', status: 'done', desc: 'DispatchOrder, DispatchOrderLine, DispatchVehicle, LoadPlan, ShippingDocument, VehicleSeal, GateExitLog — 9 dispatch types (RETAIL/DISTRIBUTOR/RESTAURANT/BRANCH_TRANSFER/EXPORT/COURIER/DIRECT_DELIVERY/CUSTOMER_PICKUP/VENDOR_RETURN), 5 vehicle types (TRUCK/CONTAINER/REFRIGERATED/TEMPO/FLATBED), 4 ownership models (OWN_FLEET/THIRD_PARTY/COURIER/RENTAL), load planning (weight/volume/pallet utilization, loading sequence), 7 shipping document types (DELIVERY_CHALLAN/PACKING_LIST/DELIVERY_MANIFEST/E_WAY_BILL_REF/etc), 4 seal types (BOLT/CABLE/ELECTRONIC/TAMPER_PROOF), gate exit verification (seal+docs+vehicle inspection), Vehicle Load Verification (Chief Architect: Loading Complete→Scan Every Pallet→Scan Vehicle→Verify Dispatch Plan→Generate Manifest→Apply Seal→Security Gate Verification→Vehicle Exit)' },
   ]
 
   return (
@@ -218,16 +220,16 @@ function DashboardModule() {
         <h2 className="text-2xl font-bold mb-1">Welcome to SUOP Admin</h2>
         <p className="text-slate-300 text-sm max-w-3xl">
           Sudhastar Unified Operating Platform — Enterprise Operating System for Food Manufacturing,
-          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 26 of 33)</span>.
+          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 27 of 33)</span>.
         </p>
         <div className="flex items-center gap-6 mt-4">
-          <div className="text-center"><p className="text-3xl font-bold">216</p><p className="text-xs text-slate-400">Database Tables</p></div>
+          <div className="text-center"><p className="text-3xl font-bold">223</p><p className="text-xs text-slate-400">Database Tables</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">821</p><p className="text-xs text-slate-400">Architecture Entities</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">249</p><p className="text-xs text-slate-400">Arch. Decisions</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
-          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">26</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
+          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">27</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
         </div>
       </Card>
 
@@ -8025,10 +8027,10 @@ function ReceivingModule() {
             <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><Truck className="h-7 w-7" /> Receiving Operations & ASN Engine</h2>
             <p className="text-emerald-100 text-sm max-w-3xl">Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — the physical warehouse receiving layer. 9-step flow: Supplier → ASN → Appointment → Gate Entry → Dock → Unload → Verify → Goods Receipt → Putaway.</p>
           </div>
-          <Badge className="bg-emerald-500 text-emerald-950 hover:bg-emerald-500">Sprint 26 · Part 4 WMS</Badge>
+          <Badge className="bg-emerald-500 text-emerald-950 hover:bg-emerald-500">Sprint 27 · Part 4 WMS</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-4 mt-4">
-          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 26 · 216 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 27 · 223 tables</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 ASNs</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Appointments</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">3 Gate Entries</Badge>
@@ -8464,10 +8466,10 @@ function PutawayModule() {
             <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><PackageOpen className="h-7 w-7" /> Directed Putaway, Storage Optimization & Bin Intelligence</h2>
             <p className="text-indigo-100 text-sm max-w-3xl">The system — not the operator — decides WHERE each pallet goes. Operator follows step-by-step instructions: Scan Pallet → System shows Zone/Aisle/Rack/Shelf/Bin → Drive to bin → Scan bin → Confirm. Eliminates the 30% putaway-error rate of operator-decided putaway.</p>
           </div>
-          <Badge className="bg-purple-500 text-purple-950 hover:bg-purple-500">Sprint 26 · Part 4 WMS</Badge>
+          <Badge className="bg-purple-500 text-purple-950 hover:bg-purple-500">Sprint 27 · Part 4 WMS</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-4 mt-4">
-          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 26 · 216 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 27 · 223 tables</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 Putaway Tasks</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">5 Putaway Rules</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Warehouse Pallets</Badge>
@@ -9014,10 +9016,10 @@ function FulfillmentModule() {
             <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><ClipboardCheck className="h-7 w-7" /> Picking, Packing & Order Fulfillment Engine</h2>
             <p className="text-amber-100 text-sm max-w-3xl">The heart of warehouse outbound — converting Sales Orders into directed pick walks with two-stage barcode verification (Pick: Scan Bin→Product→Batch→Tote; Pack: second-scan verification→pack→label→dispatch). 6 fulfillment types, 8 picking strategies, cartonization engine, multi-carrier shipping labels.</p>
           </div>
-          <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">Sprint 26 · Part 4 WMS</Badge>
+          <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">Sprint 27 · Part 4 WMS</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-4 mt-4">
-          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 26 · 216 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 27 · 223 tables</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 Picking Tasks</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">3 Packing Stations</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Packing Jobs</Badge>
@@ -9472,6 +9474,651 @@ function FulfillmentModule() {
   )
 }
 
+// ─── Dispatch, Shipping & Load Management Module (Sprint 27) ──
+type DispatchTab = 'overview' | 'dispatches' | 'vehicles' | 'documents' | 'gateexit'
+
+const DISPATCH_TYPE_COLORS: Record<string, string> = {
+  RETAIL_DISPATCH: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  DISTRIBUTOR_DISPATCH: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  RESTAURANT_REPLENISHMENT: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+  BRANCH_TRANSFER: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  EXPORT_SHIPMENT: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  COURIER_SHIPMENT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  DIRECT_DELIVERY: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
+  CUSTOMER_PICKUP: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300',
+  VENDOR_RETURN: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+}
+
+const DISPATCH_STATUS_COLORS: Record<string, string> = {
+  PLANNED: 'bg-slate-500 text-white',
+  VEHICLE_ASSIGNED: 'bg-cyan-600 text-white',
+  LOADING: 'bg-purple-600 text-white',
+  LOADED: 'bg-indigo-600 text-white',
+  SEALED: 'bg-amber-600 text-white',
+  GATE_EXIT: 'bg-teal-600 text-white',
+  DISPATCHED: 'bg-emerald-600 text-white',
+  DELIVERED: 'bg-emerald-700 text-white',
+  CANCELLED: 'bg-red-600 text-white',
+  EXCEPTION: 'bg-rose-700 text-white',
+}
+
+const DISPATCH_PRIORITY_COLORS: Record<string, string> = {
+  EMERGENCY: 'bg-red-600 text-white',
+  HIGH: 'bg-amber-500 text-white',
+  NORMAL: 'bg-blue-500 text-white',
+  LOW: 'bg-slate-400 text-white',
+}
+
+const VEHICLE_TYPE_COLORS: Record<string, string> = {
+  TRUCK: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  CONTAINER: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  REFRIGERATED: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  TEMPO: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  FLATBED: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  VAN: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  MINI_TRUCK: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+}
+
+const VEHICLE_OWNERSHIP_COLORS: Record<string, string> = {
+  OWN_FLEET: 'bg-blue-600 text-white',
+  THIRD_PARTY: 'bg-amber-500 text-white',
+  COURIER: 'bg-purple-600 text-white',
+  RENTAL: 'bg-slate-400 text-white',
+}
+
+const VEHICLE_STATUS_COLORS: Record<string, string> = {
+  AVAILABLE: 'bg-emerald-600 text-white',
+  ASSIGNED: 'bg-cyan-600 text-white',
+  LOADING: 'bg-purple-600 text-white',
+  LOADED: 'bg-indigo-600 text-white',
+  IN_TRANSIT: 'bg-blue-600 text-white',
+  MAINTENANCE: 'bg-amber-600 text-white',
+  OFFLINE: 'bg-slate-500 text-white',
+}
+
+const DOC_TYPE_COLORS: Record<string, string> = {
+  DELIVERY_CHALLAN: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  TAX_INVOICE_REF: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  PACKING_LIST: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  DELIVERY_MANIFEST: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  EXPORT_DOCUMENTS: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  TRANSPORT_RECEIPT: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  E_WAY_BILL_REF: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+}
+
+const DOC_STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  GENERATED: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  PRINTED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  SENT: 'bg-emerald-600 text-white',
+  VOID: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+}
+
+const GATE_EXIT_STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  VERIFIED: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  APPROVED: 'bg-emerald-600 text-white',
+  EXITED: 'bg-emerald-700 text-white',
+  DENIED: 'bg-red-600 text-white',
+}
+
+const SEAL_TYPE_COLORS: Record<string, string> = {
+  BOLT: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+  CABLE: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  ELECTRONIC: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  TAMPER_PROOF: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+}
+
+const SEAL_STATUS_COLORS: Record<string, string> = {
+  APPLIED: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  VERIFIED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  BROKEN: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  REMOVED: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+}
+
+const DISPATCH_ORDERS_DATA = [
+  { id: 'do-001', dispatchNumber: 'DSP-2026-0001', dispatchDate: '09 Jul 07:00', dispatchType: 'RETAIL_DISPATCH', warehouseName: 'Finished Goods Warehouse', partnerName: 'Sudhastar Retail Mumbai', vehicleNumber: 'MH-04-AB-1234', driverName: 'Rajesh Patil', carrierName: 'Sudhastar Own Fleet', routeName: 'Mumbai City Retail Route', priority: 'HIGH', status: 'VEHICLE_ASSIGNED', totalOrders: 1, totalCartons: 2, totalQty: 120, totalWeightKg: 18.50, totalVolumeM3: 0.09, loadingDurationMin: null, plannedDispatchAt: '09 Jul 08:00', loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, dispatchedAt: null },
+  { id: 'do-002', dispatchNumber: 'DSP-2026-0002', dispatchDate: '09 Jul 06:00', dispatchType: 'DISTRIBUTOR_DISPATCH', warehouseName: 'Finished Goods Warehouse', partnerName: 'Maharashtra Wholesale Distributors', vehicleNumber: 'MH-04-CD-5678', driverName: 'Suresh Kumar', carrierName: 'VRL Logistics (3PL)', routeName: 'Pune-Nashik Distributor Route', priority: 'NORMAL', status: 'LOADED', totalOrders: 1, totalCartons: 6, totalQty: 360, totalWeightKg: 36.50, totalVolumeM3: 0.18, loadingDurationMin: 30, plannedDispatchAt: '09 Jul 09:00', loadingStartedAt: '09 Jul 06:35', loadingCompletedAt: '09 Jul 07:05', sealedAt: null, dispatchedAt: null },
+  { id: 'do-003', dispatchNumber: 'DSP-2026-0003', dispatchDate: '09 Jul 05:00', dispatchType: 'RESTAURANT_REPLENISHMENT', warehouseName: 'Cold Storage Warehouse', partnerName: 'Mumbai Restaurant Group', vehicleNumber: 'MH-04-EF-9012', driverName: 'Imran Sheikh', carrierName: 'Cold Chain Express', routeName: 'Mumbai City Restaurant Cold Route', priority: 'EMERGENCY', status: 'SEALED', totalOrders: 1, totalCartons: 1, totalQty: 90, totalWeightKg: 12.80, totalVolumeM3: 0.06, loadingDurationMin: 20, plannedDispatchAt: '09 Jul 06:00', loadingStartedAt: '09 Jul 05:10', loadingCompletedAt: '09 Jul 05:30', sealedAt: '09 Jul 05:42', dispatchedAt: null },
+  { id: 'do-004', dispatchNumber: 'DSP-2026-0004', dispatchDate: '09 Jul 04:00', dispatchType: 'BRANCH_TRANSFER', warehouseName: 'Finished Goods Warehouse', partnerName: 'Pune Retail Branch', vehicleNumber: 'MH-12-GH-3456', driverName: 'Vinod Mehta', carrierName: 'Sudhastar Own Fleet', routeName: 'Pune-Nashik Distributor Route', priority: 'NORMAL', status: 'LOADING', totalOrders: 1, totalCartons: 2, totalQty: 240, totalWeightKg: 24.30, totalVolumeM3: 0.14, loadingDurationMin: null, plannedDispatchAt: '09 Jul 10:00', loadingStartedAt: '09 Jul 04:20', loadingCompletedAt: null, sealedAt: null, dispatchedAt: null },
+  { id: 'do-005', dispatchNumber: 'DSP-2026-0005', dispatchDate: '08 Jul 14:00', dispatchType: 'EXPORT_SHIPMENT', warehouseName: 'Finished Goods Warehouse', partnerName: 'Dubai Exports FZE', vehicleNumber: 'CONT-MUM-EXP-001', driverName: 'Javed Akhtar', carrierName: 'DHL Global Forwarding', routeName: 'Mumbai Port → Jebel Ali (Export)', priority: 'HIGH', status: 'DISPATCHED', totalOrders: 1, totalCartons: 4, totalQty: 480, totalWeightKg: 58.40, totalVolumeM3: 0.32, loadingDurationMin: 45, plannedDispatchAt: '08 Jul 16:00', loadingStartedAt: '08 Jul 13:30', loadingCompletedAt: '08 Jul 14:15', sealedAt: '08 Jul 14:30', dispatchedAt: '08 Jul 15:00' },
+  { id: 'do-006', dispatchNumber: 'DSP-2026-0006', dispatchDate: '09 Jul 09:00', dispatchType: 'COURIER_SHIPMENT', warehouseName: 'Finished Goods Warehouse', partnerName: 'Bengaluru E-Commerce Customer', vehicleNumber: 'KA-01-MN-7890', driverName: 'Mohan Das', carrierName: 'Delhivery Express', routeName: 'Mumbai-Bengaluru Air Route', priority: 'NORMAL', status: 'PLANNED', totalOrders: 1, totalCartons: 1, totalQty: 60, totalWeightKg: 8.20, totalVolumeM3: 0.04, loadingDurationMin: null, plannedDispatchAt: '09 Jul 15:00', loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, dispatchedAt: null },
+]
+
+const DISPATCH_VEHICLES_DATA = [
+  { id: 'dv-001', vehicleNumber: 'MH-04-AB-1234', vehicleType: 'TRUCK', maxWeightKg: 5000, maxVolumeM3: 25, palletCapacity: 8, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'OWN_FLEET', driverName: 'Rajesh Patil', driverPhone: '+91-98200-12345', driverLicense: 'MH0420190001234', helperName: 'Salim Ansari', hasGPS: true, gpsDeviceId: 'GPS-MUM-TRK-001', status: 'ASSIGNED', totalTrips: 348, avgUtilization: 78.5 },
+  { id: 'dv-002', vehicleNumber: 'MH-04-CD-5678', vehicleType: 'CONTAINER', maxWeightKg: 12000, maxVolumeM3: 45, palletCapacity: 18, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'THIRD_PARTY', driverName: 'Suresh Kumar', driverPhone: '+91-98200-23456', driverLicense: 'MH0420170005678', helperName: 'Bablu Yadav', hasGPS: true, gpsDeviceId: 'GPS-VRL-014', status: 'LOADED', totalTrips: 892, avgUtilization: 84.2 },
+  { id: 'dv-003', vehicleNumber: 'MH-04-EF-9012', vehicleType: 'REFRIGERATED', maxWeightKg: 3500, maxVolumeM3: 18, palletCapacity: 6, isTemperatureControlled: true, minTemp: 2, maxTemp: 8, ownershipType: 'THIRD_PARTY', driverName: 'Imran Sheikh', driverPhone: '+91-98200-34567', driverLicense: 'MH0420180009012', helperName: 'Kamal Singh', hasGPS: true, gpsDeviceId: 'GPS-CCE-007', status: 'LOADED', totalTrips: 521, avgUtilization: 71.8 },
+  { id: 'dv-004', vehicleNumber: 'MH-12-GH-3456', vehicleType: 'TEMPO', maxWeightKg: 1500, maxVolumeM3: 8, palletCapacity: 2, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'OWN_FLEET', driverName: 'Vinod Mehta', driverPhone: '+91-98200-45678', driverLicense: 'MH1220190003456', helperName: null, hasGPS: true, gpsDeviceId: 'GPS-MUM-TMP-002', status: 'LOADING', totalTrips: 612, avgUtilization: 65.3 },
+  { id: 'dv-005', vehicleNumber: 'CONT-MUM-EXP-001', vehicleType: 'FLATBED', maxWeightKg: 20000, maxVolumeM3: 60, palletCapacity: 24, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'RENTAL', driverName: 'Javed Akhtar', driverPhone: '+91-98200-56789', driverLicense: 'MH0420160001111', helperName: 'Ravi Kumar', hasGPS: false, gpsDeviceId: null, status: 'IN_TRANSIT', totalTrips: 78, avgUtilization: 92.1 },
+]
+
+const SHIPPING_DOCUMENTS_DATA = [
+  { id: 'sd-001', documentNumber: 'DOC-DC-2026-0001', documentDate: '09 Jul 07:10', documentType: 'DELIVERY_CHALLAN', dispatchNumber: 'DSP-2026-0002', partnerName: 'Maharashtra Wholesale Distributors', shipToAddress: 'Wholesale Hub, APMC Market, Vashi, Navi Mumbai 400703', fileUrl: '/docs/dispatch/DC-2026-0001.pdf', fileSizeBytes: 184320, format: 'PDF', status: 'PRINTED', generatedAt: '09 Jul 07:10', printedAt: '09 Jul 07:15' },
+  { id: 'sd-002', documentNumber: 'DOC-PL-2026-0002', documentDate: '09 Jul 05:25', documentType: 'PACKING_LIST', dispatchNumber: 'DSP-2026-0003', partnerName: 'Mumbai Restaurant Group', shipToAddress: 'Marine Drive Restaurant, 12 Marine Lines, Mumbai 400020', fileUrl: '/docs/dispatch/PL-2026-0002.pdf', fileSizeBytes: 92160, format: 'PDF', status: 'SENT', generatedAt: '09 Jul 05:25', printedAt: '09 Jul 05:28' },
+  { id: 'sd-003', documentNumber: 'DOC-DM-2026-0003', documentDate: '08 Jul 14:25', documentType: 'DELIVERY_MANIFEST', dispatchNumber: 'DSP-2026-0005', partnerName: 'Dubai Exports FZE', shipToAddress: 'Jebel Ali Free Zone, Office 402, Building 7, Dubai', fileUrl: '/docs/dispatch/DM-2026-0003.pdf', fileSizeBytes: 245760, format: 'PDF', status: 'GENERATED', generatedAt: '08 Jul 14:25', printedAt: null },
+  { id: 'sd-004', documentNumber: 'DOC-EB-2026-0004', documentDate: '09 Jul 07:30', documentType: 'E_WAY_BILL_REF', dispatchNumber: 'DSP-2026-0001', partnerName: 'Sudhastar Retail Mumbai', shipToAddress: 'Andheri East Retail Store, Mumbai 400069', fileUrl: null, fileSizeBytes: null, format: 'PDF', status: 'PENDING', generatedAt: null, printedAt: null },
+]
+
+const VEHICLE_SEALS_DATA = [
+  { id: 'vs-001', dispatchNumber: 'DSP-2026-0003', sealNumber: 'SEAL-BOLT-2026-0042', sealType: 'BOLT', appliedAt: '09 Jul 05:35', appliedByName: 'Loading Supervisor — Prakash Jadhav', verifiedAt: '09 Jul 05:42', verifiedByName: 'Security Officer — Mahesh Tiwari', brokenAt: null, brokenBy: null, status: 'VERIFIED' },
+  { id: 'vs-002', dispatchNumber: 'DSP-2026-0005', sealNumber: 'SEAL-TP-2026-0078', sealType: 'TAMPER_PROOF', appliedAt: '08 Jul 14:30', appliedByName: 'Loading Supervisor — Prakash Jadhav', verifiedAt: null, verifiedByName: null, brokenAt: null, brokenBy: null, status: 'APPLIED' },
+]
+
+const GATE_EXIT_LOGS_DATA = [
+  { id: 'gel-001', exitNumber: 'EXIT-2026-0001', exitDate: '08 Jul 14:55', dispatchNumber: 'DSP-2026-0005', vehicleNumber: 'CONT-MUM-EXP-001', driverName: 'Javed Akhtar', securityOfficerName: 'Security Officer — Mahesh Tiwari', sealVerified: true, documentsVerified: true, vehicleInspected: true, exitTime: '08 Jul 14:55', approvedByName: 'Security Manager — Deepak Nair', status: 'EXITED', remarks: 'Export shipment cleared — customs docs verified, container sealed, GPS offline (rental flatbed).' },
+  { id: 'gel-002', exitNumber: 'EXIT-2026-0002', exitDate: '09 Jul 05:42', dispatchNumber: 'DSP-2026-0003', vehicleNumber: 'MH-04-EF-9012', driverName: 'Imran Sheikh', securityOfficerName: 'Security Officer — Mahesh Tiwari', sealVerified: true, documentsVerified: true, vehicleInspected: false, exitTime: null, approvedByName: null, status: 'PENDING', remarks: 'Cold chain dispatch — awaiting final vehicle inspection before gate exit.' },
+]
+
+function DispatchModule() {
+  const [tab, setTab] = useState<DispatchTab>('overview')
+  const tabs: Array<{ key: DispatchTab; label: string; icon: React.ReactNode }> = [
+    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+    { key: 'dispatches', label: 'Dispatches', icon: <Truck className="h-4 w-4" /> },
+    { key: 'vehicles', label: 'Vehicles', icon: <Boxes className="h-4 w-4" /> },
+    { key: 'documents', label: 'Documents', icon: <FileText className="h-4 w-4" /> },
+    { key: 'gateexit', label: 'Gate Exit', icon: <ShieldCheck className="h-4 w-4" /> },
+  ]
+
+  const overviewStats = [
+    { label: 'Pending Dispatch', value: '1', sub: 'PLANNED — awaiting vehicle', icon: <Clock className="h-5 w-5 text-amber-600" />, color: 'text-amber-600' },
+    { label: 'Loading In Progress', value: '1', sub: 'BRANCH_TRANSFER · 04:20', icon: <ActivityIcon className="h-5 w-5 text-purple-600" />, color: 'text-purple-600' },
+    { label: 'Sealed Vehicles', value: '1', sub: 'Cold chain · awaiting gate exit', icon: <LockIcon className="h-5 w-5 text-amber-600" />, color: 'text-amber-600' },
+    { label: 'Dispatched Today', value: '1', sub: 'EXPORT_SHIPMENT · 15:00', icon: <Truck className="h-5 w-5 text-emerald-600" />, color: 'text-emerald-600' },
+    { label: 'Available Vehicles', value: '0', sub: 'All 5 vehicles assigned', icon: <Boxes className="h-5 w-5 text-blue-600" />, color: 'text-blue-600' },
+    { label: 'Avg Loading Time', value: '32 min', sub: 'SLA: ≤ 45 min', icon: <Clock className="h-5 w-5 text-indigo-600" />, color: 'text-indigo-600' },
+    { label: 'Vehicle Fill %', value: '32%', sub: 'Weight utilization avg', icon: <Gauge className="h-5 w-5 text-cyan-600" />, color: 'text-cyan-600' },
+    { label: 'On-Time Dispatch %', value: '94.2%', sub: 'SLA: ≥ 92%', icon: <TrendingUp className="h-5 w-5 text-emerald-600" />, color: 'text-emerald-600' },
+  ]
+
+  const dispatchFlow = [
+    { label: 'Packed Orders', icon: <PackageCheck className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+    { label: 'Dispatch Planning', icon: <Workflow className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
+    { label: 'Vehicle Assignment', icon: <Truck className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+    { label: 'Loading', icon: <Boxes className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+    { label: 'Barcode Verification', icon: <ScanLine className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
+    { label: 'Seal Vehicle', icon: <LockIcon className="h-4 w-4" />, color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' },
+    { label: 'Gate Exit', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
+    { label: 'Carrier', icon: <Truck className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+    { label: 'Customer', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+  ]
+
+  const vehicleLoadVerification = ['Loading Complete', 'Scan Every Pallet', 'Scan Vehicle', 'Verify Dispatch Plan', 'Generate Manifest', 'Apply Seal', 'Security Gate Verification', 'Vehicle Exit']
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 text-white border-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><Truck className="h-7 w-7" /> Dispatch, Shipping & Load Management Engine</h2>
+            <p className="text-blue-100 text-sm max-w-3xl">The final outbound warehouse operation — converting packed cartons into dispatched shipments. 9 dispatch types, 5 vehicle types, 4 ownership models, load planning (weight/volume/pallet utilization), 7 shipping document types, 4 vehicle seal types, gate exit verification. Vehicle Load Verification (Chief Architect recommendation): 8-step chain from Loading Complete → Vehicle Exit ensures zero wrong-vehicle and zero wrong-load dispatches.</p>
+          </div>
+          <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Sprint 27 · Part 4 WMS</Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 27 · 223 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 Dispatch Orders</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">5 Dispatch Vehicles</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">3 Load Plans</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Shipping Documents</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">2 Vehicle Seals</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">2 Gate Exit Logs</Badge>
+        </div>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map(t => (
+          <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)} className="gap-2">
+            {t.icon}{t.label}
+          </Button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {overviewStats.map(s => (
+              <Card key={s.label} className="p-4">
+                <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+                <p className="text-2xl font-bold">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2"><Workflow className="h-5 w-5" /> Dispatch Flow — 9 Steps</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {dispatchFlow.map((step, i) => (
+                <div key={step.label} className="flex items-center gap-2">
+                  <div className={cn('flex flex-col items-center gap-1 px-3 py-2 rounded-lg min-w-[110px]', step.color)}>
+                    {step.icon}
+                    <span className="text-xs font-medium text-center">{step.label}</span>
+                  </div>
+                  {i < dispatchFlow.length - 1 && <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">Packed Orders → Dispatch Planning → Vehicle Assignment → Loading → Barcode Verification → Seal Vehicle → Gate Exit → Carrier → Customer. Each step has a verification gate; failure at any step halts the dispatch and raises an exception. The status of every dispatch order flows through this pipeline.</p>
+          </Card>
+
+          <Card className="p-6 border-l-4 border-l-blue-500">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 flex-shrink-0">
+                <ScanLine className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 flex items-center gap-2">Vehicle Load Verification <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Chief Architect Recommendation</Badge></h3>
+                <p className="text-sm text-muted-foreground mb-4">After Loading Complete, the loading supervisor follows an 8-step verification chain to ensure zero wrong-vehicle and zero wrong-load dispatches. Every pallet is scanned against the dispatch plan, the vehicle number is confirmed, the manifest is generated, the seal is applied, and security does the gate verification before vehicle exit. This gives complete genealogy: Sales Order → Picking Task → Packing Job → Carton → Dispatch Order → Vehicle → Seal → Gate Exit → Carrier Tracking → Customer Delivery.</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {vehicleLoadVerification.map((step, i) => (
+                    <div key={step} className="flex items-center gap-2">
+                      <Badge variant="outline" className="px-3 py-1.5 text-xs font-medium">{i + 1}. {step}</Badge>
+                      {i < vehicleLoadVerification.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">Failure at any step blocks the dispatch. Step 2 (Scan Every Pallet) eliminates wrong-load errors. Step 3 (Scan Vehicle) eliminates wrong-vehicle errors. Step 6 (Apply Seal) ensures tamper-evidence. Step 7 (Security Gate Verification) is the final human check.</p>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-6">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Boxes className="h-5 w-5" /> Vehicle Seals — Tamper Evidence</h3>
+              <p className="text-xs text-muted-foreground mb-3">Vehicle seals are applied after loading complete and verified at gate exit. A verified seal means the vehicle has not been opened since leaving the dock. Four seal types cover different security needs.</p>
+              <div className="space-y-2">
+                {VEHICLE_SEALS_DATA.map(s => (
+                  <div key={s.id} className="p-3 rounded-md bg-muted/50 border-l-4 border-l-amber-500">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Badge className={cn('text-xs', SEAL_TYPE_COLORS[s.sealType])}>{s.sealType}</Badge>
+                        <Badge className={cn('text-xs', SEAL_STATUS_COLORS[s.status])}>{s.status}</Badge>
+                      </div>
+                      <span className="font-mono text-xs font-bold">{s.sealNumber}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Dispatch: {s.dispatchNumber} · Applied: {s.appliedAt} by {s.appliedByName}</p>
+                    {s.verifiedAt && <p className="text-xs text-emerald-700 dark:text-emerald-400">Verified: {s.verifiedAt} by {s.verifiedByName}</p>}
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Workflow className="h-5 w-5" /> Load Plans — Capacity Utilization</h3>
+              <p className="text-xs text-muted-foreground mb-3">Each load plan computes weight, volume, and pallet utilization against the vehicle capacity, then generates a loading sequence (back-to-front for multi-stop routes).</p>
+              <div className="space-y-3">
+                <div className="p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-xs font-bold">LP-001 · DSP-2026-0002</span>
+                    <Badge variant="outline" className="text-xs">COMPLETED</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">Vehicle: MH-04-CD-5678 (Container, 12T / 45m³)</div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2"><span className="text-xs w-20">Weight</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: '30%' }} /></div><span className="text-xs font-mono">0.30%</span></div>
+                    <div className="flex items-center gap-2"><span className="text-xs w-20">Volume</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: '40%' }} /></div><span className="text-xs font-mono">0.40%</span></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">3-step loading sequence · 1 pallet position · DD-03</p>
+                </div>
+                <div className="p-3 rounded-md bg-muted/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-xs font-bold">LP-003 · DSP-2026-0005</span>
+                    <Badge variant="outline" className="text-xs">COMPLETED</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">Vehicle: CONT-MUM-EXP-001 (Flatbed, 20T / 60m³)</div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2"><span className="text-xs w-20">Weight</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: '29%' }} /></div><span className="text-xs font-mono">0.29%</span></div>
+                    <div className="flex items-center gap-2"><span className="text-xs w-20">Volume</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: '53%' }} /></div><span className="text-xs font-mono">0.53%</span></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">4-step loading sequence · 1 pallet position · Export container</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {tab === 'dispatches' && (
+        <Card className="p-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="pb-2 pr-3 font-medium">Dispatch #</th>
+                  <th className="pb-2 pr-3 font-medium">Type</th>
+                  <th className="pb-2 pr-3 font-medium">Status</th>
+                  <th className="pb-2 pr-3 font-medium">Warehouse</th>
+                  <th className="pb-2 pr-3 font-medium">Partner</th>
+                  <th className="pb-2 pr-3 font-medium">Vehicle / Driver</th>
+                  <th className="pb-2 pr-3 font-medium">Carrier / Route</th>
+                  <th className="pb-2 pr-3 font-medium">Priority</th>
+                  <th className="pb-2 pr-3 font-medium">Orders/Cartons/Qty</th>
+                  <th className="pb-2 pr-3 font-medium">Weight/Volume</th>
+                  <th className="pb-2 pr-3 font-medium">Timing</th>
+                  <th className="pb-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DISPATCH_ORDERS_DATA.map(o => (
+                  <tr key={o.id} className="border-b hover:bg-muted/50">
+                    <td className="py-3 pr-3 font-mono text-xs font-semibold">{o.dispatchNumber}<div className="text-xs text-muted-foreground font-sans">{o.dispatchDate}</div></td>
+                    <td className="py-3 pr-3"><Badge className={cn('text-xs', DISPATCH_TYPE_COLORS[o.dispatchType])}>{o.dispatchType}</Badge></td>
+                    <td className="py-3 pr-3"><Badge className={cn('text-xs', DISPATCH_STATUS_COLORS[o.status])}>{o.status}</Badge></td>
+                    <td className="py-3 pr-3 text-xs">{o.warehouseName}</td>
+                    <td className="py-3 pr-3 text-xs">{o.partnerName}</td>
+                    <td className="py-3 pr-3 text-xs"><span className="font-mono">{o.vehicleNumber}</span><div className="text-muted-foreground">{o.driverName}</div></td>
+                    <td className="py-3 pr-3 text-xs">{o.carrierName}<div className="text-muted-foreground">{o.routeName}</div></td>
+                    <td className="py-3 pr-3"><Badge className={cn('text-xs', DISPATCH_PRIORITY_COLORS[o.priority])}>{o.priority}</Badge></td>
+                    <td className="py-3 pr-3 text-xs">{o.totalOrders}O / {o.totalCartons}C / {o.totalQty}Q</td>
+                    <td className="py-3 pr-3 text-xs">{o.totalWeightKg} kg<div className="text-muted-foreground">{o.totalVolumeM3} m³</div></td>
+                    <td className="py-3 pr-3 text-xs">
+                      <div>Planned: {o.plannedDispatchAt}</div>
+                      {o.loadingStartedAt && <div className="text-muted-foreground">Load: {o.loadingStartedAt} → {o.loadingCompletedAt || '...'}</div>}
+                      {o.sealedAt && <div className="text-amber-700 dark:text-amber-400">Sealed: {o.sealedAt}</div>}
+                      {o.dispatchedAt && <div className="text-emerald-700 dark:text-emerald-400">Dispatched: {o.dispatchedAt}</div>}
+                      {o.loadingDurationMin !== null && <div className="text-muted-foreground">Duration: {o.loadingDurationMin} min</div>}
+                    </td>
+                    <td className="py-3">
+                      {(o.status === 'LOADING' || o.status === 'LOADED') ? (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Complete</Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+            <span>Types:</span>
+            {Object.keys(DISPATCH_TYPE_COLORS).slice(0, 6).map(t => (
+              <Badge key={t} className={cn('text-xs', DISPATCH_TYPE_COLORS[t])}>{t}</Badge>
+            ))}
+            <span className="ml-3">Statuses:</span>
+            {Object.keys(DISPATCH_STATUS_COLORS).slice(0, 7).map(s => (
+              <Badge key={s} className={cn('text-xs', DISPATCH_STATUS_COLORS[s])}>{s}</Badge>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {tab === 'vehicles' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {DISPATCH_VEHICLES_DATA.map(v => (
+              <Card key={v.id} className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={cn('text-xs', VEHICLE_TYPE_COLORS[v.vehicleType])}>{v.vehicleType}</Badge>
+                      <Badge className={cn('text-xs', VEHICLE_OWNERSHIP_COLORS[v.ownershipType])}>{v.ownershipType}</Badge>
+                      <Badge className={cn('text-xs', VEHICLE_STATUS_COLORS[v.status])}>{v.status}</Badge>
+                    </div>
+                    <p className="font-mono text-sm font-bold">{v.vehicleNumber}</p>
+                    <p className="text-xs text-muted-foreground">ID: {v.id} · GPS: {v.hasGPS ? <span className="text-emerald-700 dark:text-emerald-400 font-mono">{v.gpsDeviceId}</span> : <span className="text-red-700 dark:text-red-400">offline</span>}</p>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <Truck className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+                  <div className="p-2 rounded-md bg-muted/50">
+                    <p className="text-muted-foreground">Max Wt</p>
+                    <p className="font-semibold">{v.maxWeightKg} kg</p>
+                  </div>
+                  <div className="p-2 rounded-md bg-muted/50">
+                    <p className="text-muted-foreground">Max Vol</p>
+                    <p className="font-semibold">{v.maxVolumeM3} m³</p>
+                  </div>
+                  <div className="p-2 rounded-md bg-muted/50">
+                    <p className="text-muted-foreground">Pallets</p>
+                    <p className="font-semibold">{v.palletCapacity}</p>
+                  </div>
+                </div>
+                {v.isTemperatureControlled ? (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-cyan-50 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300">
+                    <Snowflake className="h-4 w-4" />
+                    <span className="text-xs font-medium">Temperature Controlled: {v.minTemp}°C to {v.maxTemp}°C</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-muted/30 text-muted-foreground">
+                    <Thermometer className="h-4 w-4" />
+                    <span className="text-xs">Ambient (no temperature control)</span>
+                  </div>
+                )}
+                <div className="space-y-1 text-xs mb-3 border-t pt-2">
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Driver</span><span className="font-semibold">{v.driverName}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Phone</span><span className="font-mono">{v.driverPhone}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">License</span><span className="font-mono text-xs">{v.driverLicense}</span></div>
+                  {v.helperName && <div className="flex items-center justify-between"><span className="text-muted-foreground">Helper</span><span className="font-semibold">{v.helperName}</span></div>}
+                </div>
+                <div className="border-t pt-2">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Avg Utilization</span>
+                    <span className="font-semibold">{v.avgUtilization}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div className={cn('h-full', v.avgUtilization > 85 ? 'bg-emerald-500' : v.avgUtilization > 70 ? 'bg-blue-500' : 'bg-amber-500')} style={{ width: `${v.avgUtilization}%` }} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{v.totalTrips} total trips</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-6">
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Boxes className="h-5 w-5" /> Fleet Summary</h3>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <div className="p-3 rounded-md bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">By Ownership</p>
+                <div className="flex flex-wrap gap-1">
+                  <Badge className="bg-blue-600 text-white text-xs">OWN_FLEET × 2</Badge>
+                  <Badge className="bg-amber-500 text-white text-xs">THIRD_PARTY × 2</Badge>
+                  <Badge className="bg-slate-400 text-white text-xs">RENTAL × 1</Badge>
+                </div>
+              </div>
+              <div className="p-3 rounded-md bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">By Type</p>
+                <div className="flex flex-wrap gap-1">
+                  <Badge className={cn('text-xs', VEHICLE_TYPE_COLORS.TRUCK)}>TRUCK × 1</Badge>
+                  <Badge className={cn('text-xs', VEHICLE_TYPE_COLORS.CONTAINER)}>CONTAINER × 1</Badge>
+                  <Badge className={cn('text-xs', VEHICLE_TYPE_COLORS.REFRIGERATED)}>REFRIGERATED × 1</Badge>
+                  <Badge className={cn('text-xs', VEHICLE_TYPE_COLORS.TEMPO)}>TEMPO × 1</Badge>
+                  <Badge className={cn('text-xs', VEHICLE_TYPE_COLORS.FLATBED)}>FLATBED × 1</Badge>
+                </div>
+              </div>
+              <div className="p-3 rounded-md bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">Temperature Control</p>
+                <p className="text-sm font-semibold">1 vehicle (20%) — Cold chain 2-8°C</p>
+              </div>
+              <div className="p-3 rounded-md bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">GPS Coverage</p>
+                <p className="text-sm font-semibold">4/5 (80%) — 1 rental offline</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === 'documents' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {SHIPPING_DOCUMENTS_DATA.map(d => (
+              <Card key={d.id} className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={cn('text-xs', DOC_TYPE_COLORS[d.documentType])}>{d.documentType}</Badge>
+                      <Badge className={cn('text-xs', DOC_STATUS_COLORS[d.status])}>{d.status}</Badge>
+                      <Badge variant="outline" className="text-xs">{d.format}</Badge>
+                    </div>
+                    <p className="font-mono text-sm font-bold">{d.documentNumber}</p>
+                    <p className="text-xs text-muted-foreground">{d.documentDate} · Dispatch: {d.dispatchNumber}</p>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-2 text-xs mb-3">
+                  <div>
+                    <p className="text-muted-foreground">Partner</p>
+                    <p className="font-semibold text-xs">{d.partnerName}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Ship-To Address</p>
+                    <p className="text-xs">{d.shipToAddress}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs border-t pt-2">
+                  <div>
+                    <p className="text-muted-foreground">Generated</p>
+                    <p className="font-semibold text-xs">{d.generatedAt || <span className="italic text-muted-foreground">pending</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Printed</p>
+                    <p className="font-semibold text-xs">{d.printedAt || <span className="italic text-muted-foreground">pending</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">File Size</p>
+                    <p className="font-mono text-xs font-semibold">{d.fileSizeBytes ? `${Math.round(d.fileSizeBytes / 1024)} KB` : <span className="italic text-muted-foreground">—</span>}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2 border-t pt-2">
+                  <span className="text-xs text-muted-foreground">{d.fileUrl ? <span className="font-mono">{d.fileUrl}</span> : <span className="italic">no file generated yet</span>}</span>
+                  {d.status === 'PENDING' && <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><FileText className="h-3 w-3" /> Generate</Button>}
+                  {d.status === 'GENERATED' && <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><Printer className="h-3 w-3" /> Print</Button>}
+                  {d.status === 'PRINTED' && <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><ArrowRight className="h-3 w-3" /> Send</Button>}
+                  {d.status === 'SENT' && <Badge variant="outline" className="text-xs text-emerald-700"><CheckCircle2 className="h-3 w-3 mr-1 inline" />Sent</Badge>}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-6 border-l-4 border-l-amber-500">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 flex-shrink-0">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 flex items-center gap-2">Shipping Document Lifecycle <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">7 Document Types</Badge></h3>
+                <p className="text-sm text-muted-foreground mb-4">Seven document types accompany each dispatch, generated in sequence as the dispatch moves through its lifecycle. Status flow: PENDING → GENERATED → PRINTED → SENT. The Delivery Manifest is the master document — it lists every carton, weight, and pallet on the vehicle, and is signed by the carrier at hand-off. The e-Way Bill is mandatory under GST for movement of goods above ₹50,000.</p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {[
+                    { name: 'DELIVERY_CHALLAN', desc: 'Internal proof of movement — created at dispatch, signed by driver' },
+                    { name: 'TAX_INVOICE_REF', desc: 'GST invoice reference — linked to commercial engine' },
+                    { name: 'PACKING_LIST', desc: 'Carton-level detail for receiver — item × qty per carton' },
+                    { name: 'DELIVERY_MANIFEST', desc: 'Carrier hand-off document — master list of cartons/pallets' },
+                    { name: 'EXPORT_DOCUMENTS', desc: 'Customs + port — Bill of Lading, Shipping Bill, COO' },
+                    { name: 'TRANSPORT_RECEIPT', desc: 'LR (Lorry Receipt) / GR (Goods Receipt) — carrier acknowledgment' },
+                    { name: 'E_WAY_BILL_REF', desc: 'GSTN e-way bill — mandatory for movement > ₹50,000' },
+                  ].map(t => (
+                    <div key={t.name} className="p-3 rounded-md bg-muted/50">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className={cn('text-xs', DOC_TYPE_COLORS[t.name])}>{t.name}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === 'gateexit' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {GATE_EXIT_LOGS_DATA.map(g => (
+              <Card key={g.id} className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={cn('text-xs', GATE_EXIT_STATUS_COLORS[g.status])}>{g.status}</Badge>
+                      <Badge variant="outline" className="text-xs">{g.exitNumber}</Badge>
+                    </div>
+                    <p className="font-mono text-sm font-bold">Dispatch: {g.dispatchNumber}</p>
+                    <p className="text-xs text-muted-foreground">{g.exitDate} · Vehicle: <span className="font-mono">{g.vehicleNumber}</span></p>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-1 text-xs mb-3 border-t pt-2">
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Driver</span><span className="font-semibold">{g.driverName}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Security Officer</span><span className="font-semibold">{g.securityOfficerName}</span></div>
+                  {g.exitTime && <div className="flex items-center justify-between"><span className="text-muted-foreground">Exit Time</span><span className="font-semibold text-emerald-700 dark:text-emerald-400">{g.exitTime}</span></div>}
+                  {g.approvedByName && <div className="flex items-center justify-between"><span className="text-muted-foreground">Approved By</span><span className="font-semibold">{g.approvedByName}</span></div>}
+                </div>
+                <div className="border-t pt-2 mb-3">
+                  <p className="text-xs font-semibold mb-2">Verification Checklist</p>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className={cn('flex flex-col items-center gap-1 p-2 rounded-md', g.sealVerified ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400')}>
+                      {g.sealVerified ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangleIcon className="h-4 w-4" />}
+                      <span className="font-medium">Seal Verified</span>
+                    </div>
+                    <div className={cn('flex flex-col items-center gap-1 p-2 rounded-md', g.documentsVerified ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400')}>
+                      {g.documentsVerified ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangleIcon className="h-4 w-4" />}
+                      <span className="font-medium">Docs Verified</span>
+                    </div>
+                    <div className={cn('flex flex-col items-center gap-1 p-2 rounded-md', g.vehicleInspected ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400')}>
+                      {g.vehicleInspected ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangleIcon className="h-4 w-4" />}
+                      <span className="font-medium">Vehicle Insp.</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t pt-2">
+                  <p className="text-xs text-muted-foreground italic mb-2">{g.remarks}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Gate log: {g.id}</span>
+                    {(g.status === 'PENDING' || g.status === 'VERIFIED') ? (
+                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1" disabled={!g.sealVerified || !g.documentsVerified || !g.vehicleInspected}>
+                        <CheckCircle2 className="h-3 w-3" /> Approve &amp; Exit
+                      </Button>
+                    ) : g.status === 'EXITED' ? (
+                      <Badge variant="outline" className="text-xs text-emerald-700"><CheckCircle2 className="h-3 w-3 mr-1 inline" />Exited</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-6 border-l-4 border-l-emerald-500">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 flex-shrink-0">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 flex items-center gap-2">Gate Exit Verification <Badge className="bg-emerald-500 text-emerald-950 hover:bg-emerald-500">Final Checkpoint</Badge></h3>
+                <p className="text-sm text-muted-foreground mb-4">Gate Exit is the final checkpoint before vehicle leaves the warehouse premises. Security officer verifies three things: (1) Seal intact &amp; number matches dispatch order, (2) Shipping documents printed &amp; attached to vehicle, (3) Vehicle inspection — driver license, vehicle number plate matches, no unauthorized cargo. Only after all three checks pass does the gate manager approve and the vehicle exits. Failure at any check DENIES the exit and raises an exception.</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="p-3 rounded-md bg-muted/50">
+                    <p className="text-xs font-semibold mb-1 flex items-center gap-2"><LockIcon className="h-4 w-4 text-amber-600" /> 1. Seal Verification</p>
+                    <p className="text-xs text-muted-foreground">Security verifies seal number matches the dispatch order's VehicleSeal record. Broken seal = DENY exit.</p>
+                  </div>
+                  <div className="p-3 rounded-md bg-muted/50">
+                    <p className="text-xs font-semibold mb-1 flex items-center gap-2"><FileText className="h-4 w-4 text-blue-600" /> 2. Document Check</p>
+                    <p className="text-xs text-muted-foreground">Delivery Manifest, e-Way Bill, Delivery Challan printed and attached. No docs = DENY exit.</p>
+                  </div>
+                  <div className="p-3 rounded-md bg-muted/50">
+                    <p className="text-xs font-semibold mb-1 flex items-center gap-2"><Truck className="h-4 w-4 text-purple-600" /> 3. Vehicle Inspection</p>
+                    <p className="text-xs text-muted-foreground">Driver license valid, vehicle number matches, no unauthorized cargo. Mismatch = DENY exit.</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">Status flow: PENDING (awaiting inspection) → VERIFIED (all 3 checks passed) → APPROVED (gate manager approves) → EXITED (vehicle has left premises) — or DENIED if any check fails. Approved = EXITED in this implementation.</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Settings Module (Sprint 2) ─────────────────────────
 function SettingsModule() {
   return (
@@ -9545,7 +10192,7 @@ export default function Home() {
     partners: 'Business Partners', identification: 'Identification & Traceability',
     governance: 'Data Governance', inventory: 'Inventory Engine',
     goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
-    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', manufacturing: 'Manufacturing',
+    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', dispatch: 'Dispatch & Shipping', manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
     ai: 'AI Copilot',
@@ -9594,7 +10241,7 @@ export default function Home() {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
           <div className="flex-1" />
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 26 · 216 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 27 · 223 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
@@ -9624,11 +10271,12 @@ export default function Home() {
             {activeModule === 'receiving' && <ReceivingModule />}
             {activeModule === 'putaway' && <PutawayModule />}
             {activeModule === 'fulfillment' && <FulfillmentModule />}
+            {activeModule === 'dispatch' && <DispatchModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-26 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence, Picking & Packing & Order Fulfillment) · 216 Database Tables</p>
+              <p className="mt-1">Sprints 1-27 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence, Picking & Packing & Order Fulfillment, Dispatch & Shipping & Load Management) · 223 Database Tables</p>
             </div>
           </main>
         </ScrollArea>

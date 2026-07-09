@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "26.0.0"
+const VERSION = "27.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -2516,6 +2516,321 @@ const PICKING_DATA = {
   ],
 }
 
+// ─── Sprint 27: Dispatch, Shipping & Load Management Engine ──
+const DISPATCH_DATA = {
+  // ─── Dispatch Orders (6) ───
+  dispatchOrders: [
+    {
+      id: 'do-001', dispatchNumber: 'DSP-2026-0001', dispatchDate: '2026-07-09T07:00:00Z',
+      dispatchType: 'RETAIL_DISPATCH',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      partnerId: 'bp-001', partnerName: 'Sudhastar Retail Mumbai',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0231',
+      vehicleId: 'dv-001', vehicleNumber: 'MH-04-AB-1234',
+      driverName: 'Rajesh Patil', driverPhone: '+91-98200-12345',
+      carrierName: 'Sudhastar Own Fleet',
+      routeId: 'rt-001', routeName: 'Mumbai City Retail Route', deliverySequence: 1,
+      priority: 'HIGH',
+      status: 'VEHICLE_ASSIGNED',
+      totalOrders: 1, totalLines: 4, totalCartons: 2, totalPallets: 0,
+      totalQty: 120, totalWeightKg: 18.50, totalVolumeM3: 0.09,
+      plannedDispatchAt: '2026-07-09T08:00:00Z', loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, gateExitAt: null, dispatchedAt: null, loadingDurationMin: null,
+      createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah', createdAt: '2026-07-09T05:30:00Z', updatedAt: '2026-07-09T06:45:00Z',
+    },
+    {
+      id: 'do-002', dispatchNumber: 'DSP-2026-0002', dispatchDate: '2026-07-09T06:00:00Z',
+      dispatchType: 'DISTRIBUTOR_DISPATCH',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      partnerId: 'bp-002', partnerName: 'Maharashtra Wholesale Distributors',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0228',
+      vehicleId: 'dv-002', vehicleNumber: 'MH-04-CD-5678',
+      driverName: 'Suresh Kumar', driverPhone: '+91-98200-23456',
+      carrierName: 'VRL Logistics (3PL)',
+      routeId: 'rt-002', routeName: 'Pune-Nashik Distributor Route', deliverySequence: 1,
+      priority: 'NORMAL',
+      status: 'LOADED',
+      totalOrders: 1, totalLines: 3, totalCartons: 6, totalPallets: 1,
+      totalQty: 360, totalWeightKg: 36.50, totalVolumeM3: 0.18,
+      plannedDispatchAt: '2026-07-09T09:00:00Z', loadingStartedAt: '2026-07-09T06:35:00Z', loadingCompletedAt: '2026-07-09T07:05:00Z', sealedAt: null, gateExitAt: null, dispatchedAt: null, loadingDurationMin: 30,
+      createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah', createdAt: '2026-07-09T05:00:00Z', updatedAt: '2026-07-09T07:05:00Z',
+    },
+    {
+      id: 'do-003', dispatchNumber: 'DSP-2026-0003', dispatchDate: '2026-07-09T05:00:00Z',
+      dispatchType: 'RESTAURANT_REPLENISHMENT',
+      warehouseId: 'wh-cs-mum', warehouseName: 'Cold Storage Warehouse',
+      partnerId: 'bp-003', partnerName: 'Mumbai Restaurant Group',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0218',
+      vehicleId: 'dv-003', vehicleNumber: 'MH-04-EF-9012',
+      driverName: 'Imran Sheikh', driverPhone: '+91-98200-34567',
+      carrierName: 'Cold Chain Express',
+      routeId: 'rt-003', routeName: 'Mumbai City Restaurant Cold Route', deliverySequence: 1,
+      priority: 'EMERGENCY',
+      status: 'SEALED',
+      totalOrders: 1, totalLines: 3, totalCartons: 1, totalPallets: 0,
+      totalQty: 90, totalWeightKg: 12.80, totalVolumeM3: 0.06,
+      plannedDispatchAt: '2026-07-09T06:00:00Z', loadingStartedAt: '2026-07-09T05:10:00Z', loadingCompletedAt: '2026-07-09T05:30:00Z', sealedAt: '2026-07-09T05:42:00Z', gateExitAt: null, dispatchedAt: null, loadingDurationMin: 20,
+      createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah', createdAt: '2026-07-09T04:30:00Z', updatedAt: '2026-07-09T05:42:00Z',
+    },
+    {
+      id: 'do-004', dispatchNumber: 'DSP-2026-0004', dispatchDate: '2026-07-09T04:00:00Z',
+      dispatchType: 'BRANCH_TRANSFER',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      partnerId: 'bp-005', partnerName: 'Pune Retail Branch',
+      referenceType: 'TRANSFER_ORDER', referenceNumber: 'TO-2026-0067',
+      vehicleId: 'dv-004', vehicleNumber: 'MH-12-GH-3456',
+      driverName: 'Vinod Mehta', driverPhone: '+91-98200-45678',
+      carrierName: 'Sudhastar Own Fleet',
+      routeId: 'rt-002', routeName: 'Pune-Nashik Distributor Route', deliverySequence: 2,
+      priority: 'NORMAL',
+      status: 'LOADING',
+      totalOrders: 1, totalLines: 4, totalCartons: 2, totalPallets: 0,
+      totalQty: 240, totalWeightKg: 24.30, totalVolumeM3: 0.14,
+      plannedDispatchAt: '2026-07-09T10:00:00Z', loadingStartedAt: '2026-07-09T04:20:00Z', loadingCompletedAt: null, sealedAt: null, gateExitAt: null, dispatchedAt: null, loadingDurationMin: null,
+      createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah', createdAt: '2026-07-09T03:30:00Z', updatedAt: '2026-07-09T04:20:00Z',
+    },
+    {
+      id: 'do-005', dispatchNumber: 'DSP-2026-0005', dispatchDate: '2026-07-08T14:00:00Z',
+      dispatchType: 'EXPORT_SHIPMENT',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      partnerId: 'bp-006', partnerName: 'Dubai Exports FZE',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0199',
+      vehicleId: 'dv-005', vehicleNumber: 'CONT-MUM-EXP-001',
+      driverName: 'Javed Akhtar', driverPhone: '+91-98200-56789',
+      carrierName: 'DHL Global Forwarding',
+      routeId: 'rt-004', routeName: 'Mumbai Port → Jebel Ali (Export)', deliverySequence: 1,
+      priority: 'HIGH',
+      status: 'DISPATCHED',
+      totalOrders: 1, totalLines: 4, totalCartons: 4, totalPallets: 1,
+      totalQty: 480, totalWeightKg: 58.40, totalVolumeM3: 0.32,
+      plannedDispatchAt: '2026-07-08T16:00:00Z', loadingStartedAt: '2026-07-08T13:30:00Z', loadingCompletedAt: '2026-07-08T14:15:00Z', sealedAt: '2026-07-08T14:30:00Z', gateExitAt: '2026-07-08T14:55:00Z', dispatchedAt: '2026-07-08T15:00:00Z', loadingDurationMin: 45,
+      createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah', createdAt: '2026-07-08T12:00:00Z', updatedAt: '2026-07-08T15:00:00Z',
+    },
+    {
+      id: 'do-006', dispatchNumber: 'DSP-2026-0006', dispatchDate: '2026-07-09T09:00:00Z',
+      dispatchType: 'COURIER_SHIPMENT',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      partnerId: 'bp-008', partnerName: 'Bengaluru E-Commerce Customer',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0252',
+      vehicleId: 'dv-005', vehicleNumber: 'KA-01-MN-7890',
+      driverName: 'Mohan Das', driverPhone: '+91-98200-67890',
+      carrierName: 'Delhivery Express',
+      routeId: 'rt-005', routeName: 'Mumbai-Bengaluru Air Route', deliverySequence: 1,
+      priority: 'NORMAL',
+      status: 'PLANNED',
+      totalOrders: 1, totalLines: 2, totalCartons: 1, totalPallets: 0,
+      totalQty: 60, totalWeightKg: 8.20, totalVolumeM3: 0.04,
+      plannedDispatchAt: '2026-07-09T15:00:00Z', loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, gateExitAt: null, dispatchedAt: null, loadingDurationMin: null,
+      createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah', createdAt: '2026-07-09T08:30:00Z', updatedAt: '2026-07-09T08:30:00Z',
+    },
+  ],
+
+  // ─── Dispatch Vehicles (5) ───
+  dispatchVehicles: [
+    {
+      id: 'dv-001', vehicleNumber: 'MH-04-AB-1234', vehicleType: 'TRUCK',
+      maxWeightKg: 5000, maxVolumeM3: 25, palletCapacity: 8,
+      isTemperatureControlled: false, minTemp: null, maxTemp: null,
+      ownershipType: 'OWN_FLEET',
+      driverName: 'Rajesh Patil', driverPhone: '+91-98200-12345', driverLicense: 'MH0420190001234', helperName: 'Salim Ansari',
+      hasGPS: true, gpsDeviceId: 'GPS-MUM-TRK-001',
+      status: 'ASSIGNED',
+      totalTrips: 348, avgUtilization: 78.5,
+      createdAt: '2025-04-12T08:00:00Z', updatedAt: '2026-07-09T06:45:00Z',
+    },
+    {
+      id: 'dv-002', vehicleNumber: 'MH-04-CD-5678', vehicleType: 'CONTAINER',
+      maxWeightKg: 12000, maxVolumeM3: 45, palletCapacity: 18,
+      isTemperatureControlled: false, minTemp: null, maxTemp: null,
+      ownershipType: 'THIRD_PARTY',
+      driverName: 'Suresh Kumar', driverPhone: '+91-98200-23456', driverLicense: 'MH0420170005678', helperName: 'Bablu Yadav',
+      hasGPS: true, gpsDeviceId: 'GPS-VRL-014',
+      status: 'LOADED',
+      totalTrips: 892, avgUtilization: 84.2,
+      createdAt: '2024-11-03T10:00:00Z', updatedAt: '2026-07-09T07:05:00Z',
+    },
+    {
+      id: 'dv-003', vehicleNumber: 'MH-04-EF-9012', vehicleType: 'REFRIGERATED',
+      maxWeightKg: 3500, maxVolumeM3: 18, palletCapacity: 6,
+      isTemperatureControlled: true, minTemp: 2, maxTemp: 8,
+      ownershipType: 'THIRD_PARTY',
+      driverName: 'Imran Sheikh', driverPhone: '+91-98200-34567', driverLicense: 'MH0420180009012', helperName: 'Kamal Singh',
+      hasGPS: true, gpsDeviceId: 'GPS-CCE-007',
+      status: 'LOADED',
+      totalTrips: 521, avgUtilization: 71.8,
+      createdAt: '2025-01-22T09:00:00Z', updatedAt: '2026-07-09T05:42:00Z',
+    },
+    {
+      id: 'dv-004', vehicleNumber: 'MH-12-GH-3456', vehicleType: 'TEMPO',
+      maxWeightKg: 1500, maxVolumeM3: 8, palletCapacity: 2,
+      isTemperatureControlled: false, minTemp: null, maxTemp: null,
+      ownershipType: 'OWN_FLEET',
+      driverName: 'Vinod Mehta', driverPhone: '+91-98200-45678', driverLicense: 'MH1220190003456', helperName: null,
+      hasGPS: true, gpsDeviceId: 'GPS-MUM-TMP-002',
+      status: 'LOADING',
+      totalTrips: 612, avgUtilization: 65.3,
+      createdAt: '2025-06-15T11:00:00Z', updatedAt: '2026-07-09T04:20:00Z',
+    },
+    {
+      id: 'dv-005', vehicleNumber: 'CONT-MUM-EXP-001', vehicleType: 'FLATBED',
+      maxWeightKg: 20000, maxVolumeM3: 60, palletCapacity: 24,
+      isTemperatureControlled: false, minTemp: null, maxTemp: null,
+      ownershipType: 'RENTAL',
+      driverName: 'Javed Akhtar', driverPhone: '+91-98200-56789', driverLicense: 'MH0420160001111', helperName: 'Ravi Kumar',
+      hasGPS: false, gpsDeviceId: null,
+      status: 'IN_TRANSIT',
+      totalTrips: 78, avgUtilization: 92.1,
+      createdAt: '2026-02-08T14:00:00Z', updatedAt: '2026-07-08T15:00:00Z',
+    },
+  ],
+
+  // ─── Load Plans (3) ───
+  loadPlans: [
+    {
+      id: 'lp-001', dispatchOrderId: 'do-002', dispatchNumber: 'DSP-2026-0002', vehicleId: 'dv-002', vehicleNumber: 'MH-04-CD-5678',
+      planDate: '2026-07-09T05:30:00Z',
+      totalWeightKg: 36.50, maxWeightKg: 12000, weightUtilization: 0.30,
+      totalVolumeM3: 0.18, maxVolumeM3: 45, volumeUtilization: 0.40,
+      palletPositions: 1, maxPalletPositions: 18,
+      loadingSequence: [
+        { sequence: 1, productName: 'Kaju Katli 500g', cartonCount: 2, weightKg: 12.20, dockDoor: 'DD-03' },
+        { sequence: 2, productName: 'Soan Cake 1kg', cartonCount: 2, weightKg: 12.10, dockDoor: 'DD-03' },
+        { sequence: 3, productName: 'Pista Roll 250g', cartonCount: 2, weightKg: 12.20, dockDoor: 'DD-03' },
+      ],
+      status: 'COMPLETED',
+      createdById: 'usr-ds-01', createdAt: '2026-07-09T05:15:00Z', updatedAt: '2026-07-09T07:05:00Z',
+    },
+    {
+      id: 'lp-002', dispatchOrderId: 'do-003', dispatchNumber: 'DSP-2026-0003', vehicleId: 'dv-003', vehicleNumber: 'MH-04-EF-9012',
+      planDate: '2026-07-09T04:45:00Z',
+      totalWeightKg: 12.80, maxWeightKg: 3500, weightUtilization: 0.37,
+      totalVolumeM3: 0.06, maxVolumeM3: 18, volumeUtilization: 0.33,
+      palletPositions: 0, maxPalletPositions: 6,
+      loadingSequence: [
+        { sequence: 1, productName: 'Chilled Kaju Katli', cartonCount: 1, weightKg: 4.50, dockDoor: 'CD-04' },
+        { sequence: 2, productName: 'Chilled Soan Cake', cartonCount: 1, weightKg: 4.20, dockDoor: 'CD-04' },
+        { sequence: 3, productName: 'Refrigerated Dry Fruit Mix', cartonCount: 1, weightKg: 4.10, dockDoor: 'CD-04' },
+      ],
+      status: 'COMPLETED',
+      createdById: 'usr-ds-01', createdAt: '2026-07-09T04:35:00Z', updatedAt: '2026-07-09T05:30:00Z',
+    },
+    {
+      id: 'lp-003', dispatchOrderId: 'do-005', dispatchNumber: 'DSP-2026-0005', vehicleId: 'dv-005', vehicleNumber: 'CONT-MUM-EXP-001',
+      planDate: '2026-07-08T12:30:00Z',
+      totalWeightKg: 58.40, maxWeightKg: 20000, weightUtilization: 0.29,
+      totalVolumeM3: 0.32, maxVolumeM3: 60, volumeUtilization: 0.53,
+      palletPositions: 1, maxPalletPositions: 24,
+      loadingSequence: [
+        { sequence: 1, productName: 'Premium Kaju Katli 1kg Export', cartonCount: 1, weightKg: 14.80, dockDoor: 'DD-03' },
+        { sequence: 2, productName: 'Premium Soan Cake 2kg Export', cartonCount: 1, weightKg: 15.20, dockDoor: 'DD-03' },
+        { sequence: 3, productName: 'Premium Pista Roll 500g Export', cartonCount: 1, weightKg: 14.40, dockDoor: 'DD-03' },
+        { sequence: 4, productName: 'Premium Anjeer Bar 400g Export', cartonCount: 1, weightKg: 14.00, dockDoor: 'DD-03' },
+      ],
+      status: 'COMPLETED',
+      createdById: 'usr-ds-01', createdAt: '2026-07-08T12:15:00Z', updatedAt: '2026-07-08T14:15:00Z',
+    },
+  ],
+
+  // ─── Shipping Documents (4) ───
+  shippingDocuments: [
+    {
+      id: 'sd-001', documentNumber: 'DOC-DC-2026-0001', documentDate: '2026-07-09T07:10:00Z',
+      documentType: 'DELIVERY_CHALLAN',
+      dispatchOrderId: 'do-002', dispatchNumber: 'DSP-2026-0002',
+      partnerId: 'bp-002', partnerName: 'Maharashtra Wholesale Distributors',
+      shipToAddress: 'Wholesale Hub, APMC Market, Vashi, Navi Mumbai 400703',
+      fileUrl: '/docs/dispatch/DC-2026-0001.pdf', fileSizeBytes: 184320,
+      format: 'PDF',
+      status: 'PRINTED',
+      generatedAt: '2026-07-09T07:10:00Z', printedAt: '2026-07-09T07:15:00Z',
+      createdById: 'usr-ds-01', createdAt: '2026-07-09T07:10:00Z',
+    },
+    {
+      id: 'sd-002', documentNumber: 'DOC-PL-2026-0002', documentDate: '2026-07-09T05:25:00Z',
+      documentType: 'PACKING_LIST',
+      dispatchOrderId: 'do-003', dispatchNumber: 'DSP-2026-0003',
+      partnerId: 'bp-003', partnerName: 'Mumbai Restaurant Group',
+      shipToAddress: 'Marine Drive Restaurant, 12 Marine Lines, Mumbai 400020',
+      fileUrl: '/docs/dispatch/PL-2026-0002.pdf', fileSizeBytes: 92160,
+      format: 'PDF',
+      status: 'SENT',
+      generatedAt: '2026-07-09T05:25:00Z', printedAt: '2026-07-09T05:28:00Z',
+      createdById: 'usr-ds-01', createdAt: '2026-07-09T05:25:00Z',
+    },
+    {
+      id: 'sd-003', documentNumber: 'DOC-DM-2026-0003', documentDate: '2026-07-08T14:25:00Z',
+      documentType: 'DELIVERY_MANIFEST',
+      dispatchOrderId: 'do-005', dispatchNumber: 'DSP-2026-0005',
+      partnerId: 'bp-006', partnerName: 'Dubai Exports FZE',
+      shipToAddress: 'Jebel Ali Free Zone, Office 402, Building 7, Dubai',
+      fileUrl: '/docs/dispatch/DM-2026-0003.pdf', fileSizeBytes: 245760,
+      format: 'PDF',
+      status: 'GENERATED',
+      generatedAt: '2026-07-08T14:25:00Z', printedAt: null,
+      createdById: 'usr-ds-01', createdAt: '2026-07-08T14:25:00Z',
+    },
+    {
+      id: 'sd-004', documentNumber: 'DOC-EB-2026-0004', documentDate: '2026-07-09T07:30:00Z',
+      documentType: 'E_WAY_BILL_REF',
+      dispatchOrderId: 'do-001', dispatchNumber: 'DSP-2026-0001',
+      partnerId: 'bp-001', partnerName: 'Sudhastar Retail Mumbai',
+      shipToAddress: 'Andheri East Retail Store, Mumbai 400069',
+      fileUrl: null, fileSizeBytes: null,
+      format: 'PDF',
+      status: 'PENDING',
+      generatedAt: null, printedAt: null,
+      createdById: 'usr-ds-01', createdAt: '2026-07-09T07:30:00Z',
+    },
+  ],
+
+  // ─── Vehicle Seals (2) ───
+  vehicleSeals: [
+    {
+      id: 'vs-001', dispatchOrderId: 'do-003', dispatchNumber: 'DSP-2026-0003',
+      sealNumber: 'SEAL-BOLT-2026-0042', sealType: 'BOLT',
+      appliedAt: '2026-07-09T05:35:00Z', appliedById: 'usr-ds-02', appliedByName: 'Loading Supervisor — Prakash Jadhav',
+      verifiedAt: '2026-07-09T05:42:00Z', verifiedById: 'usr-ds-03', verifiedByName: 'Security Officer — Mahesh Tiwari',
+      brokenAt: null, brokenBy: null, brokenReason: null,
+      status: 'VERIFIED',
+      createdAt: '2026-07-09T05:35:00Z',
+    },
+    {
+      id: 'vs-002', dispatchOrderId: 'do-005', dispatchNumber: 'DSP-2026-0005',
+      sealNumber: 'SEAL-TP-2026-0078', sealType: 'TAMPER_PROOF',
+      appliedAt: '2026-07-08T14:30:00Z', appliedById: 'usr-ds-02', appliedByName: 'Loading Supervisor — Prakash Jadhav',
+      verifiedAt: null, verifiedById: null, verifiedByName: null,
+      brokenAt: null, brokenBy: null, brokenReason: null,
+      status: 'APPLIED',
+      createdAt: '2026-07-08T14:30:00Z',
+    },
+  ],
+
+  // ─── Gate Exit Logs (2) ───
+  gateExitLogs: [
+    {
+      id: 'gel-001', exitNumber: 'EXIT-2026-0001', exitDate: '2026-07-08T14:55:00Z',
+      dispatchOrderId: 'do-005', dispatchNumber: 'DSP-2026-0005',
+      vehicleNumber: 'CONT-MUM-EXP-001', driverName: 'Javed Akhtar',
+      securityOfficerId: 'usr-sec-01', securityOfficerName: 'Security Officer — Mahesh Tiwari',
+      sealVerified: true, documentsVerified: true, vehicleInspected: true,
+      exitTime: '2026-07-08T14:55:00Z', approvedById: 'usr-sec-02', approvedByName: 'Security Manager — Deepak Nair',
+      status: 'EXITED',
+      remarks: 'Export shipment cleared — customs docs verified, container sealed, GPS offline (rental flatbed).',
+      createdAt: '2026-07-08T14:50:00Z',
+    },
+    {
+      id: 'gel-002', exitNumber: 'EXIT-2026-0002', exitDate: '2026-07-09T05:42:00Z',
+      dispatchOrderId: 'do-003', dispatchNumber: 'DSP-2026-0003',
+      vehicleNumber: 'MH-04-EF-9012', driverName: 'Imran Sheikh',
+      securityOfficerId: 'usr-sec-01', securityOfficerName: 'Security Officer — Mahesh Tiwari',
+      sealVerified: true, documentsVerified: true, vehicleInspected: false,
+      exitTime: null, approvedById: null, approvedByName: null,
+      status: 'PENDING',
+      remarks: 'Cold chain dispatch — awaiting final vehicle inspection before gate exit.',
+      createdAt: '2026-07-09T05:42:00Z',
+    },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -2910,7 +3225,7 @@ const server = Bun.serve({
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
-        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 31, sprint: 26 },
+        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 38, sprint: 27 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -6569,14 +6884,291 @@ const server = Bun.serve({
       }, 'SUOP Picking, Packing & Order Fulfillment Engine v26.0.0')), { headers })
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // SPRINT 27 — Dispatch, Shipping & Load Management Engine
+    // ════════════════════════════════════════════════════════════════════
+
+    // ─── Dispatch Orders ──────────────────────────────────
+    // GET /api/dispatch-orders (with type/status/warehouse filters)
+    if (path === '/api/dispatch-orders' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let orders = DISPATCH_DATA.dispatchOrders
+      if (typeFilter) orders = orders.filter(o => o.dispatchType === typeFilter.toUpperCase())
+      if (statusFilter) orders = orders.filter(o => o.status === statusFilter.toUpperCase())
+      if (warehouseFilter) orders = orders.filter(o => o.warehouseId === warehouseFilter || o.warehouseName.toLowerCase().includes(warehouseFilter.toLowerCase()))
+      return new Response(JSON.stringify(successResponse(orders, `${orders.length} dispatch orders`)), { headers })
+    }
+
+    // POST /api/dispatch-orders
+    if (path === '/api/dispatch-orders' && method === 'POST') {
+      let body: any
+      try { body = await req.json() } catch { return new Response(JSON.stringify(errorResponse('Invalid JSON body', 'BAD_REQUEST', 400)), { status: 400, headers }) }
+      if (!body.dispatchNumber || !body.dispatchType || !body.warehouseName) {
+        return new Response(JSON.stringify(errorResponse('dispatchNumber, dispatchType, warehouseName are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+      }
+      const newOrder: any = {
+        id: `do-${String(DISPATCH_DATA.dispatchOrders.length + 1).padStart(3, '0')}`,
+        dispatchNumber: body.dispatchNumber,
+        dispatchDate: body.dispatchDate || new Date().toISOString(),
+        dispatchType: body.dispatchType,
+        warehouseId: body.warehouseId || 'wh-fg-mum',
+        warehouseName: body.warehouseName,
+        partnerId: body.partnerId || null,
+        partnerName: body.partnerName || null,
+        referenceType: body.referenceType || null,
+        referenceNumber: body.referenceNumber || null,
+        vehicleId: body.vehicleId || null,
+        vehicleNumber: body.vehicleNumber || null,
+        driverName: body.driverName || null,
+        driverPhone: body.driverPhone || null,
+        carrierName: body.carrierName || null,
+        routeId: body.routeId || null,
+        routeName: body.routeName || null,
+        deliverySequence: body.deliverySequence || null,
+        priority: body.priority || 'NORMAL',
+        status: body.status || 'PLANNED',
+        totalOrders: body.totalOrders || 0,
+        totalLines: body.totalLines || 0,
+        totalCartons: body.totalCartons || 0,
+        totalPallets: body.totalPallets || 0,
+        totalQty: body.totalQty || 0,
+        totalWeightKg: body.totalWeightKg || 0,
+        totalVolumeM3: body.totalVolumeM3 || 0,
+        plannedDispatchAt: body.plannedDispatchAt || null,
+        loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, gateExitAt: null, dispatchedAt: null, loadingDurationMin: null,
+        createdById: 'usr-ds-01', createdByName: 'Dispatch Planner — Anjali Shah',
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      }
+      DISPATCH_DATA.dispatchOrders.push(newOrder)
+      log('info', 'Dispatch order created', { dispatchNumber: newOrder.dispatchNumber, type: newOrder.dispatchType })
+      return new Response(JSON.stringify(successResponse(newOrder, `Dispatch order ${newOrder.dispatchNumber} created`)), { status: 201, headers })
+    }
+
+    // POST /api/dispatch-orders/:id/complete
+    if (path.startsWith('/api/dispatch-orders/') && path.endsWith('/complete') && method === 'POST') {
+      const id = path.replace('/api/dispatch-orders/', '').replace('/complete', '')
+      const order = DISPATCH_DATA.dispatchOrders.find(o => o.id === id)
+      if (!order) return new Response(JSON.stringify(errorResponse('Dispatch order not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (order.status !== 'LOADING' && order.status !== 'LOADED') {
+        return new Response(JSON.stringify(errorResponse(`Cannot complete dispatch in status ${order.status}. Must be LOADING or LOADED.`, 'INVALID_STATUS', 400)), { status: 400, headers })
+      }
+      order.loadingCompletedAt = new Date().toISOString()
+      if (order.loadingStartedAt) {
+        order.loadingDurationMin = Math.round((new Date(order.loadingCompletedAt).getTime() - new Date(order.loadingStartedAt).getTime()) / 60000)
+      }
+      order.status = 'LOADED'
+      order.updatedAt = new Date().toISOString()
+      log('info', 'Dispatch order loading completed', { dispatchNumber: order.dispatchNumber, durationMin: order.loadingDurationMin })
+      return new Response(JSON.stringify(successResponse(order, `Dispatch ${order.dispatchNumber} loading complete — status LOADED`)), { headers })
+    }
+
+    // ─── Dispatch Vehicles ────────────────────────────────
+    // GET /api/dispatch-vehicles (with type/status/ownership filters)
+    if (path === '/api/dispatch-vehicles' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const ownershipFilter = url.searchParams.get('ownership')
+      let vehicles = DISPATCH_DATA.dispatchVehicles
+      if (typeFilter) vehicles = vehicles.filter(v => v.vehicleType === typeFilter.toUpperCase())
+      if (statusFilter) vehicles = vehicles.filter(v => v.status === statusFilter.toUpperCase())
+      if (ownershipFilter) vehicles = vehicles.filter(v => v.ownershipType === ownershipFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(vehicles, `${vehicles.length} dispatch vehicles`)), { headers })
+    }
+
+    // ─── Load Plans ───────────────────────────────────────
+    // GET /api/load-plans
+    if (path === '/api/load-plans' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let plans = DISPATCH_DATA.loadPlans
+      if (statusFilter) plans = plans.filter(p => p.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(plans, `${plans.length} load plans`)), { headers })
+    }
+
+    // ─── Shipping Documents ───────────────────────────────
+    // GET /api/shipping-documents (with type/status filter)
+    if (path === '/api/shipping-documents' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let docs = DISPATCH_DATA.shippingDocuments
+      if (typeFilter) docs = docs.filter(d => d.documentType === typeFilter.toUpperCase())
+      if (statusFilter) docs = docs.filter(d => d.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(docs, `${docs.length} shipping documents`)), { headers })
+    }
+
+    // ─── Vehicle Seals ────────────────────────────────────
+    // GET /api/vehicle-seals
+    if (path === '/api/vehicle-seals' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let seals = DISPATCH_DATA.vehicleSeals
+      if (statusFilter) seals = seals.filter(s => s.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(seals, `${seals.length} vehicle seals`)), { headers })
+    }
+
+    // ─── Gate Exit Logs ───────────────────────────────────
+    // GET /api/gate-exit-logs
+    if (path === '/api/gate-exit-logs' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let logs = DISPATCH_DATA.gateExitLogs
+      if (statusFilter) logs = logs.filter(g => g.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(logs, `${logs.length} gate exit logs`)), { headers })
+    }
+
+    // POST /api/gate-exit-logs/:id/approve
+    if (path.startsWith('/api/gate-exit-logs/') && path.endsWith('/approve') && method === 'POST') {
+      const id = path.replace('/api/gate-exit-logs/', '').replace('/approve', '')
+      const gel = DISPATCH_DATA.gateExitLogs.find(g => g.id === id)
+      if (!gel) return new Response(JSON.stringify(errorResponse('Gate exit log not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (gel.status !== 'PENDING' && gel.status !== 'VERIFIED') {
+        return new Response(JSON.stringify(errorResponse(`Cannot approve gate exit in status ${gel.status}. Must be PENDING or VERIFIED.`, 'INVALID_STATUS', 400)), { status: 400, headers })
+      }
+      if (!gel.sealVerified || !gel.documentsVerified || !gel.vehicleInspected) {
+        return new Response(JSON.stringify(errorResponse('Cannot approve — all verification checks must pass (seal, documents, vehicle inspection)', 'VERIFICATION_INCOMPLETE', 400)), { status: 400, headers })
+      }
+      gel.status = 'APPROVED'
+      gel.exitTime = new Date().toISOString()
+      gel.approvedById = 'usr-sec-02'
+      gel.approvedByName = 'Security Manager — Deepak Nair'
+      // Auto-transition to EXITED
+      gel.status = 'EXITED'
+      // Also mark the related dispatch order's gateExitAt and dispatchedAt
+      const order = DISPATCH_DATA.dispatchOrders.find(o => o.id === gel.dispatchOrderId)
+      if (order) {
+        order.gateExitAt = gel.exitTime
+        order.dispatchedAt = gel.exitTime
+        order.status = 'DISPATCHED'
+        order.updatedAt = gel.exitTime
+      }
+      log('info', 'Gate exit approved', { exitNumber: gel.exitNumber, dispatchNumber: gel.dispatchNumber, status: gel.status })
+      return new Response(JSON.stringify(successResponse(gel, `Gate exit ${gel.exitNumber} approved — vehicle EXITED`)), { headers })
+    }
+
+    // ─── Dispatch Dashboard ───────────────────────────────
+    // GET /api/dispatch/dashboard
+    if (path === '/api/dispatch/dashboard' && method === 'GET') {
+      const totalOrders = DISPATCH_DATA.dispatchOrders.length
+      const planned = DISPATCH_DATA.dispatchOrders.filter(o => o.status === 'PLANNED').length
+      const vehicleAssigned = DISPATCH_DATA.dispatchOrders.filter(o => o.status === 'VEHICLE_ASSIGNED').length
+      const loading = DISPATCH_DATA.dispatchOrders.filter(o => o.status === 'LOADING').length
+      const loaded = DISPATCH_DATA.dispatchOrders.filter(o => o.status === 'LOADED').length
+      const sealed = DISPATCH_DATA.dispatchOrders.filter(o => o.status === 'SEALED').length
+      const dispatched = DISPATCH_DATA.dispatchOrders.filter(o => o.status === 'DISPATCHED').length
+      const totalVehicles = DISPATCH_DATA.dispatchVehicles.length
+      const availableVehicles = DISPATCH_DATA.dispatchVehicles.filter(v => v.status === 'AVAILABLE').length
+      const assignedVehicles = DISPATCH_DATA.dispatchVehicles.filter(v => v.status === 'ASSIGNED').length
+      const loadingVehicles = DISPATCH_DATA.dispatchVehicles.filter(v => v.status === 'LOADING' || v.status === 'LOADED').length
+      const inTransitVehicles = DISPATCH_DATA.dispatchVehicles.filter(v => v.status === 'IN_TRANSIT').length
+      const totalLoadPlans = DISPATCH_DATA.loadPlans.length
+      const completedLoadPlans = DISPATCH_DATA.loadPlans.filter(p => p.status === 'COMPLETED').length
+      const totalShippingDocs = DISPATCH_DATA.shippingDocuments.length
+      const pendingDocs = DISPATCH_DATA.shippingDocuments.filter(d => d.status === 'PENDING').length
+      const generatedDocs = DISPATCH_DATA.shippingDocuments.filter(d => d.status === 'GENERATED').length
+      const printedDocs = DISPATCH_DATA.shippingDocuments.filter(d => d.status === 'PRINTED').length
+      const sentDocs = DISPATCH_DATA.shippingDocuments.filter(d => d.status === 'SENT').length
+      const totalSeals = DISPATCH_DATA.vehicleSeals.length
+      const appliedSeals = DISPATCH_DATA.vehicleSeals.filter(s => s.status === 'APPLIED').length
+      const verifiedSeals = DISPATCH_DATA.vehicleSeals.filter(s => s.status === 'VERIFIED').length
+      const totalGateExits = DISPATCH_DATA.gateExitLogs.length
+      const pendingGateExits = DISPATCH_DATA.gateExitLogs.filter(g => g.status === 'PENDING').length
+      const exitedGateExits = DISPATCH_DATA.gateExitLogs.filter(g => g.status === 'EXITED').length
+      const byDispatchType: Record<string, number> = {}
+      DISPATCH_DATA.dispatchOrders.forEach(o => { byDispatchType[o.dispatchType] = (byDispatchType[o.dispatchType] || 0) + 1 })
+      const byDispatchStatus: Record<string, number> = {}
+      DISPATCH_DATA.dispatchOrders.forEach(o => { byDispatchStatus[o.status] = (byDispatchStatus[o.status] || 0) + 1 })
+      const byVehicleType: Record<string, number> = {}
+      DISPATCH_DATA.dispatchVehicles.forEach(v => { byVehicleType[v.vehicleType] = (byVehicleType[v.vehicleType] || 0) + 1 })
+      const byOwnershipType: Record<string, number> = {}
+      DISPATCH_DATA.dispatchVehicles.forEach(v => { byOwnershipType[v.ownershipType] = (byOwnershipType[v.ownershipType] || 0) + 1 })
+      const byDocType: Record<string, number> = {}
+      DISPATCH_DATA.shippingDocuments.forEach(d => { byDocType[d.documentType] = (byDocType[d.documentType] || 0) + 1 })
+      const byDocStatus: Record<string, number> = {}
+      DISPATCH_DATA.shippingDocuments.forEach(d => { byDocStatus[d.status] = (byDocStatus[d.status] || 0) + 1 })
+      const loadedOrdersWithDuration = DISPATCH_DATA.dispatchOrders.filter(o => o.loadingDurationMin !== null) as any[]
+      const avgLoadingTime = loadedOrdersWithDuration.length > 0 ? Math.round(loadedOrdersWithDuration.reduce((s, o) => s + (o.loadingDurationMin as number), 0) / loadedOrdersWithDuration.length) : 0
+      const plansWithUtil = DISPATCH_DATA.loadPlans as any[]
+      const avgWeightUtil = plansWithUtil.length > 0 ? Math.round(plansWithUtil.reduce((s, p) => s + (p.weightUtilization as number) * 100, 0) / plansWithUtil.length) : 0
+      const avgVolumeUtil = plansWithUtil.length > 0 ? Math.round(plansWithUtil.reduce((s, p) => s + (p.volumeUtilization as number) * 100, 0) / plansWithUtil.length) : 0
+      return new Response(JSON.stringify(successResponse({
+        summary: {
+          totalOrders, planned, vehicleAssigned, loading, loaded, sealed, dispatched,
+          totalVehicles, availableVehicles, assignedVehicles, loadingVehicles, inTransitVehicles,
+          totalLoadPlans, completedLoadPlans,
+          totalShippingDocs, pendingDocs, generatedDocs, printedDocs, sentDocs,
+          totalSeals, appliedSeals, verifiedSeals,
+          totalGateExits, pendingGateExits, exitedGateExits,
+        },
+        avgLoadingTimeMin: avgLoadingTime,
+        avgWeightUtilization: avgWeightUtil,
+        avgVolumeUtilization: avgVolumeUtil,
+        onTimeDispatchPercent: 94.2,
+        vehicleFillPercent: avgWeightUtil,
+        ordersByDispatchType: byDispatchType,
+        ordersByStatus: byDispatchStatus,
+        vehiclesByType: byVehicleType,
+        vehiclesByOwnership: byOwnershipType,
+        documentsByType: byDocType,
+        documentsByStatus: byDocStatus,
+        dispatchFlow: ['Packed Orders', 'Dispatch Planning', 'Vehicle Assignment', 'Loading', 'Barcode Verification', 'Seal Vehicle', 'Gate Exit', 'Carrier', 'Customer'],
+        vehicleLoadVerification: ['Loading Complete', 'Scan Every Pallet', 'Scan Vehicle', 'Verify Dispatch Plan', 'Generate Manifest', 'Apply Seal', 'Security Gate Verification', 'Vehicle Exit'],
+        dispatchTypes: ['RETAIL_DISPATCH', 'DISTRIBUTOR_DISPATCH', 'RESTAURANT_REPLENISHMENT', 'BRANCH_TRANSFER', 'EXPORT_SHIPMENT', 'COURIER_SHIPMENT', 'DIRECT_DELIVERY', 'CUSTOMER_PICKUP', 'VENDOR_RETURN'],
+        dispatchStatuses: ['PLANNED', 'VEHICLE_ASSIGNED', 'LOADING', 'LOADED', 'SEALED', 'GATE_EXIT', 'DISPATCHED', 'DELIVERED', 'CANCELLED', 'EXCEPTION'],
+        vehicleTypes: ['TRUCK', 'CONTAINER', 'TEMPO', 'VAN', 'REFRIGERATED', 'FLATBED', 'MINI_TRUCK'],
+        vehicleStatuses: ['AVAILABLE', 'ASSIGNED', 'LOADING', 'LOADED', 'IN_TRANSIT', 'MAINTENANCE', 'OFFLINE'],
+        ownershipTypes: ['OWN_FLEET', 'THIRD_PARTY', 'COURIER', 'RENTAL'],
+        sealTypes: ['BOLT', 'CABLE', 'ELECTRONIC', 'TAMPER_PROOF'],
+        sealStatuses: ['APPLIED', 'VERIFIED', 'BROKEN', 'REMOVED'],
+        loadPlanStatuses: ['PLANNED', 'OPTIMIZED', 'LOADING', 'COMPLETED', 'CANCELLED'],
+        documentTypes: ['DELIVERY_CHALLAN', 'TAX_INVOICE_REF', 'PACKING_LIST', 'DELIVERY_MANIFEST', 'EXPORT_DOCUMENTS', 'TRANSPORT_RECEIPT', 'E_WAY_BILL_REF'],
+        documentStatuses: ['PENDING', 'GENERATED', 'PRINTED', 'SENT', 'VOID'],
+        gateExitStatuses: ['PENDING', 'VERIFIED', 'APPROVED', 'EXITED', 'DENIED'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        sprint: 27,
+        chiefArchitectNote: 'Vehicle Load Verification is the Chief Architect recommendation: after Loading Complete, the loading supervisor scans every pallet barcode against the dispatch plan, then scans the vehicle number to confirm the right vehicle is loaded, then verifies the dispatch plan matches the loaded cartons/pallets, then generates the delivery manifest, then applies the seal, then security does the gate verification, then vehicle exits. This eight-step chain ensures zero wrong-vehicle and zero wrong-load dispatches and gives complete genealogy: Sales Order → Picking Task → Packing Job → Carton → Dispatch Order → Vehicle → Seal → Gate Exit → Carrier Tracking → Customer Delivery.',
+      }, 'Dispatch, Shipping & Load Management dashboard')), { headers })
+    }
+
+    // ─── Dispatch Info ────────────────────────────────────
+    // GET /api/dispatch/info
+    if (path === '/api/dispatch/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Dispatch, Shipping & Load Management Engine', version: '27.0.0', sprint: 27,
+        sprintName: 'Dispatch, Shipping & Load Management Engine',
+        dispatchTypes: ['RETAIL_DISPATCH', 'DISTRIBUTOR_DISPATCH', 'RESTAURANT_REPLENISHMENT', 'BRANCH_TRANSFER', 'EXPORT_SHIPMENT', 'COURIER_SHIPMENT', 'DIRECT_DELIVERY', 'CUSTOMER_PICKUP', 'VENDOR_RETURN'],
+        dispatchStatuses: ['PLANNED', 'VEHICLE_ASSIGNED', 'LOADING', 'LOADED', 'SEALED', 'GATE_EXIT', 'DISPATCHED', 'DELIVERED', 'CANCELLED', 'EXCEPTION'],
+        vehicleTypes: ['TRUCK', 'CONTAINER', 'TEMPO', 'VAN', 'REFRIGERATED', 'FLATBED', 'MINI_TRUCK'],
+        vehicleStatuses: ['AVAILABLE', 'ASSIGNED', 'LOADING', 'LOADED', 'IN_TRANSIT', 'MAINTENANCE', 'OFFLINE'],
+        ownershipTypes: ['OWN_FLEET', 'THIRD_PARTY', 'COURIER', 'RENTAL'],
+        sealTypes: ['BOLT', 'CABLE', 'ELECTRONIC', 'TAMPER_PROOF'],
+        sealStatuses: ['APPLIED', 'VERIFIED', 'BROKEN', 'REMOVED'],
+        loadPlanStatuses: ['PLANNED', 'OPTIMIZED', 'LOADING', 'COMPLETED', 'CANCELLED'],
+        documentTypes: ['DELIVERY_CHALLAN', 'TAX_INVOICE_REF', 'PACKING_LIST', 'DELIVERY_MANIFEST', 'EXPORT_DOCUMENTS', 'TRANSPORT_RECEIPT', 'E_WAY_BILL_REF'],
+        documentStatuses: ['PENDING', 'GENERATED', 'PRINTED', 'SENT', 'VOID'],
+        gateExitStatuses: ['PENDING', 'VERIFIED', 'APPROVED', 'EXITED', 'DENIED'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        dispatchOrderPrinciple: 'A Dispatch Order is the consolidated outbound shipment that aggregates packed cartons from one or more Packing Jobs into a single vehicle movement. Nine dispatch types cover every outbound scenario: RETAIL_DISPATCH (store replenishment), DISTRIBUTOR_DISPATCH (wholesale), RESTAURANT_REPLENISHMENT (cold chain), BRANCH_TRANSFER (inter-branch), EXPORT_SHIPMENT (customs + port), COURIER_SHIPMENT (last-mile air), DIRECT_DELIVERY (B2B direct), CUSTOMER_PICKUP (will-call), VENDOR_RETURN (return to supplier). Status flow: PLANNED → VEHICLE_ASSIGNED → LOADING → LOADED → SEALED → GATE_EXIT → DISPATCHED → DELIVERED.',
+        vehicleManagementPrinciple: 'Dispatch Vehicles are the physical carriers — TRUCK (general), CONTAINER (sealed export), REFRIGERATED (cold chain 2-8°C), TEMPO (light intra-city), FLATBED (heavy pallets). Four ownership models: OWN_FLEET (company trucks, blue badge), THIRD_PARTY (VRL/DHL/etc., amber badge), COURIER (Delhivery/Blue Dart, purple badge), RENTAL (per-trip rental, gray badge). Each vehicle tracks capacity (weight, volume, pallets), temperature control, driver + helper, GPS device, and utilization metrics.',
+        loadPlanningPrinciple: 'Load Plan computes the optimal loading sequence for each dispatch order — which carton goes on first (back of truck), which last (front, for first delivery). Weight utilization, volume utilization, and pallet positions are tracked against the vehicle max. Three-step load plan: (1) compute total weight/volume vs vehicle capacity, (2) generate loading sequence (back-to-front for multi-stop routes), (3) verify pallet positions. Status: PLANNED → OPTIMIZED → LOADING → COMPLETED.',
+        shippingDocumentationPrinciple: 'Shipping Documents are the legal & operational paperwork accompanying each dispatch. Seven document types: DELIVERY_CHALLAN (DC — internal proof of movement), TAX_INVOICE_REF (GST invoice reference), PACKING_LIST (carton-level detail for receiver), DELIVERY_MANIFEST (carrier hand-off document), EXPORT_DOCUMENTS (customs + port), TRANSPORT_RECEIPT (LR/GR), E_WAY_BILL_REF (GSTN e-way bill). Status: PENDING → GENERATED → PRINTED → SENT.',
+        vehicleSealPrinciple: 'Vehicle Seals are tamper-evidence devices applied after loading complete. Four seal types: BOLT (steel bolt, single-use), CABLE (steel cable loop), ELECTRONIC (RFID-tagged, real-time GPS), TAMPER_PROOF (numbered plastic, broken-once). Seal workflow: APPLIED (loading supervisor applies seal at dock) → VERIFIED (security officer verifies seal number at gate) → BROKEN (broken only at delivery, with reason) → REMOVED (after delivery confirmation). A verified seal means the vehicle has not been opened since leaving the dock.',
+        gateExitPrinciple: 'Gate Exit is the final checkpoint before vehicle leaves the warehouse premises. Security officer verifies: (1) seal intact & number matches, (2) shipping documents printed & attached, (3) vehicle inspection (driver license, vehicle number, no unauthorized cargo). Only after all three checks pass does the gate open. Status: PENDING (awaiting inspection) → VERIFIED (security checks done) → APPROVED (gate manager approves) → EXITED (vehicle has left) — or DENIED if any check fails.',
+        vehicleLoadVerificationPrinciple: 'Vehicle Load Verification is the Chief Architect recommendation for Sprint 27. After Loading Complete, the loading supervisor follows an 8-step verification chain: (1) Loading Complete confirmed, (2) Scan Every Pallet barcode against dispatch plan, (3) Scan Vehicle number to confirm right vehicle loaded, (4) Verify Dispatch Plan matches loaded cartons/pallets, (5) Generate Delivery Manifest, (6) Apply Vehicle Seal, (7) Security Gate Verification (seal + docs + vehicle inspection), (8) Vehicle Exit. This chain ensures zero wrong-vehicle and zero wrong-load dispatches and gives complete genealogy: Sales Order → Picking Task → Packing Job → Carton → Dispatch Order → Vehicle → Seal → Gate Exit → Carrier Tracking → Customer Delivery.',
+        endpoints: ['GET /api/dispatch-orders', 'POST /api/dispatch-orders', 'POST /api/dispatch-orders/:id/complete', 'GET /api/dispatch-vehicles', 'GET /api/load-plans', 'GET /api/shipping-documents', 'GET /api/vehicle-seals', 'GET /api/gate-exit-logs', 'POST /api/gate-exit-logs/:id/approve', 'GET /api/dispatch/dashboard', 'GET /api/dispatch/info'],
+        part4Begun: true,
+        part4Sprint: 6,
+        part4Sprints: 12,
+        part4Tables: 38,
+      }, 'SUOP Dispatch, Shipping & Load Management Engine v27.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 26, sprintName: 'Picking, Packing & Order Fulfillment Engine (26/33 sprints)' })
-log('info', 'Sprint 26 — Picking, Packing & Order Fulfillment Engine', { sprint: 26, part: 4, tables: 216, pickingTasks: 6, packingStations: 3, packingJobs: 4, cartonTypes: 3, cartons: 5, shippingLabels: 4 })
-log('info', 'Picking & packing endpoints available (Sprint 26)', { pickingTasks: 'GET/POST /api/wms-picking-tasks', pickingComplete: 'POST /api/wms-picking-tasks/:id/complete', packingStations: 'GET /api/packing-stations', packingJobs: 'GET /api/packing-jobs', packingComplete: 'POST /api/packing-jobs/:id/complete', cartonTypes: 'GET /api/carton-types', cartons: 'GET /api/cartons', shippingLabels: 'GET /api/shipping-labels', dashboard: 'GET /api/wms-fulfillment/dashboard', info: 'GET /api/wms-fulfillment/info' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 27, sprintName: 'Dispatch, Shipping & Load Management Engine (27/33 sprints)' })
+log('info', 'Sprint 27 — Dispatch, Shipping & Load Management Engine', { sprint: 27, part: 4, tables: 223, dispatchOrders: 6, dispatchVehicles: 5, loadPlans: 3, shippingDocuments: 4, vehicleSeals: 2, gateExitLogs: 2 })
+log('info', 'Dispatch & shipping endpoints available (Sprint 27)', { dispatchOrders: 'GET/POST /api/dispatch-orders', dispatchComplete: 'POST /api/dispatch-orders/:id/complete', dispatchVehicles: 'GET /api/dispatch-vehicles', loadPlans: 'GET /api/load-plans', shippingDocuments: 'GET /api/shipping-documents', vehicleSeals: 'GET /api/vehicle-seals', gateExitLogs: 'GET /api/gate-exit-logs', gateExitApprove: 'POST /api/gate-exit-logs/:id/approve', dashboard: 'GET /api/dispatch/dashboard', info: 'GET /api/dispatch/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })
 log('info', 'Warehouse endpoints available', { warehouses: 'GET/POST /api/warehouses', warehouseDetail: 'GET /api/warehouses/:id', zones: 'GET /api/warehouse-zones', tempZones: 'GET /api/temperature-zones', tempLogs: 'GET /api/temperature-logs', capacity: 'GET /api/warehouse-capacity', calendar: 'GET /api/warehouse-calendar', accessRules: 'GET /api/warehouse-access-rules', rules: 'GET /api/warehouse-rules', dashboard: 'GET /api/warehouses/dashboard', info: 'GET /api/warehouses/info' })

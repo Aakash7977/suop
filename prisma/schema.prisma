@@ -7243,3 +7243,281 @@ model ShippingLabel {
   @@index([carrierName], map: "idx_sl_carrier")
   @@index([status], map: "idx_sl_status")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 27 — DISPATCH, SHIPPING & LOAD MANAGEMENT ENGINE
+// Final outbound: controlled, verified, secure, traceable
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Dispatch Order Management ─────────────────
+model DispatchOrder {
+  id              String   @id @default(uuid()) @db.Uuid
+  dispatchNumber  String   @unique @map("dispatch_number")
+  dispatchDate    DateTime @map("dispatch_date")
+  // ─── Type ───
+  dispatchType    String   @map("dispatch_type") // RETAIL_DISPATCH, DISTRIBUTOR_DISPATCH, RESTAURANT_REPLENISHMENT, BRANCH_TRANSFER, EXPORT_SHIPMENT, COURIER_SHIPMENT, DIRECT_DELIVERY, CUSTOMER_PICKUP, VENDOR_RETURN
+  // ─── Scope ───
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseName   String   @map("warehouse_name")
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // SALES_ORDER, TRANSFER_ORDER, PICKING_TASK
+  referenceNumber String?  @map("reference_number")
+  // ─── Vehicle ───
+  vehicleId       String?  @db.Uuid @map("vehicle_id")
+  vehicleNumber   String?  @map("vehicle_number")
+  driverName      String?  @map("driver_name")
+  driverPhone     String?  @map("driver_phone")
+  carrierName     String?  @map("carrier_name")
+  // ─── Route ───
+  routeId         String?  @db.Uuid @map("route_id")
+  routeName       String?  @map("route_name")
+  deliverySequence Int?    @map("delivery_sequence")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Status ───
+  status          String   @default("PLANNED") // PLANNED, VEHICLE_ASSIGNED, LOADING, LOADED, SEALED, GATE_EXIT, DISPATCHED, DELIVERED, CANCELLED, EXCEPTION
+  // ─── Summary ───
+  totalOrders     Int      @default(0) @map("total_orders")
+  totalLines      Int      @default(0) @map("total_lines")
+  totalCartons    Int      @default(0) @map("total_cartons")
+  totalPallets    Int?     @map("total_pallets")
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  totalWeightKg   Decimal  @db.Decimal(12, 2) @default(0) @map("total_weight_kg")
+  totalVolumeM3   Decimal  @db.Decimal(12, 2) @default(0) @map("total_volume_m3")
+  // ─── Timing ───
+  plannedDispatchAt DateTime? @map("planned_dispatch_at")
+  loadingStartedAt DateTime? @map("loading_started_at")
+  loadingCompletedAt DateTime? @map("loading_completed_at")
+  sealedAt        DateTime? @map("sealed_at")
+  gateExitAt      DateTime? @map("gate_exit_at")
+  dispatchedAt    DateTime? @map("dispatched_at")
+  loadingDurationMin Int?  @map("loading_duration_min")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           DispatchOrderLine[]
+  loadPlan        LoadPlan?
+  shippingDocs    ShippingDocument[]
+  vehicleSeal     VehicleSeal?
+  gateExitLog     GateExitLog?
+
+  @@map("dispatch_orders")
+  @@index([dispatchType, status], map: "idx_do_type_status")
+  @@index([warehouseId, status], map: "idx_do_wh_status")
+  @@index([vehicleId], map: "idx_do_vehicle")
+  @@index([status, dispatchDate], map: "idx_do_status_date")
+}
+
+model DispatchOrderLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  dispatchOrderId String   @db.Uuid @map("dispatch_order_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Quantities ───
+  quantity        Decimal  @db.Decimal(18, 4)
+  // ─── Packaging ───
+  cartonCount     Int?     @map("carton_count")
+  palletCount     Int?     @map("pallet_count")
+  // ─── Physical ───
+  weightKg        Decimal? @db.Decimal(12, 2) @map("weight_kg")
+  volumeM3        Decimal? @db.Decimal(12, 2) @map("volume_m3")
+  // ─── Reference ───
+  orderNumber     String?  @map("order_number")
+  cartonNumbers   String[] @default([]) @map("carton_numbers")
+  // ─── Barcode ───
+  barcodesScanned String[] @default([]) @map("barcodes_scanned")
+  loadingVerified Boolean  @default(false) @map("loading_verified")
+  // ─── Status ───
+  lineStatus      String   @default("PENDING") @map("line_status") // PENDING, LOADED, VERIFIED, MISSING, EXTRA, EXCEPTION
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  dispatchOrder   DispatchOrder @relation(fields: [dispatchOrderId], references: [id], onDelete: Cascade)
+
+  @@map("dispatch_order_lines")
+  @@index([dispatchOrderId, lineOrder], map: "idx_dol_do_order")
+  @@index([productId, batchId], map: "idx_dol_product_batch")
+  @@index([lineStatus], map: "idx_dol_status")
+}
+
+// ─── Epic 2: Vehicle Management ────────────────────────
+model DispatchVehicle {
+  id              String   @id @default(uuid()) @db.Uuid
+  vehicleNumber   String   @unique @map("vehicle_number")
+  // ─── Type ───
+  vehicleType     String   @map("vehicle_type") // TRUCK, CONTAINER, TEMPO, VAN, REFRIGERATED, FLATBED, MINI_TRUCK
+  // ─── Capacity ───
+  maxWeightKg     Decimal  @db.Decimal(12, 2) @map("max_weight_kg")
+  maxVolumeM3     Decimal  @db.Decimal(12, 2) @map("max_volume_m3")
+  palletCapacity  Int?     @map("pallet_capacity")
+  // ─── Temperature ───
+  isTemperatureControlled Boolean @default(false) @map("is_temperature_controlled")
+  minTemp         Decimal? @db.Decimal(5, 2) @map("min_temp")
+  maxTemp         Decimal? @db.Decimal(5, 2) @map("max_temp")
+  // ─── Ownership ───
+  ownershipType   String   @default("OWN_FLEET") @map("ownership_type") // OWN_FLEET, THIRD_PARTY, COURIER, RENTAL
+  // ─── Driver ───
+  driverName      String?  @map("driver_name")
+  driverPhone     String?  @map("driver_phone")
+  driverLicense   String?  @map("driver_license")
+  helperName      String?  @map("helper_name")
+  // ─── GPS ───
+  hasGPS          Boolean  @default(false) @map("has_gps")
+  gpsDeviceId     String?  @map("gps_device_id")
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, ASSIGNED, LOADING, LOADED, IN_TRANSIT, MAINTENANCE, OFFLINE
+  // ─── Stats ───
+  totalTrips      Int      @default(0) @map("total_trips")
+  avgUtilization  Decimal? @db.Decimal(5, 2) @map("avg_utilization")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("dispatch_vehicles")
+  @@index([vehicleType, status], map: "idx_dv_type_status")
+  @@index([ownershipType, status], map: "idx_dv_ownership_status")
+  @@index([status], map: "idx_dv_status")
+}
+
+// ─── Epic 3: Load Planning Engine ──────────────────────
+model LoadPlan {
+  id              String   @id @default(uuid()) @db.Uuid
+  dispatchOrderId String   @unique @db.Uuid @map("dispatch_order_id")
+  vehicleId       String?  @db.Uuid @map("vehicle_id")
+  vehicleNumber   String?  @map("vehicle_number")
+  // ─── Plan ───
+  planDate        DateTime @default(now()) @map("plan_date")
+  // ─── Capacity ───
+  totalWeightKg   Decimal  @db.Decimal(12, 2) @default(0) @map("total_weight_kg")
+  maxWeightKg     Decimal  @db.Decimal(12, 2) @default(0) @map("max_weight_kg")
+  weightUtilization Decimal @db.Decimal(5, 2) @default(0) @map("weight_utilization")
+  totalVolumeM3   Decimal  @db.Decimal(12, 2) @default(0) @map("total_volume_m3")
+  maxVolumeM3     Decimal  @db.Decimal(12, 2) @default(0) @map("max_volume_m3")
+  volumeUtilization Decimal @db.Decimal(5, 2) @default(0) @map("volume_utilization")
+  palletPositions Int      @default(0) @map("pallet_positions")
+  maxPalletPositions Int   @default(0) @map("max_pallet_positions")
+  // ─── Loading sequence ───
+  loadingSequence Json?    @map("loading_sequence") // ordered list of items for loading
+  // ─── Status ───
+  status          String   @default("PLANNED") // PLANNED, OPTIMIZED, LOADING, COMPLETED, CANCELLED
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  dispatchOrder   DispatchOrder @relation(fields: [dispatchOrderId], references: [id], onDelete: Cascade)
+
+  @@map("load_plans")
+  @@index([vehicleId, status], map: "idx_lp_vehicle_status")
+  @@index([status], map: "idx_lp_status")
+}
+
+// ─── Epic 5: Shipping Documentation ────────────────────
+model ShippingDocument {
+  id              String   @id @default(uuid()) @db.Uuid
+  documentNumber  String   @unique @map("document_number")
+  documentDate    DateTime @default(now()) @map("document_date")
+  // ─── Type ───
+  documentType    String   @map("document_type") // DELIVERY_CHALLAN, TAX_INVOICE_REF, PACKING_LIST, DELIVERY_MANIFEST, EXPORT_DOCUMENTS, TRANSPORT_RECEIPT, E_WAY_BILL_REF
+  // ─── Link ───
+  dispatchOrderId String?  @db.Uuid @map("dispatch_order_id")
+  dispatchNumber  String?  @map("dispatch_number")
+  // ─── Content ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  shipToAddress   String?  @map("ship_to_address")
+  // ─── Document ───
+  fileUrl         String?  @map("file_url")
+  fileSizeBytes   Int?     @map("file_size_bytes")
+  format          String   @default("PDF") // PDF, EXCEL, CSV
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, GENERATED, PRINTED, SENT, VOID
+  generatedAt     DateTime? @map("generated_at")
+  printedAt       DateTime? @map("printed_at")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  dispatchOrder   DispatchOrder? @relation(fields: [dispatchOrderId], references: [id], onDelete: SetNull)
+
+  @@map("shipping_documents")
+  @@index([documentType, status], map: "idx_sd_type_status")
+  @@index([dispatchOrderId], map: "idx_sd_dispatch")
+  @@index([status], map: "idx_sd_status")
+}
+
+// ─── Epic 6: Vehicle Seal Management ───────────────────
+model VehicleSeal {
+  id              String   @id @default(uuid()) @db.Uuid
+  dispatchOrderId String   @unique @db.Uuid @map("dispatch_order_id")
+  // ─── Seal ───
+  sealNumber      String   @unique @map("seal_number")
+  sealType        String   @default("BOLT") @map("seal_type") // BOLT, CABLE, ELECTRONIC, TAMPER_PROOF
+  // ─── Timeline ───
+  appliedAt       DateTime @default(now()) @map("applied_at")
+  appliedById     String?  @db.Uuid @map("applied_by_id")
+  appliedByName   String?  @map("applied_by_name")
+  verifiedAt      DateTime? @map("verified_at")
+  verifiedById    String?  @db.Uuid @map("verified_by_id")
+  verifiedByName  String?  @map("verified_by_name")
+  brokenAt        DateTime? @map("broken_at")
+  brokenBy        String?  @map("broken_by")
+  brokenReason    String?  @map("broken_reason")
+  // ─── Status ───
+  status          String   @default("APPLIED") // APPLIED, VERIFIED, BROKEN, REMOVED
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  dispatchOrder   DispatchOrder @relation(fields: [dispatchOrderId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_seals")
+  @@index([sealNumber], map: "idx_vs_seal")
+  @@index([status], map: "idx_vs_status")
+}
+
+// ─── Epic 7: Gate Exit Management ──────────────────────
+model GateExitLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  exitNumber      String   @unique @map("exit_number")
+  exitDate        DateTime @default(now()) @map("exit_date")
+  // ─── Link ───
+  dispatchOrderId String   @unique @db.Uuid @map("dispatch_order_id")
+  dispatchNumber  String   @map("dispatch_number")
+  // ─── Vehicle ───
+  vehicleNumber   String   @map("vehicle_number")
+  driverName      String   @map("driver_name")
+  // ─── Security ───
+  securityOfficerId String? @db.Uuid @map("security_officer_id")
+  securityOfficerName String? @map("security_officer_name")
+  // ─── Verification ───
+  sealVerified    Boolean  @default(false) @map("seal_verified")
+  documentsVerified Boolean @default(false) @map("documents_verified")
+  vehicleInspected Boolean @default(false) @map("vehicle_inspected")
+  // ─── Exit ───
+  exitTime        DateTime? @map("exit_time")
+  approvedById    String?  @db.Uuid @map("approved_by_id")
+  approvedByName  String?  @map("approved_by_name")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, VERIFIED, APPROVED, EXITED, DENIED
+  remarks         String?
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  dispatchOrder   DispatchOrder @relation(fields: [dispatchOrderId], references: [id], onDelete: Cascade)
+
+  @@map("gate_exit_logs")
+  @@index([exitDate, status], map: "idx_gel_date_status")
+  @@index([status], map: "idx_gel_status")
+}
