@@ -57,6 +57,7 @@ type ModuleKey =
   | 'plantmaster' | 'productiondept' | 'productionlines' | 'workcenters' | 'mfgcalendar' | 'mfgresources' | 'plantconfig' | 'productiondashboard'
   | 'recipemaster' | 'formulabuilder' | 'bombuilder' | 'recipeversions' | 'yielddashboard' | 'batchscaling' | 'nutritioncenter' | 'costrollup' | 'recipeapproval'
   | 'planningdashboard' | 'mpsconsole' | 'mrpworkbench' | 'demandplanning' | 'capacityplanner' | 'shortagecenter' | 'purchasesuggestions' | 'whatifsimulator'
+  | 'productionorders' | 'workorders' | 'routingdesigner' | 'shopfloorschedule' | 'productiontraveler' | 'assignmentconsole' | 'proddashboard' | 'progressmonitor'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -246,6 +247,14 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Material Shortage', icon: <AlertTriangle className="h-4 w-4" />, module: 'shortagecenter', available: true },
       { name: 'Purchase Suggestions', icon: <Package className="h-4 w-4" />, module: 'purchasesuggestions', available: true },
       { name: 'What-if Simulator', icon: <Sparkles className="h-4 w-4" />, module: 'whatifsimulator', available: true },
+      { name: 'Production Orders', icon: <Factory className="h-4 w-4" />, module: 'productionorders', available: true },
+      { name: 'Work Orders', icon: <ListChecks className="h-4 w-4" />, module: 'workorders', available: true },
+      { name: 'Routing Designer', icon: <GitBranch className="h-4 w-4" />, module: 'routingdesigner', available: true },
+      { name: 'Shop Floor Schedule', icon: <Calendar className="h-4 w-4" />, module: 'shopfloorschedule', available: true },
+      { name: 'Production Traveler', icon: <QrCode className="h-4 w-4" />, module: 'productiontraveler', available: true },
+      { name: 'Assignment Console', icon: <UserCog className="h-4 w-4" />, module: 'assignmentconsole', available: true },
+      { name: 'Prod Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'proddashboard', available: true },
+      { name: 'Progress Monitor', icon: <Activity className="h-4 w-4" />, module: 'progressmonitor', available: true },
     ]
   },
   {
@@ -16912,6 +16921,557 @@ function WhatIfSimulatorModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 37 — PRODUCTION ORDERS, WORK ORDERS & SHOP FLOOR (PART 5)
+// Epic 1: Production Order · Epic 2: Work Order · Epic 3: Routing
+// Epic 4: Scheduling · Epic 5: Material · Epic 6: Assignment
+// Epic 7: Traveler · Epic 8: Progress
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Production Orders Module ───────────────────
+function ProductionOrdersModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+  const orders = [
+    { id: 'PO1', num: 'PO-2026-00125', product: 'Kaju Katli 500g', recipe: 'REC-KK-500 v1.2', plant: 'PLANT-THANE-01', line: 'LINE-KK-01', batch: 'BATCH-2026-A018', planned: 95, completed: 0, priority: 'HIGH', status: 'RELEASED', plannedStart: 'Jul 10 06:00', plannedFinish: 'Jul 10 14:00', materials: true, workOrders: 8 },
+    { id: 'PO2', num: 'PO-2026-00126', product: 'Shwet Idli Batter 1kg', recipe: 'REC-IB-1K v1.3', plant: 'PLANT-BLR-01', line: 'LINE-IB-01', batch: 'BATCH-2026-C015', planned: 100, completed: 45, priority: 'NORMAL', status: 'IN_PROGRESS', plannedStart: 'Jul 10 05:00', plannedFinish: 'Jul 10 09:00', materials: true, workOrders: 4 },
+    { id: 'PO3', num: 'PO-2026-00127', product: 'Mysore Pak 250g', recipe: 'REC-MP-250 v1.0', plant: 'PLANT-THANE-01', line: 'LINE-MP-01', batch: 'BATCH-2026-B043', planned: 60, completed: 0, priority: 'NORMAL', status: 'MATERIALS_RESERVED', plannedStart: 'Jul 10 14:00', plannedFinish: 'Jul 10 18:00', materials: true, workOrders: 5 },
+    { id: 'PO4', num: 'PO-2026-00128', product: 'Mixed Namkeen 500g', recipe: 'REC-NM-500 v1.0', plant: 'PLANT-THANE-02', line: 'LINE-NM-01', batch: 'BATCH-2026-D029', planned: 150, completed: 0, priority: 'HIGH', status: 'DRAFT', plannedStart: 'Jul 11 06:00', plannedFinish: 'Jul 11 14:00', materials: false, workOrders: 7 },
+    { id: 'PO5', num: 'PO-2026-00129', product: 'Motichoor Laddu 1kg', recipe: 'REC-LD-1K v2.1', plant: 'PLANT-THANE-01', line: 'LINE-LD-01', batch: 'BATCH-2026-E008', planned: 100, completed: 100, priority: 'NORMAL', status: 'COMPLETED', plannedStart: 'Jul 9 06:00', plannedFinish: 'Jul 9 14:00', materials: true, workOrders: 6 },
+    { id: 'PO6', num: 'PO-2026-00130', product: 'Dosa Batter 1kg', recipe: 'REC-DB-1K v1.1', plant: 'PLANT-BLR-01', line: 'LINE-DB-01', batch: 'BATCH-2026-F003', planned: 70, completed: 0, priority: 'LOW', status: 'RELEASED', plannedStart: 'Jul 11 06:00', plannedFinish: 'Jul 11 10:00', materials: true, workOrders: 4 },
+  ]
+
+  const filtered = orders.filter(o => filter === 'ALL' || o.status === filter)
+  const statusColors: Record<string, string> = { DRAFT: 'bg-slate-100 text-slate-700', RELEASED: 'bg-blue-100 text-blue-700', MATERIALS_RESERVED: 'bg-cyan-100 text-cyan-700', IN_PROGRESS: 'bg-amber-100 text-amber-700', COMPLETED: 'bg-emerald-100 text-emerald-700', CANCELLED: 'bg-rose-100 text-rose-700', CLOSED: 'bg-slate-200 text-slate-600' }
+  const priorityColors: Record<string, string> = { EMERGENCY: 'bg-red-500', HIGH: 'bg-orange-500', NORMAL: 'bg-blue-500', LOW: 'bg-slate-400' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Production Orders</h2><p className="text-sm text-muted-foreground mt-1">From approved MPS → Production Order → Work Orders → Shop Floor → Finished Goods</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Production Order</Button>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <h3 className="font-semibold mb-2 text-sm">Chief Architect: Multiple Linked Work Orders per Production Order</h3>
+        <p className="text-xs text-muted-foreground">Each Production Order generates 4-8 Work Orders (one per routing step: Ingredient Prep → Mixing → Cooking → Cooling → Rolling → Cutting → Quality Inspection → Packing). Provides stage-by-stage traceability, accurate costing, real-time visibility, bottleneck detection, quality control, full audit history.</p>
+      </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Orders', value: orders.length, color: 'text-blue-600' },
+          { label: 'In Progress', value: orders.filter(o => o.status === 'IN_PROGRESS').length, color: 'text-amber-600' },
+          { label: 'Released', value: orders.filter(o => o.status === 'RELEASED').length, color: 'text-blue-600' },
+          { label: 'Completed', value: orders.filter(o => o.status === 'COMPLETED').length, color: 'text-emerald-600' },
+          { label: 'Total Planned (kg)', value: orders.reduce((a, o) => a + o.planned, 0), color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'DRAFT', 'RELEASED', 'MATERIALS_RESERVED', 'IN_PROGRESS', 'COMPLETED'].map(f => <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full border ${filter === f ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{f.replace(/_/g, ' ')}</button>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">PO Number</th><th className="text-left px-4 py-3 font-medium">Product</th>
+              <th className="text-left px-4 py-3 font-medium">Recipe</th><th className="text-left px-4 py-3 font-medium">Plant / Line</th>
+              <th className="text-left px-4 py-3 font-medium">Batch</th><th className="text-left px-4 py-3 font-medium">Planned (kg)</th>
+              <th className="text-left px-4 py-3 font-medium">Completed</th><th className="text-left px-4 py-3 font-medium">Priority</th>
+              <th className="text-left px-4 py-3 font-medium">Materials</th><th className="text-left px-4 py-3 font-medium">WOs</th>
+              <th className="text-left px-4 py-3 font-medium">Schedule</th><th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {filtered.map(o => (
+                <tr key={o.id} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{o.num}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{o.product}</td>
+                  <td className="px-4 py-3 font-mono text-[10px]">{o.recipe}</td>
+                  <td className="px-4 py-3 text-[10px]"><div className="font-mono">{o.plant}</div><div className="text-muted-foreground font-mono">{o.line}</div></td>
+                  <td className="px-4 py-3 font-mono text-[10px]">{o.batch}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{o.planned}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={o.completed === o.planned ? 'text-emerald-600 font-bold' : o.completed > 0 ? 'text-amber-600' : 'text-slate-400'}>{o.completed}</span></td>
+                  <td className="px-4 py-3"><div className={`h-2 w-2 rounded-full ${priorityColors[o.priority]} inline-block mr-1`} /><span className="text-[10px]">{o.priority}</span></td>
+                  <td className="px-4 py-3">{o.materials ? <span className="text-emerald-600 text-xs">✓ Reserved</span> : <span className="text-rose-600 text-xs">⚠ Pending</span>}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.workOrders}</td>
+                  <td className="px-4 py-3 text-[10px] font-mono">{o.plannedStart}</td>
+                  <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[o.status]}`}>{o.status.replace(/_/g, ' ')}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 2: Work Orders Module ─────────────────────────
+function WorkOrdersModule() {
+  const workOrders = [
+    { wo: 'WO-001', op: 1, name: 'Ingredient Preparation', wc: 'WC-KK-01', type: 'RAW_MATERIAL_PREP', setup: 15, run: 30, cleanup: 5, operator: 'Rajesh K.', machine: '—', status: 'COMPLETED', quality: 'PASS' },
+    { wo: 'WO-002', op: 2, name: 'Mixing', wc: 'WC-KK-02', type: 'MIXING', setup: 10, run: 20, cleanup: 5, operator: 'Rajesh K.', machine: 'MIX-01', status: 'COMPLETED', quality: 'PASS' },
+    { wo: 'WO-003', op: 3, name: 'Cooking', wc: 'WC-KK-03', type: 'COOKING', setup: 10, run: 45, cleanup: 10, operator: 'Rajesh K.', machine: 'COOK-01', status: 'IN_PROGRESS', quality: null },
+    { wo: 'WO-004', op: 4, name: 'Cooling', wc: 'WC-KK-04', type: 'COOLING', setup: 0, run: 30, cleanup: 0, operator: null, machine: 'COOL-01', status: 'OPEN', quality: null },
+    { wo: 'WO-005', op: 5, name: 'Rolling', wc: 'WC-KK-05', type: 'ROLLING', setup: 5, run: 15, cleanup: 5, operator: null, machine: 'ROLL-01', status: 'OPEN', quality: null },
+    { wo: 'WO-006', op: 6, name: 'Cutting', wc: 'WC-KK-06', type: 'CUTTING', setup: 5, run: 10, cleanup: 5, operator: null, machine: 'CUT-01', status: 'OPEN', quality: null },
+    { wo: 'WO-007', op: 7, name: 'Quality Inspection', wc: 'WC-KK-07', type: 'INSPECTION', setup: 0, run: 5, cleanup: 0, operator: null, machine: '—', status: 'OPEN', quality: null },
+    { wo: 'WO-008', op: 8, name: 'Packing', wc: 'WC-KK-08', type: 'PACKING', setup: 10, run: 12, cleanup: 5, operator: null, machine: 'PACK-01', status: 'OPEN', quality: null },
+  ]
+
+  const statusColors: Record<string, string> = { OPEN: 'bg-slate-100 text-slate-600', IN_PROGRESS: 'bg-amber-100 text-amber-700', COMPLETED: 'bg-emerald-100 text-emerald-700', SKIPPED: 'bg-slate-200 text-slate-500', FAILED: 'bg-rose-100 text-rose-700' }
+  const typeColors: Record<string, string> = { RAW_MATERIAL_PREP: 'bg-slate-100 text-slate-700', MIXING: 'bg-blue-100 text-blue-700', COOKING: 'bg-orange-100 text-orange-700', COOLING: 'bg-cyan-100 text-cyan-700', ROLLING: 'bg-purple-100 text-purple-700', CUTTING: 'bg-amber-100 text-amber-700', INSPECTION: 'bg-rose-100 text-rose-700', PACKING: 'bg-emerald-100 text-emerald-700' }
+  const completedOps = workOrders.filter(w => w.status === 'COMPLETED').length
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Work Orders — PO-2026-00125 (Kaju Katli 500g)</h2><p className="text-sm text-muted-foreground mt-1">8 linked work orders following routing: Prep → Mix → Cook → Cool → Roll → Cut → Inspect → Pack</p></div>
+
+      {/* Progress Bar */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-2"><span className="text-sm font-semibold">Production Progress: {completedOps}/{workOrders.length} operations completed</span><span className="font-mono text-sm font-bold text-blue-600">{Math.round(completedOps / workOrders.length * 100)}%</span></div>
+        <div className="flex items-center gap-1">
+          {workOrders.map((w, i) => (
+            <div key={i} className="flex items-center gap-1 flex-1">
+              <div className={`flex-1 h-3 rounded-full ${w.status === 'COMPLETED' ? 'bg-emerald-500' : w.status === 'IN_PROGRESS' ? 'bg-amber-500 animate-pulse' : 'bg-slate-200'}`} title={`${w.wo}: ${w.name}`} />
+              {i < workOrders.length - 1 && <div className={`h-0.5 w-2 ${w.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-slate-200'}`} />}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">WO #</th><th className="text-left px-4 py-3 font-medium">Op</th>
+              <th className="text-left px-4 py-3 font-medium">Operation</th><th className="text-left px-4 py-3 font-medium">Type</th>
+              <th className="text-left px-4 py-3 font-medium">Work Center</th><th className="text-left px-4 py-3 font-medium">Setup</th>
+              <th className="text-left px-4 py-3 font-medium">Run</th><th className="text-left px-4 py-3 font-medium">Cleanup</th>
+              <th className="text-left px-4 py-3 font-medium">Operator</th><th className="text-left px-4 py-3 font-medium">Machine</th>
+              <th className="text-left px-4 py-3 font-medium">Quality</th><th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {workOrders.map(w => (
+                <tr key={w.wo} className={`border-b hover:bg-muted/30 ${w.status === 'IN_PROGRESS' ? 'bg-amber-50/30' : ''}`}>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{w.wo}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.op}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{w.name}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[w.type]}`}>{w.type.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.wc}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.setup}m</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.run}m</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.cleanup}m</td>
+                  <td className="px-4 py-3 text-xs">{w.operator || <span className="text-amber-600">Unassigned</span>}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.machine}</td>
+                  <td className="px-4 py-3">{w.quality ? <span className={`text-xs font-bold ${w.quality === 'PASS' ? 'text-emerald-600' : 'text-rose-600'}`}>{w.quality}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
+                  <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[w.status]}`}>{w.status.replace(/_/g, ' ')}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 3: Routing Designer ───────────────────────────
+function RoutingDesignerModule() {
+  const routings = [
+    { code: 'RT-KK-01', name: 'Kaju Katli Standard Routing', recipe: 'REC-KK-500', type: 'SEQUENTIAL', steps: 8, active: true },
+    { code: 'RT-IB-01', name: 'Idli Batter Routing', recipe: 'REC-IB-1K', type: 'SEQUENTIAL', steps: 4, active: true },
+    { code: 'RT-NM-01', name: 'Namkeen Frying Routing', recipe: 'REC-NM-500', type: 'SEQUENTIAL', steps: 7, active: true },
+    { code: 'RT-LD-01', name: 'Laddu Routing', recipe: 'REC-LD-1K', type: 'SEQUENTIAL', steps: 6, active: true },
+  ]
+
+  const routingSteps = [
+    { step: 1, op: 'Ingredient Preparation', wc: 'RAW_MATERIAL_PREP', setup: 15, run: 30, cleanup: 5, skill: 'GENERAL', qc: 'Visual check' },
+    { step: 2, op: 'Mixing', wc: 'MIXING', setup: 10, run: 20, cleanup: 5, skill: 'MIXER', qc: 'Moisture < 8%' },
+    { step: 3, op: 'Cooking', wc: 'COOKING', setup: 10, run: 45, cleanup: 10, skill: 'COOK', qc: 'Temp 110°C ± 2°C' },
+    { step: 4, op: 'Cooling', wc: 'COOLING', setup: 0, run: 30, cleanup: 0, skill: 'GENERAL', qc: 'Surface < 45°C' },
+    { step: 5, op: 'Rolling', wc: 'ROLLING', setup: 5, run: 15, cleanup: 5, skill: 'ROLLER', qc: 'Thickness 8mm ± 1mm' },
+    { step: 6, op: 'Cutting', wc: 'CUTTING', setup: 5, run: 10, cleanup: 5, skill: 'GENERAL', qc: 'Weight 12g ± 1g' },
+    { step: 7, op: 'Quality Inspection', wc: 'INSPECTION', setup: 0, run: 5, cleanup: 0, skill: 'QC', qc: 'Visual + taste' },
+    { step: 8, op: 'Packing', wc: 'PACKING', setup: 10, run: 12, cleanup: 5, skill: 'PACKER', qc: 'Net wt 500g ± 5g' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Routing Designer</h2><p className="text-sm text-muted-foreground mt-1">Sequential · parallel · alternate · rework routing — step-by-step production operations</p></div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {routings.map(r => (
+          <Card key={r.code} className="p-4">
+            <div className="flex items-center justify-between mb-2"><span className="font-mono text-xs font-semibold text-blue-700">{r.code}</span><Badge variant="outline" className="text-[10px]">{r.type}</Badge></div>
+            <p className="text-sm font-medium">{r.name}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Recipe: {r.recipe}</p>
+            <div className="mt-2 flex items-center justify-between"><span className="text-xs">{r.steps} steps</span><span className={`text-[10px] px-2 py-0.5 rounded ${r.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100'}`}>{r.active ? 'ACTIVE' : 'INACTIVE'}</span></div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Routing Steps — Kaju Katli Standard (RT-KK-01)</h3>
+        <div className="space-y-2">
+          {routingSteps.map(s => (
+            <div key={s.step} className="flex items-center gap-3 p-3 border rounded">
+              <div className="h-8 w-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">{s.step}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2"><span className="text-sm font-medium">{s.op}</span><span className="text-[10px] px-1.5 py-0.5 bg-muted rounded font-mono">{s.wc.replace(/_/g, ' ')}</span></div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">Skill: {s.skill} · QC: {s.qc}</div>
+              </div>
+              <div className="flex gap-3 text-[10px] text-right">
+                <div><p className="text-muted-foreground">Setup</p><p className="font-mono font-bold">{s.setup}m</p></div>
+                <div><p className="text-muted-foreground">Run</p><p className="font-mono font-bold">{s.run}m</p></div>
+                <div><p className="text-muted-foreground">Clean</p><p className="font-mono font-bold">{s.cleanup}m</p></div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 pt-3 border-t flex justify-between text-xs">
+          <span className="text-muted-foreground">Total time per batch:</span>
+          <span className="font-mono font-bold">{routingSteps.reduce((a, s) => a + s.setup + s.run + s.cleanup, 0)} minutes</span>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 4: Shop Floor Schedule ────────────────────────
+function ShopFloorScheduleModule() {
+  const [view, setView] = useState<'timeline' | 'calendar'>('timeline')
+  const slots = [
+    { time: '06:00-08:00', po: 'PO-2026-00125', product: 'Kaju Katli (WO-001 Prep)', line: 'LINE-KK-01', operator: 'Rajesh K.', status: 'COMPLETED' },
+    { time: '08:00-08:30', po: 'PO-2026-00125', product: 'Kaju Katli (WO-002 Mixing)', line: 'LINE-KK-01', operator: 'Rajesh K.', status: 'COMPLETED' },
+    { time: '08:30-09:30', po: 'PO-2026-00125', product: 'Kaju Katli (WO-003 Cooking)', line: 'LINE-KK-01', operator: 'Rajesh K.', status: 'IN_PROGRESS' },
+    { time: '09:30-10:00', po: 'PO-2026-00125', product: 'Kaju Katli (WO-004 Cooling)', line: 'LINE-KK-01', operator: '—', status: 'SCHEDULED' },
+    { time: '05:00-09:00', po: 'PO-2026-00126', product: 'Idli Batter (All WOs)', line: 'LINE-IB-01', operator: 'Anil R.', status: 'IN_PROGRESS' },
+    { time: '10:00-10:30', po: 'PO-2026-00125', product: 'Kaju Katli (WO-005 Rolling)', line: 'LINE-KK-01', operator: '—', status: 'SCHEDULED' },
+    { time: '10:30-10:45', po: 'PO-2026-00125', product: 'Kaju Katli (WO-006 Cutting)', line: 'LINE-KK-01', operator: '—', status: 'SCHEDULED' },
+    { time: '10:45-11:00', po: 'PO-2026-00125', product: 'Kaju Katli (WO-007 QC)', line: 'LINE-KK-01', operator: '—', status: 'SCHEDULED' },
+    { time: '11:00-11:30', po: 'PO-2026-00125', product: 'Kaju Katli (WO-008 Packing)', line: 'LINE-KK-01', operator: '—', status: 'SCHEDULED' },
+    { time: '14:00-18:00', po: 'PO-2026-00127', product: 'Mysore Pak (All WOs)', line: 'LINE-MP-01', operator: '—', status: 'SCHEDULED' },
+  ]
+
+  const statusColors: Record<string, string> = { COMPLETED: 'bg-emerald-100 text-emerald-700 border-emerald-300', IN_PROGRESS: 'bg-amber-100 text-amber-700 border-amber-300', SCHEDULED: 'bg-blue-100 text-blue-700 border-blue-300' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Shop Floor Schedule — July 10, 2026 (Morning Shift)</h2><p className="text-sm text-muted-foreground mt-1">Line scheduling · operator assignment · machine booking · maintenance windows</p></div>
+        <div className="flex rounded-md border overflow-hidden">
+          {(['timeline', 'calendar'] as const).map(v => <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 text-xs font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v}</button>)}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Scheduled Lines', value: '3/5', color: 'text-blue-600' },
+          { label: 'Active Operators', value: '5/8', color: 'text-emerald-600' },
+          { label: 'Machines in Use', value: '4/6', color: 'text-amber-600' },
+          { label: 'Scheduled Slots', value: slots.length, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {view === 'timeline' && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Timeline View — Morning Shift (06:00 - 14:00)</h3>
+          <div className="space-y-2">
+            {slots.map((s, i) => (
+              <div key={i} className={`flex items-center gap-3 p-3 border rounded ${statusColors[s.status]}`}>
+                <div className="w-24 font-mono text-xs font-semibold">{s.time}</div>
+                <div className="flex-1"><div className="text-xs font-medium">{s.product}</div><div className="text-[10px] text-muted-foreground">{s.line} · {s.operator}</div></div>
+                <div className="font-mono text-[10px] text-muted-foreground">{s.po}</div>
+                <span className={`text-[10px] px-2 py-1 rounded ${statusColors[s.status]}`}>{s.status}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {view === 'calendar' && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Week 28 — Production Calendar</h3>
+          <div className="grid grid-cols-7 gap-1">
+            {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map(d => <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
+            {Array.from({ length: 7 }, (_, i) => {
+              const day = i + 6
+              const hasProduction = [6, 7, 8].includes(day)
+              const isHoliday = day === 15
+              return (
+                <div key={day} className={`aspect-square rounded border p-1 text-[10px] ${isHoliday ? 'bg-rose-50 border-rose-300' : hasProduction ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50'}`}>
+                  <div className="font-bold">{day}</div>
+                  {hasProduction && <div className="text-[8px] text-emerald-600">{day === 6 ? '3 POs' : day === 7 ? '2 POs' : '1 PO'}</div>}
+                  {isHoliday && <div className="text-[8px] text-rose-600">Holiday</div>}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ─── Epic 7: Digital Production Traveler ────────────────
+function ProductionTravelerModule() {
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Digital Production Traveler — PO-2026-00125</h2><p className="text-sm text-muted-foreground mt-1">Paperless job card — recipe, routing, materials, quality, operator, machine, time logs, batch</p></div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-4 lg:col-span-2">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="font-semibold text-lg">Kaju Katli 500g — Batch BATCH-2026-A018</h3>
+              <p className="text-xs text-muted-foreground mt-1">PO: PO-2026-00125 · Recipe: REC-KK-500 v1.2 · Plant: PLANT-THANE-01</p>
+            </div>
+            <Badge className="bg-amber-500">IN PROGRESS</Badge>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-4">
+            <div className="p-2 bg-muted/50 rounded"><p className="text-muted-foreground">Planned Qty</p><p className="font-mono font-bold text-base">95 KG</p></div>
+            <div className="p-2 bg-muted/50 rounded"><p className="text-muted-foreground">Completed</p><p className="font-mono font-bold text-base text-amber-600">0 KG</p></div>
+            <div className="p-2 bg-muted/50 rounded"><p className="text-muted-foreground">Started</p><p className="font-mono font-bold text-base">06:00</p></div>
+            <div className="p-2 bg-muted/50 rounded"><p className="text-muted-foreground">Current Op</p><p className="font-mono font-bold text-base text-amber-600">WO-003 Cooking</p></div>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold">Quality Checks</h4>
+            {[
+              { op: 'After Mixing', check: 'Moisture < 8%', result: 'PASS', value: '6.2%', by: 'Rajesh K.', time: '08:25' },
+              { op: 'After Cooking', check: 'Temperature 110°C ± 2°C', result: null, value: null, by: null, time: null },
+              { op: 'After Cooling', check: 'Surface < 45°C', result: null, value: null, by: null, time: null },
+              { op: 'After Rolling', check: 'Thickness 8mm ± 1mm', result: null, value: null, by: null, time: null },
+              { op: 'After Cutting', check: 'Weight 12g ± 1g', result: null, value: null, by: null, time: null },
+            ].map((qc, i) => (
+              <div key={i} className={`flex items-center gap-3 p-2 border rounded ${qc.result ? 'bg-emerald-50/50' : 'bg-slate-50'}`}>
+                <div className="flex-1"><p className="text-xs font-medium">{qc.check}</p><p className="text-[10px] text-muted-foreground">{qc.op}</p></div>
+                {qc.result ? (
+                  <div className="text-right"><span className="text-xs font-bold text-emerald-600">{qc.result}</span><p className="text-[10px] text-muted-foreground">{qc.value} · {qc.by} · {qc.time}</p></div>
+                ) : <span className="text-xs text-slate-400">Pending</span>}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <h4 className="text-sm font-semibold">Time Logs</h4>
+            {[
+              { op: 'WO-001 Prep', start: '06:00', end: '06:45', dur: '45m', op2: 'Rajesh K.' },
+              { op: 'WO-002 Mixing', start: '06:45', end: '07:15', dur: '30m', op2: 'Rajesh K.' },
+              { op: 'WO-003 Cooking', start: '07:15', end: '—', dur: 'In progress', op2: 'Rajesh K.' },
+            ].map((t, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-muted/30 rounded text-xs">
+                <span className="font-mono font-medium w-28">{t.op}</span>
+                <span className="font-mono">{t.start} - {t.end}</span>
+                <span className="font-mono font-bold">{t.dur}</span>
+                <span className="text-muted-foreground">{t.op2}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3 text-sm">QR Code — Scan to Access Traveler</h3>
+          <div className="flex flex-col items-center">
+            <div className="h-48 w-48 bg-slate-900 rounded-xl flex items-center justify-center mb-3">
+              <QrCode className="h-32 w-32 text-amber-500" />
+            </div>
+            <p className="font-mono text-xs font-semibold text-center">TRAVELER-2026-A018</p>
+            <p className="text-[10px] text-muted-foreground mt-1 text-center">Scan with mobile app to view full production details, log quality checks, and record time</p>
+          </div>
+
+          <div className="mt-4 space-y-2 text-xs">
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span className="text-muted-foreground">Batch Number:</span><span className="font-mono font-bold">BATCH-2026-A018</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span className="text-muted-foreground">Recipe Version:</span><span className="font-mono">v1.2 (ACTIVE)</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span className="text-muted-foreground">Routing:</span><span className="font-mono">RT-KK-01 (8 steps)</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span className="text-muted-foreground">Line:</span><span className="font-mono">LINE-KK-01</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span className="text-muted-foreground">Operator:</span><span>Rajesh K.</span></div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 6: Assignment Console ─────────────────────────
+function AssignmentConsoleModule() {
+  const assignments = [
+    { code: 'ASG-001', po: 'PO-2026-00125', wo: 'WO-001', type: 'OPERATOR', resource: 'Rajesh K. (OP-001)', certified: true, available: true, status: 'RELEASED' },
+    { code: 'ASG-002', po: 'PO-2026-00125', wo: 'WO-002', type: 'MACHINE', resource: 'Industrial Mixer MIX-01', certified: true, available: true, status: 'RELEASED' },
+    { code: 'ASG-003', po: 'PO-2026-00125', wo: 'WO-003', type: 'MACHINE', resource: 'Cooking Kettle COOK-01', certified: true, available: true, status: 'ACTIVE' },
+    { code: 'ASG-004', po: 'PO-2026-00125', wo: 'WO-003', type: 'OPERATOR', resource: 'Rajesh K. (OP-001)', certified: true, available: true, status: 'ACTIVE' },
+    { code: 'ASG-005', po: 'PO-2026-00126', wo: 'WO-001', type: 'OPERATOR', resource: 'Anil R. (OP-006)', certified: true, available: true, status: 'ACTIVE' },
+    { code: 'ASG-006', po: 'PO-2026-00126', wo: 'WO-001', type: 'MACHINE', resource: 'Wet Grinder GRIND-01', certified: true, available: true, status: 'ACTIVE' },
+    { code: 'ASG-007', po: 'PO-2026-00127', wo: null, type: 'SUPERVISOR', resource: 'Suresh Iyer', certified: true, available: true, status: 'ASSIGNED' },
+    { code: 'ASG-008', po: 'PO-2026-00128', wo: null, type: 'OPERATOR', resource: 'Priya N. (OP-008)', certified: false, available: true, status: 'ASSIGNED' },
+  ]
+
+  const typeColors: Record<string, string> = { OPERATOR: 'bg-blue-100 text-blue-700', SUPERVISOR: 'bg-purple-100 text-purple-700', MACHINE: 'bg-amber-100 text-amber-700', PRODUCTION_TABLE: 'bg-slate-100 text-slate-700', PACKING_STATION: 'bg-emerald-100 text-emerald-700' }
+  const statusColors: Record<string, string> = { ASSIGNED: 'bg-blue-100 text-blue-700', ACTIVE: 'bg-emerald-100 text-emerald-700', RELEASED: 'bg-slate-100 text-slate-600', RECALLED: 'bg-rose-100 text-rose-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Assignment Console</h2><p className="text-sm text-muted-foreground mt-1">Operator · supervisor · machine · production table · packing station assignment with certification validation</p></div>
+
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <h3 className="font-semibold mb-2 text-sm">Validation: Machine Available? → Operator Certified? → Assign → Start Production</h3>
+      </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Assignments', value: assignments.length, color: 'text-blue-600' },
+          { label: 'Active', value: assignments.filter(a => a.status === 'ACTIVE').length, color: 'text-emerald-600' },
+          { label: 'Assigned', value: assignments.filter(a => a.status === 'ASSIGNED').length, color: 'text-amber-600' },
+          { label: 'Certification Issues', value: assignments.filter(a => !a.certified).length, color: 'text-rose-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">PO / WO</th>
+              <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Resource</th>
+              <th className="text-left px-4 py-3 font-medium">Certified</th><th className="text-left px-4 py-3 font-medium">Available</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {assignments.map(a => (
+                <tr key={a.code} className={`border-b hover:bg-muted/30 ${!a.certified ? 'bg-rose-50/30' : ''}`}>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{a.code}</td>
+                  <td className="px-4 py-3 font-mono text-[10px]">{a.po}{a.wo && ` / ${a.wo}`}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[a.type]}`}>{a.type.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3 text-xs">{a.resource}</td>
+                  <td className="px-4 py-3">{a.certified ? <span className="text-emerald-600 text-xs">✓ Certified</span> : <span className="text-rose-600 text-xs font-bold">⚠ Not Certified</span>}</td>
+                  <td className="px-4 py-3">{a.available ? <span className="text-emerald-600 text-xs">✓ Available</span> : <span className="text-rose-600 text-xs">✗ Busy</span>}</td>
+                  <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[a.status]}`}>{a.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 8: Production Execution Dashboard ─────────────
+function ProductionExecutionDashboardModule() {
+  const kpis = [
+    { label: 'Active POs', value: '3', sub: '1 in progress, 2 released', color: 'text-blue-600' },
+    { label: 'Running WOs', value: '2', sub: '1 cooking, 1 grinding', color: 'text-amber-600' },
+    { label: 'Today Output', value: '45 kg', sub: 'Target 515 kg', color: 'text-purple-600' },
+    { label: 'Avg Cycle Time', value: '2.5h', sub: 'Target 2.2h', color: 'text-cyan-600' },
+    { label: 'Schedule Adherence', value: '92%', sub: '8% behind schedule', color: 'text-emerald-600' },
+    { label: 'Quality Pass Rate', value: '100%', sub: '0 failures', color: 'text-emerald-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Production Execution Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Live shop floor — released orders, running orders, progress, machine status, quality</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpis.map(k => <Card key={k.label} className="p-3"><p className="text-[10px] text-muted-foreground uppercase">{k.label}</p><p className={`text-xl font-bold mt-1 ${k.color}`}>{k.value}</p><p className="text-[10px] text-muted-foreground">{k.sub}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Active Production Orders</h3>
+          <div className="space-y-2">
+            {[
+              { po: 'PO-2026-00125', product: 'Kaju Katli 500g', progress: 38, current: 'WO-003 Cooking', line: 'LINE-KK-01', operator: 'Rajesh K.' },
+              { po: 'PO-2026-00126', product: 'Shwet Idli Batter 1kg', progress: 45, current: 'WO-002 Grinding', line: 'LINE-IB-01', operator: 'Anil R.' },
+              { po: 'PO-2026-00127', product: 'Mysore Pak 250g', progress: 0, current: 'Waiting for start', line: 'LINE-MP-01', operator: '—' },
+            ].map((p, i) => (
+              <div key={i} className="p-3 border rounded">
+                <div className="flex items-center justify-between mb-2">
+                  <div><p className="text-xs font-medium">{p.product}</p><p className="text-[10px] text-muted-foreground font-mono">{p.po} · {p.line} · {p.operator}</p></div>
+                  <span className="font-mono text-xs font-bold">{p.progress}%</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden mb-1"><div className={`h-full ${p.progress > 0 ? 'bg-amber-500' : 'bg-slate-300'}`} style={{ width: `${p.progress}%` }} /></div>
+                <p className="text-[10px] text-muted-foreground">Current: {p.current}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Machine Status — Live</h3>
+          <div className="space-y-2">
+            {[
+              { machine: 'MIX-01 (Mixer)', line: 'LINE-KK-01', status: 'IDLE', product: '—', operator: '—' },
+              { machine: 'COOK-01 (Kettle)', line: 'LINE-KK-01', status: 'RUNNING', product: 'Kaju Katli', operator: 'Rajesh K.' },
+              { machine: 'COOL-01 (Tunnel)', line: 'LINE-KK-01', status: 'IDLE', product: '—', operator: '—' },
+              { machine: 'GRIND-01 (Grinder)', line: 'LINE-IB-01', status: 'RUNNING', product: 'Idli Batter', operator: 'Anil R.' },
+              { machine: 'FRY-01 (Fryer)', line: 'LINE-NM-01', status: 'MAINTENANCE', product: '—', operator: '—' },
+            ].map((m, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 border rounded">
+                <span className={`h-3 w-3 rounded-full ${m.status === 'RUNNING' ? 'bg-emerald-500 animate-pulse' : m.status === 'MAINTENANCE' ? 'bg-rose-500' : 'bg-slate-400'}`} />
+                <div className="flex-1"><p className="text-xs font-medium">{m.machine}</p><p className="text-[10px] text-muted-foreground">{m.line} · {m.product || 'Idle'}</p></div>
+                <span className="text-xs">{m.status}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 8: Progress Monitor ───────────────────────────
+function ProgressMonitorModule() {
+  const logs = [
+    { time: '08:25', type: 'QUALITY_CHECK', po: 'PO-2026-00125', wo: 'WO-002', msg: 'Moisture check after mixing: 6.2% (target < 8%) — PASS', operator: 'Rajesh K.' },
+    { time: '08:15', type: 'COMPLETED', po: 'PO-2026-00125', wo: 'WO-002', msg: 'Mixing completed (30 min run time)', operator: 'Rajesh K.' },
+    { time: '07:45', type: 'MATERIAL_CONSUMED', po: 'PO-2026-00125', wo: 'WO-002', msg: 'Consumed: Cashew 55kg, Sugar 35kg, Cardamom 0.5kg', operator: 'Rajesh K.' },
+    { time: '07:15', type: 'STARTED', po: 'PO-2026-00125', wo: 'WO-003', msg: 'Cooking started — target temp 110°C', operator: 'Rajesh K.' },
+    { time: '06:45', type: 'COMPLETED', po: 'PO-2026-00125', wo: 'WO-001', msg: 'Ingredient preparation completed (45 min)', operator: 'Rajesh K.' },
+    { time: '06:30', type: 'QUALITY_CHECK', po: 'PO-2026-00125', wo: 'WO-001', msg: 'Raw material visual inspection — PASS', operator: 'Rajesh K.' },
+    { time: '06:00', type: 'STARTED', po: 'PO-2026-00125', wo: 'WO-001', msg: 'Production started — Ingredient preparation', operator: 'Rajesh K.' },
+    { time: '05:45', type: 'STARTED', po: 'PO-2026-00126', wo: 'WO-001', msg: 'Idli batter production started', operator: 'Anil R.' },
+  ]
+
+  const typeColors: Record<string, string> = { STARTED: 'text-blue-600', COMPLETED: 'text-emerald-600', PAUSED: 'text-amber-600', QUALITY_CHECK: 'text-purple-600', MATERIAL_CONSUMED: 'text-cyan-600', EXCEPTION: 'text-rose-600', DOWNTIME: 'text-orange-600' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Production Progress Monitor</h2><p className="text-sm text-muted-foreground mt-1">Real-time event log — every production action tracked and timestamped</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Events Today', value: logs.length, color: 'text-blue-600' },
+          { label: 'Completions', value: logs.filter(l => l.type === 'COMPLETED').length, color: 'text-emerald-600' },
+          { label: 'Quality Checks', value: logs.filter(l => l.type === 'QUALITY_CHECK').length, color: 'text-purple-600' },
+          { label: 'Material Consumed', value: logs.filter(l => l.type === 'MATERIAL_CONSUMED').length, color: 'text-cyan-600' },
+          { label: 'Exceptions', value: logs.filter(l => l.type === 'EXCEPTION').length, color: 'text-rose-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Live Event Feed — July 10, 2026</h3>
+        <div className="relative pl-8">
+          <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-blue-200" />
+          {logs.map((l, i) => (
+            <div key={i} className="relative mb-4">
+              <div className={`absolute -left-5 top-2 h-4 w-4 rounded-full border-2 border-white ${l.type === 'COMPLETED' ? 'bg-emerald-500' : l.type === 'STARTED' ? 'bg-blue-500' : l.type === 'QUALITY_CHECK' ? 'bg-purple-500' : 'bg-cyan-500'}`} />
+              <Card className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`font-mono text-xs font-bold ${typeColors[l.type]}`}>{l.type.replace(/_/g, ' ')}</span>
+                  <span className="text-[10px] text-muted-foreground">{l.time} · {l.operator}</span>
+                </div>
+                <p className="text-xs">{l.msg}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 font-mono">{l.po} · {l.wo}</p>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -16974,6 +17534,7 @@ export default function Home() {
     plantmaster: 'Plant Master', productiondept: 'Production Departments', productionlines: 'Production Lines', workcenters: 'Work Centers', mfgcalendar: 'Manufacturing Calendar', mfgresources: 'Production Resources', plantconfig: 'Plant Configuration', productiondashboard: 'Production Dashboard',
     recipemaster: 'Recipe Master', formulabuilder: 'Formula Builder', bombuilder: 'BOM Builder', recipeversions: 'Recipe Version History', yielddashboard: 'Yield Dashboard', batchscaling: 'Batch Scaling Engine', nutritioncenter: 'Nutrition & Allergen Center', costrollup: 'Cost Roll-Up Engine', recipeapproval: 'Recipe Approval Center',
     planningdashboard: 'Production Planning Dashboard', mpsconsole: 'MPS Console', mrpworkbench: 'MRP Workbench', demandplanning: 'Demand Planning', capacityplanner: 'Capacity Planner', shortagecenter: 'Material Shortage Center', purchasesuggestions: 'Purchase Suggestions', whatifsimulator: 'What-if Simulator',
+    productionorders: 'Production Orders', workorders: 'Work Orders', routingdesigner: 'Routing Designer', shopfloorschedule: 'Shop Floor Schedule', productiontraveler: 'Digital Production Traveler', assignmentconsole: 'Assignment Console', proddashboard: 'Production Execution Dashboard', progressmonitor: 'Production Progress Monitor',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -17039,7 +17600,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 36 · 312 Tables · Part 5 MES</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 37 · 321 Tables · Part 5 MES</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -17150,11 +17711,19 @@ export default function Home() {
             {activeModule === 'shortagecenter' && <MaterialShortageModule />}
             {activeModule === 'purchasesuggestions' && <PurchaseSuggestionsModule />}
             {activeModule === 'whatifsimulator' && <WhatIfSimulatorModule />}
+            {activeModule === 'productionorders' && <ProductionOrdersModule />}
+            {activeModule === 'workorders' && <WorkOrdersModule />}
+            {activeModule === 'routingdesigner' && <RoutingDesignerModule />}
+            {activeModule === 'shopfloorschedule' && <ShopFloorScheduleModule />}
+            {activeModule === 'productiontraveler' && <ProductionTravelerModule />}
+            {activeModule === 'assignmentconsole' && <AssignmentConsoleModule />}
+            {activeModule === 'proddashboard' && <ProductionExecutionDashboardModule />}
+            {activeModule === 'progressmonitor' && <ProgressMonitorModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-36 · Part 5 MES · 312 Database Tables · Production Planning & MRP Engine</p>
+              <p className="mt-1">Sprints 1-37 · Part 5 MES · 321 Database Tables · Production Orders & Shop Floor Scheduling</p>
             </div>
           </main>
         </div>

@@ -8835,12 +8835,68 @@ const server = Bun.serve({
       }, 'SUOP Production Planning & MRP Engine v36.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 37 — PRODUCTION ORDERS, WORK ORDERS & SHOP FLOOR
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/production-orders — List production orders
+    if (path === '/api/production-orders' && method === 'GET') {
+      const orders = [
+        { id: 'po-001', productionOrderNumber: 'PO-2026-00125', productName: 'Kaju Katli 500g', recipeCode: 'REC-KK-500', recipeVersion: '1.2', plantName: 'PLANT-THANE-01', productionLineCode: 'LINE-KK-01', batchNumber: 'BATCH-2026-A018', plannedQuantity: 95, completedQuantity: 0, priority: 'HIGH', status: 'RELEASED', materialsReserved: true, workOrders: 8 },
+        { id: 'po-002', productionOrderNumber: 'PO-2026-00126', productName: 'Shwet Idli Batter 1kg', recipeCode: 'REC-IB-1K', recipeVersion: '1.3', plantName: 'PLANT-BLR-01', productionLineCode: 'LINE-IB-01', batchNumber: 'BATCH-2026-C015', plannedQuantity: 100, completedQuantity: 45, priority: 'NORMAL', status: 'IN_PROGRESS', materialsReserved: true, workOrders: 4 },
+      ]
+      return new Response(JSON.stringify(successResponse(orders, 'Production orders retrieved')), { headers })
+    }
+
+    // POST /api/production-orders — Create production order
+    if (path === '/api/production-orders' && method === 'POST') {
+      const body = await req.json()
+      const order = { id: `po-${Date.now()}`, productionOrderNumber: `PO-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`, status: 'DRAFT', workOrders: 0, createdAt: new Date().toISOString(), message: 'Production order created — generate work orders from routing' }
+      return new Response(JSON.stringify(successResponse(order, 'Production order created')), { status: 201, headers })
+    }
+
+    // POST /api/production-orders/:id/release — Release production order
+    if (path.match(/^\/api\/production-orders\/[\w-]+\/release$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const result = { id, status: 'RELEASED', workOrdersGenerated: 8, travelerQRCode: `TRAVELER-${Date.now()}`, message: 'Production order released — 8 work orders generated, materials reserved, digital traveler created' }
+      return new Response(JSON.stringify(successResponse(result, 'Production order released')), { headers })
+    }
+
+    // GET /api/production-orders/:id/work-orders — Get work orders
+    if (path.match(/^\/api\/production-orders\/[\w-]+\/work-orders$/) && method === 'GET') {
+      const workOrders = [
+        { workOrderNumber: 'WO-001', operationNo: 1, operationName: 'Ingredient Preparation', workCenterType: 'RAW_MATERIAL_PREP', setupTimeMinutes: 15, runTimeMinutes: 30, status: 'COMPLETED', assignedOperatorName: 'Rajesh K.' },
+        { workOrderNumber: 'WO-002', operationNo: 2, operationName: 'Mixing', workCenterType: 'MIXING', setupTimeMinutes: 10, runTimeMinutes: 20, status: 'COMPLETED', assignedOperatorName: 'Rajesh K.' },
+        { workOrderNumber: 'WO-003', operationNo: 3, operationName: 'Cooking', workCenterType: 'COOKING', setupTimeMinutes: 10, runTimeMinutes: 45, status: 'IN_PROGRESS', assignedOperatorName: 'Rajesh K.' },
+      ]
+      return new Response(JSON.stringify(successResponse(workOrders, 'Work orders retrieved')), { headers })
+    }
+
+    // GET /api/production-orders/:id/traveler — Get digital traveler
+    if (path.match(/^\/api\/production-orders\/[\w-]+\/traveler$/) && method === 'GET') {
+      const traveler = { travelerCode: 'TRAVELER-2026-A018', productionOrderNumber: 'PO-2026-00125', qrCode: 'QR-A018', batchNumber: 'BATCH-2026-A018', recipeVersion: 'v1.2', routingSteps: 8, status: 'ACTIVE' }
+      return new Response(JSON.stringify(successResponse(traveler, 'Digital traveler retrieved')), { headers })
+    }
+
+    // GET /api/production-orders/info — Sprint 37 info
+    if (path === '/api/production-orders/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 37, sprintName: 'Production Orders, Work Orders & Shop Floor Scheduling', version: '37.0.0', part: 5, tables: 9,
+        epics: ['Production Order Management (9 production types)', 'Work Order Management (auto-generated from routing)', 'Routing Management (sequential/parallel/alternate/rework)', 'Shop Floor Scheduling (timeline/calendar)', 'Material Reservation (auto-lock inventory)', 'Operator & Machine Assignment (certification validation)', 'Digital Production Traveler (QR-coded, paperless)', 'Production Progress Tracking (real-time event log)'],
+        chiefArchitectRecommendation: 'Each Production Order generates multiple linked Work Orders (one per routing step: Prep→Mixing→Cooking→Cooling→Rolling→Cutting→Inspection→Packing). Provides stage-by-stage traceability, accurate costing, real-time visibility, bottleneck detection, quality control, full audit history.',
+        endpoints: ['GET/POST /api/production-orders', 'POST /api/production-orders/:id/release', 'GET /api/production-orders/:id/work-orders', 'GET /api/production-orders/:id/traveler', 'GET /api/production-orders/info'],
+        part5Sprint: 4, part5Sprints: 15, totalProjectTables: 321,
+      }, 'SUOP Production Orders & Shop Floor Engine v37.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 36, sprintName: 'Production Planning, MRP & MPS — PART 5 MES (36/48 sprints)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 37, sprintName: 'Production Orders, Work Orders & Shop Floor Scheduling — PART 5 MES (37/48 sprints)' })
+log('info', 'Sprint 37 — Production Orders & Shop Floor Engine', { sprint: 37, part: 5, tables: 321, productionOrders: 6, workOrders: 8, routings: 4, assignments: 8 })
+log('info', 'Production order endpoints available (Sprint 37)', { orders: 'GET/POST /api/production-orders', release: 'POST /api/production-orders/:id/release', workOrders: 'GET /api/production-orders/:id/work-orders', traveler: 'GET /api/production-orders/:id/traveler', info: 'GET /api/production-orders/info' })
 log('info', 'Sprint 36 — Production Planning & MRP Engine', { sprint: 36, part: 5, tables: 312, mpsLines: 8, mrpMaterials: 9, shortages: 5, purchaseSuggestions: 6 })
 log('info', 'Planning endpoints available (Sprint 36)', { dashboard: 'GET /api/planning/dashboard', mps: 'GET /api/planning/mps', mrpRun: 'POST /api/planning/mrp/run', demand: 'GET /api/planning/demand', capacity: 'GET /api/planning/capacity', shortages: 'GET /api/planning/shortages', purchaseSuggestions: 'GET /api/planning/purchase-suggestions', simulate: 'POST /api/planning/simulate', info: 'GET /api/planning/info' })
 log('info', 'Sprint 35 — Recipe & Formula Engine', { sprint: 35, part: 5, tables: 303, recipes: 10, formulaLines: 6, bomLines: 8 })
