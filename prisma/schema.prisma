@@ -14681,3 +14681,302 @@ model ScheduleSimulation {
   @@index([sourceScheduleId], map: "idx_sim46_source")
   @@index([scenarioType], map: "idx_sim46_scenario")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 47 — MANUFACTURING MISSION CONTROL, DIGITAL FACTORY & COMMAND CENTER
+// Part 5: MES · 8 new models · Epic 1-8 (mission control, alerts, AI recs,
+// factory health, business continuity, executive scorecard, control tower, digital twin)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Manufacturing Mission Control ──────────────────────────────
+model MfgMissionControl {
+  id                  String   @id @default(uuid()) @db.Uuid
+  snapshotCode        String   @unique @map("snapshot_code") // MMC-2026-000001
+  // ─── Scope ───
+  scopeType           String   @map("scope_type") // PLANT, ENTERPRISE
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Period ───
+  snapshotAt          DateTime @default(now()) @map("snapshot_at")
+  // ─── Factory Health ───
+  factoryHealthScore  Decimal  @db.Decimal(5, 2) @default(0) @map("factory_health_score") // 0-100
+  factoryHealthStatus String   @default("HEALTHY") @map("factory_health_status") // HEALTHY, WARNING, CRITICAL
+  // ─── Production ───
+  activeProductionOrders Int   @default(0) @map("active_production_orders")
+  runningMachines     Int      @default(0) @map("running_machines")
+  totalMachines       Int      @default(0) @map("total_machines")
+  faultedMachines     Int      @default(0) @map("faulted_machines")
+  activeOperators     Int      @default(0) @map("active_operators")
+  totalOperators      Int      @default(0) @map("total_operators")
+  // ─── Targets ───
+  productionTargetQty Decimal  @db.Decimal(14, 3) @default(0) @map("production_target_qty")
+  productionActualQty Decimal  @db.Decimal(14, 3) @default(0) @map("production_actual_qty")
+  targetAchievement   Decimal  @db.Decimal(6, 2) @default(0) @map("target_achievement") // %
+  // ─── KPIs ───
+  avgOEE              Decimal  @db.Decimal(6, 2) @default(0) @map("avg_oee")
+  avgYield            Decimal  @db.Decimal(6, 2) @default(0) @map("avg_yield")
+  scrapRate           Decimal  @db.Decimal(6, 2) @default(0) @map("scrap_rate")
+  // ─── Energy ───
+  energyConsumptionKwh Decimal  @db.Decimal(14, 3) @default(0) @map("energy_consumption_kwh")
+  // ─── Alerts ───
+  activeAlerts        Int      @default(0) @map("active_alerts")
+  criticalAlerts      Int      @default(0) @map("critical_alerts")
+  // ─── Performance ───
+  refreshDurationMs   Int?     @map("refresh_duration_ms") // target <3000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("mfg_mission_control")
+  @@index([scopeType, scopeCode, snapshotAt], map: "idx_mmc47_scope_time")
+  @@index([factoryHealthStatus], map: "idx_mmc47_health")
+}
+
+// ─── Epic 5: Manufacturing Alert Engine ─────────────────────────────────
+model ManufacturingAlert {
+  id                  String   @id @default(uuid()) @db.Uuid
+  alertCode           String   @unique @map("alert_code") // MAL-2026-000001
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  machineCode         String?  @map("machine_code")
+  // ─── Alert ───
+  alertType           String   @map("alert_type") // CRITICAL, WARNING, QUALITY, MACHINE, MATERIAL, MAINTENANCE, SAFETY, ENERGY, PRODUCTION_DELAY
+  alertCategory       String   @map("alert_category") // PRODUCTION, EQUIPMENT, QUALITY, MATERIAL, SAFETY, UTILITY
+  title               String   @map("title")
+  description         String   @map("description")
+  // ─── Severity ───
+  severity            String   @default("WARNING") @map("severity") // INFO, WARNING, CRITICAL, EMERGENCY
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, ACKNOWLEDGED, RESOLVED, ESCALATED, DISMISSED
+  acknowledgedById    String?  @db.Uuid @map("acknowledged_by_id")
+  acknowledgedByName  String?  @map("acknowledged_by_name")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  resolvedAt          DateTime? @map("resolved_at")
+  resolutionNotes     String?  @map("resolution_notes")
+  // ─── Escalation ───
+  escalationLevel     Int      @default(0) @map("escalation_level")
+  escalatedTo         String?  @map("escalated_to")
+  escalatedAt         DateTime? @map("escalated_at")
+  // ─── Notification ───
+  deliveryChannels    String   @default("DASHBOARD") @map("delivery_channels") // DASHBOARD, MOBILE_APP, EMAIL, SMS, WHATSAPP, TEAMS, SLACK
+  notificationSent    Boolean  @default(false) @map("notification_sent")
+  notificationSentAt  DateTime? @map("notification_sent_at")
+  // ─── Links ───
+  productionBatchNumber String? @map("production_batch_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Audit ───
+  raisedAt            DateTime @default(now()) @map("raised_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("manufacturing_alerts")
+  @@index([plantCode, status, severity], map: "idx_mal47_plant_status_sev")
+  @@index([alertType, severity], map: "idx_mal47_type_sev")
+  @@index([status], map: "idx_mal47_status")
+  @@index([raisedAt], map: "idx_mal47_time")
+}
+
+// ─── Epic 4: AI Manufacturing Operations Center ──────────────────────────
+model MfgAIRecommendation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recommendationCode  String   @unique @map("recommendation_code") // AIR-2026-000001
+  // ─── AI Source ───
+  aiEngine            String   @map("ai_engine") // PRODUCTION_OPTIMIZER, PREDICTIVE_QUALITY, PREDICTIVE_MAINTENANCE, ENERGY_OPTIMIZER, ROOT_CAUSE_ANALYZER
+  // ─── Recommendation ───
+  recommendationType  String   @map("recommendation_type") // START_ADDITIONAL_SHIFT, MOVE_OPERATORS, CHANGE_MACHINE, REORDER_PRODUCTION, INCREASE_CAPACITY, REDUCE_WASTE, SCHEDULE_MAINTENANCE, OPTIMIZE_ENERGY
+  title               String   @map("title")
+  description         String   @map("description")
+  rationale           String?  @map("rationale")
+  // ─── Impact ───
+  expectedImpact      String?  @map("expected_impact") // e.g., "+8% capacity", "-15% waste", "₹2,400 savings"
+  confidencePercent   Decimal  @db.Decimal(5, 2) @default(0) @map("confidence_percent") // 0-100
+  priority            String   @default("MEDIUM") @map("priority") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Scope ───
+  plantCode           String?  @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  machineCode         String?  @map("machine_code")
+  // ─── Action ───
+  actionStatus        String   @default("PENDING") @map("action_status") // PENDING, ACCEPTED, REJECTED, IMPLEMENTED, EXPIRED
+  acceptedById        String?  @db.Uuid @map("accepted_by_id")
+  acceptedByName      String?  @map("accepted_by_name")
+  acceptedAt          DateTime? @map("accepted_at")
+  implementedAt       DateTime? @map("implemented_at")
+  implementationNotes String?  @map("implementation_notes")
+  actualImpact        String?  @map("actual_impact")
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("mfg_ai_recommendations")
+  @@index([aiEngine, actionStatus], map: "idx_air47_engine_status")
+  @@index([recommendationType, priority], map: "idx_air47_type_priority")
+  @@index([actionStatus], map: "idx_air47_status")
+}
+
+// ─── Epic 6: Factory Health & Business Continuity ───────────────────────
+model FactoryHealthCheck {
+  id                  String   @id @default(uuid()) @db.Uuid
+  checkCode           String   @unique @map("check_code") // FHC-2026-000001
+  // ─── System ───
+  systemName          String   @map("system_name") // MES, API_GATEWAY, IOT_GATEWAY, DATABASE, PRODUCTION_APP, WAREHOUSE_INTEGRATION, NETWORK, POWER, BACKUP
+  systemCategory      String   @map("system_category") // APPLICATION, INFRASTRUCTURE, INTEGRATION, UTILITY
+  // ─── Health ───
+  healthStatus        String   @default("HEALTHY") @map("health_status") // HEALTHY, DEGRADED, DOWN, MAINTENANCE
+  healthScore         Decimal  @db.Decimal(5, 2) @default(100) @map("health_score") // 0-100
+  // ─── Metrics ───
+  responseTimeMs      Int?     @map("response_time_ms")
+  uptimePercent       Decimal  @db.Decimal(6, 2) @default(100) @map("uptime_percent")
+  lastIncidentAt      DateTime? @map("last_incident_at")
+  // ─── Details ───
+  statusMessage       String?  @map("status_message")
+  // ─── Audit ───
+  checkedAt           DateTime @default(now()) @map("checked_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("factory_health_checks")
+  @@index([systemName, healthStatus], map: "idx_fhc47_system_status")
+  @@index([healthStatus], map: "idx_fhc47_status")
+}
+
+model BusinessContinuityEvent {
+  id                  String   @id @default(uuid()) @db.Uuid
+  eventCode           String   @unique @map("event_code") // BCE-2026-000001
+  // ─── Incident ───
+  systemName          String   @map("system_name")
+  incidentType        String   @map("incident_type") // OUTAGE, DEGRADATION, SLOW_RESPONSE, CONNECTIVITY_LOSS, DATA_SYNC_FAILURE, POWER_FAILURE
+  incidentDescription String   @map("incident_description")
+  // ─── Severity ───
+  severity            String   @default("WARNING") @map("severity") // INFO, WARNING, CRITICAL, EMERGENCY
+  // ─── Timeline ───
+  detectedAt          DateTime @default(now()) @map("detected_at")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  resolvedAt          DateTime? @map("resolved_at")
+  downtimeMinutes     Int?     @map("downtime_minutes")
+  // ─── Recovery ───
+  recoveryActions     String?  @map("recovery_actions") // JSON array of checklist items
+  failoverTriggered   Boolean  @default(false) @map("failover_triggered")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, INVESTIGATING, RECOVERING, RESOLVED, CLOSED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("business_continuity_events")
+  @@index([systemName, status], map: "idx_bce47_system_status")
+  @@index([severity, status], map: "idx_bce47_sev_status")
+  @@index([detectedAt], map: "idx_bce47_time")
+}
+
+// ─── Epic 7-8: Executive Scorecard ──────────────────────────────────────
+model ExecutiveScorecard {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scorecardCode       String   @unique @map("scorecard_code") // ESC-2026-000001
+  // ─── Scope ───
+  scopeType           String   @map("scope_type") // PLANT, DEPARTMENT, ENTERPRISE
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── KPIs ───
+  productionAchievementPct Decimal @db.Decimal(6, 2) @default(0) @map("production_achievement_pct")
+  oeePercent          Decimal  @db.Decimal(6, 2) @default(0) @map("oee_percent")
+  yieldPercent        Decimal  @db.Decimal(6, 2) @default(0) @map("yield_percent")
+  scrapPercent        Decimal  @db.Decimal(6, 2) @default(0) @map("scrap_percent")
+  reworkPercent       Decimal  @db.Decimal(6, 2) @default(0) @map("rework_percent")
+  machineUtilizationPct Decimal @db.Decimal(6, 2) @default(0) @map("machine_utilization_pct")
+  scheduleAdherencePct Decimal @db.Decimal(6, 2) @default(0) @map("schedule_adherence_pct")
+  laborProductivity   Decimal  @db.Decimal(6, 2) @default(0) @map("labor_productivity") // units/hour
+  energyCost          Decimal  @db.Decimal(14, 2) @default(0) @map("energy_cost")
+  manufacturingCost   Decimal  @db.Decimal(14, 2) @default(0) @map("manufacturing_cost")
+  onTimeCompletionPct Decimal  @db.Decimal(6, 2) @default(0) @map("on_time_completion_pct")
+  // ─── Traffic Light ───
+  overallStatus       String   @default("GREEN") @map("overall_status") // GREEN, YELLOW, RED
+  // ─── Ranking ───
+  plantRank           Int?     @map("plant_rank")
+  departmentRank      Int?     @map("department_rank")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("executive_scorecards")
+  @@index([scopeType, scopeCode, periodStart], map: "idx_esc47_scope_period")
+  @@index([overallStatus], map: "idx_esc47_status")
+  @@index([periodType, periodStart], map: "idx_esc47_period")
+}
+
+// ─── Epic 2: Control Tower View ─────────────────────────────────────────
+model ControlTowerView {
+  id                  String   @id @default(uuid()) @db.Uuid
+  viewCode            String   @unique @map("view_code") // CTV-2026-000001
+  // ─── Scope ───
+  viewType            String   @map("view_type") // ENTERPRISE, REGIONAL, PLANT, DEPARTMENT, LINE
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Hierarchy ───
+  parentScopeCode     String?  @map("parent_scope_code")
+  childCount          Int      @default(0) @map("child_count")
+  // ─── Live Data ───
+  activeWorkOrders    Int      @default(0) @map("active_work_orders")
+  currentOutput       Decimal  @db.Decimal(14, 3) @default(0) @map("current_output")
+  outputUom           String   @default("KG") @map("output_uom")
+  currentOEE          Decimal  @db.Decimal(6, 2) @default(0) @map("current_oee")
+  runningMachines     Int      @default(0) @map("running_machines")
+  totalMachines       Int      @default(0) @map("total_machines")
+  activeOperators     Int      @default(0) @map("active_operators")
+  // ─── Risks ───
+  riskLevel           String   @default("LOW") @map("risk_level") // LOW, MEDIUM, HIGH, CRITICAL
+  riskFactors         String?  @map("risk_factors") // JSON array
+  // ─── Status ───
+  statusIndicator     String   @default("GREEN") @map("status_indicator") // GREEN, YELLOW, RED
+  // ─── Audit ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("control_tower_views")
+  @@index([viewType, scopeCode], map: "idx_ctv47_type_scope")
+  @@index([statusIndicator], map: "idx_ctv47_status")
+  @@index([riskLevel], map: "idx_ctv47_risk")
+}
+
+// ─── Epic 3: Digital Factory Twin ───────────────────────────────────────
+model DigitalFactoryNode {
+  id                  String   @id @default(uuid()) @db.Uuid
+  nodeCode            String   @unique @map("node_code") // DFN-PLANT-THN
+  // ─── Hierarchy ───
+  nodeType            String   @map("node_type") // PLANT, DEPARTMENT, LINE, WORK_CENTER, MACHINE, OPERATOR
+  nodeName            String   @map("node_name")
+  parentNodeId        String?  @db.Uuid @map("parent_node_id")
+  parentNodeCode      String?  @map("parent_node_code")
+  // ─── Location ───
+  plantCode           String   @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  workCenterCode      String?  @map("work_center_code")
+  machineCode         String?  @map("machine_code")
+  // ─── Live Status ───
+  status              String   @default("IDLE") @map("status") // RUNNING, IDLE, SETUP, CLEANING, MAINTENANCE, FAULT, OFFLINE
+  currentBatchNumber  String?  @map("current_batch_number")
+  currentProduct      String?  @map("current_product")
+  currentOutput       Decimal  @db.Decimal(14, 3) @default(0) @map("current_output")
+  outputUom           String   @default("KG") @map("output_uom")
+  // ─── WIP ───
+  wipQty              Decimal  @db.Decimal(14, 3) @default(0) @map("wip_qty")
+  wipStage            String?  @map("wip_stage") // MIXING, COOKING, COOLING, CUTTING, PACKING, FINISHED
+  // ─── Operator ───
+  assignedOperatorId  String?  @db.Uuid @map("assigned_operator_id")
+  assignedOperatorName String? @map("assigned_operator_name")
+  // ─── Capacity ───
+  capacityPercent     Decimal  @db.Decimal(6, 2) @default(0) @map("capacity_percent")
+  // ─── Visual ───
+  statusColor         String   @default("GRAY") @map("status_color") // GREEN, YELLOW, RED, BLUE, GRAY
+  // ─── Audit ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("digital_factory_nodes")
+  @@index([nodeType, plantCode], map: "idx_dfn47_type_plant")
+  @@index([parentNodeId], map: "idx_dfn47_parent")
+  @@index([status], map: "idx_dfn47_status")
+}
