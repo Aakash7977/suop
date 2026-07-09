@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "27.0.0"
+const VERSION = "39.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -68,6 +68,20 @@ function errorResponse(message: string, code: string = 'INTERNAL_ERROR', statusC
     meta: { correlationId: crypto.randomUUID() },
     errors: [{ code, field: '', message }],
   }
+}
+
+// ─── Sprint 39: Batch Number Generator ──────────────────
+// Format: <PRODUCT_PREFIX>-<PLANT_PREFIX>-<YYYYMMDD>-<6-digit-sequence>
+// Example: KAJ-THN-20260709-000145
+function generateBatchNumber(plantCode: string, productSku: string, manufacturingDate: Date): string {
+  const plant = (plantCode || 'THN').toUpperCase().slice(0, 3)
+  const skuPrefix = (productSku || 'PRD').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'PRD'
+  const yyyy = manufacturingDate.getFullYear()
+  const mm = String(manufacturingDate.getMonth() + 1).padStart(2, '0')
+  const dd = String(manufacturingDate.getDate()).padStart(2, '0')
+  const dateStr = `${yyyy}${mm}${dd}`
+  const sequence = Math.floor(Math.random() * 900000 + 100000) // 6-digit sequence
+  return `${skuPrefix}-${plant}-${dateStr}-${sequence}`
 }
 
 // ─── Password Policy Check (Epic 4) ─────────────────────
@@ -8968,12 +8982,682 @@ const server = Bun.serve({
       }, 'SUOP Shop Floor Execution Engine v38.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 39 — BATCH MANUFACTURING, GENEALOGY & TRACEABILITY
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/batches/dashboard — Batch traceability dashboard
+    if (path === '/api/batches/dashboard' && method === 'GET') {
+      const data = {
+        kpis: {
+          totalBatches: 1248,
+          runningBatches: 7,
+          completedToday: 12,
+          qualityHoldBatches: 3,
+          recalledBatches: 1,
+          expiringBatches: 18,
+          expiredBatches: 2,
+          avgShelfLifeDays: 90,
+          traceabilityCoverage: 98.4,
+          avgTraceQueryMs: 1240,
+        },
+        batchTypeDistribution: [
+          { type: 'FINISHED_GOODS', count: 542, color: '#10b981' },
+          { type: 'RAW_MATERIAL', count: 384, color: '#3b82f6' },
+          { type: 'SEMI_FINISHED', count: 168, color: '#f59e0b' },
+          { type: 'PACKAGING', count: 89, color: '#8b5cf6' },
+          { type: 'INGREDIENT', count: 65, color: '#ec4899' },
+        ],
+        statusDistribution: [
+          { status: 'RELEASED', count: 894, color: '#10b981' },
+          { status: 'COMPLETED', count: 156, color: '#3b82f6' },
+          { status: 'RUNNING', count: 7, color: '#f59e0b' },
+          { status: 'QUALITY_HOLD', count: 3, color: '#ef4444' },
+          { status: 'RECALLED', count: 1, color: '#dc2626' },
+          { status: 'EXPIRED', count: 2, color: '#6b7280' },
+        ],
+        recentBatches: [
+          { batch: 'KAJ-THN-20260709-000145', product: 'Kaju Katli 500g', type: 'FINISHED_GOODS', status: 'RELEASED', mfgDate: '2026-07-09', expiry: '2026-10-07' },
+          { batch: 'KAJ-THN-20260709-000146', product: 'Kaju Katli 1kg', type: 'FINISHED_GOODS', status: 'RELEASED', mfgDate: '2026-07-09', expiry: '2026-10-07' },
+          { batch: 'SHW-THN-20260709-000047', product: 'Shwet Idli Batter 1kg', type: 'FINISHED_GOODS', status: 'RUNNING', mfgDate: '2026-07-09', expiry: '2026-07-16' },
+          { batch: 'MOT-THN-20260708-000032', product: 'Motichoor Laddu 1kg', type: 'FINISHED_GOODS', status: 'QUALITY_HOLD', mfgDate: '2026-07-08', expiry: '2026-08-07' },
+        ],
+        traceabilityPerformance: {
+          todaySearches: 47,
+          avgResponseMs: 1240,
+          targetMs: 5000,
+          withinTarget: 47,
+          outsideTarget: 0,
+          compliancePercent: 100,
+        },
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Batch traceability dashboard')), { headers })
+    }
+
+    // GET /api/batches — List production batches
+    if (path === '/api/batches' && method === 'GET') {
+      const batches = [
+        {
+          id: 'b001', batchNumber: 'KAJ-THN-20260709-000145', batchType: 'FINISHED_GOODS',
+          recipeCode: 'RCP-KK-001', recipeVersion: 'V2.3', productionOrderNumber: 'PO-2026-00125',
+          productSku: 'KK-500', productName: 'Kaju Katli 500g',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: 'LINE-KK-01',
+          workCenterCode: 'WC-KK-03', manufacturingDate: '2026-07-09T06:30:00Z',
+          expiryDate: '2026-10-07T06:30:00Z', bestBeforeDate: '2026-09-07T06:30:00Z',
+          operatorName: 'Rajesh Kumar', shiftCode: 'SHIFT-A',
+          plannedQty: 95, actualQty: 94, scrapQty: 1, uom: 'KG',
+          status: 'RELEASED', qualityGrade: 'A', qualityStatus: 'PASSED',
+          isRecalled: false, parentBatchNumber: 'KAJ-THN-20260709-000144',
+          supplierInfo: null, createdAt: '2026-07-09T06:45:00Z',
+        },
+        {
+          id: 'b002', batchNumber: 'KAJ-THN-20260709-000146', batchType: 'FINISHED_GOODS',
+          recipeCode: 'RCP-KK-001', recipeVersion: 'V2.3', productionOrderNumber: 'PO-2026-00125',
+          productSku: 'KK-1KG', productName: 'Kaju Katli 1kg',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: 'LINE-KK-01',
+          workCenterCode: 'WC-KK-03', manufacturingDate: '2026-07-09T11:00:00Z',
+          expiryDate: '2026-10-07T11:00:00Z', bestBeforeDate: '2026-09-07T11:00:00Z',
+          operatorName: 'Rajesh Kumar', shiftCode: 'SHIFT-B',
+          plannedQty: 100, actualQty: 98, scrapQty: 2, uom: 'KG',
+          status: 'RELEASED', qualityGrade: 'A', qualityStatus: 'PASSED',
+          isRecalled: false, parentBatchNumber: 'KAJ-THN-20260709-000144',
+          createdAt: '2026-07-09T11:15:00Z',
+        },
+        {
+          id: 'b003', batchNumber: 'SHW-THN-20260709-000047', batchType: 'FINISHED_GOODS',
+          recipeCode: 'RCP-IB-002', recipeVersion: 'V1.5', productionOrderNumber: 'PO-2026-00126',
+          productSku: 'IB-1KG', productName: 'Shwet Idli Batter 1kg',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: 'LINE-IB-01',
+          workCenterCode: 'WC-IB-02', manufacturingDate: '2026-07-09T05:00:00Z',
+          expiryDate: '2026-07-16T05:00:00Z', bestBeforeDate: '2026-07-14T05:00:00Z',
+          operatorName: 'Anil R.', shiftCode: 'SHIFT-A',
+          plannedQty: 100, actualQty: 95, scrapQty: 5, uom: 'KG',
+          status: 'RUNNING', qualityGrade: null, qualityStatus: 'PENDING',
+          isRecalled: false, createdAt: '2026-07-09T05:10:00Z',
+        },
+        {
+          id: 'b004', batchNumber: 'MOT-THN-20260708-000032', batchType: 'FINISHED_GOODS',
+          recipeCode: 'RCP-ML-003', recipeVersion: 'V1.2', productionOrderNumber: 'PO-2026-00129',
+          productSku: 'ML-1KG', productName: 'Motichoor Laddu 1kg',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: 'LINE-NM-01',
+          workCenterCode: 'WC-ML-04', manufacturingDate: '2026-07-08T14:00:00Z',
+          expiryDate: '2026-08-07T14:00:00Z', bestBeforeDate: '2026-08-01T14:00:00Z',
+          operatorName: 'Suresh M.', shiftCode: 'SHIFT-B',
+          plannedQty: 100, actualQty: 98, scrapQty: 2, uom: 'KG',
+          status: 'QUALITY_HOLD', qualityGrade: null, qualityStatus: 'QUARANTINE',
+          isRecalled: false, createdAt: '2026-07-08T14:30:00Z',
+        },
+        {
+          id: 'b005', batchNumber: 'CAS-THN-20260705-000018', batchType: 'RAW_MATERIAL',
+          recipeCode: null, recipeVersion: null, productionOrderNumber: null,
+          productSku: 'CAS-W320', productName: 'Cashew W320',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: null,
+          workCenterCode: null, manufacturingDate: '2026-07-05T10:00:00Z',
+          expiryDate: '2027-01-05T10:00:00Z', bestBeforeDate: '2026-12-05T10:00:00Z',
+          operatorName: null, shiftCode: null,
+          plannedQty: 500, actualQty: 445, scrapQty: 0, uom: 'KG',
+          status: 'RELEASED', qualityGrade: 'A', qualityStatus: 'PASSED',
+          isRecalled: false, supplierInfo: {
+            supplierName: 'Sri Balaji Cashews', supplierBatchNo: 'SBC-2026-0705',
+            purchaseOrderNumber: 'PO-2026-00112', goodsReceiptNumber: 'GR-2026-00145',
+          },
+          createdAt: '2026-07-05T10:30:00Z',
+        },
+        {
+          id: 'b006', batchNumber: 'SUG-THN-20260701-000042', batchType: 'RAW_MATERIAL',
+          recipeCode: null, recipeVersion: null, productionOrderNumber: null,
+          productSku: 'SUG-S30', productName: 'Sugar S30',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: null,
+          workCenterCode: null, manufacturingDate: '2026-07-01T08:00:00Z',
+          expiryDate: '2027-07-01T08:00:00Z', bestBeforeDate: '2027-04-01T08:00:00Z',
+          operatorName: null, shiftCode: null,
+          plannedQty: 1000, actualQty: 965, scrapQty: 0, uom: 'KG',
+          status: 'RELEASED', qualityGrade: 'A', qualityStatus: 'PASSED',
+          isRecalled: false, supplierInfo: {
+            supplierName: 'EID Parry India Ltd', supplierBatchNo: 'EID-2026-0298',
+            purchaseOrderNumber: 'PO-2026-00098', goodsReceiptNumber: 'GR-2026-00133',
+          },
+          createdAt: '2026-07-01T08:30:00Z',
+        },
+        {
+          id: 'b007', batchNumber: 'GHE-THN-20260703-000008', batchType: 'INGREDIENT',
+          recipeCode: null, recipeVersion: null, productionOrderNumber: null,
+          productSku: 'GHE-COW', productName: 'Cow Ghee',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: null,
+          workCenterCode: null, manufacturingDate: '2026-07-03T09:00:00Z',
+          expiryDate: '2027-01-03T09:00:00Z', bestBeforeDate: '2026-12-03T09:00:00Z',
+          operatorName: null, shiftCode: null,
+          plannedQty: 200, actualQty: 178, scrapQty: 0, uom: 'KG',
+          status: 'RELEASED', qualityGrade: 'A', qualityStatus: 'PASSED',
+          isRecalled: false, supplierInfo: {
+            supplierName: 'Amul Dairy', supplierBatchNo: 'AMUL-2026-0789',
+            purchaseOrderNumber: 'PO-2026-00105', goodsReceiptNumber: 'GR-2026-00139',
+          },
+          createdAt: '2026-07-03T09:15:00Z',
+        },
+        {
+          id: 'b008', batchNumber: 'REC-THN-20260628-000011', batchType: 'FINISHED_GOODS',
+          recipeCode: 'RCP-KK-001', recipeVersion: 'V2.2', productionOrderNumber: 'PO-2026-00098',
+          productSku: 'KK-500', productName: 'Kaju Katli 500g',
+          plantCode: 'THN', plantName: 'Thane Plant', productionLineCode: 'LINE-KK-01',
+          workCenterCode: 'WC-KK-03', manufacturingDate: '2026-06-28T06:30:00Z',
+          expiryDate: '2026-09-26T06:30:00Z', bestBeforeDate: '2026-08-26T06:30:00Z',
+          operatorName: 'Vijay P.', shiftCode: 'SHIFT-A',
+          plannedQty: 95, actualQty: 93, scrapQty: 2, uom: 'KG',
+          status: 'RECALLED', qualityGrade: 'C', qualityStatus: 'FAILED',
+          isRecalled: true, recallNumber: 'REC-2026-003', parentBatchNumber: 'KAJ-THN-20260628-000010',
+          createdAt: '2026-06-28T06:45:00Z',
+        },
+      ]
+      return new Response(JSON.stringify(successResponse(batches, 'Production batches retrieved')), { headers })
+    }
+
+    // GET /api/batches/:id — Batch details
+    if (path.match(/^\/api\/batches\/[^/]+$/) && method === 'GET') {
+      const batchId = path.split('/').pop()
+      const data = {
+        id: batchId,
+        batchNumber: 'KAJ-THN-20260709-000145',
+        batchType: 'FINISHED_GOODS',
+        recipeCode: 'RCP-KK-001', recipeVersion: 'V2.3',
+        productionOrderNumber: 'PO-2026-00125',
+        productSku: 'KK-500', productName: 'Kaju Katli 500g',
+        plantCode: 'THN', plantName: 'Thane Plant',
+        productionLineCode: 'LINE-KK-01', productionLineName: 'Kaju Katli Line 1',
+        workCenterCode: 'WC-KK-03', workCenterName: 'Work Center KK-03',
+        manufacturingDate: '2026-07-09T06:30:00Z',
+        packingDate: '2026-07-09T08:00:00Z',
+        expiryDate: '2026-10-07T06:30:00Z',
+        bestBeforeDate: '2026-09-07T06:30:00Z',
+        operatorId: 'op-001', operatorName: 'Rajesh Kumar', shiftCode: 'SHIFT-A',
+        plannedQty: 95, actualQty: 94, scrapQty: 1, reworkQty: 0, uom: 'KG',
+        yieldPercent: 98.9,
+        status: 'RELEASED', statusReason: null,
+        qualityGrade: 'A', qualityStatus: 'PASSED',
+        isRecalled: false,
+        parentBatchNumber: 'KAJ-THN-20260709-000144',
+        storageConditions: 'Cool & Dry (15-25°C, <65% RH)',
+        temperatureRange: '15-25°C',
+        qrCode: 'QR-KAJ-THN-20260709-000145',
+        labelPrintedAt: '2026-07-09T08:05:00Z',
+        childBatches: [
+          { batchNumber: 'KAJ-THN-20260709-000145-A', type: 'PACKAGING', qty: 188, uom: 'PCS', relationship: 'PACKAGED_FROM' },
+          { batchNumber: 'KAJ-THN-20260709-000145-B', type: 'PACKAGING', qty: 6, uom: 'PCS', relationship: 'PACKAGED_FROM' },
+        ],
+        parentBatches: [
+          { batchNumber: 'CAS-THN-20260705-000018', type: 'RAW_MATERIAL', productName: 'Cashew W320', qty: 55, uom: 'KG', supplier: 'Sri Balaji Cashews' },
+          { batchNumber: 'SUG-THN-20260701-000042', type: 'RAW_MATERIAL', productName: 'Sugar S30', qty: 35, uom: 'KG', supplier: 'EID Parry India Ltd' },
+          { batchNumber: 'GHE-THN-20260703-000008', type: 'INGREDIENT', productName: 'Cow Ghee', qty: 4, uom: 'KG', supplier: 'Amul Dairy' },
+        ],
+        shelfLife: {
+          totalShelfLifeDays: 90, elapsedDays: 1, remainingDays: 89,
+          shelfLifePercent: 98.9, alertLevel: 'HEALTHY',
+          tempCompliant: true, coldChainIntact: true,
+        },
+        history: [
+          { fromStatus: 'PLANNED', toStatus: 'RUNNING', changedAt: '2026-07-09T06:30:00Z', changedBy: 'Rajesh Kumar', reason: 'Production started' },
+          { fromStatus: 'RUNNING', toStatus: 'COMPLETED', changedAt: '2026-07-09T08:00:00Z', changedBy: 'Rajesh Kumar', reason: 'All operations complete' },
+          { fromStatus: 'COMPLETED', toStatus: 'RELEASED', changedAt: '2026-07-09T10:00:00Z', changedBy: 'Quality Team', reason: 'Quality check passed - Grade A' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, `Batch ${batchId} details`)), { headers })
+    }
+
+    // POST /api/batches — Create new batch
+    if (path === '/api/batches' && method === 'POST') {
+      const body = await request.json()
+      const batchNumber = generateBatchNumber(body.plantCode, body.productSku, new Date())
+      const data = {
+        id: 'b-new-' + Date.now(),
+        batchNumber,
+        batchType: body.batchType || 'FINISHED_GOODS',
+        recipeCode: body.recipeCode,
+        recipeVersion: body.recipeVersion,
+        productionOrderNumber: body.productionOrderNumber,
+        productSku: body.productSku,
+        productName: body.productName,
+        plantCode: body.plantCode,
+        plantName: body.plantName,
+        productionLineCode: body.productionLineCode,
+        workCenterCode: body.workCenterCode,
+        manufacturingDate: body.manufacturingDate,
+        expiryDate: body.expiryDate,
+        bestBeforeDate: body.bestBeforeDate,
+        operatorName: body.operatorName,
+        shiftCode: body.shiftCode,
+        plannedQty: body.plannedQty || 0,
+        actualQty: 0, scrapQty: 0, reworkQty: 0,
+        uom: body.uom || 'KG',
+        status: 'PLANNED',
+        qualityStatus: 'PENDING',
+        isRecalled: false,
+        createdAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(data, `Batch ${batchNumber} created successfully`)), { status: 201, headers })
+    }
+
+    // POST /api/batches/:id/release — Release batch
+    if (path.match(/^\/api\/batches\/[^/]+\/release$/) && method === 'POST') {
+      const parts = path.split('/')
+      const batchId = parts[parts.length - 2]
+      return new Response(JSON.stringify(successResponse({
+        batchId,
+        status: 'RELEASED',
+        releasedAt: new Date().toISOString(),
+        message: 'Batch released for distribution',
+      }, `Batch ${batchId} released`)), { headers })
+    }
+
+    // POST /api/batches/:id/split — Split batch (Epic 6)
+    if (path.match(/^\/api\/batches\/[^/]+\/split$/) && method === 'POST') {
+      const parts = path.split('/')
+      const batchId = parts[parts.length - 2]
+      const body = await request.json()
+      const operationCode = 'BSM-' + Date.now()
+      const childBatchNumbers = []
+      for (let i = 0; i < (body.children?.length || 0); i++) {
+        childBatchNumbers.push(generateBatchNumber(body.plantCode, body.productSku, new Date()))
+      }
+      const data = {
+        operationCode,
+        operationType: 'SPLIT',
+        sourceBatchId: batchId,
+        sourceBatchNumber: body.sourceBatchNumber,
+        sourceQty: body.sourceQty,
+        children: body.children?.map((c, i) => ({
+          batchNumber: childBatchNumbers[i],
+          qty: c.qty,
+          uom: c.uom || 'KG',
+          targetWarehouse: c.targetWarehouse,
+        })),
+        status: 'COMPLETED',
+        performedAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(data, `Batch split operation ${operationCode} completed`)), { status: 201, headers })
+    }
+
+    // GET /api/batches/genealogy/:id — Get batch genealogy tree
+    if (path.match(/^\/api\/batches\/genealogy\/[^/]+$/) && method === 'GET') {
+      const batchId = path.split('/').pop()
+      const data = {
+        rootBatch: {
+          batchNumber: 'KAJ-THN-20260709-000145',
+          productName: 'Kaju Katli 500g',
+          batchType: 'FINISHED_GOODS',
+          status: 'RELEASED',
+          qty: 94, uom: 'KG',
+        },
+        // Parent batches (raw materials)
+        parents: [
+          {
+            batchNumber: 'CAS-THN-20260705-000018',
+            productName: 'Cashew W320',
+            batchType: 'RAW_MATERIAL',
+            qtyUsed: 55, uom: 'KG',
+            supplier: 'Sri Balaji Cashews',
+            supplierBatchNo: 'SBC-2026-0705',
+            purchaseOrderNumber: 'PO-2026-00112',
+            goodsReceiptNumber: 'GR-2026-00145',
+            receivedDate: '2026-07-05T10:30:00Z',
+            relationshipType: 'USED_IN',
+          },
+          {
+            batchNumber: 'SUG-THN-20260701-000042',
+            productName: 'Sugar S30',
+            batchType: 'RAW_MATERIAL',
+            qtyUsed: 35, uom: 'KG',
+            supplier: 'EID Parry India Ltd',
+            supplierBatchNo: 'EID-2026-0298',
+            purchaseOrderNumber: 'PO-2026-00098',
+            goodsReceiptNumber: 'GR-2026-00133',
+            receivedDate: '2026-07-01T08:30:00Z',
+            relationshipType: 'USED_IN',
+          },
+          {
+            batchNumber: 'GHE-THN-20260703-000008',
+            productName: 'Cow Ghee',
+            batchType: 'INGREDIENT',
+            qtyUsed: 4, uom: 'KG',
+            supplier: 'Amul Dairy',
+            supplierBatchNo: 'AMUL-2026-0789',
+            purchaseOrderNumber: 'PO-2026-00105',
+            goodsReceiptNumber: 'GR-2026-00139',
+            receivedDate: '2026-07-03T09:15:00Z',
+            relationshipType: 'USED_IN',
+          },
+        ],
+        // Children (packaged batches)
+        children: [
+          {
+            batchNumber: 'KAJ-THN-20260709-000145-A',
+            productName: 'Kaju Katli 500g (Packed)',
+            batchType: 'PACKAGING',
+            qtyProduced: 188, uom: 'PCS',
+            relationshipType: 'PACKAGED_FROM',
+            warehouse: 'WH-THN-FG-01', binCode: 'A-01-03-02',
+            dispatchDate: null,
+          },
+          {
+            batchNumber: 'KAJ-THN-20260709-000145-B',
+            productName: 'Kaju Katli 500g (Display Box)',
+            batchType: 'PACKAGING',
+            qtyProduced: 6, uom: 'PCS',
+            relationshipType: 'PACKAGED_FROM',
+            warehouse: 'WH-THN-FG-01', binCode: 'A-01-03-03',
+            dispatchDate: null,
+          },
+        ],
+        // Siblings (same production run)
+        siblings: [
+          {
+            batchNumber: 'KAJ-THN-20260709-000146',
+            productName: 'Kaju Katli 1kg',
+            batchType: 'FINISHED_GOODS',
+            qty: 98, uom: 'KG',
+            relationshipType: 'SAME_PRODUCTION_RUN',
+            productionOrderNumber: 'PO-2026-00125',
+          },
+        ],
+        tree: {
+          // visualization-ready tree structure
+          name: 'KAJ-THN-20260709-000145 (Kaju Katli 500g)',
+          type: 'FINISHED_GOODS',
+          status: 'RELEASED',
+          children: [
+            { name: 'CAS-THN-20260705-000018 (Cashew)', type: 'RAW_MATERIAL', supplier: 'Sri Balaji Cashews' },
+            { name: 'SUG-THN-20260701-000042 (Sugar)', type: 'RAW_MATERIAL', supplier: 'EID Parry India Ltd' },
+            { name: 'GHE-THN-20260703-000008 (Ghee)', type: 'INGREDIENT', supplier: 'Amul Dairy' },
+          ],
+        },
+      }
+      return new Response(JSON.stringify(successResponse(data, `Genealogy for batch ${batchId}`)), { headers })
+    }
+
+    // GET /api/batches/trace — Forward/backward traceability search
+    if (path === '/api/batches/trace' && method === 'GET') {
+      const url = new URL(request.url)
+      const searchTerm = url.searchParams.get('q') || ''
+      const direction = url.searchParams.get('direction') || 'BOTH' // FORWARD, BACKWARD, BOTH
+      const searchType = url.searchParams.get('type') || 'BY_BATCH'
+
+      // Simulate <5sec search (target met)
+      const executionMs = 800 + Math.floor(Math.random() * 400) // 800-1200ms
+
+      const result = {
+        searchCode: 'TS-' + Date.now(),
+        searchTerm, direction, searchType,
+        executionMs,
+        withinTarget: executionMs < 5000,
+        totalNodesFound: 18,
+        totalBatchesFound: 14,
+        totalSuppliersFound: 3,
+        totalCustomersFound: 5,
+        totalShipmentsFound: 4,
+        totalWarehousesFound: 2,
+        triggeredBy: 'OPERATOR',
+        searchedAt: new Date().toISOString(),
+        // Backward trace (raw material → finished goods)
+        backwardTrace: direction === 'BACKWARD' || direction === 'BOTH' ? {
+          steps: [
+            { step: 1, level: 'CUSTOMER', entity: 'Customer Complaint #CMP-2026-0042', date: '2026-07-08', details: 'Customer reported taste deviation in Kaju Katli 500g' },
+            { step: 2, level: 'RETAIL', entity: 'Sweets Mart, Bandra (Batch KAJ-THN-20260628-000011)', date: '2026-07-06', details: 'Distributor dispatched 24 boxes' },
+            { step: 3, level: 'DISTRIBUTOR', entity: 'Mumbai Sweets Distributors', date: '2026-07-03', details: 'Received 96 boxes from plant' },
+            { step: 4, level: 'SHIPMENT', entity: 'SHP-2026-00892', date: '2026-07-01', details: 'Dispatched from WH-THN-FG-01' },
+            { step: 5, level: 'WAREHOUSE', entity: 'WH-THN-FG-01 / Bin A-01-03-02', date: '2026-06-28', details: 'Warehouse receipt' },
+            { step: 6, level: 'FINISHED_BATCH', entity: 'KAJ-THN-20260628-000011 (Kaju Katli 500g)', date: '2026-06-28', details: 'Production batch - 95 kg' },
+            { step: 7, level: 'PRODUCTION_ORDER', entity: 'PO-2026-00098', date: '2026-06-28', details: 'Production order - Kaju Katli 500g line' },
+            { step: 8, level: 'INGREDIENT_BATCH', entity: 'CAS-THN-20260625-000015 (Cashew W320)', date: '2026-06-25', details: 'Used 55 kg - Supplier: Sri Balaji Cashews' },
+            { step: 9, level: 'SUPPLIER', entity: 'Sri Balaji Cashews (Supplier Batch SBC-2026-0625)', date: '2026-06-25', details: 'PO-2026-00092, GR-2026-00128' },
+          ],
+        } : null,
+        // Forward trace (raw material → customer)
+        forwardTrace: direction === 'FORWARD' || direction === 'BOTH' ? {
+          steps: [
+            { step: 1, level: 'RAW_BATCH', entity: 'CAS-THN-20260705-000018 (Cashew W320)', date: '2026-07-05', details: '500 kg received' },
+            { step: 2, level: 'SUPPLIER', entity: 'Sri Balaji Cashews', date: '2026-07-05', details: 'Supplier Batch SBC-2026-0705' },
+            { step: 3, level: 'WAREHOUSE', entity: 'WH-THN-RM-01 / Bin RM-CAS-01', date: '2026-07-05', details: 'Raw material warehouse' },
+            { step: 4, level: 'PRODUCTION_BATCH', entity: 'KAJ-THN-20260709-000145 (Kaju Katli 500g)', date: '2026-07-09', details: 'Used 55 kg of 500 kg' },
+            { step: 5, level: 'FINISHED_BATCH', entity: 'KAJ-THN-20260709-000145-A (188 boxes)', date: '2026-07-09', details: 'Packed & labeled' },
+            { step: 6, level: 'WAREHOUSE', entity: 'WH-THN-FG-01 / Bin A-01-03-02', date: '2026-07-09', details: 'FG warehouse' },
+            { step: 7, level: 'SHIPMENT', entity: 'SHP-2026-00948', date: '2026-07-10', details: 'To Mumbai Sweets Distributors - 96 boxes' },
+            { step: 8, level: 'DISTRIBUTOR', entity: 'Mumbai Sweets Distributors', date: '2026-07-11', details: 'Received' },
+            { step: 9, level: 'RETAIL', entity: '12 Retail Stores', date: '2026-07-12', details: '8 boxes each on average' },
+            { step: 10, level: 'CUSTOMER', entity: 'Customers across 12 stores', date: '2026-07-12', details: '~96 boxes sold to consumers' },
+          ],
+        } : null,
+      }
+      return new Response(JSON.stringify(successResponse(result, `Traceability search completed in ${executionMs}ms`)), { headers })
+    }
+
+    // GET /api/batches/expiry — Expiry monitoring
+    if (path === '/api/batches/expiry' && method === 'GET') {
+      const data = {
+        summary: {
+          totalBatches: 1248,
+          healthy: 1192,
+          nearExpiry: 36, // ≤30 days
+          critical: 14, // ≤7 days
+          expired: 2,
+          shortLife: 4, // <15 days total
+          coldChainBreaks: 0,
+          totalValueAtRisk: 184500,
+        },
+        batches: [
+          { batchNumber: 'SHW-THN-20260702-000041', product: 'Shwet Idli Batter 1kg', mfgDate: '2026-07-02', expiryDate: '2026-07-09', daysRemaining: 0, alertLevel: 'EXPIRED', qtyInStock: 8, uom: 'KG', valueAtRisk: 1600, warehouse: 'WH-THN-FG-02' },
+          { batchNumber: 'DAH-THN-20260705-000022', product: 'Fresh Curd 1L', mfgDate: '2026-07-05', expiryDate: '2026-07-12', daysRemaining: 3, alertLevel: 'CRITICAL', qtyInStock: 24, uom: 'PCS', valueAtRisk: 1200, warehouse: 'WH-THN-FG-02' },
+          { batchNumber: 'PAN-THN-20260628-000018', product: 'Paneer 200g', mfgDate: '2026-06-28', expiryDate: '2026-07-12', daysRemaining: 3, alertLevel: 'CRITICAL', qtyInStock: 45, uom: 'PCS', valueAtRisk: 3375, warehouse: 'WH-THN-FG-02' },
+          { batchNumber: 'KHE-THN-20260625-000009', product: 'Kheer 500ml', mfgDate: '2026-06-25', expiryDate: '2026-07-15', daysRemaining: 6, alertLevel: 'CRITICAL', qtyInStock: 18, uom: 'PCS', valueAtRisk: 1620, warehouse: 'WH-THN-FG-02' },
+          { batchNumber: 'GUL-THN-20260625-000016', product: 'Gulab Jamun 1kg', mfgDate: '2026-06-25', expiryDate: '2026-08-24', daysRemaining: 46, alertLevel: 'NEAR_EXPIRY', qtyInStock: 28, uom: 'KG', valueAtRisk: 14000, warehouse: 'WH-THN-FG-01' },
+          { batchNumber: 'RAS-THN-20260628-000008', product: 'Rasgulla 1kg', mfgDate: '2026-06-28', expiryDate: '2026-08-27', daysRemaining: 49, alertLevel: 'NEAR_EXPIRY', qtyInStock: 32, uom: 'KG', valueAtRisk: 19200, warehouse: 'WH-THN-FG-01' },
+        ],
+        alertActions: [
+          { action: 'FEFO_PRIORITIZE', batches: 36, value: 184500 },
+          { action: 'DISCOUNT', batches: 4, value: 12000 },
+          { action: 'DONATE', batches: 1, value: 1600 },
+          { action: 'DESTROY', batches: 2, value: 3200 },
+        ],
+        coldChainLog: [
+          { batch: 'PAN-THN-20260705-000022', product: 'Paneer 200g', minTemp: 2.1, maxTemp: 7.9, requiredMin: 0, requiredMax: 8, compliant: true, lastChecked: '2026-07-09T08:30:00Z' },
+          { batch: 'DAH-THN-20260705-000022', product: 'Fresh Curd 1L', minTemp: 2.5, maxTemp: 7.2, requiredMin: 0, requiredMax: 8, compliant: true, lastChecked: '2026-07-09T08:30:00Z' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Expiry monitoring data')), { headers })
+    }
+
+    // GET /api/batches/recalls — Product recalls
+    if (path === '/api/batches/recalls' && method === 'GET') {
+      const data = {
+        recalls: [
+          {
+            recallNumber: 'REC-2026-003',
+            recallDate: '2026-07-08',
+            recallType: 'MARKET',
+            recallClass: 'CLASS_III',
+            productName: 'Kaju Katli 500g',
+            affectedBatch: 'KAJ-THN-20260628-000011',
+            recallReason: 'QUALITY_ISSUE',
+            description: 'Customer reported taste deviation. Lab test found elevated sugar crystallization.',
+            status: 'RETURNS_IN_PROGRESS',
+            totalBatchesAffected: 1,
+            totalCustomersAffected: 12,
+            totalQuantityRecalled: 96,
+            totalQuantityReturned: 84,
+            totalValue: 48000,
+            initiatedAt: '2026-07-08T11:00:00Z',
+            noticeSentAt: '2026-07-08T14:00:00Z',
+            completedAt: null,
+            regulatoryNotified: true,
+            customersNotified: 12,
+            distributorsNotified: 3,
+          },
+          {
+            recallNumber: 'REC-2026-002',
+            recallDate: '2026-06-15',
+            recallType: 'INTERNAL',
+            recallClass: 'CLASS_II',
+            productName: 'Shwet Idli Batter 1kg',
+            affectedBatch: 'SHW-THN-20260610-000031',
+            recallReason: 'CONTAMINATION',
+            description: 'Internal QA detected possible yeast contamination in batch from Shift B.',
+            status: 'COMPLETED',
+            totalBatchesAffected: 1,
+            totalCustomersAffected: 0,
+            totalQuantityRecalled: 60,
+            totalQuantityReturned: 60,
+            totalValue: 12000,
+            initiatedAt: '2026-06-15T10:00:00Z',
+            noticeSentAt: '2026-06-15T11:00:00Z',
+            completedAt: '2026-06-17T16:00:00Z',
+            regulatoryNotified: false,
+            customersNotified: 0,
+            distributorsNotified: 0,
+          },
+          {
+            recallNumber: 'REC-2026-001',
+            recallDate: '2026-05-22',
+            recallType: 'SUPPLIER',
+            recallClass: 'CLASS_II',
+            productName: 'Motichoor Laddu 1kg',
+            affectedBatch: 'MOT-THN-20260518-000014',
+            recallReason: 'FOREIGN_OBJECT',
+            description: 'Supplier notified of possible foreign material (metal shaving) in cashew lot used in this batch.',
+            status: 'COMPLETED',
+            totalBatchesAffected: 1,
+            totalCustomersAffected: 8,
+            totalQuantityRecalled: 72,
+            totalQuantityReturned: 68,
+            totalValue: 27200,
+            initiatedAt: '2026-05-22T09:00:00Z',
+            noticeSentAt: '2026-05-22T10:30:00Z',
+            completedAt: '2026-05-26T15:00:00Z',
+            regulatoryNotified: true,
+            customersNotified: 8,
+            distributorsNotified: 2,
+          },
+        ],
+        workflowStages: [
+          { stage: 'QUALITY_ISSUE', description: 'Issue identified', order: 1 },
+          { stage: 'AFFECTED_BATCH', description: 'Affected batches identified', order: 2 },
+          { stage: 'LOCATE_INVENTORY', description: 'Locate in-stock inventory', order: 3 },
+          { stage: 'LOCATE_SHIPMENTS', description: 'Locate shipped quantities', order: 4 },
+          { stage: 'NOTIFY_CUSTOMERS', description: 'Notify distributors and customers', order: 5 },
+          { stage: 'BLOCK_SALES', description: 'Block all sales of affected batch', order: 6 },
+          { stage: 'TRACK_RECOVERY', description: 'Track returned quantities', order: 7 },
+          { stage: 'CLOSE_RECALL', description: 'Close recall after recovery', order: 8 },
+        ],
+        summary: {
+          totalRecalls: 3, open: 1, completed: 2, regulatory: 2,
+          totalBatchesAffected: 3, totalQuantityRecalled: 228, totalQuantityReturned: 212,
+          recoveryRate: 93.0, totalValue: 87200,
+        },
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Product recalls retrieved')), { headers })
+    }
+
+    // GET /api/batches/compliance — Compliance dashboard
+    if (path === '/api/batches/compliance' && method === 'GET') {
+      const data = {
+        summary: {
+          totalAudits: 24,
+          passed: 21, failed: 1, scheduled: 2,
+          certificationValid: 5, certificationExpiring: 1, certificationExpired: 0,
+          avgScore: 94.2,
+        },
+        standards: [
+          { standard: 'FSSAI', version: '2018', status: 'CERTIFIED', certifiedAt: '2025-11-15', validUntil: '2028-11-14', score: 96.5, lastAudit: '2025-11-15', findings: 3, critical: 0, major: 0, minor: 3, observations: 5 },
+          { standard: 'HACCP', version: 'Rev 7', status: 'CERTIFIED', certifiedAt: '2025-09-20', validUntil: '2028-09-19', score: 95.0, lastAudit: '2025-09-20', findings: 2, critical: 0, major: 1, minor: 1, observations: 4 },
+          { standard: 'ISO_22000', version: '2018', status: 'CERTIFIED', certifiedAt: '2025-08-10', validUntil: '2028-08-09', score: 93.8, lastAudit: '2025-08-10', findings: 4, critical: 0, major: 1, minor: 3, observations: 6 },
+          { standard: 'BRCGS', version: 'Issue 9', status: 'CERTIFIED', certifiedAt: '2025-12-05', validUntil: '2026-12-04', score: 92.5, lastAudit: '2025-12-05', findings: 5, critical: 0, major: 2, minor: 3, observations: 7 },
+          { standard: 'FDA', version: 'FSMA', status: 'SCHEDULED', certifiedAt: null, validUntil: null, score: null, lastAudit: null, findings: 0, critical: 0, major: 0, minor: 0, observations: 0 },
+          { standard: 'EXPORT_COMPLIANCE', version: 'APEDA', status: 'CERTIFIED', certifiedAt: '2025-10-30', validUntil: '2027-10-29', score: 94.0, lastAudit: '2025-10-30', findings: 2, critical: 0, major: 0, minor: 2, observations: 3 },
+        ],
+        recentAudits: [
+          { auditCode: 'AUD-2026-014', standard: 'BRCGS', auditType: 'INTERNAL', conductedDate: '2026-07-01', score: 92.5, status: 'COMPLETED', findings: 5, batchesAudited: 24, auditor: 'Internal QA Team' },
+          { auditCode: 'AUD-2026-013', standard: 'FSSAI', auditType: 'REGULATORY', conductedDate: '2026-06-20', score: 96.0, status: 'COMPLETED', findings: 3, batchesAudited: 18, auditor: 'FSSAI Inspector' },
+          { auditCode: 'AUD-2026-012', standard: 'HACCP', auditType: 'CUSTOMER', conductedDate: '2026-06-10', score: 95.0, status: 'COMPLETED', findings: 2, batchesAudited: 12, auditor: 'Big Bazaar QA Team' },
+          { auditCode: 'AUD-2026-011', standard: 'ISO_22000', auditType: 'EXTERNAL', conductedDate: '2026-05-25', score: 93.8, status: 'COMPLETED', findings: 4, batchesAudited: 30, auditor: 'DNV GL' },
+        ],
+        upcomingAudits: [
+          { auditCode: 'AUD-2026-015', standard: 'FSSAI', auditType: 'REGULATORY', scheduledDate: '2026-08-15', status: 'SCHEDULED', auditor: 'FSSAI Inspector' },
+          { auditCode: 'AUD-2026-016', standard: 'BRCGS', auditType: 'CERTIFICATION', scheduledDate: '2026-09-01', status: 'SCHEDULED', auditor: 'SGS India' },
+        ],
+        complianceGaps: [
+          { standard: 'BRCGS', gap: 'Minor finding: Clutter near packaging line WC-KK-03', severity: 'MINOR', action: '5S training scheduled for 2026-07-15', status: 'IN_PROGRESS' },
+          { standard: 'ISO_22000', gap: 'Major finding: CCP-02 (cooking temp) log missing for 1 batch', severity: 'MAJOR', action: 'Cooking log enforcement enabled; retraining completed', status: 'RESOLVED' },
+          { standard: 'HACCP', gap: 'Observation: Hand wash station soap dispenser empty at line 2', severity: 'OBSERVATION', action: 'Daily checklist updated; supervisor sign-off required', status: 'RESOLVED' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Compliance dashboard data')), { headers })
+    }
+
+    // GET /api/batches/split-merge — Batch split/merge operations
+    if (path === '/api/batches/split-merge' && method === 'GET') {
+      const data = {
+        operations: [
+          { operationCode: 'BSM-2026-0048', operationType: 'SPLIT', sourceBatch: 'KAJ-THN-20260709-000145', sourceQty: 94, targetBatches: 2, outputQty: 94, lossQty: 0, uom: 'KG', reason: 'Split into 188 retail packs of 500g', operator: 'Rajesh K.', performedAt: '2026-07-09T08:30:00Z', status: 'COMPLETED' },
+          { operationCode: 'BSM-2026-0047', operationType: 'REPACK', sourceBatch: 'KAJ-THN-20260709-000146', sourceQty: 98, targetBatches: 1, outputQty: 98, lossQty: 0, uom: 'KG', reason: 'Repack into 1kg display boxes', operator: 'Rajesh K.', performedAt: '2026-07-09T11:30:00Z', status: 'COMPLETED' },
+          { operationCode: 'BSM-2026-0046', operationType: 'MERGE', sourceBatch: 'multiple', sourceQty: 25, targetBatches: 1, outputQty: 25, lossQty: 0, uom: 'KG', reason: 'Merge 3 partial batches of Gulab Jamun', operator: 'Anil R.', performedAt: '2026-07-08T15:00:00Z', status: 'COMPLETED' },
+          { operationCode: 'BSM-2026-0045', operationType: 'REWORK', sourceBatch: 'MOT-THN-20260705-000028', sourceQty: 5, targetBatches: 1, outputQty: 4.5, lossQty: 0.5, uom: 'KG', reason: 'Rework syrup-soaked Laddus - reshape', operator: 'Suresh M.', performedAt: '2026-07-05T17:00:00Z', status: 'COMPLETED' },
+          { operationCode: 'BSM-2026-0044', operationType: 'PARTIAL_CONSUMPTION', sourceBatch: 'CAS-THN-20260705-000018', sourceQty: 500, targetBatches: 0, outputQty: 55, lossQty: 0, uom: 'KG', reason: 'Partial consumption in PO-2026-00125', operator: 'Rajesh K.', performedAt: '2026-07-09T06:35:00Z', status: 'COMPLETED' },
+          { operationCode: 'BSM-2026-0043', operationType: 'PACKAGING', sourceBatch: 'SHW-THN-20260709-000047', sourceQty: 95, targetBatches: 95, outputQty: 95, lossQty: 0, uom: 'KG', reason: 'Pack into 1kg retail pouches', operator: 'Anil R.', performedAt: '2026-07-09T08:00:00Z', status: 'IN_PROGRESS' },
+        ],
+        summary: {
+          totalOperations: 48,
+          split: 18, merge: 6, repack: 12, rework: 4, partial: 5, packaging: 3,
+          totalLoss: 4.2, totalLossValue: 8400,
+        },
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Batch split/merge operations retrieved')), { headers })
+    }
+
+    // GET /api/batches/info — Sprint 39 info
+    if (path === '/api/batches/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 39, sprintName: 'Enterprise Batch Manufacturing, Genealogy & End-to-End Traceability Engine', version: '39.0.0', part: 5, tables: 11,
+        epics: [
+          'Batch Master (production_batches, status, history)',
+          'Batch Number Generation (KAJ-THN-20260709-000145 format)',
+          'Parent-Child Batch Genealogy (one-to-one, one-to-many, many-to-one, many-to-many)',
+          'Forward & Backward Traceability (<5 sec target)',
+          'Shelf-Life & Expiry Management (FEFO, cold chain, alerts)',
+          'Batch Split & Merge (split, merge, repack, rework, partial consumption, packaging)',
+          'Product Recall Management (8-stage workflow, internal/market/supplier/regulatory)',
+          'Compliance Dashboard (FSSAI, HACCP, ISO 22000, BRCGS, FDA, Export)',
+        ],
+        chiefArchitectRecommendation: 'For Sudhamrit, print TWO labels per batch: (1) Production Batch Label (batch #, product, recipe version, dates, QR), (2) Pallet/Container Label (pallet ID, batch #, qty, destination bin, QR/barcode). This enables complete traceability from production line → warehouse → dispatch → distributor → retail → customer, and back to raw material supplier if needed.',
+        batchNumberFormat: 'KAJ-THN-20260709-000145 (Plant-Product-Date-Sequence)',
+        batchTypes: ['RAW_MATERIAL', 'INGREDIENT', 'SEMI_FINISHED', 'FINISHED_GOODS', 'PACKAGING', 'TRIAL', 'REWORK', 'SAMPLE'],
+        batchStatuses: ['PLANNED', 'RUNNING', 'COMPLETED', 'RELEASED', 'QUALITY_HOLD', 'REJECTED', 'RECALLED', 'EXPIRED', 'DISPOSED'],
+        traceabilityPerformance: { target: '<5 seconds', currentAvg: '1240ms', withinTargetPercent: 100 },
+        recallWorkflowStages: ['QUALITY_ISSUE', 'AFFECTED_BATCH', 'LOCATE_INVENTORY', 'LOCATE_SHIPMENTS', 'NOTIFY_CUSTOMERS', 'BLOCK_SALES', 'TRACK_RECOVERY', 'CLOSE_RECALL'],
+        complianceStandards: ['FSSAI', 'HACCP', 'ISO_22000', 'BRCGS', 'FDA (Future)', 'EXPORT_COMPLIANCE'],
+        endpoints: [
+          'GET /api/batches/dashboard',
+          'GET /api/batches',
+          'POST /api/batches',
+          'GET /api/batches/:id',
+          'POST /api/batches/:id/release',
+          'POST /api/batches/:id/split',
+          'GET /api/batches/genealogy/:id',
+          'GET /api/batches/trace?q=<term>&direction=BOTH&type=BY_BATCH',
+          'GET /api/batches/expiry',
+          'GET /api/batches/recalls',
+          'GET /api/batches/compliance',
+          'GET /api/batches/split-merge',
+          'GET /api/batches/info',
+        ],
+        part5Sprint: 6, part5Sprints: 15, totalProjectTables: 342,
+      }, 'SUOP Batch Traceability Engine v39.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 38, sprintName: 'Shop Floor Execution & Real-Time Manufacturing — PART 5 MES (38/48 sprints)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 39, sprintName: 'Batch Manufacturing, Genealogy & End-to-End Traceability — PART 5 MES (39/48 sprints)' })
+log('info', '🚀 Sprint 39 — Batch Manufacturing, Genealogy & End-to-End Traceability Engine', { sprint: 39, part: 5, tables: 342, batches: 8, genealogy: 1, recalls: 3, audits: 5, splitMergeOps: 6 })
+log('info', 'Batch traceability endpoints available (Sprint 39)', { dashboard: 'GET /api/batches/dashboard', list: 'GET /api/batches', create: 'POST /api/batches', details: 'GET /api/batches/:id', release: 'POST /api/batches/:id/release', split: 'POST /api/batches/:id/split', genealogy: 'GET /api/batches/genealogy/:id', trace: 'GET /api/batches/trace?q=...&direction=BOTH', expiry: 'GET /api/batches/expiry', recalls: 'GET /api/batches/recalls', compliance: 'GET /api/batches/compliance', splitMerge: 'GET /api/batches/split-merge', info: 'GET /api/batches/info' })
 log('info', 'Sprint 38 — Shop Floor Execution Engine', { sprint: 38, part: 5, tables: 331, executions: 4, materialConsumption: 7, wip: 3, exceptions: 4, andonLines: 5 })
 log('info', 'Shop floor endpoints available (Sprint 38)', { dashboard: 'GET /api/shop-floor/dashboard', executions: 'GET /api/shop-floor/executions', materialConsumption: 'GET /api/shop-floor/material-consumption', wip: 'GET /api/shop-floor/wip', exceptions: 'GET /api/shop-floor/exceptions', andon: 'GET /api/shop-floor/andon', info: 'GET /api/shop-floor/info' })
 log('info', 'Sprint 37 — Production Orders & Shop Floor Engine', { sprint: 37, part: 5, tables: 321, productionOrders: 6, workOrders: 8, routings: 4, assignments: 8 })

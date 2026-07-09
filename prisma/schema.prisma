@@ -9414,7 +9414,7 @@ model MobileNotification {
   actionType          String?  @map("action_type") // OPEN_TASK, OPEN_SYNC, OPEN_LOOKUP, DISMISS
   actionPayload       Json?    @map("action_payload")
   // ─── Delivery ───
-  deliveryChannel     String[] @default(['IN_APP']) @map("delivery_channel") // IN_APP, PUSH, VIBRATION, VOICE
+  deliveryChannel     String[] @map("delivery_channel") // IN_APP, PUSH, VIBRATION, VOICE
   deliveredAt         DateTime? @map("delivered_at")
   readAt              DateTime? @map("read_at")
   dismissedAt         DateTime? @map("dismissed_at")
@@ -9603,7 +9603,7 @@ model OperatorScore {
 }
 
 // ─── Epic 6: Warehouse Cost Analytics ───────────────────
-model CostCenter {
+model WarehouseCostCenter {
   id                  String   @id @default(uuid()) @db.Uuid
   costCenterCode      String   @unique @map("cost_center_code")
   costCenterName      String   @map("cost_center_name")
@@ -9622,8 +9622,8 @@ model CostCenter {
 
   costs               WarehouseCost[]
 
-  @@map("cost_centers")
-  @@index([warehouseId, costType], map: "idx_cc_wh_type")
+  @@map("warehouse_cost_centers")
+  @@index([warehouseId, costType], map: "idx_wcc_wh_type")
 }
 
 model WarehouseCost {
@@ -9657,7 +9657,7 @@ model WarehouseCost {
   calculatedAt        DateTime @default(now()) @map("calculated_at")
   createdAt           DateTime @default(now()) @map("created_at")
 
-  costCenter          CostCenter? @relation(fields: [costCenterId], references: [id])
+  costCenter          WarehouseCostCenter? @relation(fields: [costCenterId], references: [id])
 
   @@map("warehouse_costs")
   @@index([warehouseId, costType, periodStart], map: "idx_wc_wh_type_period")
@@ -9935,7 +9935,7 @@ model EnterpriseAlert {
   sourceSystem        String   @map("source_system") // WMS, MOBILE_APP, IOT_SENSOR, ERP, AI_ENGINE
   sourceEntity        String?  @map("source_entity") // task ID, equipment code, etc.
   // ─── Notification ───
-  deliveryChannels    String[] @default(['DASHBOARD']) @map("delivery_channels") // DASHBOARD, MOBILE_APP, EMAIL, SMS, WHATSAPP, TEAMS, SLACK
+  deliveryChannels    String[] @map("delivery_channels") // DASHBOARD, MOBILE_APP, EMAIL, SMS, WHATSAPP, TEAMS, SLACK
   deliveredTo         Json?    @map("delivered_to") // [{ channel, recipient, deliveredAt, readAt }]
   // ─── Acknowledgement ───
   requiresAck         Boolean  @default(false) @map("requires_ack")
@@ -10986,8 +10986,8 @@ model PurchaseRecommendation {
   createdAt           DateTime @default(now()) @map("created_at")
 
   @@map("purchase_recommendations")
-  @@index([status, priority], map: "idx_pr_status_priority")
-  @@index([requiredDate], map: "idx_pr_required_date")
+  @@index([status, priority], map: "idx_purrec_status_priority")
+  @@index([requiredDate], map: "idx_purrec_required_date")
 }
 
 // ─── Epic 7: Production Plan ────────────────────────────
@@ -11163,7 +11163,7 @@ model WorkOrder {
 
   @@map("work_orders")
   @@index([productionOrderId, operationNo], map: "idx_wo_po_op")
-  @@index([status], map: "idx_wo_status")
+  @@index([status], map: "idx_wo_status_v2")
   @@index([assignedOperatorId, status], map: "idx_wo_op_status")
 }
 
@@ -11674,4 +11674,398 @@ model AndonBoard {
   @@map("andon_boards")
   @@index([plantId, status], map: "idx_ab_plant_status")
   @@index([productionLineId], map: "idx_ab_line")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 39 — ENTERPRISE BATCH MANUFACTURING, GENEALOGY & END-TO-END TRACEABILITY
+// Part 5: MES · 11 new models · Epic 1–8 (production_batches, genealogy, recall,
+// shelf-life, compliance, split/merge, traceability audit)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Production Batch Master (manufacturing context) ─────────
+model ProductionBatch {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batchNumber         String   @unique @map("batch_number") // KAJ-THN-20260709-000145
+  // ─── Type ───
+  batchType           String   @map("batch_type") // RAW_MATERIAL, INGREDIENT, SEMI_FINISHED, FINISHED_GOODS, PACKAGING, TRIAL, REWORK, SAMPLE
+  // ─── Recipe / Order Links ───
+  recipeId            String?  @db.Uuid @map("recipe_id")
+  recipeCode          String?  @map("recipe_code")
+  recipeVersion       String?  @map("recipe_version") // V1.2
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  productionOrderNumber String? @map("production_order_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Manufacturing ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantCode           String?  @map("plant_code")
+  plantName           String?  @map("plant_name")
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  workCenterId        String?  @db.Uuid @map("work_center_id")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Dates ───
+  manufacturingDate   DateTime @map("manufacturing_date")
+  packingDate         DateTime? @map("packing_date")
+  bestBeforeDate      DateTime? @map("best_before_date")
+  expiryDate          DateTime? @map("expiry_date")
+  // ─── Operator / Shift ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  shiftCode           String?  @map("shift_code")
+  // ─── Quantity ───
+  plannedQty          Decimal  @db.Decimal(18, 4) @default(0) @map("planned_qty")
+  actualQty           Decimal  @db.Decimal(18, 4) @default(0) @map("actual_qty")
+  scrapQty            Decimal  @db.Decimal(18, 4) @default(0) @map("scrap_qty")
+  reworkQty           Decimal  @db.Decimal(18, 4) @default(0) @map("rework_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Status ───
+  status              String   @default("PLANNED") @map("status") // PLANNED, RUNNING, COMPLETED, RELEASED, QUALITY_HOLD, REJECTED, RECALLED, EXPIRED, DISPOSED
+  statusReason        String?  @map("status_reason")
+  // ─── Genealogy Anchor ───
+  parentBatchId       String?  @db.Uuid @map("parent_batch_id") // immediate parent (for simple chains)
+  parentBatchNumber   String?  @map("parent_batch_number")
+  // ─── Storage ───
+  storageConditions   String?  @map("storage_conditions")
+  temperatureRange    String?  @map("temperature_range")
+  // ─── Quality ───
+  qualityGrade        String?  @map("quality_grade") // A, B, C, REJECT
+  qualityStatus       String   @default("PENDING") @map("quality_status") // PENDING, PASSED, FAILED, QUARANTINE
+  // ─── Recall ───
+  isRecalled          Boolean  @default(false) @map("is_recalled")
+  recallId            String?  @db.Uuid @map("recall_id")
+  // ─── QR/Label ───
+  qrCode              String?  @map("qr_code")
+  labelPrintedAt      DateTime? @map("label_printed_at")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  history             ProductionBatchHistory[]
+  childRelationships  BatchRelationship[] @relation("ParentBatch")
+  parentRelationships BatchRelationship[] @relation("ChildBatch")
+  splitMerges         BatchSplitMerge[]
+  shelfLife           BatchShelfLife?
+  recallActions       RecallAction[]
+  traceSearches       TraceabilitySearch[]
+
+  @@map("production_batches")
+  @@index([batchType, status], map: "idx_pb_type_status")
+  @@index([productionOrderId], map: "idx_pb_po")
+  @@index([plantId, manufacturingDate], map: "idx_pb_plant_date")
+  @@index([expiryDate], map: "idx_pb_expiry")
+  @@index([isRecalled], map: "idx_pb_recalled")
+  @@index([productId, status], map: "idx_pb_product_status")
+}
+
+model ProductionBatchHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batchId             String   @db.Uuid @map("batch_id")
+  batchNumber         String   @map("batch_number")
+  // ─── Transition ───
+  fromStatus          String   @map("from_status")
+  toStatus            String   @map("to_status")
+  // ─── Actor ───
+  changedById         String?  @db.Uuid @map("changed_by_id")
+  changedByName       String?  @map("changed_by_name")
+  // ─── Context ───
+  reason              String?
+  comments            String?
+  referenceType       String?  @map("reference_type") // QUALITY_CHECK, RECALL, EXPIRY, MANUAL, SPLIT, MERGE
+  referenceNumber     String?  @map("reference_number")
+  // ─── Timestamp ───
+  changedAt           DateTime @default(now()) @map("changed_at")
+
+  batch               ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("production_batch_history")
+  @@index([batchId, changedAt], map: "idx_pbh_batch_time")
+  @@index([fromStatus, toStatus], map: "idx_pbh_transition")
+}
+
+// ─── Epic 3: Parent-Child Batch Genealogy (manufacturing context) ──────
+// Supports: One-to-One, One-to-Many, Many-to-One, Many-to-Many
+model BatchRelationship {
+  id                  String   @id @default(uuid()) @db.Uuid
+  // ─── Parent (input) ───
+  parentBatchId       String   @db.Uuid @map("parent_batch_id")
+  parentBatchNumber   String   @map("parent_batch_number")
+  parentBatchType     String   @map("parent_batch_type") // RAW_MATERIAL, SEMI_FINISHED, etc.
+  parentProductId     String?  @db.Uuid @map("parent_product_id")
+  parentProductName   String?  @map("parent_product_name")
+  // ─── Child (output) ───
+  childBatchId        String   @db.Uuid @map("child_batch_id")
+  childBatchNumber    String   @map("child_batch_number")
+  childBatchType      String   @map("child_batch_type")
+  childProductId      String?  @db.Uuid @map("child_product_id")
+  childProductName    String?  @map("child_product_name")
+  // ─── Relationship ───
+  relationshipType    String   @map("relationship_type") // PRODUCED_FROM, USED_IN, REPACKED_FROM, REWORKED_FROM, BLEND_OF, SPLIT_FROM, MERGED_FROM, PACKAGED_FROM
+  // ─── Quantity ───
+  quantityUsed        Decimal  @db.Decimal(18, 4) @map("quantity_used")
+  quantityRatio       Decimal? @db.Decimal(10, 4) @map("quantity_ratio") // 0.4500 = 45% of parent
+  uom                 String   @default("KG") @map("uom")
+  // ─── Production Context ───
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  productionOrderNumber String? @map("production_order_number")
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  workCenterCode      String?  @map("work_center_code")
+  operatorName        String?  @map("operator_name")
+  productionDate      DateTime? @map("production_date")
+  // ─── Supplier Trace (for raw materials) ───
+  supplierId          String?  @db.Uuid @map("supplier_id")
+  supplierName        String?  @map("supplier_name")
+  purchaseOrderNumber String?  @map("purchase_order_number")
+  goodsReceiptNumber  String?  @map("goods_receipt_number")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  parentBatch         ProductionBatch @relation("ParentBatch", fields: [parentBatchId], references: [id], onDelete: Cascade)
+  childBatch          ProductionBatch @relation("ChildBatch", fields: [childBatchId], references: [id], onDelete: Cascade)
+
+  @@map("batch_relationships")
+  @@index([parentBatchId], map: "idx_br_parent")
+  @@index([childBatchId], map: "idx_br_child")
+  @@index([relationshipType], map: "idx_br_relation")
+  @@index([productionOrderId], map: "idx_br_po")
+  @@index([supplierId], map: "idx_br_supplier")
+}
+
+// ─── Epic 5: Shelf-Life & Expiry (manufacturing context) ──────────────
+model BatchShelfLife {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batchId             String   @unique @db.Uuid @map("batch_id")
+  batchNumber         String   @map("batch_number")
+  // ─── Dates ───
+  manufacturingDate   DateTime @map("manufacturing_date")
+  bestBeforeDate      DateTime? @map("best_before_date")
+  expiryDate          DateTime @map("expiry_date")
+  // ─── Computed ───
+  totalShelfLifeDays  Int      @map("total_shelf_life_days")
+  elapsedDays         Int      @map("elapsed_days")
+  remainingDays       Int      @map("remaining_days") // negative = expired
+  shelfLifePercent    Decimal  @db.Decimal(5, 2) @map("shelf_life_percent") // 100.00 → 0.00
+  // ─── Storage Compliance ───
+  storageConditions   String?  @map("storage_conditions")
+  requiredTempMin     Decimal? @db.Decimal(5, 2) @map("required_temp_min")
+  requiredTempMax     Decimal? @db.Decimal(5, 2) @map("required_temp_max")
+  actualTempMin       Decimal? @db.Decimal(5, 2) @map("actual_temp_min")
+  actualTempMax       Decimal? @db.Decimal(5, 2) @map("actual_temp_max")
+  tempCompliant       Boolean  @default(true) @map("temp_compliant")
+  coldChainIntact     Boolean  @default(true) @map("cold_chain_intact")
+  // ─── Alert ───
+  alertLevel          String   @default("HEALTHY") @map("alert_level") // HEALTHY, NEAR_EXPIRY, CRITICAL, EXPIRED, SHORT_LIFE, COLD_CHAIN_BREAK
+  // ─── Audit ───
+  lastCheckedAt       DateTime @default(now()) @map("last_checked_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  batch               ProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@map("batch_shelf_life")
+  @@index([expiryDate], map: "idx_bsl_expiry")
+  @@index([alertLevel], map: "idx_bsl_alert")
+  @@index([tempCompliant], map: "idx_bsl_temp")
+}
+
+model ExpiryMonitor {
+  id                  String   @id @default(uuid()) @db.Uuid
+  monitorCode         String   @unique @map("monitor_code")
+  // ─── Scope ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantName           String?  @map("plant_name")
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  // ─── Summary ───
+  totalBatches        Int      @default(0) @map("total_batches")
+  healthyBatches      Int      @default(0) @map("healthy_batches")
+  nearExpiryBatches   Int      @default(0) @map("near_expiry_batches") // ≤30 days
+  criticalBatches     Int      @default(0) @map("critical_batches") // ≤7 days
+  expiredBatches      Int      @default(0) @map("expired_batches")
+  shortLifeBatches    Int      @default(0) @map("short_life_batches")
+  coldChainBreaks     Int      @default(0) @map("cold_chain_breaks")
+  // ─── Value at Risk ───
+  totalValueAtRisk    Decimal  @db.Decimal(18, 2) @default(0) @map("total_value_at_risk")
+  // ─── Action ───
+  fefoPicks           Int      @default(0) @map("fefo_picks")
+  discountedLines     Int      @default(0) @map("discounted_lines")
+  donatedLines        Int      @default(0) @map("donated_lines")
+  destroyedLines      Int      @default(0) @map("destroyed_lines")
+  // ─── Audit ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("expiry_monitor")
+  @@index([plantId], map: "idx_em_plant")
+  @@index([warehouseId], map: "idx_em_wh")
+}
+
+// ─── Epic 6: Batch Split & Merge ──────────────────────────────────────
+model BatchSplitMerge {
+  id                  String   @id @default(uuid()) @db.Uuid
+  operationCode       String   @unique @map("operation_code")
+  operationType       String   @map("operation_type") // SPLIT, MERGE, REPACK, PARTIAL_CONSUMPTION, REWORK, PACKAGING
+  // ─── Source ───
+  sourceBatchId       String?  @db.Uuid @map("source_batch_id")
+  sourceBatchNumber   String?  @map("source_batch_number")
+  sourceQty           Decimal  @db.Decimal(18, 4) @default(0) @map("source_qty")
+  // ─── Target ───
+  targetBatchId       String?  @db.Uuid @map("target_batch_id")
+  targetBatchNumber   String?  @map("target_batch_number")
+  targetQty           Decimal  @db.Decimal(18, 4) @default(0) @map("target_qty")
+  // ─── Multi-batch (for MERGE) ───
+  sourceBatchIds      String?  @map("source_batch_ids") // JSON array
+  // ─── Quantity ───
+  inputQty            Decimal  @db.Decimal(18, 4) @default(0) @map("input_qty")
+  outputQty           Decimal  @db.Decimal(18, 4) @default(0) @map("output_qty")
+  lossQty             Decimal  @db.Decimal(18, 4) @default(0) @map("loss_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Reason / Reference ───
+  reason              String?
+  referenceNumber     String?  @map("reference_number")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Status ───
+  status              String   @default("COMPLETED") @map("status") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+  // ─── Audit ───
+  performedAt         DateTime @default(now()) @map("performed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  targetBatch         ProductionBatch? @relation(fields: [targetBatchId], references: [id], onDelete: SetNull)
+
+  @@map("batch_split_merges")
+  @@index([operationType, status], map: "idx_bsm_type_status")
+  @@index([sourceBatchId], map: "idx_bsm_source")
+  @@index([targetBatchId], map: "idx_bsm_target")
+}
+
+// ─── Epic 7: Product Recall Management (manufacturing context) ─────────
+model RecallAction {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recallNumber        String   @map("recall_number") // links to ProductRecall.recallNumber or self-contained
+  actionCode          String   @unique @map("action_code")
+  // ─── Recall Type ───
+  recallType          String   @map("recall_type") // INTERNAL, MARKET, SUPPLIER, REGULATORY
+  recallClass         String?  @map("recall_class") // CLASS_I, CLASS_II, CLASS_III
+  // ─── Affected Batch ───
+  batchId             String?  @db.Uuid @map("batch_id")
+  batchNumber         String   @map("batch_number")
+  productId           String?  @db.Uuid @map("product_id")
+  productName         String?  @map("product_name")
+  // ─── Stage in Recall Workflow ───
+  workflowStage       String   @map("workflow_stage") // QUALITY_ISSUE, AFFECTED_BATCH, LOCATE_INVENTORY, LOCATE_SHIPMENTS, NOTIFY_CUSTOMERS, BLOCK_SALES, TRACK_RECOVERY, CLOSE_RECALL
+  // ─── Affected Quantities ───
+  qtyProduced         Decimal  @db.Decimal(18, 4) @default(0) @map("qty_produced")
+  qtyInStock          Decimal  @db.Decimal(18, 4) @default(0) @map("qty_in_stock")
+  qtyDispatched       Decimal  @db.Decimal(18, 4) @default(0) @map("qty_dispatched")
+  qtyReturned         Decimal  @db.Decimal(18, 4) @default(0) @map("qty_returned")
+  qtyInTransit        Decimal  @db.Decimal(18, 4) @default(0) @map("qty_in_transit")
+  qtyAtDistributor    Decimal  @db.Decimal(18, 4) @default(0) @map("qty_at_distributor")
+  qtyAtRetail         Decimal  @db.Decimal(18, 4) @default(0) @map("qty_at_retail")
+  // ─── Notifications ───
+  customersNotified   Int      @default(0) @map("customers_notified")
+  distributorsNotified Int     @default(0) @map("distributors_notified")
+  regulatoryNotified  Boolean  @default(false) @map("regulatory_notified")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, IN_PROGRESS, COMPLETED, BLOCKED
+  // ─── Actor ───
+  performedById       String?  @db.Uuid @map("performed_by_id")
+  performedByName     String?  @map("performed_by_name")
+  // ─── Notes ───
+  notes               String?
+  // ─── Audit ───
+  performedAt         DateTime @default(now()) @map("performed_at")
+
+  batch               ProductionBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@map("recall_actions")
+  @@index([recallNumber], map: "idx_ra_recall")
+  @@index([batchId], map: "idx_ra_batch")
+  @@index([workflowStage, status], map: "idx_ra_stage_status")
+}
+
+// ─── Epic 8: Compliance Dashboard (FSSAI, HACCP, ISO 22000, BRCGS) ─────
+model ComplianceAudit {
+  id                  String   @id @default(uuid()) @db.Uuid
+  auditCode           String   @unique @map("audit_code")
+  // ─── Standard ───
+  standard            String   @map("standard") // FSSAI, HACCP, ISO_22000, BRCGS, FDA, EXPORT_COMPLIANCE
+  standardVersion     String?  @map("standard_version") // e.g., FSSAI 2018, ISO 22000:2018
+  // ─── Scope ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantName           String?  @map("plant_name")
+  auditType           String   @map("audit_type") // INTERNAL, EXTERNAL, REGULATORY, CUSTOMER, CERTIFICATION
+  // ─── Audit Date ───
+  scheduledDate       DateTime @map("scheduled_date")
+  conductedDate       DateTime? @map("conducted_date")
+  completedDate       DateTime? @map("completed_date")
+  // ─── Auditor ───
+  auditorName         String?  @map("auditor_name")
+  auditorOrg          String?  @map("auditor_org")
+  // ─── Findings ───
+  totalFindings       Int      @default(0) @map("total_findings")
+  criticalFindings    Int      @default(0) @map("critical_findings")
+  majorFindings       Int      @default(0) @map("major_findings")
+  minorFindings       Int      @default(0) @map("minor_findings")
+  observations        Int      @default(0) @map("observations")
+  // ─── Score ───
+  scorePercent        Decimal? @db.Decimal(5, 2) @map("score_percent")
+  // ─── Status ───
+  status              String   @default("SCHEDULED") @map("status") // SCHEDULED, IN_PROGRESS, COMPLETED, FAILED, CERTIFIED
+  // ─── Linked Batches ───
+  batchesAudited      Int      @default(0) @map("batches_audited")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("compliance_audits")
+  @@index([standard, status], map: "idx_ca_std_status")
+  @@index([plantId, scheduledDate], map: "idx_ca_plant_date")
+  @@index([auditType], map: "idx_ca_type")
+}
+
+// ─── Epic 4: Traceability Search Audit (<5 sec target) ───────────────
+model TraceabilitySearch {
+  id                  String   @id @default(uuid()) @db.Uuid
+  searchCode          String   @unique @map("search_code")
+  // ─── Search Input ───
+  searchType          String   @map("search_type") // FORWARD, BACKWARD, BY_BATCH, BY_PRODUCT, BY_SUPPLIER, BY_CUSTOMER, BY_BARCODE, BY_QR
+  searchTerm          String   @map("search_term") // batch number, barcode, QR
+  // ─── Direction ───
+  direction           String   @default("BOTH") @map("direction") // FORWARD, BACKWARD, BOTH
+  // ─── Performance ───
+  executionMs         Int      @map("execution_ms") // target <5000
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Results ───
+  totalNodesFound     Int      @default(0) @map("total_nodes_found")
+  totalBatchesFound   Int      @default(0) @map("total_batches_found")
+  totalSuppliersFound Int      @default(0) @map("total_suppliers_found")
+  totalCustomersFound Int      @default(0) @map("total_customers_found")
+  totalShipmentsFound Int      @default(0) @map("total_shipments_found")
+  totalWarehousesFound Int     @default(0) @map("total_warehouses_found")
+  // ─── Triggered By ───
+  triggeredBy         String   @default("OPERATOR") @map("triggered_by") // OPERATOR, QUALITY_TEAM, COMPLAINT, RECALL, AUDIT, REGULATORY
+  complaintNumber     String?  @map("complaint_number")
+  // ─── Actor ───
+  userId              String?  @db.Uuid @map("user_id")
+  userName            String?  @map("user_name")
+  // ─── Result Snapshot ───
+  resultSnapshot      String?  @map("result_snapshot") // JSON summary of search
+  // ─── Primary Batch ───
+  primaryBatchId      String?  @db.Uuid @map("primary_batch_id")
+  // ─── Audit ───
+  searchedAt          DateTime @default(now()) @map("searched_at")
+
+  primaryBatch        ProductionBatch? @relation(fields: [primaryBatchId], references: [id], onDelete: SetNull)
+
+  @@map("traceability_searches")
+  @@index([searchType, direction], map: "idx_ts_type_dir")
+  @@index([withinTarget], map: "idx_ts_target")
+  @@index([searchedAt], map: "idx_ts_time")
 }

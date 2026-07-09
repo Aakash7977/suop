@@ -1,0 +1,342 @@
+ 17634→function WIPDashboardModule() {
+ 17635→  const wips = [
+ 17636→    { code: 'WIP-001', po: 'PO-2026-00125', product: 'Kaju Katli 500g', batch: 'BATCH-2026-A018', stage: 'COOKING', input: 95, current: 94, scrap: 1, status: 'IN_PROGRESS', operator: 'Rajesh K.', location: 'WC-KK-03' },
+ 17637→    { code: 'WIP-002', po: 'PO-2026-00126', product: 'Shwet Idli Batter 1kg', batch: 'BATCH-2026-C015', stage: 'GRINDING', input: 105, current: 100, scrap: 5, status: 'IN_PROGRESS', operator: 'Anil R.', location: 'WC-IB-02' },
+ 17638→    { code: 'WIP-003', po: 'PO-2026-00129', product: 'Motichoor Laddu 1kg', batch: 'BATCH-2026-E008', stage: 'FINISHED_GOODS', input: 100, current: 98, scrap: 2, status: 'COMPLETED', operator: 'Suresh M.', location: 'FG-WH-01' },
+ 17639→  ]
+ 17640→  const movements = [
+ 17641→    { wip: 'WIP-001', from: 'MIXING', to: 'COOKING', qty: 94, scrap: 1, op: 'Rajesh K.', time: '07:15' },
+ 17642→    { wip: 'WIP-001', from: 'RAW_MATERIALS', to: 'MIXING', qty: 95, scrap: 0, op: 'Rajesh K.', time: '06:45' },
+ 17643→    { wip: 'WIP-002', from: 'RAW_MATERIALS', to: 'GRINDING', qty: 105, scrap: 0, op: 'Anil R.', time: '05:10' },
+ 17644→    { wip: 'WIP-003', from: 'PACKING', to: 'FINISHED_GOODS', qty: 98, scrap: 0, op: 'Suresh M.', time: '14:00' },
+ 17645→  ]
+ 17646→  const stageColors: Record<string,string> = { RAW_MATERIALS: 'bg-slate-100 text-slate-700', MIXING: 'bg-blue-100 text-blue-700', COOKING: 'bg-orange-100 text-orange-700', GRINDING: 'bg-cyan-100 text-cyan-700', COOLING: 'bg-cyan-100 text-cyan-700', ROLLING: 'bg-purple-100 text-purple-700', CUTTING: 'bg-amber-100 text-amber-700', INSPECTION: 'bg-rose-100 text-rose-700', PACKING: 'bg-emerald-100 text-emerald-700', FINISHED_GOODS: 'bg-emerald-100 text-emerald-700' }
+ 17647→  const statusColors: Record<string,string> = { IN_PROGRESS: 'bg-amber-100 text-amber-700', ON_HOLD: 'bg-orange-100 text-orange-700', COMPLETED: 'bg-emerald-100 text-emerald-700', REJECTED: 'bg-rose-100 text-rose-700', REWORK: 'bg-blue-100 text-blue-700' }
+ 17648→  return (
+ 17649→    <div className="space-y-6">
+ 17650→      <div><h2 className="text-2xl font-bold">WIP Dashboard — Work In Progress</h2><p className="text-sm text-muted-foreground mt-1">Live WIP tracking: Raw Materials → Mixing → Cooking → Cooling → Packing → Finished Goods</p></div>
+ 17651→      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[{label:'Active WIP',value:wips.filter(w=>w.status==='IN_PROGRESS').length,color:'text-amber-600'},{label:'Completed',value:wips.filter(w=>w.status==='COMPLETED').length,color:'text-emerald-600'},{label:'Total WIP Qty (kg)',value:wips.filter(w=>w.status==='IN_PROGRESS').reduce((a,w)=>a+w.current,0),color:'text-blue-600'},{label:'Total Scrap (kg)',value:wips.reduce((a,w)=>a+w.scrap,0),color:'text-rose-600'}].map(s=><Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}</div>
+ 17652→      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300"><h3 className="font-semibold mb-2 text-sm">WIP Flow — Kaju Katli (WIP-001)</h3><div className="flex items-center gap-2 text-xs overflow-x-auto">{['Raw Materials','Mixing','Cooking','Cooling','Rolling','Cutting','Inspection','Packing','Finished Goods'].map((s,i,a)=>(<div key={i} className="flex items-center gap-2 flex-shrink-0"><div className={`px-3 py-1.5 border rounded-md font-medium ${i<=2?'bg-emerald-50 border-emerald-300 text-emerald-800':i===2?'bg-amber-50 border-amber-300 text-amber-800':'bg-slate-50 border-slate-200 text-slate-500'}`}>{s}{i<2&&' ✓'}{i===2&&' ⏳'}</div>{i<a.length-1&&<ArrowRight className="h-3 w-3 text-blue-600 flex-shrink-0" />}</div>))}</div></Card>
+ 17653→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><Card className="overflow-hidden"><div className="p-4 border-b"><h3 className="font-semibold">Active WIP Batches</h3></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/50 border-b"><tr><th className="text-left px-4 py-3 font-medium">WIP Code</th><th className="text-left px-4 py-3 font-medium">Product</th><th className="text-left px-4 py-3 font-medium">Stage</th><th className="text-left px-4 py-3 font-medium">Input</th><th className="text-left px-4 py-3 font-medium">Current</th><th className="text-left px-4 py-3 font-medium">Scrap</th><th className="text-left px-4 py-3 font-medium">Operator</th><th className="text-left px-4 py-3 font-medium">Status</th></tr></thead><tbody>{wips.map(w=>(<tr key={w.code} className="border-b hover:bg-muted/30"><td className="px-4 py-3 font-mono text-xs text-blue-700">{w.code}</td><td className="px-4 py-3 text-xs font-medium">{w.product}</td><td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${stageColors[w.stage]||'bg-slate-100'}`}>{w.stage.replace(/_/g,' ')}</span></td><td className="px-4 py-3 font-mono text-xs">{w.input}</td><td className="px-4 py-3 font-mono text-xs font-bold">{w.current}</td><td className="px-4 py-3 font-mono text-xs">{w.scrap>0?<span className="text-rose-600">{w.scrap}</span>:'—'}</td><td className="px-4 py-3 text-xs">{w.operator}</td><td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[w.status]}`}>{w.status.replace(/_/g,' ')}</span></td></tr>))}</tbody></table></div></Card><Card className="p-4"><h3 className="font-semibold mb-3">WIP Movements — Recent</h3><div className="space-y-2">{movements.map((m,i)=>(<div key={i} className="flex items-center gap-3 p-2 border rounded"><div className="flex-1"><div className="flex items-center gap-2 text-xs"><span className={`px-1.5 py-0.5 rounded font-mono ${stageColors[m.from]||'bg-slate-100'}`}>{m.from}</span><ArrowRight className="h-3 w-3" /><span className={`px-1.5 py-0.5 rounded font-mono ${stageColors[m.to]||'bg-slate-100'}`}>{m.to}</span></div></div><div className="text-right"><div className="font-mono text-xs font-bold">{m.qty} kg</div>{m.scrap>0&&<div className="text-[10px] text-rose-600">-{m.scrap} scrap</div>}<div className="text-[10px] text-muted-foreground">{m.op} · {m.time}</div></div></div>))}</div></Card></div>
+ 17654→    </div>
+ 17655→  )
+ 17656→}
+ 17657→
+ 17658→// ─── Epic 8: Digital Andon Board ────────────────────────
+ 17659→function AndonBoardModule() {
+ 17660→  const [tvMode, setTvMode] = useState(false)
+ 17661→  const lines = [
+ 17662→    { line: 'LINE-KK-01', product: 'Kaju Katli 500g', status: 'YELLOW', target: 95, actual: 0, completed: 2, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: 'Rajesh K.' },
+ 17663→    { line: 'LINE-IB-01', product: 'Shwet Idli Batter', status: 'GREEN', target: 100, actual: 45, completed: 1, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: 'Anil R.' },
+ 17664→    { line: 'LINE-MP-01', product: 'Mysore Pak 250g', status: 'BLUE', target: 60, actual: 0, completed: 0, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: '—' },
+ 17665→    { line: 'LINE-NM-01', product: 'Mixed Namkeen', status: 'RED', target: 150, actual: 0, completed: 0, delayed: 1, downtime: 25, quality: 1, safety: 0, operator: '—' },
+ 17666→    { line: 'LINE-LD-01', product: 'Motichoor Laddu', status: 'GREEN', target: 100, actual: 98, completed: 1, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: 'Suresh M.' },
+ 17667→  ]
+ 17668→  const statusColors: Record<string,string> = { GREEN: 'bg-emerald-500', YELLOW: 'bg-amber-500', RED: 'bg-rose-500', BLUE: 'bg-blue-500' }
+ 17669→  const statusText: Record<string,string> = { GREEN: 'RUNNING', YELLOW: 'WARNING', RED: 'STOPPED', BLUE: 'SETUP' }
+ 17670→  return (
+ 17671→    <div className={`space-y-6 ${tvMode?'bg-slate-950 p-6 rounded-xl':''}`}>
+ 17672→      <div className="flex items-center justify-between"><div><h2 className={`text-2xl font-bold ${tvMode?'text-white':''}`}>Digital Andon Board</h2><p className={`text-sm mt-1 ${tvMode?'text-slate-400':'text-muted-foreground'}`}>Live production status — Green (running) · Yellow (warning) · Red (stopped) · Blue (setup)</p></div><Button size="sm" variant={tvMode?'default':'outline'} onClick={()=>setTvMode(!tvMode)}>{tvMode?'Exit TV Mode':'TV Mode'}</Button></div>
+ 17673→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{lines.map(l=>{const pct=l.actual/l.target*100;return(
+ 17674→        <Card key={l.line} className={`p-4 border-l-4 ${l.status==='GREEN'?'border-l-emerald-500':l.status==='YELLOW'?'border-l-amber-500':l.status==='RED'?'border-l-rose-500':'border-l-blue-500'} ${tvMode?'bg-slate-900 text-white':''}`}>
+ 17675→          <div className="flex items-center justify-between mb-3"><div><h3 className={`font-mono font-bold ${tvMode?'text-white':''}`}>{l.line}</h3><p className={`text-xs ${tvMode?'text-slate-400':'text-muted-foreground'}`}>{l.product}</p></div><div className="flex items-center gap-2"><span className={`h-4 w-4 rounded-full ${statusColors[l.status]} ${l.status==='GREEN'||l.status==='YELLOW'?'animate-pulse':''}`} /><span className={`text-sm font-bold ${tvMode?'text-white':''}`}>{statusText[l.status]}</span></div></div>
+ 17676→          <div className="space-y-2"><div><div className="flex justify-between text-xs mb-1"><span className={tvMode?'text-slate-400':'text-muted-foreground'}>Output</span><span className={`font-mono font-bold ${tvMode?'text-white':''}`}>{l.actual}/{l.target} kg</span></div><div className={`h-3 rounded-full overflow-hidden ${tvMode?'bg-slate-700':'bg-muted'}`}><div className={`h-full ${pct>80?'bg-emerald-500':pct>50?'bg-amber-500':pct>0?'bg-blue-500':'bg-slate-400'}`} style={{width:`${Math.max(pct,2)}%`}}/></div></div>
+ 17677→            <div className="grid grid-cols-4 gap-2 text-center text-[10px] mt-2"><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Done</p><p className={`font-bold ${tvMode?'text-white':''}`}>{l.completed}</p></div><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Delayed</p><p className={`font-bold ${l.delayed>0?'text-rose-500':tvMode?'text-white':''}`}>{l.delayed}</p></div><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Down</p><p className={`font-bold ${l.downtime>0?'text-rose-500':tvMode?'text-white':''}`}>{l.downtime}m</p></div><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Quality</p><p className={`font-bold ${l.quality>0?'text-amber-500':tvMode?'text-white':''}`}>{l.quality}</p></div></div>
+ 17678→          </div>
+ 17679→        </Card>)})}</div>
+ 17680→    </div>
+ 17681→  )
+ 17682→}
+ 17683→
+ 17684→// ─── Epic 7: Production Exceptions ──────────────────────
+ 17685→function ProdExceptionsModule() {
+ 17686→  const exceptions = [
+ 17687→    { code: 'PEX-001', po: 'PO-2026-00128', wo: null, type: 'MACHINE_FAILURE', severity: 'CRITICAL', title: 'FRY-01 hydraulic failure', desc: 'Continuous Fryer hydraulic pressure loss — production halted', status: 'OPEN', reportedBy: 'Suresh Iyer', time: '15m ago', downtime: 25 },
+ 17688→    { code: 'PEX-002', po: 'PO-2026-00126', wo: 'WO-001', type: 'RECIPE_DEVIATION', severity: 'HIGH', title: 'Urad Dal shortage — 2kg short', desc: 'Only 23kg available vs 25kg required. Batch BATCH-URD-007 was short.', status: 'INVESTIGATING', reportedBy: 'Anil Reddy', time: '1h ago', downtime: 5 },
+ 17689→    { code: 'PEX-003', po: 'PO-2026-00125', wo: 'WO-003', type: 'TEMPERATURE_DEVIATION', severity: 'MEDIUM', title: 'Cooking temp 108°C (target 110°C ± 2°C)', desc: 'Cooking kettle COOK-01 running 2°C below target. Adjusting flame.', status: 'RESOLVED', reportedBy: 'Rajesh Kumar', time: '30m ago', downtime: 0 },
+ 17690→    { code: 'PEX-004', po: 'PO-2026-00127', wo: null, type: 'OPERATOR_ABSENCE', severity: 'LOW', title: 'OP-004 Lakshmi V. late for afternoon shift', desc: 'Operator 15 min late. Supervisor covering Mysore Pak line setup.', status: 'RESOLVED', reportedBy: 'Suresh Mehta', time: '2h ago', downtime: 15 },
+ 17691→  ]
+ 17692→  const typeColors: Record<string,string> = { MATERIAL_SHORTAGE: 'bg-amber-100 text-amber-700', MACHINE_FAILURE: 'bg-rose-100 text-rose-700', RECIPE_DEVIATION: 'bg-orange-100 text-orange-700', QUALITY_FAILURE: 'bg-red-100 text-red-700', OPERATOR_ABSENCE: 'bg-blue-100 text-blue-700', POWER_FAILURE: 'bg-slate-100 text-slate-700', BATCH_REJECTION: 'bg-rose-100 text-rose-700', TEMPERATURE_DEVIATION: 'bg-purple-100 text-purple-700' }
+ 17693→  const sevColors: Record<string,string> = { CRITICAL: 'border-rose-400 bg-rose-50/50', HIGH: 'border-orange-300 bg-orange-50/30', MEDIUM: 'border-amber-200 bg-amber-50/20', LOW: 'border-slate-200' }
+ 17694→  const sevBadge: Record<string,string> = { CRITICAL: 'bg-rose-100 text-rose-700', HIGH: 'bg-orange-100 text-orange-700', MEDIUM: 'bg-amber-100 text-amber-700', LOW: 'bg-slate-100 text-slate-600' }
+ 17695→  const statusBadge: Record<string,string> = { OPEN: 'bg-rose-100 text-rose-700', ACKNOWLEDGED: 'bg-blue-100 text-blue-700', INVESTIGATING: 'bg-amber-100 text-amber-700', RESOLVED: 'bg-emerald-100 text-emerald-700', ESCALATED: 'bg-red-100 text-red-700' }
+ 17696→  return (
+ 17697→    <div className="space-y-6">
+ 17698→      <div className="flex items-center justify-between"><div><h2 className="text-2xl font-bold">Production Exception Management</h2><p className="text-sm text-muted-foreground mt-1">Material shortage · machine failure · recipe deviation · quality failure · temperature deviation</p></div><Button size="sm" variant="destructive"><AlertTriangle className="mr-2 h-4 w-4" />Report Exception</Button></div>
+ 17699→      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[{label:'Total',value:exceptions.length,color:'text-blue-600'},{label:'Open',value:exceptions.filter(e=>e.status==='OPEN').length,color:'text-rose-600'},{label:'Investigating',value:exceptions.filter(e=>e.status==='INVESTIGATING').length,color:'text-amber-600'},{label:'Resolved',value:exceptions.filter(e=>e.status==='RESOLVED').length,color:'text-emerald-600'},{label:'Total Downtime',value:`${exceptions.reduce((a,e)=>a+e.downtime,0)}m`,color:'text-orange-600'}].map(s=><Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}</div>
+ 17700→      <Card className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 border-rose-300"><h3 className="font-semibold mb-2 text-sm">Exception Resolution Workflow</h3><div className="flex items-center gap-2 text-xs overflow-x-auto">{['Exception','Supervisor','Decision','Continue / Pause / Reject / Rework'].map((s,i,a)=>(<div key={i} className="flex items-center gap-2 flex-shrink-0"><div className="px-3 py-1.5 bg-white border rounded-md font-medium">{s}</div>{i<a.length-1&&<ArrowRight className="h-3 w-3 text-rose-600"/>}</div>))}</div></Card>
+ 17701→      <div className="space-y-2">{exceptions.map(e=>(<Card key={e.code} className={`p-4 border-l-4 ${sevColors[e.severity]}`}><div className="flex items-start gap-3"><div className="h-9 w-9 rounded-lg bg-white border flex items-center justify-center flex-shrink-0"><AlertTriangle className="h-4 w-4 text-rose-600"/></div><div className="flex-1"><div className="flex items-center gap-2 flex-wrap mb-1"><span className="font-mono text-xs font-semibold text-blue-700">{e.code}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${typeColors[e.type]||'bg-slate-100'}`}>{e.type.replace(/_/g,' ')}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${sevBadge[e.severity]}`}>{e.severity}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${statusBadge[e.status]}`}>{e.status}</span></div><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-muted-foreground mt-0.5">{e.desc}</p><div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground"><span>PO: {e.po}</span>{e.wo&&<span>WO: {e.wo}</span>}<span>By: {e.reportedBy}</span><span>{e.time}</span>{e.downtime>0&&<span className="text-rose-600">Downtime: {e.downtime}m</span>}</div></div>{(e.status==='OPEN'||e.status==='INVESTIGATING')&&<div className="flex flex-col gap-1"><Button size="sm" className="h-7 text-xs">Resolve</Button><Button size="sm" variant="outline" className="h-7 text-xs">Escalate</Button></div>}</div></Card>))}</div>
+ 17702→    </div>
+ 17703→  )
+ 17704→}
+ 17705→
+ 17706→// ─── Coming Soon Placeholder ────────────────────────────
+ 17707→function ComingSoon({ name }: { name: string }) {
+ 17708→  return (
+ 17709→    <Card className="p-12 text-center">
+ 17710→      <div className="flex flex-col items-center gap-4">
+ 17711→        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted"><Package className="h-8 w-8 text-muted-foreground" /></div>
+ 17712→        <div><h3 className="font-semibold text-lg">{name}</h3><p className="text-sm text-muted-foreground mt-1">This module is planned for future sprints.</p></div>
+ 17713→      </div>
+ 17714→    </Card>
+ 17715→  )
+ 17716→}
+ 17717→
+ 17718→// ─── Main Unified Application ───────────────────────────
+ 17719→export default function Home() {
+ 17720→  const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode } = useAuthStore()
+ 17721→  const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard')
+ 17722→  const [sidebarOpen, setSidebarOpen] = useState(true)
+ 17723→  const [zoom, setZoom] = useState(100)
+ 17724→
+ 17725→  useEffect(() => { initialize() }, [initialize])
+ 17726→
+ 17727→  // Ctrl/Cmd + scroll = zoom; Ctrl/Cmd + 0 = reset; + / - to zoom
+ 17728→  useEffect(() => {
+ 17729→    const onKey = (e: KeyboardEvent) => {
+ 17730→      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setZoom(z => Math.min(150, z + 10)) }
+ 17731→      else if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); setZoom(z => Math.max(60, z - 10)) }
+ 17732→      else if ((e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); setZoom(100) }
+ 17733→    }
+ 17734→    window.addEventListener('keydown', onKey)
+ 17735→    return () => window.removeEventListener('keydown', onKey)
+ 17736→  }, [])
+ 17737→
+ 17738→  if (isLoading) {
+ 17739→    return (
+ 17740→      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+ 17741→        <div className="text-center space-y-4">
+ 17742→          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-3xl">S</div>
+ 17743→          <div className="flex items-center justify-center gap-2 text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /><p className="text-sm">Loading SUOP Admin...</p></div>
+ 17744→        </div>
+ 17745→      </div>
+ 17746→    )
+ 17747→  }
+ 17748→
+ 17749→  if (!isAuthenticated) {
+ 17750→    return <LoginScreen onLogin={async (e, p, r) => { await login(e, p) }} onDemo={loginDemo} />
+ 17751→  }
+ 17752→
+ 17753→  const moduleNames: Record<ModuleKey, string> = {
+ 17754→    dashboard: 'Dashboard', organization: 'Organization', rbac: 'RBAC & Security',
+ 17755→    products: 'Product Master', pim: 'PIM Platform', commercial: 'Commercial Engine',
+ 17756→    partners: 'Business Partners', identification: 'Identification & Traceability',
+ 17757→    governance: 'Data Governance', inventory: 'Inventory Engine',
+ 17758→    goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
+ 17759→    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', dispatch: 'Dispatch & Shipping',
+ 17760→    waveplanning: 'Wave Planning', taskqueue: 'Task Queue', workforce: 'Workforce Management', equipment: 'Equipment Management', controltower: 'Warehouse Control Tower', sladashboard: 'SLA Dashboard', exceptioncenter: 'Exception Center', workforceanalytics: 'Workforce Analytics',
+ 17761→    crossdock: 'Cross-Dock Console', truckqueue: 'Truck Queue', dockschedule: 'Dock Schedule', yardmap: 'Yard Map', vehicletracker: 'Vehicle Tracker', gateconsole: 'Gate Console', yardtower: 'Yard Control Tower', crossdockanalytics: 'Cross-Dock Analytics',
+ 17762→    equipmentmaster: 'Equipment Master', forkliftdashboard: 'Forklift Dashboard', scannermgmt: 'Scanner Management', batterydashboard: 'Battery Dashboard', maintenanceplanner: 'Maintenance Planner', breakdownconsole: 'Breakdown Console', certificationcenter: 'Certification Center', equipmentanalytics: 'Equipment Analytics',
+ 17763→    missioncontrol: 'Warehouse Mission Control', kpidashboard: 'KPI Dashboard', operatoranalytics: 'Operator Analytics', wareheatanalytics: 'Equipment Analytics+', heatmaps: 'Warehouse Heat Maps', costdashboard: 'Warehouse Cost Dashboard', slaanalytics: 'SLA Analytics', execreports: 'Executive Reports',
+ 17764→    wmsmissioncontrol: 'WMS Mission Control', controltower: 'Enterprise Control Tower', digitaltwin: 'Warehouse Digital Twin', aioperations: 'AI Operations Center', execdashboard: 'Executive Command Dashboard', alertcenter: 'Enterprise Alert Center', recoverydashboard: 'Disaster Recovery Dashboard', enterprisenalytics: 'Enterprise Analytics',
+ 17765→    plantmaster: 'Plant Master', productiondept: 'Production Departments', productionlines: 'Production Lines', workcenters: 'Work Centers', mfgcalendar: 'Manufacturing Calendar', mfgresources: 'Production Resources', plantconfig: 'Plant Configuration', productiondashboard: 'Production Dashboard',
+ 17766→    recipemaster: 'Recipe Master', formulabuilder: 'Formula Builder', bombuilder: 'BOM Builder', recipeversions: 'Recipe Version History', yielddashboard: 'Yield Dashboard', batchscaling: 'Batch Scaling Engine', nutritioncenter: 'Nutrition & Allergen Center', costrollup: 'Cost Roll-Up Engine', recipeapproval: 'Recipe Approval Center',
+ 17767→    planningdashboard: 'Production Planning Dashboard', mpsconsole: 'MPS Console', mrpworkbench: 'MRP Workbench', demandplanning: 'Demand Planning', capacityplanner: 'Capacity Planner', shortagecenter: 'Material Shortage Center', purchasesuggestions: 'Purchase Suggestions', whatifsimulator: 'What-if Simulator',
+ 17768→    productionorders: 'Production Orders', workorders: 'Work Orders', routingdesigner: 'Routing Designer', shopfloorschedule: 'Shop Floor Schedule', productiontraveler: 'Digital Production Traveler', assignmentconsole: 'Assignment Console', proddashboard: 'Production Execution Dashboard', progressmonitor: 'Production Progress Monitor',
+ 17769→    shopfloordashboard: 'Shop Floor Execution Dashboard', woconsole: 'Work Order Execution Console', materialconsumption: 'Material Consumption', machineconsole: 'Machine Console', operatordashboard: 'Operator Dashboard', wipdashboard: 'WIP Dashboard', andonboard: 'Digital Andon Board', prodexceptions: 'Production Exceptions',
+ 17770→    manufacturing: 'Manufacturing',
+ 17771→    quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
+ 17772→    maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
+ 17773→    ai: 'AI Copilot',
+ 17774→  }
+ 17775→
+ 17776→  return (
+ 17777→    <div className="flex h-screen overflow-hidden bg-background">
+ 17778→      {/* Sidebar */}
+ 17779→      <aside className={cn('flex flex-col border-r bg-sidebar transition-all duration-200 flex-shrink-0', sidebarOpen ? 'w-64' : 'w-0')}>
+ 17780→        {sidebarOpen && (
+ 17781→          <>
+ 17782→            <div className="flex h-16 items-center gap-3 border-b px-6">
+ 17783→              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">S</div>
+ 17784→              <div><p className="font-bold text-sm leading-tight">SUOP</p><p className="text-xs text-muted-foreground leading-tight">Sudhastar Unified OS</p></div>
+ 17785→            </div>
+ 17786→            <div className="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden suop-sidebar-scroll">
+ 17787→              <nav className="space-y-6">
+ 17788→                {SIDEBAR_SECTIONS.map(section => (
+ 17789→                  <div key={section.section}>
+ 17790→                    <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.section}</p>
+ 17791→                    <div className="space-y-1">
+ 17792→                      {section.items.map(item => (
+ 17793→                        <button key={item.name} disabled={!item.available}
+ 17794→                          className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+ 17795→                            activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
+ 17796→                          )}
+ 17797→                          onClick={() => item.available && setActiveModule(item.module)}
+ 17798→                        >
+ 17799→                          {item.icon}{item.name}
+ 17800→                          {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
+ 17801→                        </button>
+ 17802→                      ))}
+ 17803→                    </div>
+ 17804→                  </div>
+ 17805→                ))}
+ 17806→              </nav>
+ 17807→            </div>
+ 17808→            <div className="border-t p-4"><Button variant="ghost" size="sm" onClick={logout} className="w-full">Sign Out</Button></div>
+ 17809→          </>
+ 17810→        )}
+ 17811→      </aside>
+ 17812→
+ 17813→      {/* Main Content */}
+ 17814→      <div className="flex flex-1 flex-col overflow-hidden">
+ 17815→        <header className="flex h-16 items-center gap-4 border-b px-6">
+ 17816→          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
+ 17817→          <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
+ 17818→          <div className="flex-1" />
+ 17819→          {/* Zoom Controls */}
+ 17820→          <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-1 py-1">
+ 17821→            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(60, z - 10))} title="Zoom Out (Ctrl -)">
+ 17822→              <span className="text-base leading-none">−</span>
+ 17823→            </Button>
+ 17824→            <button
+ 17825→              onClick={() => setZoom(100)}
+ 17826→              className="min-w-[44px] text-xs font-medium hover:bg-accent rounded px-1 py-0.5"
+ 17827→              title="Reset Zoom (Ctrl 0)"
+ 17828→            >
+ 17829→              {zoom}%
+ 17830→            </button>
+ 17831→            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(150, z + 10))} title="Zoom In (Ctrl +)">
+ 17832→              <span className="text-base leading-none">+</span>
+ 17833→            </Button>
+ 17834→          </div>
+ 17835→          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 38 · 331 Tables · Part 5 MES</Badge>
+ 17836→          {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
+ 17837→          <a href="/mobile" target="_blank" rel="noopener noreferrer">
+ 17838→            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
+ 17839→              <Smartphone className="mr-1 h-4 w-4" />Launch Mobile App
+ 17840→            </Button>
+ 17841→          </a>
+ 17842→        </header>
+ 17843→
+ 17844→        <div className="flex-1 overflow-y-auto overflow-x-hidden suop-main-scroll" style={{ scrollBehavior: 'smooth' }}>
+ 17845→          <main
+ 17846→            className="p-6 mx-auto origin-top"
+ 17847→            style={{
+ 17848→              maxWidth: '1600px',
+ 17849→              zoom: `${zoom}%`,
+ 17850→              // Firefox doesn't support zoom property — fall back to transform
+ 17851→              ...(typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('firefox')
+ 17852→                ? { transform: `scale(${zoom / 100})`, transformOrigin: 'top center', zoom: 'normal' as unknown as string }
+ 17853→                : {}),
+ 17854→            }}
+ 17855→          >
+ 17856→            {activeModule === 'dashboard' && <DashboardModule />}
+ 17857→            {activeModule === 'organization' && <OrganizationModule />}
+ 17858→            {activeModule === 'rbac' && <RBACModule />}
+ 17859→            {activeModule === 'products' && <ProductMasterModule />}
+ 17860→            {activeModule === 'pim' && <PIMModule />}
+ 17861→            {activeModule === 'commercial' && <CommercialEngineModule />}
+ 17862→            {activeModule === 'partners' && <BusinessPartnerModule />}
+ 17863→            {activeModule === 'identification' && <IdentificationModule />}
+ 17864→            {activeModule === 'governance' && <GovernanceModule />}
+ 17865→            {activeModule === 'inventory' && <InventoryModule />}
+ 17866→            {activeModule === 'goodsreceipt' && <GoodsReceiptModule />}
+ 17867→            {activeModule === 'stockissue' && <StockIssueModule />}
+ 17868→            {activeModule === 'transfer' && <StockTransferModule />}
+ 17869→            {activeModule === 'adjustment' && <AdjustmentModule />}
+ 17870→            {activeModule === 'reservation' && <ReservationModule />}
+ 17871→            {activeModule === 'cyclecount' && <CycleCountModule />}
+ 17872→            {activeModule === 'batchmgmt' && <BatchExpiryModule />}
+ 17873→            {activeModule === 'costing' && <CostingModule />}
+ 17874→            {activeModule === 'analytics' && <MissionControlModule />}
+ 17875→            {activeModule === 'warehouse' && <WarehouseModule />}
+ 17876→            {activeModule === 'whlocations' && <WarehouseLocationModule />}
+ 17877→            {activeModule === 'receiving' && <ReceivingModule />}
+ 17878→            {activeModule === 'putaway' && <PutawayModule />}
+ 17879→            {activeModule === 'fulfillment' && <FulfillmentModule />}
+ 17880→            {activeModule === 'dispatch' && <DispatchModule />}
+ 17881→            {activeModule === 'waveplanning' && <WavePlanningModule />}
+ 17882→            {activeModule === 'taskqueue' && <TaskQueueModule />}
+ 17883→            {activeModule === 'workforce' && <WorkforceModule />}
+ 17884→            {activeModule === 'equipment' && <EquipmentModule />}
+ 17885→            {activeModule === 'controltower' && <ControlTowerModule />}
+ 17886→            {activeModule === 'sladashboard' && <SLADashboardModule />}
+ 17887→            {activeModule === 'exceptioncenter' && <ExceptionCenterModule />}
+ 17888→            {activeModule === 'workforceanalytics' && <WorkforceAnalyticsModule />}
+ 17889→            {activeModule === 'crossdock' && <CrossDockConsoleModule />}
+ 17890→            {activeModule === 'truckqueue' && <TruckQueueModule />}
+ 17891→            {activeModule === 'dockschedule' && <DockScheduleModule />}
+ 17892→            {activeModule === 'yardmap' && <YardMapModule />}
+ 17893→            {activeModule === 'vehicletracker' && <VehicleTrackerModule />}
+ 17894→            {activeModule === 'gateconsole' && <GateConsoleModule />}
+ 17895→            {activeModule === 'yardtower' && <YardControlTowerModule />}
+ 17896→            {activeModule === 'crossdockanalytics' && <CrossDockAnalyticsModule />}
+ 17897→            {activeModule === 'equipmentmaster' && <EquipmentMasterModule />}
+ 17898→            {activeModule === 'forkliftdashboard' && <ForkliftDashboardModule />}
+ 17899→            {activeModule === 'scannermgmt' && <ScannerManagementModule />}
+ 17900→            {activeModule === 'batterydashboard' && <BatteryDashboardModule />}
+ 17901→            {activeModule === 'maintenanceplanner' && <MaintenancePlannerModule />}
+ 17902→            {activeModule === 'breakdownconsole' && <BreakdownConsoleModule />}
+ 17903→            {activeModule === 'certificationcenter' && <CertificationCenterModule />}
+ 17904→            {activeModule === 'equipmentanalytics' && <EquipmentAnalyticsModule />}
+ 17905→            {activeModule === 'missioncontrol' && <WarehouseMissionControlModule />}
+ 17906→            {activeModule === 'kpidashboard' && <KPIDashboardModule />}
+ 17907→            {activeModule === 'operatoranalytics' && <OperatorAnalyticsModule />}
+ 17908→            {activeModule === 'wareheatanalytics' && <WarehouseEquipmentAnalyticsModule />}
+ 17909→            {activeModule === 'heatmaps' && <WarehouseHeatMapsModule />}
+ 17910→            {activeModule === 'costdashboard' && <WarehouseCostDashboardModule />}
+ 17911→            {activeModule === 'slaanalytics' && <SLAAnalyticsModule />}
+ 17912→            {activeModule === 'execreports' && <ExecutiveReportsModule />}
+ 17913→            {activeModule === 'wmsmissioncontrol' && <WMSMissionControlModule />}
+ 17914→            {activeModule === 'controltower' && <EnterpriseControlTowerModule />}
+ 17915→            {activeModule === 'digitaltwin' && <DigitalTwinModule />}
+ 17916→            {activeModule === 'aioperations' && <AIOperationsModule />}
+ 17917→            {activeModule === 'execdashboard' && <ExecutiveCommandDashboardModule />}
+ 17918→            {activeModule === 'alertcenter' && <EnterpriseAlertCenterModule />}
+ 17919→            {activeModule === 'recoverydashboard' && <DisasterRecoveryModule />}
+ 17920→            {activeModule === 'enterprisenalytics' && <EnterpriseAnalyticsModule />}
+ 17921→            {activeModule === 'plantmaster' && <PlantMasterModule />}
+ 17922→            {activeModule === 'productiondept' && <ProductionDepartmentsModule />}
+ 17923→            {activeModule === 'productionlines' && <ProductionLinesModule />}
+ 17924→            {activeModule === 'workcenters' && <WorkCentersModule />}
+ 17925→            {activeModule === 'mfgcalendar' && <ManufacturingCalendarModule />}
+ 17926→            {activeModule === 'mfgresources' && <ProductionResourcesModule />}
+ 17927→            {activeModule === 'plantconfig' && <PlantConfigModule />}
+ 17928→            {activeModule === 'productiondashboard' && <ProductionDashboardModule />}
+ 17929→            {activeModule === 'recipemaster' && <RecipeMasterModule />}
+ 17930→            {activeModule === 'formulabuilder' && <FormulaBuilderModule />}
+ 17931→            {activeModule === 'bombuilder' && <BOMBuilderModule />}
+ 17932→            {activeModule === 'recipeversions' && <RecipeVersionHistoryModule />}
+ 17933→            {activeModule === 'yielddashboard' && <YieldDashboardModule />}
+ 17934→            {activeModule === 'batchscaling' && <BatchScalingModule />}
+ 17935→            {activeModule === 'nutritioncenter' && <NutritionCenterModule />}
+ 17936→            {activeModule === 'costrollup' && <CostRollupModule />}
+ 17937→            {activeModule === 'recipeapproval' && <RecipeApprovalModule />}
+ 17938→            {activeModule === 'planningdashboard' && <PlanningDashboardModule />}
+ 17939→            {activeModule === 'mpsconsole' && <MPSConsoleModule />}
+ 17940→            {activeModule === 'mrpworkbench' && <MRPWorkbenchModule />}
+ 17941→            {activeModule === 'demandplanning' && <DemandPlanningModule />}
+ 17942→            {activeModule === 'capacityplanner' && <CapacityPlannerModule />}
+ 17943→            {activeModule === 'shortagecenter' && <MaterialShortageModule />}
+ 17944→            {activeModule === 'purchasesuggestions' && <PurchaseSuggestionsModule />}
+ 17945→            {activeModule === 'whatifsimulator' && <WhatIfSimulatorModule />}
+ 17946→            {activeModule === 'productionorders' && <ProductionOrdersModule />}
+ 17947→            {activeModule === 'workorders' && <WorkOrdersModule />}
+ 17948→            {activeModule === 'routingdesigner' && <RoutingDesignerModule />}
+ 17949→            {activeModule === 'shopfloorschedule' && <ShopFloorScheduleModule />}
+ 17950→            {activeModule === 'productiontraveler' && <ProductionTravelerModule />}
+ 17951→            {activeModule === 'assignmentconsole' && <AssignmentConsoleModule />}
+ 17952→            {activeModule === 'proddashboard' && <ProductionExecutionDashboardModule />}
+ 17953→            {activeModule === 'progressmonitor' && <ProgressMonitorModule />}
+ 17954→            {activeModule === 'shopfloordashboard' && <ShopFloorExecutionDashboardModule />}
+ 17955→            {activeModule === 'woconsole' && <WOExecutionConsoleModule />}
+ 17956→            {activeModule === 'materialconsumption' && <MaterialConsumptionModule />}
+ 17957→            {activeModule === 'machineconsole' && <MachineConsoleModule />}
+ 17958→            {activeModule === 'operatordashboard' && <OperatorDashboardModule />}
+ 17959→            {activeModule === 'wipdashboard' && <WIPDashboardModule />}
+ 17960→            {activeModule === 'andonboard' && <AndonBoardModule />}
+ 17961→            {activeModule === 'prodexceptions' && <ProdExceptionsModule />}
+ 17962→            {activeModule === 'settings' && <SettingsModule />}
+ 17963→            {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
+ 17964→            <div className="text-center text-xs text-muted-foreground py-8">
+ 17965→              <p>SUOP — Sudhastar Unified Operating Platform</p>
+ 17966→              <p className="mt-1">Sprints 1-38 · Part 5 MES · 331 Database Tables · Shop Floor Execution & Real-Time Manufacturing</p>
+ 17967→            </div>
+ 17968→          </main>
+ 17969→        </div>
+ 17970→      </div>
+ 17971→    </div>
+ 17972→  )
+ 17973→}
+
+[showing lines 17634-17973 of 17974; use offset=17974 with limit to continue reading]
