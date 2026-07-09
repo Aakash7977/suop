@@ -55,6 +55,7 @@ type ModuleKey =
   | 'missioncontrol' | 'kpidashboard' | 'operatoranalytics' | 'wareheatanalytics' | 'heatmaps' | 'costdashboard' | 'slaanalytics' | 'execreports'
   | 'wmsmissioncontrol' | 'controltower' | 'digitaltwin' | 'aioperations' | 'execdashboard' | 'alertcenter' | 'recoverydashboard' | 'enterprisenalytics'
   | 'plantmaster' | 'productiondept' | 'productionlines' | 'workcenters' | 'mfgcalendar' | 'mfgresources' | 'plantconfig' | 'productiondashboard'
+  | 'recipemaster' | 'formulabuilder' | 'bombuilder' | 'recipeversions' | 'yielddashboard' | 'batchscaling' | 'nutritioncenter' | 'costrollup' | 'recipeapproval'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -227,6 +228,15 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Resources', icon: <Wrench className="h-4 w-4" />, module: 'mfgresources', available: true },
       { name: 'Plant Config', icon: <Settings className="h-4 w-4" />, module: 'plantconfig', available: true },
       { name: 'Production Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'productiondashboard', available: true },
+      { name: 'Recipe Master', icon: <FileText className="h-4 w-4" />, module: 'recipemaster', available: true },
+      { name: 'Formula Builder', icon: <Layers3 className="h-4 w-4" />, module: 'formulabuilder', available: true },
+      { name: 'BOM Builder', icon: <GitBranch className="h-4 w-4" />, module: 'bombuilder', available: true },
+      { name: 'Recipe Versions', icon: <History className="h-4 w-4" />, module: 'recipeversions', available: true },
+      { name: 'Yield Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'yielddashboard', available: true },
+      { name: 'Batch Scaling', icon: <Calculator className="h-4 w-4" />, module: 'batchscaling', available: true },
+      { name: 'Nutrition Center', icon: <FlaskConical className="h-4 w-4" />, module: 'nutritioncenter', available: true },
+      { name: 'Cost Roll-Up', icon: <IndianRupee className="h-4 w-4" />, module: 'costrollup', available: true },
+      { name: 'Recipe Approval', icon: <ShieldCheck className="h-4 w-4" />, module: 'recipeapproval', available: true },
     ]
   },
   {
@@ -15647,6 +15657,654 @@ function ProductionDashboardModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 35 — RECIPE, FORMULA, BOM & VERSION MANAGEMENT (PART 5)
+// Epic 1: Recipe · Epic 2: Formula · Epic 3: BOM · Epic 4: Version
+// Epic 5: Yield · Epic 6: Batch Scaling · Epic 7: Alternate · Epic 8: Nutrition · Epic 9: Cost
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Recipe Master Module ───────────────────────
+function RecipeMasterModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+  const [showCreate, setShowCreate] = useState(false)
+  const recipes = [
+    { id: 'R1', code: 'REC-KK-500', name: 'Kaju Katli 500g', product: 'SK-KAJU-500', type: 'TRADITIONAL_SWEETS', yield: 95, version: '1.2', status: 'ACTIVE', ingredients: 6, approvedBy: 'Rajesh Patil', effective: '2026-05-15' },
+    { id: 'R2', code: 'REC-MP-250', name: 'Mysore Pak 250g', product: 'SK-MYSORE-250', type: 'TRADITIONAL_SWEETS', yield: 92, version: '1.0', status: 'ACTIVE', ingredients: 5, approvedBy: 'Suresh Iyer', effective: '2026-03-10' },
+    { id: 'R3', code: 'REC-LD-1K', name: 'Motichoor Laddu 1kg', product: 'SK-LAD-1K', type: 'TRADITIONAL_SWEETS', yield: 90, version: '2.1', status: 'ACTIVE', ingredients: 7, approvedBy: 'Rajesh Patil', effective: '2026-06-01' },
+    { id: 'R4', code: 'REC-IB-1K', name: 'Shwet Idli Batter 1kg', product: 'SK-IB-1K', type: 'IDLI_BATTER', yield: 98, version: '1.3', status: 'ACTIVE', ingredients: 3, approvedBy: 'Anil Reddy', effective: '2026-04-20' },
+    { id: 'R5', code: 'REC-DB-1K', name: 'Dosa Batter 1kg', product: 'SK-DB-1K', type: 'DOSA_BATTER', yield: 98, version: '1.1', status: 'ACTIVE', ingredients: 3, approvedBy: 'Anil Reddy', effective: '2026-04-20' },
+    { id: 'R6', code: 'REC-NM-500', name: 'Mixed Namkeen 500g', product: 'SK-NM-500', type: 'NAMKEEN', yield: 96, version: '1.0', status: 'ACTIVE', ingredients: 12, approvedBy: 'Suresh Iyer', effective: '2026-02-15' },
+    { id: 'R7', code: 'REC-GJ-250', name: 'Gulab Jamun 250g', product: 'SK-GJ-250', type: 'MILK_SWEETS', yield: 93, version: '1.4', status: 'UNDER_REVIEW', ingredients: 5, approvedBy: null, effective: null },
+    { id: 'R8', code: 'REC-BF-250', name: 'Coconut Barfi 250g', product: 'SK-BF-250', type: 'TRADITIONAL_SWEETS', yield: 91, version: '2.0', status: 'APPROVED', ingredients: 6, approvedBy: 'Rajesh Patil', effective: '2026-07-10' },
+    { id: 'R9', code: 'REC-MX-500', name: 'Spicy Mixture 500g', product: 'SK-MX-500', type: 'NAMKEEN', yield: 95, version: '1.1', status: 'ACTIVE', ingredients: 10, approvedBy: 'Suresh Iyer', effective: '2026-03-20' },
+    { id: 'R10', code: 'REC-DF-1K', name: 'Dry Fruit Mix 1kg', product: 'SK-DF-1K', type: 'DRY_FRUIT_SWEETS', yield: 99, version: '1.0', status: 'DRAFT', ingredients: 8, approvedBy: null, effective: null },
+  ]
+
+  const filtered = recipes.filter(r => filter === 'ALL' || r.type === filter || r.status === filter)
+  const typeColors: Record<string, string> = { TRADITIONAL_SWEETS: 'bg-amber-100 text-amber-700', MILK_SWEETS: 'bg-blue-100 text-blue-700', DRY_FRUIT_SWEETS: 'bg-orange-100 text-orange-700', NAMKEEN: 'bg-red-100 text-red-700', SNACKS: 'bg-purple-100 text-purple-700', IDLI_BATTER: 'bg-cyan-100 text-cyan-700', DOSA_BATTER: 'bg-emerald-100 text-emerald-700' }
+  const statusColors: Record<string, string> = { DRAFT: 'bg-slate-100 text-slate-700', UNDER_REVIEW: 'bg-amber-100 text-amber-700', APPROVED: 'bg-blue-100 text-blue-700', ACTIVE: 'bg-emerald-100 text-emerald-700', INACTIVE: 'bg-slate-100 text-slate-500', ARCHIVED: 'bg-slate-200 text-slate-600' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Recipe Master</h2><p className="text-sm text-muted-foreground mt-1">The digital heart of production — recipes, formulas, BOM, versions, yield, nutrition, cost</p></div>
+        <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Recipe</Button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Recipes', value: recipes.length, color: 'text-blue-600' },
+          { label: 'Active', value: recipes.filter(r => r.status === 'ACTIVE').length, color: 'text-emerald-600' },
+          { label: 'Under Review', value: recipes.filter(r => r.status === 'UNDER_REVIEW').length, color: 'text-amber-600' },
+          { label: 'Draft', value: recipes.filter(r => r.status === 'DRAFT').length, color: 'text-slate-600' },
+          { label: 'Avg Yield', value: `${(recipes.reduce((a, r) => a + r.yield, 0) / recipes.length).toFixed(1)}%`, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {showCreate && (
+        <Card className="p-4 border-amber-300 bg-amber-50/50">
+          <h3 className="font-semibold mb-3">Create New Recipe</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Recipe Code</Label><Input className="mt-1" placeholder="REC-XXX-500" /></div>
+            <div><Label className="text-xs">Recipe Name</Label><Input className="mt-1" placeholder="Kaju Katli 500g" /></div>
+            <div><Label className="text-xs">Product Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>TRADITIONAL_SWEETS</option><option>MILK_SWEETS</option><option>NAMKEEN</option><option>IDLI_BATTER</option><option>DOSA_BATTER</option></select></div>
+            <div><Label className="text-xs">Yield Quantity (kg)</Label><Input type="number" className="mt-1" placeholder="95" /></div>
+            <div className="md:col-span-2"><Label className="text-xs">Production Instructions</Label><Input className="mt-1" placeholder="Mix at 60°C, cook 45 min, cool 30 min..." /></div>
+            <div className="md:col-span-2"><Label className="text-xs">Quality Checkpoints</Label><Input className="mt-1" placeholder="Temperature check, moisture test, visual inspection" /></div>
+            <div className="md:col-span-4 flex gap-2"><Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Create Recipe (Draft)</Button><Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button></div>
+          </div>
+        </Card>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'TRADITIONAL_SWEETS', 'MILK_SWEETS', 'NAMKEEN', 'IDLI_BATTER', 'DOSA_BATTER', 'DRY_FRUIT_SWEETS', 'ACTIVE', 'UNDER_REVIEW', 'DRAFT'].map(f => <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full border ${filter === f ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{f.replace(/_/g, ' ')}</button>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Recipe Code</th><th className="text-left px-4 py-3 font-medium">Name</th>
+              <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Version</th>
+              <th className="text-left px-4 py-3 font-medium">Yield</th><th className="text-left px-4 py-3 font-medium">Ingredients</th>
+              <th className="text-left px-4 py-3 font-medium">Approved By</th><th className="text-left px-4 py-3 font-medium">Effective</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {filtered.map(r => (
+                <tr key={r.id} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{r.code}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{r.name}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[r.type] || 'bg-slate-100'}`}>{r.type.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs"><Badge variant="outline" className="text-[10px]">v{r.version}</Badge></td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={r.yield > 95 ? 'text-emerald-600 font-bold' : r.yield > 90 ? 'text-amber-600' : 'text-rose-600'}>{r.yield}%</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">{r.ingredients}</td>
+                  <td className="px-4 py-3 text-xs">{r.approvedBy || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{r.effective || '—'}</td>
+                  <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[r.status] || 'bg-slate-100'}`}>{r.status.replace(/_/g, ' ')}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 2: Formula Builder Module ─────────────────────
+function FormulaBuilderModule() {
+  const [selectedRecipe, setSelectedRecipe] = useState('REC-KK-500')
+  const recipes = ['REC-KK-500 — Kaju Katli 500g', 'REC-IB-1K — Shwet Idli Batter 1kg', 'REC-NM-500 — Mixed Namkeen 500g']
+  const formulaLines = [
+    { no: 1, ingredient: 'Cashew (W320)', qty: 55, uom: 'KG', pct: 57.9, stage: 'MIXING', loss: 2, critical: true, optional: false },
+    { no: 2, ingredient: 'Sugar', qty: 35, uom: 'KG', pct: 36.8, stage: 'MIXING', loss: 1, critical: true, optional: false },
+    { no: 3, ingredient: 'Ghee', qty: 3, uom: 'KG', pct: 3.2, stage: 'COOKING', loss: 0.5, critical: true, optional: false },
+    { no: 4, ingredient: 'Cardamom Powder', qty: 0.5, uom: 'KG', pct: 0.5, stage: 'MIXING', loss: 0, critical: false, optional: false },
+    { no: 5, ingredient: 'Silver Leaf (Vark)', qty: 50, uom: 'SHEETS', pct: 0.1, stage: 'PACKING', loss: 5, critical: false, optional: true },
+    { no: 6, ingredient: 'Water', qty: 1.5, uom: 'LTR', pct: 1.5, stage: 'COOKING', loss: 100, critical: true, optional: false },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Formula Builder</h2><p className="text-sm text-muted-foreground mt-1">Fixed quantity · percentage · ratio · conditional ingredients · process stage · loss %</p></div>
+        <div className="flex items-center gap-2">
+          <select value={selectedRecipe} onChange={e => setSelectedRecipe(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+            {recipes.map(r => <option key={r} value={r.split(' ')[0]}>{r}</option>)}
+          </select>
+          <Button size="sm"><Plus className="mr-2 h-4 w-4" />Add Ingredient</Button>
+        </div>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <h3 className="font-semibold mb-2 text-sm">Chief Architect: Recipe ≠ Production Instructions</h3>
+        <p className="text-xs text-muted-foreground">Separate recipe (ingredients) from production instructions (mixing sequence, temperature, duration, cooling, rolling thickness, cutting dimensions, quality checkpoints, packaging). Same recipe can be produced on different lines while preserving quality.</p>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Formula Lines — {selectedRecipe}</h3>
+          <div className="flex gap-2">
+            <Badge variant="outline" className="text-[10px]">Formula Type: FIXED</Badge>
+            <Badge variant="outline" className="text-[10px]">Total Input: 95.0 KG</Badge>
+            <Badge variant="outline" className="text-[10px]">Expected Output: 95.0 KG</Badge>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-3 py-2 font-medium">#</th><th className="text-left px-3 py-2 font-medium">Ingredient</th>
+              <th className="text-left px-3 py-2 font-medium">Quantity</th><th className="text-left px-3 py-2 font-medium">%</th>
+              <th className="text-left px-3 py-2 font-medium">Process Stage</th><th className="text-left px-3 py-2 font-medium">Loss %</th>
+              <th className="text-left px-3 py-2 font-medium">Critical</th><th className="text-left px-3 py-2 font-medium">Optional</th>
+            </tr></thead>
+            <tbody>
+              {formulaLines.map(l => (
+                <tr key={l.no} className="border-b hover:bg-muted/30">
+                  <td className="px-3 py-2 font-mono text-xs">{l.no}</td>
+                  <td className="px-3 py-2 text-xs font-medium">{l.ingredient}</td>
+                  <td className="px-3 py-2 font-mono text-xs"><span className="font-bold">{l.qty}</span> {l.uom}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{l.pct}%</td>
+                  <td className="px-3 py-2"><span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-mono">{l.stage}</span></td>
+                  <td className="px-3 py-2 font-mono text-xs"><span className={l.loss > 50 ? 'text-rose-600' : l.loss > 5 ? 'text-amber-600' : 'text-emerald-600'}>{l.loss}%</span></td>
+                  <td className="px-3 py-2">{l.critical ? <span className="text-rose-600 text-xs">🔴 Critical</span> : <span className="text-slate-400 text-xs">—</span>}</td>
+                  <td className="px-3 py-2">{l.optional ? <Badge variant="outline" className="text-[10px]">Optional</Badge> : <span className="text-slate-400 text-xs">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3 text-sm">Production Instructions (Chief Architect Recommendation)</h3>
+          <div className="space-y-2 text-xs">
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-blue-700">Mixing:</span> Combine cashew powder and sugar. Mix at 60°C for 10 minutes until smooth paste.</div>
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-orange-700">Cooking:</span> Cook mixture on medium flame for 35-45 minutes. Add ghee gradually. Target temperature: 110°C.</div>
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-cyan-700">Cooling:</span> Cool to 45°C on cooling table. Duration: 30 minutes.</div>
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-purple-700">Rolling:</span> Roll to 8mm thickness. Use rolling pin and cornstarch for dusting.</div>
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-amber-700">Cutting:</span> Cut into diamond shapes. Dimensions: 25mm × 25mm.</div>
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-emerald-700">Silver Leaf:</span> Apply silver vark carefully on top surface.</div>
+            <div className="p-2 bg-muted/50 rounded"><span className="font-semibold text-pink-700">Packing:</span> Pack in 500g boxes with food-grade liner. Apply label and barcode.</div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3 text-sm">Quality Checkpoints</h3>
+          <div className="space-y-2 text-xs">
+            {[
+              { stage: 'After Mixing', check: 'Moisture content < 8%', target: '< 8%' },
+              { stage: 'After Cooking', check: 'Temperature reached 110°C', target: '110°C ± 2°C' },
+              { stage: 'After Cooling', check: 'Surface temperature < 45°C', target: '< 45°C' },
+              { stage: 'After Rolling', check: 'Thickness 8mm ± 1mm', target: '8mm ± 1mm' },
+              { stage: 'After Cutting', check: 'Weight per piece 12g ± 1g', target: '12g ± 1g' },
+              { stage: 'Before Packing', check: 'Visual inspection — color, texture, silver leaf coverage', target: 'Pass/Fail' },
+              { stage: 'After Packing', check: 'Net weight 500g ± 5g, seal integrity', target: '500g ± 5g' },
+            ].map((c, i) => (
+              <div key={i} className="flex items-center gap-2 p-2 border rounded">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                <div className="flex-1"><p className="font-medium">{c.check}</p><p className="text-[10px] text-muted-foreground">{c.stage}</p></div>
+                <Badge variant="outline" className="text-[10px] font-mono">{c.target}</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 3: BOM Builder Module ─────────────────────────
+function BOMBuilderModule() {
+  const bomLines = [
+    { no: 1, component: 'Cashew (W320)', type: 'RAW_MATERIAL', qty: 55, uom: 'KG', scrap: 2, unitCost: 850, totalCost: 47300, alt: false },
+    { no: 2, component: 'Sugar', type: 'RAW_MATERIAL', qty: 35, uom: 'KG', scrap: 1, unitCost: 45, totalCost: 1575, alt: false },
+    { no: 3, component: 'Ghee', type: 'RAW_MATERIAL', qty: 3, uom: 'KG', scrap: 0.5, unitCost: 520, totalCost: 1560, alt: false },
+    { no: 4, component: 'Cardamom Powder', type: 'RAW_MATERIAL', qty: 0.5, uom: 'KG', scrap: 0, unitCost: 1200, totalCost: 600, alt: false },
+    { no: 5, component: 'Silver Leaf (Vark)', type: 'CONSUMABLE', qty: 50, uom: 'SHEETS', scrap: 5, unitCost: 2, totalCost: 100, alt: true },
+    { no: 6, component: 'Packaging Box 500g', type: 'PACKAGING', qty: 190, uom: 'PCS', scrap: 2, unitCost: 8, totalCost: 1520, alt: false },
+    { no: 7, component: 'Product Label', type: 'LABEL', qty: 190, uom: 'PCS', scrap: 1, unitCost: 0.5, totalCost: 95, alt: false },
+    { no: 8, component: 'Barcode Sticker', type: 'LABEL', qty: 190, uom: 'PCS', scrap: 1, unitCost: 0.3, totalCost: 57, alt: false },
+  ]
+
+  const totalCost = bomLines.reduce((a, l) => a + l.totalCost, 0)
+  const componentColors: Record<string, string> = { RAW_MATERIAL: 'bg-amber-100 text-amber-700', PACKAGING: 'bg-blue-100 text-blue-700', LABEL: 'bg-purple-100 text-purple-700', CONSUMABLE: 'bg-cyan-100 text-cyan-700', SEMI_FINISHED: 'bg-emerald-100 text-emerald-700' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">BOM Builder — Kaju Katli 500g</h2><p className="text-sm text-muted-foreground mt-1">Multi-level BOM · packaging BOM · alternate BOM · engineering BOM · manufacturing BOM</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />Add BOM Line</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'BOM Type', value: 'MANUFACTURING', color: 'text-blue-600' },
+          { label: 'BOM Version', value: 'v1.2', color: 'text-purple-600' },
+          { label: 'Total Lines', value: bomLines.length, color: 'text-amber-600' },
+          { label: 'Yield Output', value: '95 KG (190 pcs)', color: 'text-emerald-600' },
+          { label: 'Total Cost', value: `₹${totalCost.toLocaleString('en-IN')}`, color: 'text-rose-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-lg font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b flex items-center justify-between"><h3 className="font-semibold">Bill of Materials — Kaju Katli 500g (Batch: 95 KG / 190 boxes)</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">#</th><th className="text-left px-4 py-3 font-medium">Component</th>
+              <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Qty</th>
+              <th className="text-left px-4 py-3 font-medium">Scrap %</th><th className="text-left px-4 py-3 font-medium">Unit Cost</th>
+              <th className="text-left px-4 py-3 font-medium">Total Cost</th><th className="text-left px-4 py-3 font-medium">Alt</th>
+            </tr></thead>
+            <tbody>
+              {bomLines.map(l => (
+                <tr key={l.no} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs">{l.no}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{l.component}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${componentColors[l.type]}`}>{l.type.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className="font-bold">{l.qty}</span> {l.uom}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.scrap}%</td>
+                  <td className="px-4 py-3 font-mono text-xs">₹{l.unitCost}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">₹{l.totalCost.toLocaleString('en-IN')}</td>
+                  <td className="px-4 py-3">{l.alt ? <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-300">Has Alt</Badge> : <span className="text-slate-400 text-xs">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/50 font-bold">
+                <td colSpan={6} className="px-4 py-3 text-right text-xs">Total Manufacturing Cost:</td>
+                <td className="px-4 py-3 font-mono text-sm text-rose-700">₹{totalCost.toLocaleString('en-IN')}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="p-4 border-t flex items-center justify-between">
+          <div className="flex gap-4 text-xs">
+            <span>Cost per KG: <span className="font-bold text-rose-700">₹{(totalCost / 95).toFixed(2)}</span></span>
+            <span>Cost per Box (500g): <span className="font-bold text-rose-700">₹{(totalCost / 190).toFixed(2)}</span></span>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 4: Recipe Version History ─────────────────────
+function RecipeVersionHistoryModule() {
+  const versions = [
+    { version: 'v2.1', major: 2, minor: 1, date: '2026-06-01', status: 'ACTIVE', approvedBy: 'Rajesh Patil', changes: 'Reduced sugar by 2kg for health-conscious market. Updated cooking time from 50 to 45 min.', reason: 'Customer feedback on sweetness' },
+    { version: 'v2.0', major: 2, minor: 0, date: '2026-04-15', status: 'ARCHIVED', approvedBy: 'Rajesh Patil', changes: 'Major revision: New cashew supplier (W320 grade). Changed ghee from buffalo to cow. Updated mixing sequence.', reason: 'Supplier change + quality improvement' },
+    { version: 'v1.1', major: 1, minor: 1, date: '2026-02-20', status: 'ARCHIVED', approvedBy: 'Rajesh Patil', changes: 'Minor: Increased cardamom from 0.3 to 0.5 kg for better flavor.', reason: 'Flavor enhancement' },
+    { version: 'v1.0', major: 1, minor: 0, date: '2026-01-10', status: 'ARCHIVED', approvedBy: 'Rajesh Patil', changes: 'Initial recipe creation — Kaju Katli 500g standard formula.', reason: 'New product launch' },
+  ]
+
+  const statusColors: Record<string, string> = { ACTIVE: 'bg-emerald-100 text-emerald-700', ARCHIVED: 'bg-slate-100 text-slate-600', DRAFT: 'bg-amber-100 text-amber-700', APPROVED: 'bg-blue-100 text-blue-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Recipe Version History</h2><p className="text-sm text-muted-foreground mt-1">Complete audit trail of recipe changes · major/minor version · rollback · approval workflow</p></div>
+
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg">REC-KK-500</div>
+          <div><h3 className="font-semibold">Kaju Katli 500g — Version Timeline</h3><p className="text-xs text-muted-foreground">4 versions · Current: v2.1 (ACTIVE) · First created: Jan 10, 2026</p></div>
+        </div>
+      </Card>
+
+      <div className="relative pl-8">
+        <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-blue-200" />
+        {versions.map((v, i) => (
+          <div key={i} className="relative mb-6">
+            <div className={`absolute -left-5 top-2 h-4 w-4 rounded-full border-2 border-white ${v.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            <Card className={`p-4 ${v.status === 'ACTIVE' ? 'border-emerald-300 bg-emerald-50/30' : ''}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono font-bold text-lg">{v.version}</span>
+                  <span className={`text-[10px] px-2 py-1 rounded ${statusColors[v.status]}`}>{v.status}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{v.date}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">Approved by: {v.approvedBy}</p>
+              <div className="text-xs space-y-1">
+                <p><span className="font-semibold text-blue-700">Changes:</span> {v.changes}</p>
+                <p><span className="font-semibold text-amber-700">Reason:</span> {v.reason}</p>
+              </div>
+              {v.status !== 'ACTIVE' && <Button size="sm" variant="outline" className="mt-3 h-7 text-xs"><History className="mr-1 h-3 w-3" />Rollback to this version</Button>}
+            </Card>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 5: Yield Dashboard ────────────────────────────
+function YieldDashboardModule() {
+  const yieldData = [
+    { recipe: 'Kaju Katli 500g', batch: 'BATCH-2026-A018', input: 100, output: 95, expected: 95, actual: 95, variance: 0, loss: 5, reason: null, date: 'Jul 9' },
+    { recipe: 'Kaju Katli 500g', batch: 'BATCH-2026-A017', input: 100, output: 93, expected: 95, actual: 93, variance: -2, loss: 7, reason: 'Overcooking — 5 min extra', date: 'Jul 8' },
+    { recipe: 'Kaju Katli 500g', batch: 'BATCH-2026-A016', input: 100, output: 96, expected: 95, actual: 96, variance: 1, loss: 4, reason: null, date: 'Jul 7' },
+    { recipe: 'Mysore Pak 250g', batch: 'BATCH-2026-B042', input: 50, output: 45, expected: 46, actual: 90, variance: -2, loss: 5, reason: 'Ghee measurement error', date: 'Jul 8' },
+    { recipe: 'Shwet Idli Batter', batch: 'BATCH-2026-C015', input: 200, output: 196, expected: 98, actual: 98, variance: 0, loss: 4, reason: null, date: 'Jul 9' },
+    { recipe: 'Mixed Namkeen 500g', batch: 'BATCH-2026-D028', input: 150, output: 144, expected: 96, actual: 96, variance: 0, loss: 6, reason: null, date: 'Jul 9' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Yield Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Input vs output · expected vs actual yield · variance · loss analysis</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Avg Actual Yield', value: '94.8%', color: 'text-emerald-600' },
+          { label: 'Avg Expected Yield', value: '95.2%', color: 'text-blue-600' },
+          { label: 'Avg Variance', value: '-0.4%', color: 'text-amber-600' },
+          { label: 'Total Loss (kg)', value: '31', color: 'text-rose-600' },
+          { label: 'Within Spec', value: '5/6', color: 'text-emerald-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Yield History — Recent Batches</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Recipe</th><th className="text-left px-4 py-3 font-medium">Batch #</th>
+              <th className="text-left px-4 py-3 font-medium">Input (kg)</th><th className="text-left px-4 py-3 font-medium">Output (kg)</th>
+              <th className="text-left px-4 py-3 font-medium">Expected %</th><th className="text-left px-4 py-3 font-medium">Actual %</th>
+              <th className="text-left px-4 py-3 font-medium">Variance</th><th className="text-left px-4 py-3 font-medium">Loss (kg)</th>
+              <th className="text-left px-4 py-3 font-medium">Reason</th><th className="text-left px-4 py-3 font-medium">Date</th>
+            </tr></thead>
+            <tbody>
+              {yieldData.map((y, i) => (
+                <tr key={i} className={`border-b hover:bg-muted/30 ${y.variance < -1 ? 'bg-rose-50/30' : ''}`}>
+                  <td className="px-4 py-3 text-xs font-medium">{y.recipe}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{y.batch}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{y.input}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{y.output}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{y.expected}%</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={y.actual >= y.expected ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold'}>{y.actual}%</span></td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={y.variance === 0 ? 'text-slate-500' : y.variance < 0 ? 'text-rose-600' : 'text-emerald-600'}>{y.variance > 0 ? '+' : ''}{y.variance}%</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">{y.loss}</td>
+                  <td className="px-4 py-3 text-xs">{y.reason ? <span className="text-rose-600">{y.reason}</span> : <span className="text-emerald-600">✓ Normal</span>}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{y.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 6: Batch Scaling Engine ───────────────────────
+function BatchScalingModule() {
+  const [targetQty, setTargetQty] = useState('250')
+  const standardRecipe = [
+    { ingredient: 'Cashew (W320)', stdQty: 55, uom: 'KG' },
+    { ingredient: 'Sugar', stdQty: 35, uom: 'KG' },
+    { ingredient: 'Ghee', stdQty: 3, uom: 'KG' },
+    { ingredient: 'Cardamom Powder', stdQty: 0.5, uom: 'KG' },
+    { ingredient: 'Silver Leaf', stdQty: 50, uom: 'SHEETS' },
+    { ingredient: 'Water', stdQty: 1.5, uom: 'LTR' },
+  ]
+  const scaleFactor = parseFloat(targetQty) / 95 // standard yield is 95kg
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Batch Scaling Engine</h2><p className="text-sm text-muted-foreground mt-1">Auto-scale recipes · scale up · scale down · min/max batch limits</p></div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div><Label className="text-xs">Recipe</Label><div className="mt-1 p-2 bg-white border rounded-md font-mono text-sm">REC-KK-500 — Kaju Katli</div></div>
+          <div><Label className="text-xs">Standard Yield</Label><div className="mt-1 p-2 bg-white border rounded-md font-mono text-sm">95 KG</div></div>
+          <div><Label className="text-xs">Target Batch Quantity (KG)</Label><Input type="number" value={targetQty} onChange={e => setTargetQty(e.target.value)} className="mt-1 font-mono text-lg font-bold" /></div>
+          <div><Button size="sm" className="w-full"><Calculator className="mr-2 h-4 w-4" />Scale Recipe</Button></div>
+        </div>
+        <div className="mt-3 flex gap-4 text-xs">
+          <span>Scale Factor: <span className="font-mono font-bold">{scaleFactor.toFixed(3)}x</span></span>
+          <span>Min Batch: <span className="font-mono">25 KG</span></span>
+          <span>Max Batch: <span className="font-mono">500 KG</span></span>
+          <span className={parseFloat(targetQty) >= 25 && parseFloat(targetQty) <= 500 ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold'}>{parseFloat(targetQty) >= 25 && parseFloat(targetQty) <= 500 ? '✓ Within limits' : '✗ Outside limits'}</span>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Scaled Formula — Target: {targetQty} KG</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">#</th><th className="text-left px-4 py-3 font-medium">Ingredient</th>
+              <th className="text-left px-4 py-3 font-medium">Standard Qty</th><th className="text-left px-4 py-3 font-medium">Scale Factor</th>
+              <th className="text-left px-4 py-3 font-medium">Scaled Qty</th><th className="text-left px-4 py-3 font-medium">UOM</th>
+            </tr></thead>
+            <tbody>
+              {standardRecipe.map((l, i) => (
+                <tr key={i} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs">{i + 1}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{l.ingredient}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.stdQty}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-blue-600">{scaleFactor.toFixed(3)}x</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-amber-700">{(l.stdQty * scaleFactor).toFixed(2)}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.uom}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/50 font-bold">
+                <td colSpan={2} className="px-4 py-3 text-right text-xs">Total Expected Output:</td>
+                <td className="px-4 py-3 font-mono">95 KG</td>
+                <td></td>
+                <td className="px-4 py-3 font-mono text-amber-700">{targetQty} KG</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 8: Nutrition & Allergen Center ────────────────
+function NutritionCenterModule() {
+  const products = [
+    { product: 'Kaju Katli 500g', serving: 100, calories: 462, protein: 8.5, fat: 21.3, carbs: 62.1, sugar: 42.5, fiber: 2.8, sodium: 12, allergens: ['NUTS', 'MILK'] },
+    { product: 'Mysore Pak 250g', serving: 100, calories: 498, protein: 5.2, fat: 28.4, carbs: 55.8, sugar: 38.2, fiber: 1.2, sodium: 85, allergens: ['GLUTEN', 'MILK'] },
+    { product: 'Shwet Idli Batter 1kg', serving: 100, calories: 154, protein: 5.1, fat: 1.2, carbs: 31.5, sugar: 0.8, fiber: 1.8, sodium: 245, allergens: ['GLUTEN'] },
+    { product: 'Mixed Namkeen 500g', serving: 100, calories: 512, protein: 9.8, fat: 28.5, carbs: 54.2, sugar: 3.5, fiber: 4.2, sodium: 856, allergens: ['GLUTEN', 'PEANUTS', 'SOY'] },
+    { product: 'Motichoor Laddu 1kg', serving: 100, calories: 425, protein: 6.5, fat: 18.2, carbs: 58.5, sugar: 45.2, fiber: 1.5, sodium: 15, allergens: ['MILK', 'GLUTEN'] },
+  ]
+
+  const allergenColors: Record<string, string> = { MILK: 'bg-blue-100 text-blue-700', NUTS: 'bg-rose-100 text-rose-700', GLUTEN: 'bg-amber-100 text-amber-700', PEANUTS: 'bg-orange-100 text-orange-700', SOY: 'bg-purple-100 text-purple-700', SESAME: 'bg-cyan-100 text-cyan-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Nutrition & Allergen Center</h2><p className="text-sm text-muted-foreground mt-1">Per-serving nutrition · allergen tracking · automatic label generation (future)</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Products with Nutrition', value: products.length, color: 'text-blue-600' },
+          { label: 'Allergens Tracked', value: '6 types', color: 'text-rose-600' },
+          { label: 'High-Risk Allergens', value: products.filter(p => p.allergens.includes('NUTS')).length, color: 'text-orange-600' },
+          { label: 'Avg Calories/100g', value: Math.round(products.reduce((a, p) => a + p.calories, 0) / products.length), color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Nutrition Profiles (per 100g serving)</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Product</th>
+              <th className="text-left px-4 py-3 font-medium">Calories</th><th className="text-left px-4 py-3 font-medium">Protein</th>
+              <th className="text-left px-4 py-3 font-medium">Fat</th><th className="text-left px-4 py-3 font-medium">Carbs</th>
+              <th className="text-left px-4 py-3 font-medium">Sugar</th><th className="text-left px-4 py-3 font-medium">Fiber</th>
+              <th className="text-left px-4 py-3 font-medium">Sodium</th><th className="text-left px-4 py-3 font-medium">Allergens</th>
+            </tr></thead>
+            <tbody>
+              {products.map((p, i) => (
+                <tr key={i} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 text-xs font-medium">{p.product}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{p.calories} kcal</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.protein}g</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.fat}g</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.carbs}g</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.sugar}g</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.fiber}g</td>
+                  <td className="px-4 py-3 font-mono text-xs">{p.sodium}mg</td>
+                  <td className="px-4 py-3"><div className="flex gap-1 flex-wrap">{p.allergens.map(a => <span key={a} className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${allergenColors[a] || 'bg-slate-100'}`}>{a}</span>)}</div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 9: Cost Roll-Up Engine ────────────────────────
+function CostRollupModule() {
+  const [selectedRecipe, setSelectedRecipe] = useState('REC-KK-500')
+  const costBreakdown = [
+    { component: 'Ingredient Cost', amount: 51635, pct: 78, color: 'bg-amber-500', icon: <Package className="h-4 w-4" /> },
+    { component: 'Packaging Cost', amount: 1672, pct: 3, color: 'bg-blue-500', icon: <Box className="h-4 w-4" /> },
+    { component: 'Processing Cost', amount: 5800, pct: 9, color: 'bg-orange-500', icon: <Zap className="h-4 w-4" /> },
+    { component: 'Labor Cost', amount: 4200, pct: 6, color: 'bg-purple-500', icon: <Users className="h-4 w-4" /> },
+    { component: 'Overhead Cost', amount: 2893, pct: 4, color: 'bg-slate-500', icon: <Server className="h-4 w-4" /> },
+  ]
+  const totalCost = costBreakdown.reduce((a, c) => a + c.amount, 0)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Cost Roll-Up Engine</h2><p className="text-sm text-muted-foreground mt-1">Ingredient → packaging → processing → labor → overhead → total manufacturing cost</p></div>
+        <select value={selectedRecipe} onChange={e => setSelectedRecipe(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+          <option value="REC-KK-500">REC-KK-500 — Kaju Katli 500g</option>
+          <option value="REC-IB-1K">REC-IB-1K — Shwet Idli Batter</option>
+          <option value="REC-NM-500">REC-NM-500 — Mixed Namkeen</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Manufacturing Cost', value: `₹${totalCost.toLocaleString('en-IN')}`, color: 'text-rose-600' },
+          { label: 'Cost per KG', value: `₹${(totalCost / 95).toFixed(2)}`, color: 'text-amber-600' },
+          { label: 'Cost per Box (500g)', value: `₹${(totalCost / 190).toFixed(2)}`, color: 'text-purple-600' },
+          { label: 'Selling Price (per box)', value: '₹350', color: 'text-emerald-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Cost Breakdown — {selectedRecipe}</h3>
+          <div className="space-y-3">
+            {costBreakdown.map((c, i) => (
+              <div key={i}>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className={`h-8 w-8 rounded-lg ${c.color} text-white flex items-center justify-center`}>{c.icon}</div>
+                  <div className="flex-1"><span className="text-xs font-medium">{c.component}</span></div>
+                  <span className="font-mono text-xs font-bold">₹{c.amount.toLocaleString('en-IN')}</span>
+                  <span className="text-xs text-muted-foreground w-10 text-right">{c.pct}%</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden ml-11"><div className={`h-full ${c.color}`} style={{ width: `${c.pct * 2}%` }} /></div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t flex justify-between items-center">
+            <span className="font-semibold text-sm">Total Manufacturing Cost</span>
+            <span className="font-mono text-lg font-bold text-rose-700">₹{totalCost.toLocaleString('en-IN')}</span>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Profitability Analysis</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span>Manufacturing Cost</span><span className="font-mono font-bold text-rose-600">₹{(totalCost / 190).toFixed(2)}/box</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span>Selling Price</span><span className="font-mono font-bold text-emerald-600">₹350.00/box</span></div>
+            <div className="flex justify-between p-2 bg-emerald-50 rounded border border-emerald-200"><span className="font-semibold">Gross Profit per Box</span><span className="font-mono font-bold text-emerald-700">₹{(350 - totalCost / 190).toFixed(2)}</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span>Gross Margin</span><span className="font-mono font-bold text-emerald-700">{((350 - totalCost / 190) / 350 * 100).toFixed(1)}%</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span>Batch (190 boxes)</span><span className="font-mono font-bold">₹{((350 - totalCost / 190) * 190).toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between p-2 bg-muted/50 rounded"><span>Monthly (500 batches)</span><span className="font-mono font-bold text-emerald-700">₹{(((350 - totalCost / 190) * 190 * 500) / 100000).toFixed(1)}L</span></div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button size="sm" variant="outline" className="flex-1">Simulate Cost Change</Button>
+            <Button size="sm" variant="outline" className="flex-1">View History</Button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Recipe Approval Center ─────────────────────────────
+function RecipeApprovalModule() {
+  const pendingApprovals = [
+    { code: 'REC-GJ-250', name: 'Gulab Jamun 250g', version: 'v1.4', submittedBy: 'Priya Nair', submittedAt: '2 hours ago', changes: 'Reduced khoya from 40kg to 38kg. Increased milk powder from 5kg to 7kg. Updated frying temperature from 180°C to 170°C.', reason: 'Cost optimization — khoya price increased 15%', impact: 'Cost savings: ₹450/batch. Quality: taste test passed.', risk: 'LOW' },
+    { code: 'REC-DF-1K', name: 'Dry Fruit Mix 1kg', version: 'v1.0', submittedBy: 'Anil Reddy', submittedAt: '5 hours ago', changes: 'New recipe — initial creation. 8 ingredients including almond, cashew, pistachio, walnut, raisin, apricot, fig, saffron.', reason: 'New product launch for festive season', impact: 'Expected revenue: ₹8L/month. Production capacity: 200kg/day.', risk: 'MEDIUM' },
+    { code: 'REC-KK-500', name: 'Kaju Katli 500g', version: 'v3.0', submittedBy: 'Rajesh Patil', submittedAt: '1 day ago', changes: 'Major revision: Switching from W320 to W240 cashew grade. New supplier (Sri Lankan import). Sugar reduction from 35kg to 33kg.', reason: 'Premium product positioning — larger cashew pieces visible', impact: 'Cost increase: ₹2,800/batch. Selling price increase: ₹50/box (₹350→₹400). Quality: enhanced visual appeal.', risk: 'HIGH' },
+  ]
+
+  const riskColors: Record<string, string> = { LOW: 'bg-emerald-100 text-emerald-700', MEDIUM: 'bg-amber-100 text-amber-700', HIGH: 'bg-rose-100 text-rose-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Recipe Approval Center</h2><p className="text-sm text-muted-foreground mt-1">Review · approve · reject recipe versions · supervisor workflow · audit trail</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Pending Approvals', value: pendingApprovals.length, color: 'text-amber-600' },
+          { label: 'High Risk', value: pendingApprovals.filter(a => a.risk === 'HIGH').length, color: 'text-rose-600' },
+          { label: 'Approved (30d)', value: 18, color: 'text-emerald-600' },
+          { label: 'Rejected (30d)', value: 3, color: 'text-slate-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="space-y-3">
+        {pendingApprovals.map(a => (
+          <Card key={a.code} className="p-4">
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <span className="font-mono text-xs font-semibold text-blue-700">{a.code}</span>
+                  <Badge variant="outline" className="text-[10px]">{a.version}</Badge>
+                  <span className="text-sm font-semibold">{a.name}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded ${riskColors[a.risk]}`}>{a.risk} RISK</span>
+                </div>
+                <div className="text-xs space-y-1">
+                  <p><span className="text-muted-foreground">Submitted by:</span> {a.submittedBy} · {a.submittedAt}</p>
+                  <p><span className="font-semibold text-blue-700">Changes:</span> {a.changes}</p>
+                  <p><span className="font-semibold text-amber-700">Reason:</span> {a.reason}</p>
+                  <p><span className="font-semibold text-emerald-700">Impact:</span> {a.impact}</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button size="sm" className="h-8"><CheckCircle2 className="mr-1 h-4 w-4" />Approve</Button>
+                <Button size="sm" variant="destructive" className="h-8"><X className="mr-1 h-4 w-4" />Reject</Button>
+                <Button size="sm" variant="outline" className="h-8">Request Changes</Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-amber-500 flex items-center justify-center text-white"><Award className="h-5 w-5" /></div>
+          <div>
+            <h3 className="font-semibold text-sm">Validation Rule: Only Approved Recipes in Production</h3>
+            <p className="text-xs text-muted-foreground mt-1">Only APPROVED recipe versions can be used in production. Every recipe change creates a new version and audit record. Recipe locking prevents unauthorized changes during active production runs.</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -15707,6 +16365,7 @@ export default function Home() {
     missioncontrol: 'Warehouse Mission Control', kpidashboard: 'KPI Dashboard', operatoranalytics: 'Operator Analytics', wareheatanalytics: 'Equipment Analytics+', heatmaps: 'Warehouse Heat Maps', costdashboard: 'Warehouse Cost Dashboard', slaanalytics: 'SLA Analytics', execreports: 'Executive Reports',
     wmsmissioncontrol: 'WMS Mission Control', controltower: 'Enterprise Control Tower', digitaltwin: 'Warehouse Digital Twin', aioperations: 'AI Operations Center', execdashboard: 'Executive Command Dashboard', alertcenter: 'Enterprise Alert Center', recoverydashboard: 'Disaster Recovery Dashboard', enterprisenalytics: 'Enterprise Analytics',
     plantmaster: 'Plant Master', productiondept: 'Production Departments', productionlines: 'Production Lines', workcenters: 'Work Centers', mfgcalendar: 'Manufacturing Calendar', mfgresources: 'Production Resources', plantconfig: 'Plant Configuration', productiondashboard: 'Production Dashboard',
+    recipemaster: 'Recipe Master', formulabuilder: 'Formula Builder', bombuilder: 'BOM Builder', recipeversions: 'Recipe Version History', yielddashboard: 'Yield Dashboard', batchscaling: 'Batch Scaling Engine', nutritioncenter: 'Nutrition & Allergen Center', costrollup: 'Cost Roll-Up Engine', recipeapproval: 'Recipe Approval Center',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -15772,7 +16431,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 34 · 291 Tables · Part 5 MES</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 35 · 303 Tables · Part 5 MES</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -15866,11 +16525,20 @@ export default function Home() {
             {activeModule === 'mfgresources' && <ProductionResourcesModule />}
             {activeModule === 'plantconfig' && <PlantConfigModule />}
             {activeModule === 'productiondashboard' && <ProductionDashboardModule />}
+            {activeModule === 'recipemaster' && <RecipeMasterModule />}
+            {activeModule === 'formulabuilder' && <FormulaBuilderModule />}
+            {activeModule === 'bombuilder' && <BOMBuilderModule />}
+            {activeModule === 'recipeversions' && <RecipeVersionHistoryModule />}
+            {activeModule === 'yielddashboard' && <YieldDashboardModule />}
+            {activeModule === 'batchscaling' && <BatchScalingModule />}
+            {activeModule === 'nutritioncenter' && <NutritionCenterModule />}
+            {activeModule === 'costrollup' && <CostRollupModule />}
+            {activeModule === 'recipeapproval' && <RecipeApprovalModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-34 · Part 4 WMS 100% + Part 5 MES Started · 291 Database Tables · Manufacturing Foundation</p>
+              <p className="mt-1">Sprints 1-35 · Part 5 MES · 303 Database Tables · Recipe & Formula Engine</p>
             </div>
           </main>
         </div>

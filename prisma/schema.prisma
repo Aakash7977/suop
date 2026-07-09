@@ -10359,3 +10359,349 @@ model PlantConfiguration {
 
   @@map("plant_configurations")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 35 — RECIPE, FORMULA, BOM & VERSION MANAGEMENT (PART 5)
+// Epic 1: Recipe · Epic 2: Formula · Epic 3: BOM · Epic 4: Version
+// Epic 5: Yield · Epic 6: Batch Scaling · Epic 7: Alternate · Epic 8: Nutrition · Epic 9: Cost
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Recipe Master ──────────────────────────────
+model Recipe {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recipeCode          String   @unique @map("recipe_code")
+  recipeName          String   @map("recipe_name")
+  // ─── Product Link ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  // ─── Category ───
+  productType         String   @map("product_type") // TRADITIONAL_SWEETS, MILK_SWEETS, DRY_FRUIT_SWEETS, NAMKEEN, SNACKS, READY_TO_EAT, IDLI_BATTER, DOSA_BATTER, PACKAGING_KITS, SEMI_FINISHED
+  // ─── Plant ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantName           String?  @map("plant_name")
+  // ─── Yield ───
+  yieldQuantity       Decimal  @db.Decimal(12, 3) @map("yield_quantity")
+  yieldUom            String   @default("KG") @map("yield_uom")
+  // ─── Production Instructions (Chief Architect Recommendation) ───
+  productionInstructions String? @map("production_instructions")
+  qualityCheckpoints  String[] @default([]) @map("quality_checkpoints")
+  packagingInstructions String? @map("packaging_instructions")
+  // ─── Status ───
+  status              String   @default("DRAFT") // DRAFT, UNDER_REVIEW, APPROVED, ACTIVE, INACTIVE, ARCHIVED
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Effective ───
+  effectiveFrom       DateTime? @map("effective_from")
+  effectiveTo         DateTime? @map("effective_to")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  versions            RecipeVersion[]
+  formulas            Formula[]
+  boms                BillOfMaterial[]
+
+  @@map("recipes")
+  @@index([productType, status], map: "idx_rec_type_status")
+  @@index([status], map: "idx_rec_status")
+}
+
+model RecipeVersion {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recipeId            String   @db.Uuid @map("recipe_id")
+  recipeCode          String   @map("recipe_code")
+  // ─── Version ───
+  majorVersion        Int      @default(1) @map("major_version")
+  minorVersion        Int      @default(0) @map("minor_version")
+  versionLabel        String   @map("version_label") // e.g. "1.0", "1.1", "2.0"
+  // ─── Change ───
+  changeSummary       String?  @map("change_summary")
+  changeReason        String?  @map("change_reason")
+  // ─── Snapshot ───
+  recipeSnapshot      Json     @map("recipe_snapshot") // full recipe + formula + BOM at this version
+  // ─── Status ───
+  status              String   @default("DRAFT") // DRAFT, UNDER_REVIEW, APPROVED, ACTIVE, ARCHIVED
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Effective ───
+  effectiveFrom       DateTime? @map("effective_from")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  recipe              Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@map("recipe_versions")
+  @@unique([recipeId, majorVersion, minorVersion], map: "uq_rv_recipe_version")
+  @@index([recipeId, createdAt], map: "idx_rv_recipe_time")
+}
+
+// ─── Epic 2: Formula Management ────────────────────────
+model Formula {
+  id                  String   @id @default(uuid()) @db.Uuid
+  formulaCode         String   @unique @map("formula_code")
+  formulaName         String   @map("formula_name")
+  // ─── Recipe Link ───
+  recipeId            String   @db.Uuid @map("recipe_id")
+  recipeCode          String   @map("recipe_code")
+  recipeVersion       String   @map("recipe_version")
+  // ─── Type ───
+  formulaType         String   @default("FIXED") // FIXED, PERCENTAGE, RATIO, CONDITIONAL
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  recipe              Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  lines               FormulaLine[]
+
+  @@map("formulas")
+  @@index([recipeId], map: "idx_fml_recipe")
+}
+
+model FormulaLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  formulaId           String   @db.Uuid @map("formula_id")
+  lineNo              Int      @map("line_no")
+  // ─── Ingredient ───
+  ingredientId        String?  @db.Uuid @map("ingredient_id")
+  ingredientSku       String   @map("ingredient_sku")
+  ingredientName      String   @map("ingredient_name")
+  // ─── Quantity ───
+  quantity            Decimal  @db.Decimal(12, 3) @default(0)
+  uom                 String   @default("KG")
+  percentage          Decimal? @db.Decimal(5, 2) @map("percentage") // for percentage formulas
+  // ─── Process Stage ───
+  processStage        String   @map("process_stage") // MIXING, COOKING, COOLING, ROLLING, CUTTING, PACKING, etc.
+  // ─── Loss ───
+  lossPercentage      Decimal  @db.Decimal(5, 2) @default(0) @map("loss_percentage")
+  // ─── Flags ───
+  isCritical          Boolean  @default(false) @map("is_critical")
+  isOptional          Boolean  @default(false) @map("is_optional")
+  // ─── Notes ───
+  notes               String?
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  formula             Formula @relation(fields: [formulaId], references: [id], onDelete: Cascade)
+
+  @@map("formula_lines")
+  @@index([formulaId, lineNo], map: "idx_fl_formula_line")
+}
+
+// ─── Epic 3: Bill of Materials (BOM) ───────────────────
+model BillOfMaterial {
+  id                  String   @id @default(uuid()) @db.Uuid
+  bomCode             String   @unique @map("bom_code")
+  // ─── Recipe Link ───
+  recipeId            String   @db.Uuid @map("recipe_id")
+  recipeCode          String   @map("recipe_code")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  // ─── Type ───
+  bomType             String   @default("MANUFACTURING") // SINGLE_LEVEL, MULTI_LEVEL, PHANTOM, PACKAGING, ALTERNATE, ENGINEERING, MANUFACTURING
+  // ─── Version ───
+  version             Int      @default(1)
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  recipe              Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  lines               BOMLine[]
+
+  @@map("bill_of_materials")
+  @@index([recipeId], map: "idx_bom_recipe")
+  @@index([bomType, status], map: "idx_bom_type_status")
+}
+
+model BOMLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  bomId               String   @db.Uuid @map("bom_id")
+  lineNo              Int      @map("line_no")
+  // ─── Component ───
+  componentId         String?  @db.Uuid @map("component_id")
+  componentSku        String   @map("component_sku")
+  componentName       String   @map("component_name")
+  componentType       String   @default("RAW_MATERIAL") // RAW_MATERIAL, SEMI_FINISHED, PACKAGING, LABEL, CONSUMABLE
+  // ─── Quantity ───
+  quantity            Decimal  @db.Decimal(12, 3) @default(0)
+  uom                 String   @default("KG")
+  // ─── Loss ───
+  scrapPercentage     Decimal  @db.Decimal(5, 2) @default(0) @map("scrap_percentage")
+  // ─── Cost ───
+  unitCost            Decimal? @db.Decimal(10, 2) @map("unit_cost")
+  totalCost           Decimal? @db.Decimal(12, 2) @map("total_cost")
+  // ─── Alternate ───
+  hasAlternate        Boolean  @default(false) @map("has_alternate")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  bom                 BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
+
+  @@map("bom_lines")
+  @@index([bomId, lineNo], map: "idx_bl_bom_line")
+}
+
+// ─── Epic 5: Yield Management ──────────────────────────
+model YieldRule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recipeId            String   @db.Uuid @map("recipe_id")
+  recipeCode          String   @map("recipe_code")
+  // ─── Yield ───
+  expectedYieldPct    Decimal  @db.Decimal(5, 2) @map("expected_yield_pct") // e.g. 95% means 5% loss
+  expectedLossPct     Decimal  @db.Decimal(5, 2) @map("expected_loss_pct")
+  // ─── Limits ───
+  minYieldPct         Decimal  @db.Decimal(5, 2) @default(90) @map("min_yield_pct")
+  maxYieldPct         Decimal  @db.Decimal(5, 2) @default(100) @map("max_yield_pct")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("yield_rules")
+  @@unique([recipeId], map: "uq_yr_recipe")
+}
+
+model YieldHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recipeId            String   @db.Uuid @map("recipe_id")
+  recipeCode          String   @map("recipe_code")
+  // ─── Batch ───
+  batchNumber         String   @map("batch_number")
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  // ─── Weights ───
+  inputWeightKg       Decimal  @db.Decimal(12, 3) @map("input_weight_kg")
+  outputWeightKg      Decimal  @db.Decimal(12, 3) @map("output_weight_kg")
+  // ─── Yield ───
+  expectedYieldPct    Decimal  @db.Decimal(5, 2) @map("expected_yield_pct")
+  actualYieldPct      Decimal  @db.Decimal(5, 2) @map("actual_yield_pct")
+  yieldVariancePct    Decimal  @db.Decimal(5, 2) @map("yield_variance_pct")
+  // ─── Loss ───
+  lossWeightKg        Decimal  @db.Decimal(12, 3) @map("loss_weight_kg")
+  lossReason          String?  @map("loss_reason")
+  // ─── Audit ───
+  productionDate      DateTime @map("production_date")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("yield_history")
+  @@index([recipeId, productionDate], map: "idx_yh_recipe_date")
+}
+
+// ─── Epic 7: Alternate Ingredients ─────────────────────
+model AlternateIngredient {
+  id                  String   @id @default(uuid()) @db.Uuid
+  // ─── Primary ───
+  primaryIngredientId    String?  @db.Uuid @map("primary_ingredient_id")
+  primaryIngredientSku   String   @map("primary_ingredient_sku")
+  primaryIngredientName  String   @map("primary_ingredient_name")
+  // ─── Alternate ───
+  alternateIngredientId    String?  @db.Uuid @map("alternate_ingredient_id")
+  alternateIngredientSku   String   @map("alternate_ingredient_sku")
+  alternateIngredientName  String   @map("alternate_ingredient_name")
+  // ─── Replacement ───
+  replacementRatio    Decimal  @db.Decimal(8, 4) @default(1) @map("replacement_ratio") // e.g. 1.1 means 1.1kg alternate = 1kg primary
+  // ─── Quality ───
+  qualityApprovalReq  Boolean  @default(true) @map("quality_approval_req")
+  qualityApprovedBy   String?  @map("quality_approved_by")
+  qualityApprovedAt   DateTime? @map("quality_approved_at")
+  // ─── Cost ───
+  costDifferencePct   Decimal? @db.Decimal(5, 2) @map("cost_difference_pct")
+  // ─── Supplier ───
+  supplierRestrictions String? @map("supplier_restrictions")
+  // ─── Status ───
+  status              String   @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("alternate_ingredients")
+  @@index([primaryIngredientSku, status], map: "idx_ai_primary_status")
+}
+
+// ─── Epic 8: Allergen & Nutrition Management ───────────
+model Allergen {
+  id                  String   @id @default(uuid()) @db.Uuid
+  allergenCode        String   @unique @map("allergen_code")
+  allergenName        String   @map("allergen_name")
+  // ─── Type ───
+  allergenType        String   @map("allergen_type") // MILK, NUTS, SOY, GLUTEN, SESAME, PEANUTS, EGG, FISH, SHELLFISH, SULPHITE
+  // ─── Severity ───
+  severity            String   @default("HIGH") // HIGH, MEDIUM, LOW
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("allergens")
+  @@index([allergenType], map: "idx_alg_type")
+}
+
+model NutritionProfile {
+  id                  String   @id @default(uuid()) @db.Uuid
+  // ─── Product/Recipe Link ───
+  recipeId            String?  @db.Uuid @map("recipe_id")
+  recipeCode          String?  @map("recipe_code")
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String?  @map("product_sku")
+  // ─── Serving ───
+  servingSize         Decimal  @db.Decimal(8, 2) @default(100) @map("serving_size")
+  servingUom          String   @default("G") @map("serving_uom")
+  // ─── Nutrition (per serving) ───
+  calories            Decimal? @db.Decimal(8, 2)
+  protein             Decimal? @db.Decimal(8, 2)
+  fat                 Decimal? @db.Decimal(8, 2)
+  saturatedFat        Decimal? @db.Decimal(8, 2) @map("saturated_fat")
+  carbohydrates       Decimal? @db.Decimal(8, 2)
+  sugar               Decimal? @db.Decimal(8, 2)
+  fiber               Decimal? @db.Decimal(8, 2)
+  sodium              Decimal? @db.Decimal(8, 2)
+  // ─── Allergens ───
+  allergens           String[] @default([]) // ["MILK", "NUTS", "GLUTEN"]
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("nutrition_profiles")
+  @@index([recipeId], map: "idx_np_recipe")
+  @@index([productId], map: "idx_np_product")
+}
+
+// ─── Epic 9: Cost Roll-Up ──────────────────────────────
+model CostRollup {
+  id                  String   @id @default(uuid()) @db.Uuid
+  rollupCode          String   @unique @map("rollup_code")
+  // ─── Recipe ───
+  recipeId            String   @db.Uuid @map("recipe_id")
+  recipeCode          String   @map("recipe_code")
+  recipeVersion       String   @map("recipe_version")
+  // ─── Cost Breakdown ───
+  ingredientCost      Decimal  @db.Decimal(12, 2) @default(0) @map("ingredient_cost")
+  packagingCost       Decimal  @db.Decimal(12, 2) @default(0) @map("packaging_cost")
+  processingCost      Decimal  @db.Decimal(12, 2) @default(0) @map("processing_cost")
+  laborCost           Decimal  @db.Decimal(12, 2) @default(0) @map("labor_cost")
+  overheadCost        Decimal  @db.Decimal(12, 2) @default(0) @map("overhead_cost")
+  // ─── Total ───
+  totalManufacturingCost Decimal @db.Decimal(12, 2) @default(0) @map("total_manufacturing_cost")
+  costPerUnit         Decimal  @db.Decimal(10, 2) @map("cost_per_unit")
+  costPerKg           Decimal  @db.Decimal(10, 2) @map("cost_per_kg")
+  // ─── Type ───
+  costType            String   @default("CURRENT") // CURRENT, FUTURE, HISTORICAL, SIMULATION
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("cost_rollups")
+  @@index([recipeId, costType], map: "idx_cr_recipe_type")
+  @@index([calculatedAt], map: "idx_cr_calculated")
+}

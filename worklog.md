@@ -2208,3 +2208,45 @@ Stage Summary:
 - Total project state: Sprints 1-34 complete, 291 database tables, 63+ ERP modules + mobile app + React Native app
 - Chief Architect Recommendation implemented: Work Center approach (Mixing → Cooking → Cooling → Rolling → Cutting → Inspection → Packing) for precise tracking, better utilization, accurate costing, bottleneck analysis, food safety traceability
 - Next: Sprint 35 — Recipe, Formula, BOM & Version Management (critical for Sudhamrit — the digital brain of manufacturing)
+
+---
+Task ID: 35
+Agent: Main Agent (Super Z)
+Task: Sprint 35 — Enterprise Recipe, Formula, BOM & Version Management Engine (Part 5 MES Sprint 2 of 15)
+
+Work Log:
+- Added 12 new Sprint 35 Prisma models (303 total tables):
+  * Epic 1: `Recipe` (version control, approval workflow, production instructions, quality checkpoints), `RecipeVersion` (major/minor version, snapshot, rollback)
+  * Epic 2: `Formula` (FIXED/PERCENTAGE/RATIO/CONDITIONAL), `FormulaLine` (ingredient, quantity, process stage, loss %, critical/optional)
+  * Epic 3: `BillOfMaterial` (7 types: single/multi-level, phantom, packaging, alternate, engineering, manufacturing), `BOMLine` (component, scrap, cost)
+  * Epic 5: `YieldRule` (expected yield, min/max limits), `YieldHistory` (input/output, variance, loss reason)
+  * Epic 7: `AlternateIngredient` (replacement ratio, quality approval, cost difference)
+  * Epic 8: `Allergen` (10 types), `NutritionProfile` (8 nutrients, allergen array)
+  * Epic 9: `CostRollup` (ingredient+packaging+processing+labor+overhead=total, per unit/kg, 4 cost types)
+- Added 9 new Sprint 35 frontend modules (~2,500 lines):
+  1. `RecipeMasterModule` — 10 recipes (Kaju Katli, Mysore Pak, Laddu, Idli Batter, Dosa Batter, Namkeen, Gulab Jamun, Barfi, Mixture, Dry Fruit Mix), filter chips, create form, status badges
+  2. `FormulaBuilderModule` — Kaju Katli formula with 6 ingredients, process stages (MIXING/COOKING/PACKING), loss %, critical flags, **production instructions** (Chief Architect: separate recipe from instructions), 7 quality checkpoints with targets
+  3. `BOMBuilderModule` — Kaju Katli BOM (8 lines: raw materials + packaging + labels), scrap %, unit/total cost, cost per KG/box
+  4. `RecipeVersionHistoryModule` — Timeline view of 4 versions (v1.0→v2.1), changes/reasons, rollback buttons, approval status
+  5. `YieldDashboardModule` — 6 batch yield records, expected vs actual, variance, loss reason, within-spec count
+  6. `BatchScalingModule` — Interactive scaling (input target qty → auto-calculate scale factor + scaled quantities), min/max batch validation
+  7. `NutritionCenterModule` — 5 products with 8 nutrients per 100g, allergen badges (6 types)
+  8. `CostRollupModule` — 5-component cost breakdown (ingredient 78%, packaging 3%, processing 9%, labor 6%, overhead 4%), profitability analysis (cost vs selling price → margin)
+  9. `RecipeApprovalModule` — 3 pending approvals with risk levels, changes/reason/impact, approve/reject/request changes buttons
+- Added 7 new backend API endpoints under `/api/recipes/*`:
+  * `GET/POST /api/recipes`, `POST /api/recipes/:id/approve`
+  * `GET /api/recipes/:id/formula`, `GET /api/recipes/:id/bom`
+  * `POST /api/recipes/:id/scale` (batch scaling), `GET /api/recipes/:id/cost-rollup`
+  * `GET /api/recipes/info`
+- Added 9 new module entries to sidebar, moduleNames, ModuleKey, and routing
+- Updated header badge: `Sprint 35 · 303 Tables · Part 5 MES`
+- Backend `info` endpoint includes Chief Architect Recommendation (separate Recipe from Production Instructions)
+- Verified `npm run build` succeeds (Turbopack)
+- Verified backend starts with Sprint 35 recipe endpoints
+
+Stage Summary:
+- Sprint 35 implementation COMPLETE: 12 new Prisma models, 9 new frontend modules (~2,500 LOC), 7 new API endpoints
+- Part 5 MES: Sprint 2 of 15 complete (13%)
+- Total project state: Sprints 1-35 complete, 303 database tables, 72+ ERP modules + mobile app + React Native app
+- Chief Architect Recommendation implemented: Recipe separated from Production Instructions (mixing sequence, cooking temp/duration, cooling time, rolling thickness, cutting dimensions, silver leaf application, packing instructions, quality checkpoints)
+- Next: Sprint 36 — Production Planning, MRP & Master Production Scheduling
