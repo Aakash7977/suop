@@ -153,3 +153,90 @@ export const DashboardAPI = {
 }
 
 export { API_BASE_URL }
+
+// ─── Production Mobile API (Sprint 40) ───────────────────
+export const ProductionAPI = {
+  async login(operatorCode: string, password: string, loginMethod: string = 'PIN_LOGIN', deviceCode?: string) {
+    return apiRequest('/api/production-mobile/login', 'POST', { operatorCode, password, loginMethod, deviceCode }, false)
+  },
+
+  async register(deviceData: any) {
+    return apiRequest('/api/production-mobile/register', 'POST', deviceData, false)
+  },
+
+  async logout() {
+    try { await apiRequest('/api/production-mobile/logout', 'POST') } catch {}
+  },
+
+  async getProfile() {
+    return apiRequest('/api/production-mobile/profile')
+  },
+
+  async getDashboard() {
+    return apiRequest('/api/production-mobile/dashboard')
+  },
+
+  async getWorkOrders() {
+    return apiRequest('/api/production-mobile/work-orders')
+  },
+
+  async getWorkOrder(woNumber: string) {
+    return apiRequest(`/api/production-mobile/work-orders/${woNumber}`)
+  },
+
+  async startWO(woNumber: string) {
+    return apiRequest(`/api/production-mobile/work-orders/${woNumber}/start`, 'POST', {})
+  },
+
+  async pauseWO(woNumber: string) {
+    return apiRequest(`/api/production-mobile/work-orders/${woNumber}/pause`, 'POST', {})
+  },
+
+  async completeWO(woNumber: string, data: any) {
+    return apiRequest(`/api/production-mobile/work-orders/${woNumber}/complete`, 'POST', data)
+  },
+
+  async issueMaterial(data: any) {
+    return apiRequest('/api/production-mobile/material-issue', 'POST', data)
+  },
+
+  async createBatch(data: any) {
+    return apiRequest('/api/production-mobile/batch/create', 'POST', data)
+  },
+
+  async printLabel(data: any) {
+    return apiRequest('/api/production-mobile/labels/print', 'POST', data)
+  },
+
+  async transferWIP(data: any) {
+    return apiRequest('/api/production-mobile/wip/transfer', 'POST', data)
+  },
+
+  async submitQualityCheck(data: any) {
+    return apiRequest('/api/production-mobile/quality-check', 'POST', data)
+  },
+
+  async scan(barcodeValue: string, barcodeType: string = 'CODE_128', scanSource: string = 'CAMERA') {
+    return apiRequest('/api/production-mobile/scan', 'POST', { barcodeValue, barcodeType, scanSource })
+  },
+
+  async lookup(query: string) {
+    return apiRequest(`/api/production-mobile/inventory-lookup?q=${encodeURIComponent(query)}`)
+  },
+
+  async getSyncStatus() {
+    return apiRequest('/api/production-mobile/sync/status')
+  },
+
+  async sync(transactions: any[]) {
+    return apiRequest('/api/production-mobile/sync', 'POST', { transactions })
+  },
+
+  async lockDevice(deviceCode: string) {
+    return apiRequest(`/api/production-mobile/devices/${deviceCode}/lock`, 'POST', {})
+  },
+
+  async wipeDevice(deviceCode: string) {
+    return apiRequest(`/api/production-mobile/devices/${deviceCode}/wipe`, 'POST', {})
+  },
+}

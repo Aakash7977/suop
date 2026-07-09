@@ -12069,3 +12069,315 @@ model TraceabilitySearch {
   @@index([withinTarget], map: "idx_ts_target")
   @@index([searchedAt], map: "idx_ts_time")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 40 — PRODUCTION EXECUTION MOBILE PLATFORM & BARCODE SCANNING APP
+// Part 5: MES · 9 new models · Epic 1, 5, 8 (devices, sessions, labels, offline queue)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Production Mobile Devices & Sessions ──────────────────────
+model ProductionMobileDevice {
+  id                  String   @id @default(uuid()) @db.Uuid
+  deviceCode          String   @unique @map("device_code")
+  deviceName          String   @map("device_name")
+  // ─── Hardware ───
+  deviceType          String   @default("HANDHELD") @map("device_type") // PHONE, HANDHELD, ZEBRA_TC, HONEYWELL, CHAINWAY, UROVO, TABLET
+  manufacturer        String?  @map("manufacturer")
+  modelNumber         String?  @map("model_number")
+  serialNumber        String?  @map("serial_number") @unique
+  androidVersion      String?  @map("android_version")
+  // ─── Bound Operator ───
+  assignedOperatorId  String?  @db.Uuid @map("assigned_operator_id")
+  assignedOperatorName String? @map("assigned_operator_name")
+  // ─── Scope ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantCode           String?  @map("plant_code")
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  workCenterId        String?  @db.Uuid @map("work_center_id")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, INACTIVE, LOCKED, WIPED, RETIRED
+  batteryPercent      Int      @default(100) @map("battery_percent")
+  connectivityStatus  String   @default("ONLINE") @map("connectivity_status") // ONLINE, OFFLINE, SYNCING
+  lastKnownLocation   String?  @map("last_known_location")
+  // ─── Security ───
+  isEncrypted         Boolean  @default(true) @map("is_encrypted")
+  remoteLockRequested Boolean  @default(false) @map("remote_lock_requested")
+  remoteWipeRequested Boolean  @default(false) @map("remote_wipe_requested")
+  // ─── Sync ───
+  lastSyncAt          DateTime? @map("last_sync_at")
+  pendingTransactions Int      @default(0) @map("pending_transactions")
+  // ─── Audit ───
+  registeredAt        DateTime @default(now()) @map("registered_at")
+  lastSeenAt          DateTime? @map("last_seen_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  sessions            ProductionDeviceSession[]
+
+  @@map("production_mobile_devices")
+  @@index([plantId, status], map: "idx_pmd_plant_status")
+  @@index([assignedOperatorId], map: "idx_pmd_operator")
+  @@index([status], map: "idx_pmd_status")
+}
+
+model ProductionDeviceSession {
+  id                  String   @id @default(uuid()) @db.Uuid
+  sessionCode         String   @unique @map("session_code")
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  // ─── Operator ───
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  // ─── Scope ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantCode           String?  @map("plant_code")
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  workCenterId        String?  @db.Uuid @map("work_center_id")
+  workCenterCode      String?  @map("work_center_code")
+  shiftCode           String?  @map("shift_code")
+  // ─── Auth ───
+  loginMethod         String   @map("login_method") // EMPLOYEE_LOGIN, PIN_LOGIN, BIOMETRIC, QR_LOGIN, OFFLINE_LOGIN
+  jwtToken            String?  @map("jwt_token")
+  refreshToken        String?  @map("refresh_token")
+  // ─── Time ───
+  loginAt             DateTime @default(now()) @map("login_at")
+  lastActivityAt      DateTime @default(now()) @map("last_activity_at")
+  logoutAt            DateTime? @map("logout_at")
+  expiresAt           DateTime @map("expires_at")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, EXPIRED, LOGGED_OUT, FORCE_LOGOUT
+  // ─── Audit ───
+  ipAddress           String?  @map("ip_address")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  device              ProductionMobileDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("production_device_sessions")
+  @@index([deviceId, status], map: "idx_pds_device_status")
+  @@index([operatorId, status], map: "idx_pds_operator_status")
+  @@index([expiresAt], map: "idx_pds_expires")
+}
+
+model ProductionDeviceToken {
+  id                  String   @id @default(uuid()) @db.Uuid
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  // ─── Token ───
+  tokenType           String   @map("token_type") // FCM, APNS, FCM_ANDROID, EXPO_PUSH
+  tokenValue          String   @map("token_value")
+  // ─── Status ───
+  isActive            Boolean  @default(true) @map("is_active")
+  registeredAt        DateTime @default(now()) @map("registered_at")
+  lastUsedAt          DateTime? @map("last_used_at")
+  unregisteredAt      DateTime? @map("unregistered_at")
+
+  @@map("production_device_tokens")
+  @@index([deviceId, isActive], map: "idx_pdt_device_active")
+  @@index([tokenValue], map: "idx_pdt_token")
+}
+
+// ─── Epic 5: Production Labels & Print Jobs ────────────────────────────
+model ProductionLabel {
+  id                  String   @id @default(uuid()) @db.Uuid
+  labelCode           String   @unique @map("label_code")
+  // ─── Batch ───
+  batchId             String?  @db.Uuid @map("batch_id")
+  batchNumber         String   @map("batch_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Label Type ───
+  labelType           String   @map("label_type") // PRODUCTION_BATCH, FINISHED_BATCH, QR_LABEL, BARCODE_LABEL, PALLET_LABEL, DISPLAY_BOX_LABEL
+  // ─── Contents ───
+  qrCode              String   @map("qr_code")
+  barcodeValue        String   @map("barcode_value")
+  barcodeType         String   @default("CODE_128") @map("barcode_type") // CODE_128, EAN_13, GS1_128, GS1_DATAMATRIX
+  // ─── Label Data ───
+  labelData           String   @map("label_data") // JSON: { batch, mfg, expiry, recipe, etc }
+  // ─── Manufacturing ───
+  manufacturingDate   DateTime @map("manufacturing_date")
+  expiryDate          DateTime? @map("expiry_date")
+  bestBeforeDate      DateTime? @map("best_before_date")
+  // ─── Quantity ───
+  quantity            Decimal  @db.Decimal(18, 4) @map("quantity")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Recipe / Quality ───
+  recipeCode          String?  @map("recipe_code")
+  recipeVersion       String?  @map("recipe_version")
+  qualityGrade        String?  @map("quality_grade")
+  // ─── Print Info ───
+  printCount          Int      @default(0) @map("print_count")
+  lastPrintedAt       DateTime? @map("last_printed_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  printJobs           ProductionLabelPrintJob[]
+
+  @@map("production_labels")
+  @@index([batchId], map: "idx_pl_batch")
+  @@index([labelType], map: "idx_pl_type")
+  @@index([productSku], map: "idx_pl_sku")
+}
+
+model ProductionLabelPrintJob {
+  id                  String   @id @default(uuid()) @db.Uuid
+  jobCode             String   @unique @map("job_code")
+  // ─── Label ───
+  labelId             String   @db.Uuid @map("label_id")
+  labelCode           String   @map("label_code")
+  batchNumber         String   @map("batch_number")
+  productName         String   @map("product_name")
+  // ─── Printer ───
+  printerType         String   @map("printer_type") // BLUETOOTH, NETWORK, INDUSTRIAL
+  printerName         String   @map("printer_name")
+  printerAddress      String?  @map("printer_address") // MAC or IP:port
+  // ─── Print Settings ───
+  copies              Int      @default(1) @map("copies")
+  labelSize           String   @default("4x6") @map("label_size") // 4x6, 3x2, 2x1
+  // ─── Status ───
+  status              String   @default("QUEUED") @map("status") // QUEUED, PRINTING, COMPLETED, FAILED, CANCELLED
+  printStartedAt      DateTime? @map("print_started_at")
+  printCompletedAt    DateTime? @map("print_completed_at")
+  // ─── Performance ───
+  printDurationMs     Int?     @map("print_duration_ms") // target <2000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Error ───
+  errorMessage        String?  @map("error_message")
+  retryCount          Int      @default(0) @map("retry_count")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  label               ProductionLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@map("production_label_print_jobs")
+  @@index([status, createdAt], map: "idx_plpj_status_time")
+  @@index([labelId], map: "idx_plpj_label")
+  @@index([operatorId], map: "idx_plpj_operator")
+}
+
+// ─── Epic 8: Offline Sync Queue & History ──────────────────────────────
+model ProductionOfflineQueue {
+  id                  String   @id @default(uuid()) @db.Uuid
+  transactionCode     String   @unique @map("transaction_code")
+  // ─── Device & Operator ───
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  // ─── Transaction ───
+  transactionType     String   @map("transaction_type") // MATERIAL_ISSUE, WO_START, WO_PAUSE, WO_RESUME, WO_COMPLETE, BATCH_CREATE, LABEL_PRINT, QC_CHECK, WIP_TRANSFER, FG_CONFIRM
+  // ─── Payload ───
+  payload             String   @map("payload") // JSON encrypted payload
+  signature           String   @map("signature") // HMAC signature for integrity
+  // ─── References ───
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  batchId             String?  @db.Uuid @map("batch_id")
+  batchNumber         String?  @map("batch_number")
+  // ─── Sync ───
+  status              String   @default("PENDING_SYNC") @map("status") // PENDING_SYNC, SYNCING, SYNCED, CONFLICT, FAILED, EXPIRED
+  attemptCount        Int      @default(0) @map("attempt_count")
+  maxAttempts         Int      @default(5) @map("max_attempts")
+  lastAttemptAt       DateTime? @map("last_attempt_at")
+  syncedAt            DateTime? @map("synced_at")
+  // ─── Conflict ───
+  conflictReason      String?  @map("conflict_reason")
+  conflictResolution  String?  @map("conflict_resolution") // SERVER_WINS, CLIENT_WINS, MANUAL, MERGED
+  // ─── Time ───
+  offlineCreatedAt    DateTime @default(now()) @map("offline_created_at")
+  expiresAt           DateTime @map("expires_at") // offline transactions expire after 7 days
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("production_offline_queue")
+  @@index([deviceId, status], map: "idx_poq_device_status")
+  @@index([status, offlineCreatedAt], map: "idx_poq_status_time")
+  @@index([operatorId], map: "idx_poq_operator")
+  @@index([expiresAt], map: "idx_poq_expires")
+}
+
+model ProductionSyncHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  syncCode            String   @unique @map("sync_code")
+  // ─── Device ───
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorCode        String?  @map("operator_code")
+  // ─── Sync Direction ───
+  syncDirection       String   @map("sync_direction") // UPLOAD, DOWNLOAD, BIDIRECTIONAL
+  // ─── Summary ───
+  totalTransactions   Int      @default(0) @map("total_transactions")
+  successfulSyncs     Int      @default(0) @map("successful_syncs")
+  failedSyncs         Int      @default(0) @map("failed_syncs")
+  conflictCount       Int      @default(0) @map("conflict_count")
+  // ─── Performance ───
+  syncStartedAt       DateTime @map("sync_started_at")
+  syncCompletedAt     DateTime? @map("sync_completed_at")
+  syncDurationMs      Int?     @map("sync_duration_ms") // target <10000ms for recovery
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Network ───
+  networkType         String?  @map("network_type") // WIFI, 4G, 3G, ETHERNET
+  payloadSizeKb       Int      @default(0) @map("payload_size_kb")
+  // ─── Status ───
+  status              String   @default("IN_PROGRESS") @map("status") // IN_PROGRESS, COMPLETED, PARTIAL, FAILED
+  errorMessage        String?  @map("error_message")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("production_sync_history")
+  @@index([deviceId, syncCompletedAt], map: "idx_psh_device_time")
+  @@index([status], map: "idx_psh_status")
+  @@index([withinTarget], map: "idx_psh_target")
+}
+
+// ─── Epic 7: Quality Checkpoint Records (mobile-captured) ─────────────
+model ProductionQualityCheck {
+  id                  String   @id @default(uuid()) @db.Uuid
+  checkCode           String   @unique @map("check_code")
+  // ─── Links ───
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  productionOrderNumber String? @map("production_order_number")
+  batchId             String?  @db.Uuid @map("batch_id")
+  batchNumber         String?  @map("batch_number")
+  // ─── Check ───
+  checkType           String   @map("check_type") // TEMPERATURE, WEIGHT, DIMENSIONS, VISUAL, TASTE, PACKAGING, METAL_DETECTOR, SEAL_VERIFICATION
+  checkStage          String   @map("check_stage") // MIXING, COOKING, COOLING, CUTTING, PACKING, FINISHED
+  // ─── Results ───
+  measuredValue       Decimal? @db.Decimal(10, 3) @map("measured_value")
+  targetValue         Decimal? @db.Decimal(10, 3) @map("target_value")
+  minValue            Decimal? @db.Decimal(10, 3) @map("min_value")
+  maxValue            Decimal? @db.Decimal(10, 3) @map("max_value")
+  unit                String?  @map("unit") // °C, KG, MM, etc.
+  // ─── Status ───
+  result              String   @default("PASS") @map("result") // PASS, FAIL, REWORK, HOLD, CONCESSION
+  remarks             String?
+  // ─── Actor ───
+  checkedById         String?  @db.Uuid @map("checked_by_id")
+  checkedByName       String?  @map("checked_by_name")
+  // ─── Mobile Source ───
+  deviceId            String?  @db.Uuid @map("device_id")
+  deviceCode          String?  @map("device_code")
+  scannedAt           DateTime? @map("scanned_at")
+  // ─── Audit ───
+  checkedAt           DateTime @default(now()) @map("checked_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("production_quality_checks")
+  @@index([workOrderId, checkStage], map: "idx_pqc_wo_stage")
+  @@index([batchId], map: "idx_pqc_batch")
+  @@index([checkType, result], map: "idx_pqc_type_result")
+  @@index([checkedAt], map: "idx_pqc_time")
+}
