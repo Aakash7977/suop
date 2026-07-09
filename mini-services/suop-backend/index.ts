@@ -8889,12 +8889,93 @@ const server = Bun.serve({
       }, 'SUOP Production Orders & Shop Floor Engine v37.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 38 — SHOP FLOOR EXECUTION & REAL-TIME MFG
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/shop-floor/dashboard — Shop floor execution dashboard
+    if (path === '/api/shop-floor/dashboard' && method === 'GET') {
+      const data = {
+        kpis: { runningWOs: 2, operatorsOnline: 5, machinesRunning: '4/6', wipValue: 210000, todayOutput: 145, exceptions: 2 },
+        liveExecutions: [
+          { wo: 'WO-003', op: 'Cooking', po: 'PO-2026-00125', operator: 'Rajesh K.', machine: 'COOK-01', elapsed: '45m', output: '0/95 kg' },
+          { wo: 'WO-002', op: 'Grinding', po: 'PO-2026-00126', operator: 'Anil R.', machine: 'GRIND-01', elapsed: '1h 20m', output: '45/100 kg' },
+        ],
+        andonStatus: [
+          { line: 'LINE-KK-01', status: 'YELLOW', output: '0/95 kg', downtime: '0m', alerts: 1 },
+          { line: 'LINE-IB-01', status: 'GREEN', output: '45/100 kg', downtime: '0m', alerts: 0 },
+          { line: 'LINE-NM-01', status: 'RED', output: '0/150 kg', downtime: '25m', alerts: 2 },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Shop floor dashboard data')), { headers })
+    }
+
+    // GET /api/shop-floor/executions — Work order executions
+    if (path === '/api/shop-floor/executions' && method === 'GET') {
+      const executions = [
+        { code: 'EXE-001', wo: 'WO-003', op: 'Cooking', po: 'PO-2026-00125', operator: 'Rajesh K.', machine: 'COOK-01', status: 'IN_PROGRESS', input: 95, output: 0 },
+        { code: 'EXE-002', wo: 'WO-002', op: 'Grinding', po: 'PO-2026-00126', operator: 'Anil R.', machine: 'GRIND-01', status: 'IN_PROGRESS', input: 100, output: 45 },
+      ]
+      return new Response(JSON.stringify(successResponse(executions, 'Work order executions retrieved')), { headers })
+    }
+
+    // GET /api/shop-floor/material-consumption — Material consumption
+    if (path === '/api/shop-floor/material-consumption' && method === 'GET') {
+      const consumption = [
+        { material: 'Cashew (W320)', batch: 'BATCH-CASHEW-018', planned: 55, actual: 55, validation: 'VALID', status: 'CONSUMED' },
+        { material: 'Sugar', batch: 'BATCH-SUG-042', planned: 35, actual: 35, validation: 'VALID', status: 'CONSUMED' },
+        { material: 'Urad Dal', batch: 'BATCH-URD-007', planned: 25, actual: 23, validation: 'WRONG_QTY', status: 'SHORT' },
+      ]
+      return new Response(JSON.stringify(successResponse(consumption, 'Material consumption retrieved')), { headers })
+    }
+
+    // GET /api/shop-floor/wip — WIP dashboard
+    if (path === '/api/shop-floor/wip' && method === 'GET') {
+      const wip = [
+        { code: 'WIP-001', po: 'PO-2026-00125', product: 'Kaju Katli 500g', stage: 'COOKING', input: 95, current: 94, scrap: 1, status: 'IN_PROGRESS' },
+        { code: 'WIP-002', po: 'PO-2026-00126', product: 'Shwet Idli Batter 1kg', stage: 'GRINDING', input: 105, current: 100, scrap: 5, status: 'IN_PROGRESS' },
+      ]
+      return new Response(JSON.stringify(successResponse(wip, 'WIP data retrieved')), { headers })
+    }
+
+    // GET /api/shop-floor/exceptions — Production exceptions
+    if (path === '/api/shop-floor/exceptions' && method === 'GET') {
+      const exceptions = [
+        { code: 'PEX-001', type: 'MACHINE_FAILURE', severity: 'CRITICAL', title: 'FRY-01 hydraulic failure', status: 'OPEN', downtime: 25 },
+        { code: 'PEX-002', type: 'RECIPE_DEVIATION', severity: 'HIGH', title: 'Urad Dal shortage — 2kg short', status: 'INVESTIGATING', downtime: 5 },
+      ]
+      return new Response(JSON.stringify(successResponse(exceptions, 'Production exceptions retrieved')), { headers })
+    }
+
+    // GET /api/shop-floor/andon — Andon board data
+    if (path === '/api/shop-floor/andon' && method === 'GET') {
+      const andon = [
+        { line: 'LINE-KK-01', product: 'Kaju Katli 500g', status: 'YELLOW', target: 95, actual: 0, completed: 2, delayed: 0, downtime: 0 },
+        { line: 'LINE-IB-01', product: 'Shwet Idli Batter', status: 'GREEN', target: 100, actual: 45, completed: 1, delayed: 0, downtime: 0 },
+        { line: 'LINE-NM-01', product: 'Mixed Namkeen', status: 'RED', target: 150, actual: 0, completed: 0, delayed: 1, downtime: 25 },
+      ]
+      return new Response(JSON.stringify(successResponse(andon, 'Andon board data retrieved')), { headers })
+    }
+
+    // GET /api/shop-floor/info — Sprint 38 info
+    if (path === '/api/shop-floor/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 38, sprintName: 'Shop Floor Execution, Production Barcode Scanning & Real-Time Manufacturing', version: '38.0.0', part: 5, tables: 10,
+        epics: ['Production Execution App (operator login, tasks, alerts)', 'Work Order Execution (scan WO QR, verify materials, start/complete)', 'Barcode Material Consumption (6 barcode types, 7 validation rules)', 'Machine Execution (start/stop, setup/run/cleaning/idle/downtime)', 'Operator Time Tracking (shift, breaks, operation, cleaning, training, overtime)', 'WIP Tracking (raw→mixing→cooking→cooling→packing→finished, movements)', 'Production Exception Management (8 exception types, resolution workflow)', 'Digital Andon Board (Green/Yellow/Red/Blue status, TV mode)'],
+        chiefArchitectRecommendation: 'Two mandatory scans before production: Scan Work Center QR → Scan Work Order QR → Load Approved Recipe → Scan Ingredients → Start Production. Guarantees correct line, correct recipe version, correct material batches, full traceability.',
+        endpoints: ['GET /api/shop-floor/dashboard', 'GET /api/shop-floor/executions', 'GET /api/shop-floor/material-consumption', 'GET /api/shop-floor/wip', 'GET /api/shop-floor/exceptions', 'GET /api/shop-floor/andon', 'GET /api/shop-floor/info'],
+        part5Sprint: 5, part5Sprints: 15, totalProjectTables: 331,
+      }, 'SUOP Shop Floor Execution Engine v38.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 37, sprintName: 'Production Orders, Work Orders & Shop Floor Scheduling — PART 5 MES (37/48 sprints)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 38, sprintName: 'Shop Floor Execution & Real-Time Manufacturing — PART 5 MES (38/48 sprints)' })
+log('info', 'Sprint 38 — Shop Floor Execution Engine', { sprint: 38, part: 5, tables: 331, executions: 4, materialConsumption: 7, wip: 3, exceptions: 4, andonLines: 5 })
+log('info', 'Shop floor endpoints available (Sprint 38)', { dashboard: 'GET /api/shop-floor/dashboard', executions: 'GET /api/shop-floor/executions', materialConsumption: 'GET /api/shop-floor/material-consumption', wip: 'GET /api/shop-floor/wip', exceptions: 'GET /api/shop-floor/exceptions', andon: 'GET /api/shop-floor/andon', info: 'GET /api/shop-floor/info' })
 log('info', 'Sprint 37 — Production Orders & Shop Floor Engine', { sprint: 37, part: 5, tables: 321, productionOrders: 6, workOrders: 8, routings: 4, assignments: 8 })
 log('info', 'Production order endpoints available (Sprint 37)', { orders: 'GET/POST /api/production-orders', release: 'POST /api/production-orders/:id/release', workOrders: 'GET /api/production-orders/:id/work-orders', traveler: 'GET /api/production-orders/:id/traveler', info: 'GET /api/production-orders/info' })
 log('info', 'Sprint 36 — Production Planning & MRP Engine', { sprint: 36, part: 5, tables: 312, mpsLines: 8, mrpMaterials: 9, shortages: 5, purchaseSuggestions: 6 })

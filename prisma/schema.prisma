@@ -11362,3 +11362,316 @@ model ProductionProgressLog {
   @@index([productionOrderId, loggedAt], map: "idx_ppl_po_time")
   @@index([progressType], map: "idx_ppl_type")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 38 — SHOP FLOOR EXECUTION & REAL-TIME MANUFACTURING (PART 5)
+// Epic 2: Execution · Epic 3: Material Consumption · Epic 4: Machine
+// Epic 5: Operator Time · Epic 6: WIP · Epic 7: Exceptions · Epic 8: Andon
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 2: Work Order Execution ───────────────────────
+model WorkOrderExecution {
+  id                  String   @id @default(uuid()) @db.Uuid
+  executionCode       String   @unique @map("execution_code")
+  workOrderId         String   @db.Uuid @map("work_order_id")
+  workOrderNumber     String   @map("work_order_number")
+  productionOrderId   String   @db.Uuid @map("production_order_id")
+  productionOrderNumber String  @map("production_order_number")
+  // ─── Execution ───
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  machineId           String?  @db.Uuid @map("machine_id")
+  machineCode         String?  @map("machine_code")
+  workCenterCode      String   @map("work_center_code")
+  // ─── Time ───
+  scanTime            DateTime @default(now()) @map("scan_time")
+  startTime           DateTime? @map("start_time")
+  endTime             DateTime? @map("end_time")
+  setupDurationMin    Int?     @map("setup_duration_min")
+  runDurationMin      Int?     @map("run_duration_min")
+  cleanupDurationMin  Int?     @map("cleanup_duration_min")
+  downtimeMin         Int      @default(0) @map("downtime_min")
+  // ─── Quantity ───
+  inputQty            Decimal? @db.Decimal(14, 3) @map("input_qty")
+  outputQty           Decimal? @db.Decimal(14, 3) @map("output_qty")
+  scrapQty            Decimal? @db.Decimal(14, 3) @default(0) @map("scrap_qty")
+  // ─── Quality ───
+  qualityResult       String?  @map("quality_result") // PASS, FAIL, CONCERN
+  qualityNotes        String?  @map("quality_notes")
+  // ─── Status ───
+  status              String   @default("SCANNED") // SCANNED, MATERIALS_VERIFIED, IN_PROGRESS, PAUSED, COMPLETED, FAILED
+  remarks             String?
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  logs                ExecutionLog[]
+
+  @@map("work_order_execution")
+  @@index([workOrderId], map: "idx_woe_wo")
+  @@index([operatorId, status], map: "idx_woe_op_status")
+  @@index([status], map: "idx_woe_status")
+}
+
+model ExecutionLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  executionId         String   @db.Uuid @map("execution_id")
+  logType             String   @map("log_type") // SCAN, MATERIAL_CONSUMED, START, PAUSE, RESUME, COMPLETE, QUALITY_CHECK, EXCEPTION, DOWNTIME
+  message             String
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Data ───
+  logData             Json?    @map("log_data")
+  // ─── Timestamp ───
+  loggedAt            DateTime @default(now()) @map("logged_at")
+
+  execution           WorkOrderExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@map("execution_logs")
+  @@index([executionId, loggedAt], map: "idx_el_exec_time")
+  @@index([logType], map: "idx_el_type")
+}
+
+// ─── Epic 3: Material Consumption ───────────────────────
+model MaterialConsumption {
+  id                  String   @id @default(uuid()) @db.Uuid
+  consumptionCode     String   @unique @map("consumption_code")
+  // ─── Links ───
+  productionOrderId   String   @db.Uuid @map("production_order_id")
+  productionOrderNumber String  @map("production_order_number")
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  executionId         String?  @db.Uuid @map("execution_id")
+  // ─── Material ───
+  materialId          String?  @db.Uuid @map("material_id")
+  materialSku         String   @map("material_sku")
+  materialName        String   @map("material_name")
+  materialType        String   @default("RAW_MATERIAL") // RAW_MATERIAL, PACKAGING, SEMI_FINISHED, CONSUMABLE
+  // ─── Batch ───
+  batchId             String?  @db.Uuid @map("batch_id")
+  batchNumber         String?  @map("batch_number")
+  // ─── Scan ───
+  barcodeScanned      String?  @map("barcode_scanned")
+  barcodeType         String?  @map("barcode_type") // INGREDIENT, BATCH, CONTAINER, PALLET, QR, GS1
+  // ─── Quantity ───
+  plannedQty          Decimal  @db.Decimal(14, 3) @default(0) @map("planned_qty")
+  actualQty           Decimal  @db.Decimal(14, 3) @default(0) @map("actual_qty")
+  uom                 String   @default("KG")
+  // ─── Validation ───
+  validationResult    String   @default("VALID") // VALID, WRONG_INGREDIENT, EXPIRED_BATCH, WRONG_QTY, BLOCKED_BATCH, UNKNOWN_BARCODE, DUPLICATE_SCAN
+  validationMessage   String?  @map("validation_message")
+  // ─── Inventory ───
+  inventoryTransactionId String? @db.Uuid @map("inventory_transaction_id")
+  // ─── Status ───
+  status              String   @default("CONSUMED") // CONSUMED, SHORT, REVERSED, PENDING
+  // ─── Audit ───
+  consumedById        String?  @db.Uuid @map("consumed_by_id")
+  consumedByName      String?  @map("consumed_by_name")
+  consumedAt          DateTime @default(now()) @map("consumed_at")
+
+  @@map("material_consumption")
+  @@index([productionOrderId], map: "idx_mc_po")
+  @@index([workOrderId], map: "idx_mc_wo")
+  @@index([materialSku, batchNumber], map: "idx_mc_material_batch")
+  @@index([validationResult], map: "idx_mc_validation")
+}
+
+// ─── Epic 4: Machine Execution ──────────────────────────
+model MachineExecution {
+  id                  String   @id @default(uuid()) @db.Uuid
+  executionCode       String   @unique @map("execution_code")
+  // ─── Links ───
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Time ───
+  startTime           DateTime @map("start_time")
+  endTime             DateTime? @map("end_time")
+  setupDurationMin    Int?     @map("setup_duration_min")
+  productionDurationMin Int?   @map("production_duration_min")
+  cleaningDurationMin Int?     @map("cleaning_duration_min")
+  idleDurationMin     Int      @default(0) @map("idle_duration_min")
+  downtimeMin         Int      @default(0) @map("downtime_min")
+  // ─── Status ───
+  status              String   @default("RUNNING") // RUNNING, STOPPED, IDLE, CLEANING, MAINTENANCE, SETUP
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  events              MachineEvent[]
+
+  @@map("machine_execution")
+  @@index([machineId, status], map: "idx_me_machine_status")
+  @@index([workOrderId], map: "idx_me_wo")
+}
+
+model MachineEvent {
+  id                  String   @id @default(uuid()) @db.Uuid
+  machineExecutionId  String   @db.Uuid @map("machine_execution_id")
+  eventType           String   @map("event_type") // START, STOP, SETUP_START, SETUP_END, CLEANING_START, CLEANING_END, IDLE, DOWNTIME, MAINTENANCE
+  eventTime           DateTime @default(now()) @map("event_time")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  notes               String?
+
+  machineExecution    MachineExecution @relation(fields: [machineExecutionId], references: [id], onDelete: Cascade)
+
+  @@map("machine_events")
+  @@index([machineExecutionId, eventTime], map: "idx_mev_exec_time")
+}
+
+// ─── Epic 5: Operator Time Tracking ─────────────────────
+model OperatorTimeLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  // ─── Links ───
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Time Log ───
+  logType             String   @map("log_type") // SHIFT_START, SHIFT_END, BREAK_START, BREAK_END, OPERATION_TIME, CLEANING_TIME, TRAINING_TIME, OVERTIME
+  startTime           DateTime @map("start_time")
+  endTime             DateTime? @map("end_time")
+  durationMinutes     Int?     @map("duration_minutes")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("operator_time_logs")
+  @@index([operatorId, startTime], map: "idx_otl_op_time")
+  @@index([logType], map: "idx_otl_type")
+}
+
+// ─── Epic 6: Work In Progress (WIP) ─────────────────────
+model WorkInProgress {
+  id                  String   @id @default(uuid()) @db.Uuid
+  wipCode             String   @unique @map("wip_code")
+  // ─── Links ───
+  productionOrderId   String   @db.Uuid @map("production_order_id")
+  productionOrderNumber String  @map("production_order_number")
+  batchNumber         String?  @map("batch_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── WIP Stage ───
+  currentStage        String   @map("current_stage") // RAW_MATERIALS, MIXING, COOKING, COOLING, ROLLING, CUTTING, INSPECTION, PACKING, FINISHED_GOODS
+  currentWorkOrderId  String?  @db.Uuid @map("current_work_order_id")
+  // ─── Quantity ───
+  inputQty            Decimal  @db.Decimal(14, 3) @default(0) @map("input_qty")
+  currentQty          Decimal  @db.Decimal(14, 3) @default(0) @map("current_qty")
+  scrapQty            Decimal  @db.Decimal(14, 3) @default(0) @map("scrap_qty")
+  uom                 String   @default("KG")
+  // ─── Status ───
+  status              String   @default("IN_PROGRESS") // IN_PROGRESS, ON_HOLD, COMPLETED, REJECTED, REWORK
+  // ─── Location ───
+  locationCode        String?  @map("location_code")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  movements           WIPMovement[]
+
+  @@map("work_in_progress")
+  @@index([productionOrderId], map: "idx_wip_po")
+  @@index([status, currentStage], map: "idx_wip_status_stage")
+}
+
+model WIPMovement {
+  id                  String   @id @default(uuid()) @db.Uuid
+  wipId               String   @db.Uuid @map("wip_id")
+  // ─── Movement ───
+  fromStage           String   @map("from_stage")
+  toStage             String   @map("to_stage")
+  // ─── Quantity ───
+  qty                 Decimal  @db.Decimal(14, 3) @map("qty")
+  scrapQty            Decimal  @db.Decimal(14, 3) @default(0) @map("scrap_qty")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Time ───
+  movedAt             DateTime @default(now()) @map("moved_at")
+  notes               String?
+
+  wip                 WorkInProgress @relation(fields: [wipId], references: [id], onDelete: Cascade)
+
+  @@map("wip_movements")
+  @@index([wipId, movedAt], map: "idx_wm_wip_time")
+}
+
+// ─── Epic 7: Production Exception Management ────────────
+model ProductionException {
+  id                  String   @id @default(uuid()) @db.Uuid
+  exceptionCode       String   @unique @map("exception_code")
+  // ─── Links ───
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  productionOrderNumber String? @map("production_order_number")
+  workOrderId         String?  @db.Uuid @map("work_order_id")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Exception ───
+  exceptionType       String   @map("exception_type") // MATERIAL_SHORTAGE, MACHINE_FAILURE, RECIPE_DEVIATION, QUALITY_FAILURE, OPERATOR_ABSENCE, POWER_FAILURE, BATCH_REJECTION, TEMPERATURE_DEVIATION
+  severity            String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  title               String
+  description         String
+  // ─── Reporter ───
+  reportedById        String?  @db.Uuid @map("reported_by_id")
+  reportedByName      String?  @map("reported_by_name")
+  reportedAt          DateTime @default(now()) @map("reported_at")
+  // ─── Resolution ───
+  status              String   @default("OPEN") // OPEN, ACKNOWLEDGED, INVESTIGATING, RESOLVED, ESCALATED
+  resolution          String?  @map("resolution") // CONTINUE, PAUSE, REJECT, REWORK
+  resolutionNotes     String?  @map("resolution_notes")
+  resolvedById        String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName      String?  @map("resolved_by_name")
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Impact ───
+  downtimeMinutes     Int      @default(0) @map("downtime_minutes")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("production_exceptions")
+  @@index([productionOrderId, status], map: "idx_pex_po_status")
+  @@index([exceptionType, severity], map: "idx_pex_type_sev")
+  @@index([status, severity], map: "idx_pex_status_sev")
+}
+
+// ─── Epic 8: Digital Andon Board ────────────────────────
+model AndonBoard {
+  id                  String   @id @default(uuid()) @db.Uuid
+  andonCode           String   @unique @map("andon_code")
+  // ─── Scope ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Display ───
+  displayType         String   @default("LINE") // LINE, PLANT, DEPARTMENT
+  // ─── Status ───
+  status              String   @default("GREEN") // GREEN (running), YELLOW (warning), RED (stopped), BLUE (setup)
+  // ─── Live Data ───
+  activeOrders        Int      @default(0) @map("active_orders")
+  completedToday      Int      @default(0) @map("completed_today")
+  delayedOrders       Int      @default(0) @map("delayed_orders")
+  targetOutput        Decimal  @db.Decimal(14, 3) @default(0) @map("target_output")
+  actualOutput        Decimal  @db.Decimal(14, 3) @default(0) @map("actual_output")
+  downtimeMinutes     Int      @default(0) @map("downtime_minutes")
+  qualityAlerts       Int      @default(0) @map("quality_alerts")
+  safetyAlerts        Int      @default(0) @map("safety_alerts")
+  // ─── Audit ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("andon_boards")
+  @@index([plantId, status], map: "idx_ab_plant_status")
+  @@index([productionLineId], map: "idx_ab_line")
+}

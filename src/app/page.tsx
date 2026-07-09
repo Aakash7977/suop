@@ -58,6 +58,7 @@ type ModuleKey =
   | 'recipemaster' | 'formulabuilder' | 'bombuilder' | 'recipeversions' | 'yielddashboard' | 'batchscaling' | 'nutritioncenter' | 'costrollup' | 'recipeapproval'
   | 'planningdashboard' | 'mpsconsole' | 'mrpworkbench' | 'demandplanning' | 'capacityplanner' | 'shortagecenter' | 'purchasesuggestions' | 'whatifsimulator'
   | 'productionorders' | 'workorders' | 'routingdesigner' | 'shopfloorschedule' | 'productiontraveler' | 'assignmentconsole' | 'proddashboard' | 'progressmonitor'
+  | 'shopfloordashboard' | 'woconsole' | 'materialconsumption' | 'machineconsole' | 'operatordashboard' | 'wipdashboard' | 'andonboard' | 'prodexceptions'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -255,6 +256,14 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Assignment Console', icon: <UserCog className="h-4 w-4" />, module: 'assignmentconsole', available: true },
       { name: 'Prod Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'proddashboard', available: true },
       { name: 'Progress Monitor', icon: <Activity className="h-4 w-4" />, module: 'progressmonitor', available: true },
+      { name: 'Shop Floor Dashboard', icon: <Activity className="h-4 w-4" />, module: 'shopfloordashboard', available: true },
+      { name: 'WO Console', icon: <ListChecks className="h-4 w-4" />, module: 'woconsole', available: true },
+      { name: 'Material Consumption', icon: <Package className="h-4 w-4" />, module: 'materialconsumption', available: true },
+      { name: 'Machine Console', icon: <Server className="h-4 w-4" />, module: 'machineconsole', available: true },
+      { name: 'Operator Dashboard', icon: <Users className="h-4 w-4" />, module: 'operatordashboard', available: true },
+      { name: 'WIP Dashboard', icon: <Boxes className="h-4 w-4" />, module: 'wipdashboard', available: true },
+      { name: 'Andon Board', icon: <Grid3x3 className="h-4 w-4" />, module: 'andonboard', available: true },
+      { name: 'Prod Exceptions', icon: <AlertTriangle className="h-4 w-4" />, module: 'prodexceptions', available: true },
     ]
   },
   {
@@ -17472,6 +17481,228 @@ function ProgressMonitorModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 38 — SHOP FLOOR EXECUTION & REAL-TIME MFG (PART 5)
+// Epic 1: Dashboard · Epic 2: WO Execution · Epic 3: Material
+// Epic 4: Machine · Epic 5: Operator · Epic 6: WIP · Epic 7: Exceptions · Epic 8: Andon
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Shop Floor Execution Dashboard ─────────────
+function ShopFloorExecutionDashboardModule() {
+  const kpis = [
+    { label: 'Running WOs', value: '2', sub: '1 cooking, 1 grinding', color: 'text-amber-600' },
+    { label: 'Operators Online', value: '5', sub: '1 on break', color: 'text-emerald-600' },
+    { label: 'Machines Running', value: '4/6', sub: '1 maintenance', color: 'text-blue-600' },
+    { label: 'WIP Value', value: '₹2.1L', sub: '3 batches in progress', color: 'text-purple-600' },
+    { label: 'Today Output', value: '145 kg', sub: 'Target 515 kg', color: 'text-cyan-600' },
+    { label: 'Exceptions', value: '2', sub: '1 critical', color: 'text-rose-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Shop Floor Execution Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Live manufacturing — running work orders, machines, operators, WIP, exceptions</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">{kpis.map(k => <Card key={k.label} className="p-3"><p className="text-[10px] text-muted-foreground uppercase">{k.label}</p><p className={`text-xl font-bold mt-1 ${k.color}`}>{k.value}</p><p className="text-[10px] text-muted-foreground">{k.sub}</p></Card>)}</div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4"><h3 className="font-semibold mb-3">Live Work Order Executions</h3>
+          <div className="space-y-2">{[
+            { wo: 'WO-003', op: 'Cooking', po: 'PO-2026-00125', operator: 'Rajesh K.', machine: 'COOK-01', elapsed: '45m', status: 'IN_PROGRESS', output: '0/95 kg' },
+            { wo: 'WO-002', op: 'Grinding', po: 'PO-2026-00126', operator: 'Anil R.', machine: 'GRIND-01', elapsed: '1h 20m', status: 'IN_PROGRESS', output: '45/100 kg' },
+          ].map((w, i) => (<div key={i} className="p-3 border rounded"><div className="flex items-center justify-between mb-1"><div><p className="text-xs font-medium">{w.wo}: {w.op}</p><p className="text-[10px] text-muted-foreground font-mono">{w.po} · {w.operator} · {w.machine}</p></div><span className="text-xs font-mono">{w.elapsed}</span></div><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-amber-500 animate-pulse" style={{ width: `${w.output.includes('0/') ? 10 : 45}%` }} /></div><span className="text-[10px] font-mono">{w.output}</span></div></div>))}</div>
+        </Card>
+        <Card className="p-4"><h3 className="font-semibold mb-3">Andon Status — All Lines</h3>
+          <div className="space-y-2">{[
+            { line: 'LINE-KK-01 (Kaju Katli)', status: 'YELLOW', output: '0/95 kg', target: '95 kg', downtime: '0m', alerts: 1 },
+            { line: 'LINE-IB-01 (Idli Batter)', status: 'GREEN', output: '45/100 kg', target: '100 kg', downtime: '0m', alerts: 0 },
+            { line: 'LINE-MP-01 (Mysore Pak)', status: 'BLUE', output: '0/60 kg', target: '60 kg', downtime: '0m', alerts: 0 },
+            { line: 'LINE-NM-01 (Namkeen)', status: 'RED', output: '0/150 kg', target: '150 kg', downtime: '25m', alerts: 2 },
+          ].map((l, i) => { const colors: Record<string,string> = { GREEN: 'bg-emerald-500', YELLOW: 'bg-amber-500', RED: 'bg-rose-500', BLUE: 'bg-blue-500' }; return (
+            <div key={i} className="flex items-center gap-3 p-2 border rounded"><span className={`h-4 w-4 rounded-full ${colors[l.status]} ${l.status === 'GREEN' || l.status === 'YELLOW' ? 'animate-pulse' : ''}`} /><div className="flex-1"><p className="text-xs font-medium">{l.line}</p><p className="text-[10px] text-muted-foreground">Output: {l.output} · Downtime: {l.downtime} · Alerts: {l.alerts}</p></div><span className="text-xs font-bold">{l.status}</span></div>
+          )})}</div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 2: WO Execution Console ──────────────────────
+function WOExecutionConsoleModule() {
+  const executions = [
+    { code: 'EXE-001', wo: 'WO-003', op: 'Cooking', po: 'PO-2026-00125', operator: 'Rajesh K. (OP-001)', machine: 'COOK-01', wc: 'WC-KK-03', scanTime: '07:15', startTime: '07:15', status: 'IN_PROGRESS', input: 95, output: 0, scrap: 0, downtime: 0 },
+    { code: 'EXE-002', wo: 'WO-002', op: 'Grinding', po: 'PO-2026-00126', operator: 'Anil R. (OP-006)', machine: 'GRIND-01', wc: 'WC-IB-02', scanTime: '05:00', startTime: '05:10', status: 'IN_PROGRESS', input: 100, output: 45, scrap: 2, downtime: 5 },
+    { code: 'EXE-003', wo: 'WO-002', op: 'Mixing', po: 'PO-2026-00125', operator: 'Rajesh K. (OP-001)', machine: 'MIX-01', wc: 'WC-KK-02', scanTime: '06:45', startTime: '06:45', endTime: '07:15', status: 'COMPLETED', input: 95, output: 94, scrap: 1, downtime: 0, quality: 'PASS' },
+    { code: 'EXE-004', wo: 'WO-001', op: 'Ingredient Prep', po: 'PO-2026-00125', operator: 'Rajesh K. (OP-001)', machine: '—', wc: 'WC-KK-01', scanTime: '06:00', startTime: '06:00', endTime: '06:45', status: 'COMPLETED', input: 95, output: 95, scrap: 0, downtime: 0, quality: 'PASS' },
+  ]
+  const statusColors: Record<string,string> = { SCANNED: 'bg-slate-100 text-slate-600', IN_PROGRESS: 'bg-amber-100 text-amber-700', COMPLETED: 'bg-emerald-100 text-emerald-700', PAUSED: 'bg-orange-100 text-orange-700', FAILED: 'bg-rose-100 text-rose-700' }
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Work Order Execution Console</h2><p className="text-sm text-muted-foreground mt-1">Scan WO QR → Load Instructions → Verify Materials → Start → Complete → Next WO</p></div>
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300"><h3 className="font-semibold mb-2 text-sm">Chief Architect: Two Mandatory Scans Before Production</h3><div className="flex items-center gap-2 text-xs overflow-x-auto">{['Scan Work Center QR', 'Scan Work Order QR', 'Load Approved Recipe', 'Scan Ingredients', 'Start Production'].map((s,i,a) => (<div key={i} className="flex items-center gap-2 flex-shrink-0"><div className="px-3 py-1.5 bg-white border rounded-md font-medium">{s}</div>{i<a.length-1 && <ArrowRight className="h-3 w-3 text-amber-600" />}</div>))}</div></Card>
+      <Card className="overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/50 border-b"><tr><th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">WO / Op</th><th className="text-left px-4 py-3 font-medium">PO</th><th className="text-left px-4 py-3 font-medium">Operator</th><th className="text-left px-4 py-3 font-medium">Machine</th><th className="text-left px-4 py-3 font-medium">Scan</th><th className="text-left px-4 py-3 font-medium">Input</th><th className="text-left px-4 py-3 font-medium">Output</th><th className="text-left px-4 py-3 font-medium">Scrap</th><th className="text-left px-4 py-3 font-medium">Quality</th><th className="text-left px-4 py-3 font-medium">Status</th></tr></thead><tbody>{executions.map(e => (<tr key={e.code} className={`border-b hover:bg-muted/30 ${e.status === 'IN_PROGRESS' ? 'bg-amber-50/30' : ''}`}><td className="px-4 py-3 font-mono text-xs text-blue-700">{e.code}</td><td className="px-4 py-3"><div className="font-mono text-xs font-semibold">{e.wo}</div><div className="text-[10px] text-muted-foreground">{e.op}</div></td><td className="px-4 py-3 font-mono text-[10px]">{e.po}</td><td className="px-4 py-3 text-xs">{e.operator}</td><td className="px-4 py-3 font-mono text-xs">{e.machine}</td><td className="px-4 py-3 font-mono text-xs">{e.scanTime}</td><td className="px-4 py-3 font-mono text-xs">{e.input}</td><td className="px-4 py-3 font-mono text-xs font-bold">{e.output}</td><td className="px-4 py-3 font-mono text-xs">{e.scrap > 0 ? <span className="text-rose-600">{e.scrap}</span> : '—'}</td><td className="px-4 py-3">{e.quality ? <span className={`text-xs font-bold ${e.quality === 'PASS' ? 'text-emerald-600' : 'text-rose-600'}`}>{e.quality}</span> : <span className="text-slate-400 text-xs">—</span>}</td><td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[e.status]}`}>{e.status.replace(/_/g,' ')}</span></td></tr>))}</tbody></table></div></Card>
+    </div>
+  )
+}
+
+// ─── Epic 3: Material Consumption ───────────────────────
+function MaterialConsumptionModule() {
+  const consumptions = [
+    { code: 'MC-001', po: 'PO-2026-00125', wo: 'WO-002', material: 'Cashew (W320)', batch: 'BATCH-CASHEW-018', barcode: 'CAS-W320-018', planned: 55, actual: 55, uom: 'KG', validation: 'VALID', status: 'CONSUMED', time: '07:45', op: 'Rajesh K.' },
+    { code: 'MC-002', po: 'PO-2026-00125', wo: 'WO-002', material: 'Sugar', batch: 'BATCH-SUG-042', barcode: 'SUG-042', planned: 35, actual: 35, uom: 'KG', validation: 'VALID', status: 'CONSUMED', time: '07:46', op: 'Rajesh K.' },
+    { code: 'MC-003', po: 'PO-2026-00125', wo: 'WO-002', material: 'Ghee', batch: 'BATCH-GHE-008', barcode: 'GHE-008', planned: 3, actual: 3, uom: 'KG', validation: 'VALID', status: 'CONSUMED', time: '07:47', op: 'Rajesh K.' },
+    { code: 'MC-004', po: 'PO-2026-00125', wo: 'WO-002', material: 'Cardamom Powder', batch: 'BATCH-CAR-003', barcode: 'CAR-003', planned: 0.5, actual: 0.5, uom: 'KG', validation: 'VALID', status: 'CONSUMED', time: '07:48', op: 'Rajesh K.' },
+    { code: 'MC-005', po: 'PO-2026-00125', wo: 'WO-002', material: 'Water', batch: '—', barcode: 'WTR-TAP', planned: 1.5, actual: 1.5, uom: 'LTR', validation: 'VALID', status: 'CONSUMED', time: '07:49', op: 'Rajesh K.' },
+    { code: 'MC-006', po: 'PO-2026-00126', wo: 'WO-001', material: 'Rice (Idli)', batch: 'BATCH-RIC-015', barcode: 'RIC-015', planned: 80, actual: 80, uom: 'KG', validation: 'VALID', status: 'CONSUMED', time: '05:15', op: 'Anil R.' },
+    { code: 'MC-007', po: 'PO-2026-00126', wo: 'WO-001', material: 'Urad Dal', batch: 'BATCH-URD-007', barcode: 'URD-007', planned: 25, actual: 23, uom: 'KG', validation: 'WRONG_QTY', status: 'SHORT', time: '05:20', op: 'Anil R.' },
+  ]
+  const valColors: Record<string,string> = { VALID: 'bg-emerald-100 text-emerald-700', WRONG_INGREDIENT: 'bg-rose-100 text-rose-700', EXPIRED_BATCH: 'bg-rose-100 text-rose-700', WRONG_QTY: 'bg-amber-100 text-amber-700', BLOCKED_BATCH: 'bg-red-100 text-red-700', UNKNOWN_BARCODE: 'bg-slate-100 text-slate-600', DUPLICATE_SCAN: 'bg-orange-100 text-orange-700' }
+  const statusColors: Record<string,string> = { CONSUMED: 'bg-emerald-100 text-emerald-700', SHORT: 'bg-amber-100 text-amber-700', REVERSED: 'bg-slate-100 text-slate-600', PENDING: 'bg-blue-100 text-blue-700' }
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Material Consumption — Barcode-Driven</h2><p className="text-sm text-muted-foreground mt-1">Scan ingredient → validate batch → validate quantity → consume inventory → update production</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[{label:'Total Consumed',value:consumptions.filter(c=>c.status==='CONSUMED').length,color:'text-emerald-600'},{label:'Short',value:consumptions.filter(c=>c.status==='SHORT').length,color:'text-amber-600'},{label:'Validation Errors',value:consumptions.filter(c=>c.validation!=='VALID').length,color:'text-rose-600'},{label:'Materials Scanned',value:consumptions.length,color:'text-blue-600'},{label:'Total Qty (kg)',value:consumptions.reduce((a,c)=>a+c.actual,0).toFixed(1),color:'text-purple-600'}].map(s=><Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}</div>
+      <Card className="overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/50 border-b"><tr><th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">Material</th><th className="text-left px-4 py-3 font-medium">Batch</th><th className="text-left px-4 py-3 font-medium">Barcode</th><th className="text-left px-4 py-3 font-medium">Planned</th><th className="text-left px-4 py-3 font-medium">Actual</th><th className="text-left px-4 py-3 font-medium">Validation</th><th className="text-left px-4 py-3 font-medium">Operator</th><th className="text-left px-4 py-3 font-medium">Time</th><th className="text-left px-4 py-3 font-medium">Status</th></tr></thead><tbody>{consumptions.map(c=>(<tr key={c.code} className={`border-b hover:bg-muted/30 ${c.validation!=='VALID'?'bg-rose-50/30':''}`}><td className="px-4 py-3 font-mono text-xs text-blue-700">{c.code}</td><td className="px-4 py-3 text-xs font-medium">{c.material}</td><td className="px-4 py-3 font-mono text-[10px]">{c.batch}</td><td className="px-4 py-3 font-mono text-[10px]">{c.barcode}</td><td className="px-4 py-3 font-mono text-xs">{c.planned} {c.uom}</td><td className="px-4 py-3 font-mono text-xs font-bold">{c.actual} {c.uom}</td><td className="px-4 py-3"><span className={`text-[10px] px-2 py-1 rounded ${valColors[c.validation]}`}>{c.validation.replace(/_/g,' ')}</span></td><td className="px-4 py-3 text-xs">{c.op}</td><td className="px-4 py-3 font-mono text-xs">{c.time}</td><td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[c.status]}`}>{c.status}</span></td></tr>))}</tbody></table></div></Card>
+    </div>
+  )
+}
+
+// ─── Epic 4: Machine Console ────────────────────────────
+function MachineConsoleModule() {
+  const machines = [
+    { code: 'MIX-01', name: 'Industrial Mixer 500L', line: 'LINE-KK-01', status: 'RUNNING', operator: 'Rajesh K.', wo: 'WO-003', product: 'Kaju Katli', elapsed: '45m', output: '0 kg', temp: '95°C', rpm: '120' },
+    { code: 'COOK-01', name: 'Cooking Kettle 200L', line: 'LINE-KK-01', status: 'RUNNING', operator: 'Rajesh K.', wo: 'WO-003', product: 'Kaju Katli', elapsed: '45m', output: '0 kg', temp: '108°C', rpm: '60' },
+    { code: 'GRIND-01', name: 'Wet Grinder 100L', line: 'LINE-IB-01', status: 'RUNNING', operator: 'Anil R.', wo: 'WO-002', product: 'Idli Batter', elapsed: '1h 50m', output: '45 kg', temp: '32°C', rpm: '180' },
+    { code: 'COOL-01', name: 'Cooling Tunnel', line: 'LINE-KK-01', status: 'IDLE', operator: null, wo: null, product: null, elapsed: null, output: null, temp: '22°C', rpm: '—' },
+    { code: 'CUT-01', name: 'Automatic Cutting Machine', line: 'LINE-KK-01', status: 'IDLE', operator: null, wo: null, product: null, elapsed: null, output: null, temp: '—', rpm: '—' },
+    { code: 'FRY-01', name: 'Continuous Fryer', line: 'LINE-NM-01', status: 'MAINTENANCE', operator: null, wo: null, product: null, elapsed: null, output: null, temp: '—', rpm: '—' },
+  ]
+  const statusColors: Record<string,string> = { RUNNING: 'bg-emerald-500', IDLE: 'bg-slate-400', MAINTENANCE: 'bg-rose-500', CLEANING: 'bg-blue-500', SETUP: 'bg-amber-500' }
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Machine Console — Live Machine Status</h2><p className="text-sm text-muted-foreground mt-1">Machine start/stop · setup/run/cleaning/idle/downtime tracking · temperature · RPM</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Running</p><p className="text-2xl font-bold mt-1 text-emerald-600">{machines.filter(m=>m.status==='RUNNING').length}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Idle</p><p className="text-2xl font-bold mt-1 text-slate-600">{machines.filter(m=>m.status==='IDLE').length}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Maintenance</p><p className="text-2xl font-bold mt-1 text-rose-600">{machines.filter(m=>m.status==='MAINTENANCE').length}</p></Card>
+        <Card className="p-3"><p className="text-xs text-muted-foreground">Total Machines</p><p className="text-2xl font-bold mt-1 text-blue-600">{machines.length}</p></Card>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {machines.map(m => (
+          <Card key={m.code} className={`p-4 ${m.status==='MAINTENANCE'?'border-rose-300 bg-rose-50/30':''}`}>
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center"><Server className="h-5 w-5 text-slate-700" /></div>
+                <div><div className="font-mono text-xs font-semibold">{m.code}</div><div className="text-[10px] text-muted-foreground">{m.name}</div></div>
+              </div>
+              <span className={`h-3 w-3 rounded-full ${statusColors[m.status]} ${m.status==='RUNNING'?'animate-pulse':''}`} />
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Status:</span><span className="font-bold">{m.status}</span></div>
+              {m.operator && <div className="flex justify-between"><span className="text-muted-foreground">Operator:</span><span>{m.operator}</span></div>}
+              {m.wo && <div className="flex justify-between"><span className="text-muted-foreground">Work Order:</span><span className="font-mono">{m.wo}</span></div>}
+              {m.product && <div className="flex justify-between"><span className="text-muted-foreground">Product:</span><span>{m.product}</span></div>}
+              {m.elapsed && <div className="flex justify-between"><span className="text-muted-foreground">Elapsed:</span><span className="font-mono font-bold">{m.elapsed}</span></div>}
+              {m.output && <div className="flex justify-between"><span className="text-muted-foreground">Output:</span><span className="font-mono">{m.output}</span></div>}
+              <div className="flex justify-between"><span className="text-muted-foreground">Temperature:</span><span className="font-mono font-bold text-orange-600">{m.temp}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">RPM:</span><span className="font-mono">{m.rpm}</span></div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 5: Operator Dashboard ─────────────────────────
+function OperatorDashboardModule() {
+  const operators = [
+    { code: 'OP-001', name: 'Rajesh Kumar', shift: 'Morning', line: 'LINE-KK-01', currentWO: 'WO-003 (Cooking)', status: 'BUSY', startedAt: '07:15', elapsed: '45m', todayTasks: 3, completed: 2, efficiency: 92, utilization: 88 },
+    { code: 'OP-006', name: 'Anil Reddy', shift: 'Morning', line: 'LINE-IB-01', currentWO: 'WO-002 (Grinding)', status: 'BUSY', startedAt: '05:10', elapsed: '1h 50m', todayTasks: 2, completed: 1, efficiency: 85, utilization: 94 },
+    { code: 'OP-003', name: 'Suresh Mehta', shift: 'Morning', line: 'LINE-LD-01', currentWO: null, status: 'IDLE', startedAt: null, elapsed: null, todayTasks: 0, completed: 0, efficiency: 90, utilization: 0 },
+    { code: 'OP-002', name: 'Anita Sharma', shift: 'Morning', line: 'LINE-MP-01', currentWO: null, status: 'IDLE', startedAt: null, elapsed: null, todayTasks: 0, completed: 0, efficiency: 87, utilization: 0 },
+    { code: 'OP-005', name: 'Ramesh Patel', shift: 'Morning', line: 'LINE-NM-01', currentWO: null, status: 'BREAK', startedAt: null, elapsed: null, todayTasks: 0, completed: 0, efficiency: 82, utilization: 0 },
+  ]
+  const statusColors: Record<string,string> = { BUSY: 'bg-amber-500', IDLE: 'bg-blue-500', BREAK: 'bg-slate-400', OFFLINE: 'bg-slate-300' }
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Operator Dashboard — Time Tracking</h2><p className="text-sm text-muted-foreground mt-1">Shift start/end · breaks · operation time · cleaning time · training · overtime · efficiency</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[{label:'Online',value:operators.filter(o=>o.status!=='OFFLINE').length,color:'text-emerald-600'},{label:'Busy',value:operators.filter(o=>o.status==='BUSY').length,color:'text-amber-600'},{label:'Idle',value:operators.filter(o=>o.status==='IDLE').length,color:'text-blue-600'},{label:'On Break',value:operators.filter(o=>o.status==='BREAK').length,color:'text-slate-600'},{label:'Avg Efficiency',value:`${Math.round(operators.reduce((a,o)=>a+o.efficiency,0)/operators.length)}%`,color:'text-purple-600'}].map(s=><Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{operators.map(o=>(<Card key={o.code} className="p-4"><div className="flex items-start justify-between mb-3"><div className="flex items-center gap-3"><div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${o.status==='BUSY'?'bg-amber-500 text-white':'bg-slate-300 text-slate-600'}`}>{o.name.split(' ').map(n=>n[0]).join('')}</div><div><div className="font-semibold text-sm">{o.name}</div><div className="text-[10px] text-muted-foreground font-mono">{o.code} · {o.shift}</div></div></div><span className={`h-3 w-3 rounded-full ${statusColors[o.status]} ${o.status==='BUSY'?'animate-pulse':''}`} /></div><div className="space-y-1 text-xs">{<div className="flex justify-between"><span className="text-muted-foreground">Line:</span><span className="font-mono">{o.line}</span></div>}{o.currentWO&&<div className="flex justify-between"><span className="text-muted-foreground">Current WO:</span><span className="font-mono text-amber-600">{o.currentWO}</span></div>}{o.elapsed&&<div className="flex justify-between"><span className="text-muted-foreground">Elapsed:</span><span className="font-mono font-bold">{o.elapsed}</span></div>}<div className="flex justify-between"><span className="text-muted-foreground">Today:</span><span className="font-mono">{o.completed}/{o.todayTasks} completed</span></div><div><div className="flex justify-between text-[10px] text-muted-foreground"><span>Efficiency</span><span>{o.efficiency}%</span></div><div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{width:`${o.efficiency}%`}}/></div></div></div></Card>))}</div>
+    </div>
+  )
+}
+
+// ─── Epic 6: WIP Dashboard ──────────────────────────────
+function WIPDashboardModule() {
+  const wips = [
+    { code: 'WIP-001', po: 'PO-2026-00125', product: 'Kaju Katli 500g', batch: 'BATCH-2026-A018', stage: 'COOKING', input: 95, current: 94, scrap: 1, status: 'IN_PROGRESS', operator: 'Rajesh K.', location: 'WC-KK-03' },
+    { code: 'WIP-002', po: 'PO-2026-00126', product: 'Shwet Idli Batter 1kg', batch: 'BATCH-2026-C015', stage: 'GRINDING', input: 105, current: 100, scrap: 5, status: 'IN_PROGRESS', operator: 'Anil R.', location: 'WC-IB-02' },
+    { code: 'WIP-003', po: 'PO-2026-00129', product: 'Motichoor Laddu 1kg', batch: 'BATCH-2026-E008', stage: 'FINISHED_GOODS', input: 100, current: 98, scrap: 2, status: 'COMPLETED', operator: 'Suresh M.', location: 'FG-WH-01' },
+  ]
+  const movements = [
+    { wip: 'WIP-001', from: 'MIXING', to: 'COOKING', qty: 94, scrap: 1, op: 'Rajesh K.', time: '07:15' },
+    { wip: 'WIP-001', from: 'RAW_MATERIALS', to: 'MIXING', qty: 95, scrap: 0, op: 'Rajesh K.', time: '06:45' },
+    { wip: 'WIP-002', from: 'RAW_MATERIALS', to: 'GRINDING', qty: 105, scrap: 0, op: 'Anil R.', time: '05:10' },
+    { wip: 'WIP-003', from: 'PACKING', to: 'FINISHED_GOODS', qty: 98, scrap: 0, op: 'Suresh M.', time: '14:00' },
+  ]
+  const stageColors: Record<string,string> = { RAW_MATERIALS: 'bg-slate-100 text-slate-700', MIXING: 'bg-blue-100 text-blue-700', COOKING: 'bg-orange-100 text-orange-700', GRINDING: 'bg-cyan-100 text-cyan-700', COOLING: 'bg-cyan-100 text-cyan-700', ROLLING: 'bg-purple-100 text-purple-700', CUTTING: 'bg-amber-100 text-amber-700', INSPECTION: 'bg-rose-100 text-rose-700', PACKING: 'bg-emerald-100 text-emerald-700', FINISHED_GOODS: 'bg-emerald-100 text-emerald-700' }
+  const statusColors: Record<string,string> = { IN_PROGRESS: 'bg-amber-100 text-amber-700', ON_HOLD: 'bg-orange-100 text-orange-700', COMPLETED: 'bg-emerald-100 text-emerald-700', REJECTED: 'bg-rose-100 text-rose-700', REWORK: 'bg-blue-100 text-blue-700' }
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">WIP Dashboard — Work In Progress</h2><p className="text-sm text-muted-foreground mt-1">Live WIP tracking: Raw Materials → Mixing → Cooking → Cooling → Packing → Finished Goods</p></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[{label:'Active WIP',value:wips.filter(w=>w.status==='IN_PROGRESS').length,color:'text-amber-600'},{label:'Completed',value:wips.filter(w=>w.status==='COMPLETED').length,color:'text-emerald-600'},{label:'Total WIP Qty (kg)',value:wips.filter(w=>w.status==='IN_PROGRESS').reduce((a,w)=>a+w.current,0),color:'text-blue-600'},{label:'Total Scrap (kg)',value:wips.reduce((a,w)=>a+w.scrap,0),color:'text-rose-600'}].map(s=><Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}</div>
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300"><h3 className="font-semibold mb-2 text-sm">WIP Flow — Kaju Katli (WIP-001)</h3><div className="flex items-center gap-2 text-xs overflow-x-auto">{['Raw Materials','Mixing','Cooking','Cooling','Rolling','Cutting','Inspection','Packing','Finished Goods'].map((s,i,a)=>(<div key={i} className="flex items-center gap-2 flex-shrink-0"><div className={`px-3 py-1.5 border rounded-md font-medium ${i<=2?'bg-emerald-50 border-emerald-300 text-emerald-800':i===2?'bg-amber-50 border-amber-300 text-amber-800':'bg-slate-50 border-slate-200 text-slate-500'}`}>{s}{i<2&&' ✓'}{i===2&&' ⏳'}</div>{i<a.length-1&&<ArrowRight className="h-3 w-3 text-blue-600 flex-shrink-0" />}</div>))}</div></Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><Card className="overflow-hidden"><div className="p-4 border-b"><h3 className="font-semibold">Active WIP Batches</h3></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-muted/50 border-b"><tr><th className="text-left px-4 py-3 font-medium">WIP Code</th><th className="text-left px-4 py-3 font-medium">Product</th><th className="text-left px-4 py-3 font-medium">Stage</th><th className="text-left px-4 py-3 font-medium">Input</th><th className="text-left px-4 py-3 font-medium">Current</th><th className="text-left px-4 py-3 font-medium">Scrap</th><th className="text-left px-4 py-3 font-medium">Operator</th><th className="text-left px-4 py-3 font-medium">Status</th></tr></thead><tbody>{wips.map(w=>(<tr key={w.code} className="border-b hover:bg-muted/30"><td className="px-4 py-3 font-mono text-xs text-blue-700">{w.code}</td><td className="px-4 py-3 text-xs font-medium">{w.product}</td><td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${stageColors[w.stage]||'bg-slate-100'}`}>{w.stage.replace(/_/g,' ')}</span></td><td className="px-4 py-3 font-mono text-xs">{w.input}</td><td className="px-4 py-3 font-mono text-xs font-bold">{w.current}</td><td className="px-4 py-3 font-mono text-xs">{w.scrap>0?<span className="text-rose-600">{w.scrap}</span>:'—'}</td><td className="px-4 py-3 text-xs">{w.operator}</td><td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${statusColors[w.status]}`}>{w.status.replace(/_/g,' ')}</span></td></tr>))}</tbody></table></div></Card><Card className="p-4"><h3 className="font-semibold mb-3">WIP Movements — Recent</h3><div className="space-y-2">{movements.map((m,i)=>(<div key={i} className="flex items-center gap-3 p-2 border rounded"><div className="flex-1"><div className="flex items-center gap-2 text-xs"><span className={`px-1.5 py-0.5 rounded font-mono ${stageColors[m.from]||'bg-slate-100'}`}>{m.from}</span><ArrowRight className="h-3 w-3" /><span className={`px-1.5 py-0.5 rounded font-mono ${stageColors[m.to]||'bg-slate-100'}`}>{m.to}</span></div></div><div className="text-right"><div className="font-mono text-xs font-bold">{m.qty} kg</div>{m.scrap>0&&<div className="text-[10px] text-rose-600">-{m.scrap} scrap</div>}<div className="text-[10px] text-muted-foreground">{m.op} · {m.time}</div></div></div>))}</div></Card></div>
+    </div>
+  )
+}
+
+// ─── Epic 8: Digital Andon Board ────────────────────────
+function AndonBoardModule() {
+  const [tvMode, setTvMode] = useState(false)
+  const lines = [
+    { line: 'LINE-KK-01', product: 'Kaju Katli 500g', status: 'YELLOW', target: 95, actual: 0, completed: 2, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: 'Rajesh K.' },
+    { line: 'LINE-IB-01', product: 'Shwet Idli Batter', status: 'GREEN', target: 100, actual: 45, completed: 1, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: 'Anil R.' },
+    { line: 'LINE-MP-01', product: 'Mysore Pak 250g', status: 'BLUE', target: 60, actual: 0, completed: 0, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: '—' },
+    { line: 'LINE-NM-01', product: 'Mixed Namkeen', status: 'RED', target: 150, actual: 0, completed: 0, delayed: 1, downtime: 25, quality: 1, safety: 0, operator: '—' },
+    { line: 'LINE-LD-01', product: 'Motichoor Laddu', status: 'GREEN', target: 100, actual: 98, completed: 1, delayed: 0, downtime: 0, quality: 0, safety: 0, operator: 'Suresh M.' },
+  ]
+  const statusColors: Record<string,string> = { GREEN: 'bg-emerald-500', YELLOW: 'bg-amber-500', RED: 'bg-rose-500', BLUE: 'bg-blue-500' }
+  const statusText: Record<string,string> = { GREEN: 'RUNNING', YELLOW: 'WARNING', RED: 'STOPPED', BLUE: 'SETUP' }
+  return (
+    <div className={`space-y-6 ${tvMode?'bg-slate-950 p-6 rounded-xl':''}`}>
+      <div className="flex items-center justify-between"><div><h2 className={`text-2xl font-bold ${tvMode?'text-white':''}`}>Digital Andon Board</h2><p className={`text-sm mt-1 ${tvMode?'text-slate-400':'text-muted-foreground'}`}>Live production status — Green (running) · Yellow (warning) · Red (stopped) · Blue (setup)</p></div><Button size="sm" variant={tvMode?'default':'outline'} onClick={()=>setTvMode(!tvMode)}>{tvMode?'Exit TV Mode':'TV Mode'}</Button></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{lines.map(l=>{const pct=l.actual/l.target*100;return(
+        <Card key={l.line} className={`p-4 border-l-4 ${l.status==='GREEN'?'border-l-emerald-500':l.status==='YELLOW'?'border-l-amber-500':l.status==='RED'?'border-l-rose-500':'border-l-blue-500'} ${tvMode?'bg-slate-900 text-white':''}`}>
+          <div className="flex items-center justify-between mb-3"><div><h3 className={`font-mono font-bold ${tvMode?'text-white':''}`}>{l.line}</h3><p className={`text-xs ${tvMode?'text-slate-400':'text-muted-foreground'}`}>{l.product}</p></div><div className="flex items-center gap-2"><span className={`h-4 w-4 rounded-full ${statusColors[l.status]} ${l.status==='GREEN'||l.status==='YELLOW'?'animate-pulse':''}`} /><span className={`text-sm font-bold ${tvMode?'text-white':''}`}>{statusText[l.status]}</span></div></div>
+          <div className="space-y-2"><div><div className="flex justify-between text-xs mb-1"><span className={tvMode?'text-slate-400':'text-muted-foreground'}>Output</span><span className={`font-mono font-bold ${tvMode?'text-white':''}`}>{l.actual}/{l.target} kg</span></div><div className={`h-3 rounded-full overflow-hidden ${tvMode?'bg-slate-700':'bg-muted'}`}><div className={`h-full ${pct>80?'bg-emerald-500':pct>50?'bg-amber-500':pct>0?'bg-blue-500':'bg-slate-400'}`} style={{width:`${Math.max(pct,2)}%`}}/></div></div>
+            <div className="grid grid-cols-4 gap-2 text-center text-[10px] mt-2"><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Done</p><p className={`font-bold ${tvMode?'text-white':''}`}>{l.completed}</p></div><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Delayed</p><p className={`font-bold ${l.delayed>0?'text-rose-500':tvMode?'text-white':''}`}>{l.delayed}</p></div><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Down</p><p className={`font-bold ${l.downtime>0?'text-rose-500':tvMode?'text-white':''}`}>{l.downtime}m</p></div><div><p className={tvMode?'text-slate-400':'text-muted-foreground'}>Quality</p><p className={`font-bold ${l.quality>0?'text-amber-500':tvMode?'text-white':''}`}>{l.quality}</p></div></div>
+          </div>
+        </Card>)})}</div>
+    </div>
+  )
+}
+
+// ─── Epic 7: Production Exceptions ──────────────────────
+function ProdExceptionsModule() {
+  const exceptions = [
+    { code: 'PEX-001', po: 'PO-2026-00128', wo: null, type: 'MACHINE_FAILURE', severity: 'CRITICAL', title: 'FRY-01 hydraulic failure', desc: 'Continuous Fryer hydraulic pressure loss — production halted', status: 'OPEN', reportedBy: 'Suresh Iyer', time: '15m ago', downtime: 25 },
+    { code: 'PEX-002', po: 'PO-2026-00126', wo: 'WO-001', type: 'RECIPE_DEVIATION', severity: 'HIGH', title: 'Urad Dal shortage — 2kg short', desc: 'Only 23kg available vs 25kg required. Batch BATCH-URD-007 was short.', status: 'INVESTIGATING', reportedBy: 'Anil Reddy', time: '1h ago', downtime: 5 },
+    { code: 'PEX-003', po: 'PO-2026-00125', wo: 'WO-003', type: 'TEMPERATURE_DEVIATION', severity: 'MEDIUM', title: 'Cooking temp 108°C (target 110°C ± 2°C)', desc: 'Cooking kettle COOK-01 running 2°C below target. Adjusting flame.', status: 'RESOLVED', reportedBy: 'Rajesh Kumar', time: '30m ago', downtime: 0 },
+    { code: 'PEX-004', po: 'PO-2026-00127', wo: null, type: 'OPERATOR_ABSENCE', severity: 'LOW', title: 'OP-004 Lakshmi V. late for afternoon shift', desc: 'Operator 15 min late. Supervisor covering Mysore Pak line setup.', status: 'RESOLVED', reportedBy: 'Suresh Mehta', time: '2h ago', downtime: 15 },
+  ]
+  const typeColors: Record<string,string> = { MATERIAL_SHORTAGE: 'bg-amber-100 text-amber-700', MACHINE_FAILURE: 'bg-rose-100 text-rose-700', RECIPE_DEVIATION: 'bg-orange-100 text-orange-700', QUALITY_FAILURE: 'bg-red-100 text-red-700', OPERATOR_ABSENCE: 'bg-blue-100 text-blue-700', POWER_FAILURE: 'bg-slate-100 text-slate-700', BATCH_REJECTION: 'bg-rose-100 text-rose-700', TEMPERATURE_DEVIATION: 'bg-purple-100 text-purple-700' }
+  const sevColors: Record<string,string> = { CRITICAL: 'border-rose-400 bg-rose-50/50', HIGH: 'border-orange-300 bg-orange-50/30', MEDIUM: 'border-amber-200 bg-amber-50/20', LOW: 'border-slate-200' }
+  const sevBadge: Record<string,string> = { CRITICAL: 'bg-rose-100 text-rose-700', HIGH: 'bg-orange-100 text-orange-700', MEDIUM: 'bg-amber-100 text-amber-700', LOW: 'bg-slate-100 text-slate-600' }
+  const statusBadge: Record<string,string> = { OPEN: 'bg-rose-100 text-rose-700', ACKNOWLEDGED: 'bg-blue-100 text-blue-700', INVESTIGATING: 'bg-amber-100 text-amber-700', RESOLVED: 'bg-emerald-100 text-emerald-700', ESCALATED: 'bg-red-100 text-red-700' }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between"><div><h2 className="text-2xl font-bold">Production Exception Management</h2><p className="text-sm text-muted-foreground mt-1">Material shortage · machine failure · recipe deviation · quality failure · temperature deviation</p></div><Button size="sm" variant="destructive"><AlertTriangle className="mr-2 h-4 w-4" />Report Exception</Button></div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">{[{label:'Total',value:exceptions.length,color:'text-blue-600'},{label:'Open',value:exceptions.filter(e=>e.status==='OPEN').length,color:'text-rose-600'},{label:'Investigating',value:exceptions.filter(e=>e.status==='INVESTIGATING').length,color:'text-amber-600'},{label:'Resolved',value:exceptions.filter(e=>e.status==='RESOLVED').length,color:'text-emerald-600'},{label:'Total Downtime',value:`${exceptions.reduce((a,e)=>a+e.downtime,0)}m`,color:'text-orange-600'}].map(s=><Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}</div>
+      <Card className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 border-rose-300"><h3 className="font-semibold mb-2 text-sm">Exception Resolution Workflow</h3><div className="flex items-center gap-2 text-xs overflow-x-auto">{['Exception','Supervisor','Decision','Continue / Pause / Reject / Rework'].map((s,i,a)=>(<div key={i} className="flex items-center gap-2 flex-shrink-0"><div className="px-3 py-1.5 bg-white border rounded-md font-medium">{s}</div>{i<a.length-1&&<ArrowRight className="h-3 w-3 text-rose-600"/>}</div>))}</div></Card>
+      <div className="space-y-2">{exceptions.map(e=>(<Card key={e.code} className={`p-4 border-l-4 ${sevColors[e.severity]}`}><div className="flex items-start gap-3"><div className="h-9 w-9 rounded-lg bg-white border flex items-center justify-center flex-shrink-0"><AlertTriangle className="h-4 w-4 text-rose-600"/></div><div className="flex-1"><div className="flex items-center gap-2 flex-wrap mb-1"><span className="font-mono text-xs font-semibold text-blue-700">{e.code}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${typeColors[e.type]||'bg-slate-100'}`}>{e.type.replace(/_/g,' ')}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${sevBadge[e.severity]}`}>{e.severity}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${statusBadge[e.status]}`}>{e.status}</span></div><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-muted-foreground mt-0.5">{e.desc}</p><div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground"><span>PO: {e.po}</span>{e.wo&&<span>WO: {e.wo}</span>}<span>By: {e.reportedBy}</span><span>{e.time}</span>{e.downtime>0&&<span className="text-rose-600">Downtime: {e.downtime}m</span>}</div></div>{(e.status==='OPEN'||e.status==='INVESTIGATING')&&<div className="flex flex-col gap-1"><Button size="sm" className="h-7 text-xs">Resolve</Button><Button size="sm" variant="outline" className="h-7 text-xs">Escalate</Button></div>}</div></Card>))}</div>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -17535,6 +17766,7 @@ export default function Home() {
     recipemaster: 'Recipe Master', formulabuilder: 'Formula Builder', bombuilder: 'BOM Builder', recipeversions: 'Recipe Version History', yielddashboard: 'Yield Dashboard', batchscaling: 'Batch Scaling Engine', nutritioncenter: 'Nutrition & Allergen Center', costrollup: 'Cost Roll-Up Engine', recipeapproval: 'Recipe Approval Center',
     planningdashboard: 'Production Planning Dashboard', mpsconsole: 'MPS Console', mrpworkbench: 'MRP Workbench', demandplanning: 'Demand Planning', capacityplanner: 'Capacity Planner', shortagecenter: 'Material Shortage Center', purchasesuggestions: 'Purchase Suggestions', whatifsimulator: 'What-if Simulator',
     productionorders: 'Production Orders', workorders: 'Work Orders', routingdesigner: 'Routing Designer', shopfloorschedule: 'Shop Floor Schedule', productiontraveler: 'Digital Production Traveler', assignmentconsole: 'Assignment Console', proddashboard: 'Production Execution Dashboard', progressmonitor: 'Production Progress Monitor',
+    shopfloordashboard: 'Shop Floor Execution Dashboard', woconsole: 'Work Order Execution Console', materialconsumption: 'Material Consumption', machineconsole: 'Machine Console', operatordashboard: 'Operator Dashboard', wipdashboard: 'WIP Dashboard', andonboard: 'Digital Andon Board', prodexceptions: 'Production Exceptions',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -17600,7 +17832,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 37 · 321 Tables · Part 5 MES</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 38 · 331 Tables · Part 5 MES</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -17719,11 +17951,19 @@ export default function Home() {
             {activeModule === 'assignmentconsole' && <AssignmentConsoleModule />}
             {activeModule === 'proddashboard' && <ProductionExecutionDashboardModule />}
             {activeModule === 'progressmonitor' && <ProgressMonitorModule />}
+            {activeModule === 'shopfloordashboard' && <ShopFloorExecutionDashboardModule />}
+            {activeModule === 'woconsole' && <WOExecutionConsoleModule />}
+            {activeModule === 'materialconsumption' && <MaterialConsumptionModule />}
+            {activeModule === 'machineconsole' && <MachineConsoleModule />}
+            {activeModule === 'operatordashboard' && <OperatorDashboardModule />}
+            {activeModule === 'wipdashboard' && <WIPDashboardModule />}
+            {activeModule === 'andonboard' && <AndonBoardModule />}
+            {activeModule === 'prodexceptions' && <ProdExceptionsModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-37 · Part 5 MES · 321 Database Tables · Production Orders & Shop Floor Scheduling</p>
+              <p className="mt-1">Sprints 1-38 · Part 5 MES · 331 Database Tables · Shop Floor Execution & Real-Time Manufacturing</p>
             </div>
           </main>
         </div>
