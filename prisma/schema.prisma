@@ -14355,3 +14355,329 @@ model SustainabilityMetric {
   @@index([plantCode, periodStart], map: "idx_sm45_plant_period")
   @@index([periodType, periodStart], map: "idx_sm45_period")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 46 — PRODUCTION SCHEDULING, FINITE CAPACITY PLANNING & OPTIMIZATION
+// Part 5: MES · 9 new models · Epic 1-8 (schedules, machine schedules,
+// changeovers, campaigns, simulations, constraints)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Finite Capacity Scheduling ─────────────────────────────────
+model ProductionSchedule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scheduleNumber      String   @unique @map("schedule_number") // SCH-2026-000001
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  plantName           String   @map("plant_name")
+  productionLineCode  String?  @map("production_line_code")
+  productionLineName  String?  @map("production_line_name")
+  // ─── Period ───
+  scheduleType        String   @map("schedule_type") // DAILY, WEEKLY, MONTHLY, ROLLING
+  scheduleDate        DateTime @map("schedule_date")
+  scheduleStartDate   DateTime @map("schedule_start_date")
+  scheduleEndDate     DateTime @map("schedule_end_date")
+  // ─── Planner ───
+  plannerId           String?  @db.Uuid @map("planner_id")
+  plannerName         String?  @map("planner_name")
+  // ─── Version ───
+  version             Int      @default(1) @map("version")
+  parentScheduleId    String?  @db.Uuid @map("parent_schedule_id")
+  // ─── Capacity ───
+  schedulingMethod    String   @default("FINITE_CAPACITY") @map("scheduling_method") // FINITE_CAPACITY, INFINITE_CAPACITY, FORWARD, BACKWARD, JUST_IN_TIME, CAMPAIGN, PRIORITY, MANUAL
+  totalPlannedHours   Decimal  @db.Decimal(10, 2) @default(0) @map("total_planned_hours")
+  totalAvailableHours Decimal  @db.Decimal(10, 2) @default(0) @map("total_available_hours")
+  utilizationPercent  Decimal  @db.Decimal(6, 2) @default(0) @map("utilization_percent")
+  // ─── Constraints ───
+  constraintViolations Int     @default(0) @map("constraint_violations")
+  constraintWarnings  Int      @default(0) @map("constraint_warnings")
+  // ─── Optimization ───
+  optimizationScore   Decimal? @db.Decimal(5, 2) @map("optimization_score") // 0-100
+  changeoverCount     Int      @default(0) @map("changeover_count")
+  totalChangeoverMin  Int      @default(0) @map("total_changeover_min")
+  // ─── Status ───
+  status              String   @default("DRAFT") @map("status") // DRAFT, SIMULATED, PUBLISHED, EXECUTING, COMPLETED, ARCHIVED, CANCELLED
+  publishedAt         DateTime? @map("published_at")
+  publishedById       String?  @db.Uuid @map("published_by_id")
+  publishedByName     String?  @map("published_by_name")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  operations          ScheduleOperation[]
+  versions            ScheduleVersion[]
+
+  @@map("production_schedules")
+  @@index([plantCode, scheduleDate], map: "idx_ps46_plant_date")
+  @@index([scheduleType, status], map: "idx_ps46_type_status")
+  @@index([status], map: "idx_ps46_status")
+}
+
+model ScheduleOperation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scheduleId          String   @db.Uuid @map("schedule_id")
+  scheduleNumber      String   @map("schedule_number")
+  // ─── Operation ───
+  operationNo         Int      @map("operation_no")
+  productionOrderNumber String? @map("production_order_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  productFamily       String?  @map("product_family") // KATLI, MILK_SWEET, NAMKEEN, etc.
+  // ─── Machine ───
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Shift ───
+  shiftCode           String   @map("shift_code") // SHIFT-A, SHIFT-B, SHIFT-C, WEEKEND, FESTIVAL, OVERTIME
+  // ─── Time ───
+  plannedStart        DateTime @map("planned_start")
+  plannedEnd          DateTime @map("planned_end")
+  plannedDurationMin  Int      @map("planned_duration_min")
+  setupDurationMin    Int      @default(0) @map("setup_duration_min")
+  cleaningDurationMin Int      @default(0) @map("cleaning_duration_min")
+  runtimeDurationMin  Int      @default(0) @map("runtime_duration_min")
+  // ─── Quantity ───
+  plannedQty          Decimal  @db.Decimal(14, 3) @map("planned_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Changeover ───
+  changeoverType      String?  @map("changeover_type") // NONE, MINOR, MAJOR, FULL_CLEAN
+  changeoverFromProduct String? @map("changeover_from_product")
+  // ─── Constraints ───
+  constraintsMet      Boolean  @default(true) @map("constraints_met")
+  constraintNotes     String?  @map("constraint_notes")
+  // ─── Status ───
+  status              String   @default("PLANNED") @map("status") // PLANNED, RELEASED, IN_PROGRESS, COMPLETED, SKIPPED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  schedule            ProductionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_operations")
+  @@index([scheduleId, operationNo], map: "idx_so46_schedule_op")
+  @@index([machineCode, plannedStart], map: "idx_so46_machine_time")
+  @@index([plannedStart], map: "idx_so46_time")
+}
+
+model ScheduleVersion {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scheduleId          String   @db.Uuid @map("schedule_id")
+  versionNumber       Int      @map("version_number")
+  // ─── Snapshot ───
+  snapshotData        String   @map("snapshot_data") // JSON of operations
+  changeReason        String?  @map("change_reason")
+  // ─── Comparison ───
+  utilizationPercent  Decimal  @db.Decimal(6, 2) @map("utilization_percent")
+  changeoverCount     Int      @map("changeover_count")
+  optimizationScore   Decimal? @db.Decimal(5, 2) @map("optimization_score")
+  // ─── Actor ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  schedule            ProductionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_versions")
+  @@index([scheduleId, versionNumber], map: "idx_sv46_schedule_version")
+}
+
+// ─── Epic 2: Machine-Level Scheduling ───────────────────────────────────
+model MachineSchedule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  machineScheduleCode String   @unique @map("machine_schedule_code") // MSCH-2026-000001
+  // ─── Links ───
+  scheduleId          String?  @db.Uuid @map("schedule_id")
+  scheduleNumber      String?  @map("schedule_number")
+  // ─── Machine ───
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  workCenterCode      String?  @map("work_center_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Operation ───
+  operationType       String   @map("operation_type") // PRODUCTION, SETUP, CLEANING, MAINTENANCE, IDLE, CHANGE_OVER
+  productionOrderNumber String? @map("production_order_number")
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  // ─── Time ───
+  startTime           DateTime @map("start_time")
+  endTime             DateTime? @map("end_time")
+  durationMin         Int?     @map("duration_min")
+  // ─── Shift ───
+  shiftCode           String?  @map("shift_code")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Status ───
+  status              String   @default("PLANNED") @map("status") // PLANNED, IN_PROGRESS, COMPLETED, BLOCKED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("machine_schedules")
+  @@index([machineCode, startTime], map: "idx_msch46_machine_time")
+  @@index([scheduleId], map: "idx_msch46_schedule")
+  @@index([startTime], map: "idx_msch46_time")
+}
+
+// ─── Epic 5: Changeover Optimization ────────────────────────────────────
+model Changeover {
+  id                  String   @id @default(uuid()) @db.Uuid
+  changeoverCode      String   @unique @map("changeover_code") // CHG-2026-000001
+  // ─── Machine ───
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── From / To ───
+  fromProductSku      String   @map("from_product_sku")
+  fromProductName     String   @map("from_product_name")
+  fromProductFamily   String   @map("from_product_family")
+  toProductSku        String   @map("to_product_sku")
+  toProductName       String   @map("to_product_name")
+  toProductFamily     String   @map("to_product_family")
+  // ─── Changeover Type ───
+  changeoverType      String   @map("changeover_type") // NONE, MINOR, MAJOR, FULL_CLEAN
+  // ─── Time ───
+  setupTimeMin        Int      @default(0) @map("setup_time_min")
+  cleaningTimeMin     Int      @default(0) @map("cleaning_time_min")
+  totalChangeoverMin  Int      @map("total_changeover_min")
+  // ─── Resources ───
+  operatorsRequired   Int      @default(1) @map("operators_required")
+  utilityUsage        String?  @map("utility_usage") // WATER, STEAM, DETERGENT
+  // ─── Cost ───
+  changeoverCost      Decimal  @db.Decimal(10, 2) @default(0) @map("changeover_cost")
+  // ─── Risk ───
+  allergenRisk        Boolean  @default(false) @map("allergen_risk")
+  contaminationRisk   String   @default("LOW") @map("contamination_risk") // LOW, MEDIUM, HIGH
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("changeovers")
+  @@index([machineCode, fromProductSku, toProductSku], map: "idx_chg46_machine_products")
+  @@index([changeoverType], map: "idx_chg46_type")
+}
+
+model ChangeoverRule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ruleCode            String   @unique @map("rule_code")
+  // ─── From / To Family ───
+  fromProductFamily   String   @map("from_product_family")
+  toProductFamily     String   @map("to_product_family")
+  // ─── Rule ───
+  changeoverType      String   @map("changeover_type") // NONE, MINOR, MAJOR, FULL_CLEAN
+  requiredCleaningTimeMin Int  @map("required_cleaning_time_min")
+  requiresSanitization Boolean @default(false) @map("requires_sanitization")
+  // ─── Allergen ───
+  allergenConcern     Boolean  @default(false) @map("allergen_concern")
+  allergenType        String?  @map("allergen_type") // NUTS, DAIRY, GLUTEN, SOY
+  // ─── Status ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("changeover_rules")
+  @@index([fromProductFamily, toProductFamily], map: "idx_cr46_families")
+}
+
+// ─── Epic 6: Campaign Manufacturing ─────────────────────────────────────
+model ProductionCampaign {
+  id                  String   @id @default(uuid()) @db.Uuid
+  campaignCode        String   @unique @map("campaign_code") // CMP-2026-000001
+  // ─── Campaign ───
+  campaignName        String   @map("campaign_name")
+  campaignType        String   @map("campaign_type") // PRODUCT_FAMILY, ALLERGEN_GROUP, FLAVOR_GROUP, COLOR_GROUP
+  productFamily       String   @map("product_family") // KATLI, MILK_SWEET, NAMKEEN, CHOCOLATE
+  // ─── Products ───
+  productCount        Int      @map("product_count")
+  productSkus         String   @map("product_skus") // JSON array
+  // ─── Schedule ───
+  scheduleId          String?  @db.Uuid @map("schedule_id")
+  scheduleNumber      String?  @map("schedule_number")
+  productionLineCode  String   @map("production_line_code")
+  // ─── Time ───
+  campaignStart       DateTime @map("campaign_start")
+  campaignEnd         DateTime @map("campaign_end")
+  campaignDurationMin Int      @map("campaign_duration_min")
+  // ─── Optimization ───
+  totalSetupMin       Int      @map("total_setup_min")
+  totalCleaningMin    Int      @map("total_cleaning_min")
+  savedSetupMin       Int      @default(0) @map("saved_setup_min") // vs non-campaign scheduling
+  savedCost           Decimal  @db.Decimal(10, 2) @default(0) @map("saved_cost")
+  // ─── Sequence ───
+  sequenceOrder       String   @map("sequence_order") // JSON array of product sequence
+  sequenceRationale   String?  @map("sequence_rationale")
+  // ─── Status ───
+  status              String   @default("PLANNED") @map("status") // PLANNED, EXECUTING, COMPLETED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("production_campaigns")
+  @@index([productFamily, status], map: "idx_pc46_family_status")
+  @@index([campaignStart], map: "idx_pc46_start")
+}
+
+// ─── Epic 4: Constraint-Based Scheduling ────────────────────────────────
+model ScheduleConstraint {
+  id                  String   @id @default(uuid()) @db.Uuid
+  constraintCode      String   @unique @map("constraint_code") // CON-2026-000001
+  // ─── Links ───
+  scheduleId          String?  @db.Uuid @map("schedule_id")
+  scheduleNumber      String?  @map("schedule_number")
+  operationId         String?  @db.Uuid @map("operation_id")
+  // ─── Constraint ───
+  constraintType      String   @map("constraint_type") // MATERIAL_AVAILABILITY, MACHINE_CAPACITY, OPERATOR_SKILLS, CLEANING_TIME, MAINTENANCE_WINDOW, SHELF_LIFE, BATCH_SIZE, UTILITY_CAPACITY
+  constraintDescription String  @map("constraint_description")
+  // ─── Resource ───
+  resourceType        String   @map("resource_type") // MATERIAL, MACHINE, OPERATOR, UTILITY, WAREHOUSE
+  resourceCode        String   @map("resource_code")
+  resourceName        String   @map("resource_name")
+  // ─── Status ───
+  constraintStatus    String   @default("DETECTED") @map("constraint_status") // DETECTED, VALIDATED, RESOLVED, VIOLATED, BYPASSED
+  severity            String   @default("WARNING") @map("severity") // INFO, WARNING, ERROR, BLOCKER
+  // ─── Resolution ───
+  resolutionAction    String?  @map("resolution_action")
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Audit ───
+  detectedAt          DateTime @default(now()) @map("detected_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("schedule_constraints")
+  @@index([scheduleId, constraintStatus], map: "idx_sc46_schedule_status")
+  @@index([constraintType, severity], map: "idx_sc46_type_sev")
+}
+
+// ─── Epic 8: Schedule Simulation ────────────────────────────────────────
+model ScheduleSimulation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  simulationCode      String   @unique @map("simulation_code") // SIM-2026-000001
+  // ─── Source ───
+  sourceScheduleId    String   @db.Uuid @map("source_schedule_id")
+  sourceScheduleNumber String   @map("source_schedule_number")
+  // ─── Scenario ───
+  scenarioType        String   @map("scenario_type") // MACHINE_FAILURE, RUSH_ORDER, MATERIAL_DELAY, OPERATOR_ABSENCE, DEMAND_INCREASE, POWER_SHUTDOWN
+  scenarioDescription String   @map("scenario_description")
+  scenarioParameters  String?  @map("scenario_parameters") // JSON
+  // ─── Impact ───
+  capacityImpactPercent Decimal @db.Decimal(6, 2) @default(0) @map("capacity_impact_percent")
+  delayForecastMin    Int      @default(0) @map("delay_forecast_min")
+  costImpact          Decimal  @db.Decimal(14, 2) @default(0) @map("cost_impact")
+  affectedOperations  Int      @default(0) @map("affected_operations")
+  affectedMachines    Int      @default(0) @map("affected_machines")
+  // ─── Revised Schedule ───
+  revisedScheduleGenerated Boolean @default(false) @map("revised_schedule_generated")
+  revisedScheduleNumber String?  @map("revised_schedule_number")
+  revisedUtilization  Decimal? @db.Decimal(6, 2) @map("revised_utilization")
+  // ─── Performance ───
+  simulationDurationMs Int?    @map("simulation_duration_ms") // target <15000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Audit ───
+  simulatedAt         DateTime @default(now()) @map("simulated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("schedule_simulations")
+  @@index([sourceScheduleId], map: "idx_sim46_source")
+  @@index([scenarioType], map: "idx_sim46_scenario")
+}
