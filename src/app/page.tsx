@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils'
 // ─── Types ──────────────────────────────────────────────
 type ModuleKey =
   | 'dashboard' | 'organization' | 'rbac' | 'products' | 'pim' | 'commercial' | 'partners' | 'identification' | 'governance' | 'inventory' | 'goodsreceipt' | 'stockissue' | 'transfer' | 'adjustment' | 'reservation' | 'cyclecount' | 'batchmgmt' | 'costing'
-  | 'warehouse' | 'whlocations' | 'manufacturing' | 'quality'
+  | 'warehouse' | 'whlocations' | 'receiving' | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
 
@@ -101,7 +101,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
           <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
             <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
           </Button>
-          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-23 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins)</p>
+          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-24 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins, Receiving & ASN Engine)</p>
         </Card>
       </div>
     </div>
@@ -150,6 +150,7 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Mission Control', icon: <BarChart3 className="h-4 w-4" />, module: 'analytics', available: true },
       { name: 'Warehouse', icon: <Warehouse className="h-4 w-4" />, module: 'warehouse', available: true },
       { name: 'Locations & Bins', icon: <MapPinIcon className="h-4 w-4" />, module: 'whlocations', available: true },
+      { name: 'Receiving', icon: <Truck className="h-4 w-4" />, module: 'receiving', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -204,6 +205,7 @@ function DashboardModule() {
     { sprint: 'Sprint 21', name: 'Inventory Analytics & Mission Control', status: 'done', desc: 'Inventory KPIs, Ageing Analysis, ABC/XYZ/FSN Classification, Reorder Rules, Mission Control Dashboard, Executive Reports — PART 3 COMPLETE' },
     { sprint: 'Sprint 22', name: 'Warehouse Foundation — PART 4 BEGUN', status: 'done', desc: 'Warehouse Master, Zones, Temperature Zones & Logs, Capacity, Calendar, Access Rules, Warehouse Rules — 6-warehouse Mumbai architecture' },
     { sprint: 'Sprint 23', name: 'Warehouse Location & Bin Management', status: 'done', desc: 'Aisles, Racks, Shelves, Bins, Bin Capacity Logs — 6-level hierarchy (Warehouse→Zone→Aisle→Rack→Shelf→Bin), scanner-first workflow, bin capacity alerts' },
+    { sprint: 'Sprint 24', name: 'Receiving Operations, Dock Management & ASN Engine', status: 'done', desc: 'Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — 9-step receiving flow (Supplier→ASN→Appt→Gate→Dock→Unload→Verify→GRN→Putaway), pallet-level receiving' },
   ]
 
   return (
@@ -212,16 +214,16 @@ function DashboardModule() {
         <h2 className="text-2xl font-bold mb-1">Welcome to SUOP Admin</h2>
         <p className="text-slate-300 text-sm max-w-3xl">
           Sudhastar Unified Operating Platform — Enterprise Operating System for Food Manufacturing,
-          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 23 of 33) — Locations & Bins</span>.
+          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 24 of 33)</span>.
         </p>
         <div className="flex items-center gap-6 mt-4">
-          <div className="text-center"><p className="text-3xl font-bold">198</p><p className="text-xs text-slate-400">Database Tables</p></div>
+          <div className="text-center"><p className="text-3xl font-bold">204</p><p className="text-xs text-slate-400">Database Tables</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">821</p><p className="text-xs text-slate-400">Architecture Entities</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">249</p><p className="text-xs text-slate-400">Arch. Decisions</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
-          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">23</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
+          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">24</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
         </div>
       </Card>
 
@@ -7850,6 +7852,460 @@ function WhLocCapacityTab() {
   )
 }
 
+// ─── Receiving Operations Module (Sprint 24) ───────────────
+type RecvTab = 'overview' | 'asns' | 'appointments' | 'docks' | 'exceptions'
+
+const RECV_TYPE_COLORS: Record<string, string> = {
+  PURCHASE_ORDER: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  INTER_WAREHOUSE_TRANSFER: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  CUSTOMER_RETURN: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  SUPPLIER_REPLACEMENT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  MANUFACTURING_RECEIPT: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  VENDOR_MANAGED_INVENTORY: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  OPENING_STOCK: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+  SAMPLE_DELIVERY: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300',
+}
+
+const ASN_STATUS_COLORS: Record<string, string> = {
+  DRAFT: 'bg-slate-500 text-white',
+  SUBMITTED: 'bg-blue-500 text-white',
+  CONFIRMED: 'bg-cyan-600 text-white',
+  VEHICLE_ARRIVED: 'bg-amber-500 text-white',
+  RECEIVING: 'bg-purple-600 text-white',
+  COMPLETED: 'bg-emerald-600 text-white',
+  CANCELLED: 'bg-red-600 text-white',
+}
+
+const APPT_STATUS_COLORS: Record<string, string> = {
+  SCHEDULED: 'bg-slate-500 text-white',
+  CONFIRMED: 'bg-cyan-600 text-white',
+  ARRIVED: 'bg-amber-500 text-white',
+  IN_PROGRESS: 'bg-purple-600 text-white',
+  COMPLETED: 'bg-emerald-600 text-white',
+  CANCELLED: 'bg-red-600 text-white',
+  NO_SHOW: 'bg-red-700 text-white',
+}
+
+const APPT_PRIORITY_COLORS: Record<string, string> = {
+  EMERGENCY: 'bg-red-600 text-white',
+  HIGH: 'bg-amber-500 text-white',
+  NORMAL: 'bg-blue-500 text-white',
+  LOW: 'bg-slate-400 text-white',
+}
+
+const DOCK_TYPE_COLORS: Record<string, string> = {
+  RECEIVING_DOCK: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  DISPATCH_DOCK: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  MIXED_DOCK: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  COLD_DOCK: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  BULK_DOCK: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  CONTAINER_DOCK: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+}
+
+const DOCK_STATUS_COLORS: Record<string, string> = {
+  AVAILABLE: 'bg-emerald-600 text-white',
+  OCCUPIED: 'bg-amber-500 text-white',
+  MAINTENANCE: 'bg-red-600 text-white',
+  CLOSED: 'bg-slate-500 text-white',
+}
+
+const EXCEPTION_TYPE_COLORS: Record<string, string> = {
+  SHORT_DELIVERY: 'bg-red-600 text-white',
+  OVER_DELIVERY: 'bg-amber-500 text-white',
+  DAMAGED_GOODS: 'bg-orange-500 text-white',
+  WRONG_PRODUCT: 'bg-purple-600 text-white',
+  WRONG_BATCH: 'bg-pink-500 text-white',
+  BROKEN_SEAL: 'bg-red-700 text-white',
+  TEMPERATURE_VIOLATION: 'bg-cyan-600 text-white',
+  MISSING_DOCUMENTS: 'bg-slate-500 text-white',
+}
+
+const RESOLUTION_STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-red-600 text-white',
+  UNDER_REVIEW: 'bg-amber-500 text-white',
+  ACCEPTED: 'bg-emerald-600 text-white',
+  REJECTED: 'bg-red-700 text-white',
+  PARTIAL_ACCEPT: 'bg-blue-600 text-white',
+  ESCALATED: 'bg-purple-600 text-white',
+}
+
+const GATE_STATUS_COLORS: Record<string, string> = {
+  ARRIVED: 'bg-amber-500 text-white',
+  IN_WAREHOUSE: 'bg-blue-600 text-white',
+  DEPARTED: 'bg-emerald-600 text-white',
+  DENIED: 'bg-red-600 text-white',
+}
+
+const RECV_ASNS = [
+  { id: 'asn-001', asnNumber: 'ASN-2026-0001', asnDate: '2026-07-08', expectedArrival: '2026-07-09 08:00', receivingType: 'PURCHASE_ORDER', supplierName: 'Marwadi Cashew Suppliers', referenceType: 'PURCHASE_ORDER', referenceNumber: 'PO-2026-0042', vehicleNumber: 'MH-04-AB-1234', driverName: 'Ramesh Yadav', carrierName: 'Patel Transport Co.', warehouseName: 'Raw Material Warehouse', status: 'VEHICLE_ARRIVED', totalLines: 3, totalPallets: 12, totalCartons: 48, totalQuantity: 1800, totalWeight: 4500.00 },
+  { id: 'asn-002', asnNumber: 'ASN-2026-0002', asnDate: '2026-07-07', expectedArrival: '2026-07-09 10:00', receivingType: 'INTER_WAREHOUSE_TRANSFER', supplierName: 'Sudhastar Pune Plant (Inter-WH)', referenceType: 'STOCK_TRANSFER', referenceNumber: 'ST-2026-0018', vehicleNumber: 'MH-12-CD-5678', driverName: 'Suresh Kumar', carrierName: 'Sudhastar Logistics', warehouseName: 'Finished Goods Warehouse', status: 'CONFIRMED', totalLines: 2, totalPallets: 8, totalCartons: 32, totalQuantity: 960, totalWeight: 720.00 },
+  { id: 'asn-003', asnNumber: 'ASN-2026-0003', asnDate: '2026-07-06', expectedArrival: '2026-07-08 14:00', receivingType: 'CUSTOMER_RETURN', supplierName: 'Retail Customer — Mumbai Store 01', referenceType: 'SALES_RETURN', referenceNumber: 'SR-2026-0093', vehicleNumber: 'MH-01-EF-9012', driverName: 'Ajay Singh', carrierName: 'Customer Vehicle', warehouseName: 'Finished Goods Warehouse', status: 'COMPLETED', totalLines: 1, totalPallets: 1, totalCartons: 4, totalQuantity: 24, totalWeight: 18.00 },
+  { id: 'asn-004', asnNumber: 'ASN-2026-0004', asnDate: '2026-07-09', expectedArrival: '2026-07-10 08:30', receivingType: 'SUPPLIER_REPLACEMENT', supplierName: 'Marwadi Cashew Suppliers', referenceType: 'RECEIVING_EXCEPTION', referenceNumber: 'RE-2026-0011', vehicleNumber: 'MH-04-GH-3456', driverName: 'Mohan Lal', carrierName: 'Patel Transport Co.', warehouseName: 'Raw Material Warehouse', status: 'CONFIRMED', totalLines: 1, totalPallets: 2, totalCartons: 8, totalQuantity: 20, totalWeight: 500.00 },
+  { id: 'asn-005', asnNumber: 'ASN-2026-0005', asnDate: '2026-07-09', expectedArrival: '2026-07-09 11:00', receivingType: 'MANUFACTURING_RECEIPT', supplierName: 'Internal Production Block', referenceType: 'PRODUCTION_ORDER', referenceNumber: 'PRD-2026-0156', vehicleNumber: 'WH-INT-001', driverName: 'Internal Lift', carrierName: 'Internal Material Handling', warehouseName: 'Finished Goods Warehouse', status: 'RECEIVING', totalLines: 2, totalPallets: 6, totalCartons: 24, totalQuantity: 720, totalWeight: 540.00 },
+  { id: 'asn-006', asnNumber: 'ASN-2026-0006', asnDate: '2026-07-09', expectedArrival: '2026-07-11 09:00', receivingType: 'VENDOR_MANAGED_INVENTORY', supplierName: 'VMI Partner — Premium Dry Fruits LLP', referenceType: 'VMI_CONTRACT', referenceNumber: 'VMI-2026-CN-003', vehicleNumber: 'GJ-01-IJ-7890', driverName: 'Imran Khan', carrierName: 'VMI Dedicated Logistics', warehouseName: 'Raw Material Warehouse', status: 'DRAFT', totalLines: 2, totalPallets: 5, totalCartons: 20, totalQuantity: 600, totalWeight: 1500.00 },
+]
+
+const RECV_APPOINTMENTS = [
+  { id: 'appt-001', appointmentNumber: 'RAP-2026-0001', appointmentDate: '2026-07-09', startTime: '08:00', endTime: '10:00', dockCode: 'RD-01', supplierName: 'Marwadi Cashew Suppliers', vehicleNumber: 'MH-04-AB-1234', driverName: 'Ramesh Yadav', asnNumber: 'ASN-2026-0001', warehouseName: 'Raw Material Warehouse', priority: 'HIGH', status: 'ARRIVED' },
+  { id: 'appt-002', appointmentNumber: 'RAP-2026-0002', appointmentDate: '2026-07-09', startTime: '10:00', endTime: '12:00', dockCode: 'RD-02', supplierName: 'Sudhastar Pune Plant (Inter-WH)', vehicleNumber: 'MH-12-CD-5678', driverName: 'Suresh Kumar', asnNumber: 'ASN-2026-0002', warehouseName: 'Finished Goods Warehouse', priority: 'NORMAL', status: 'CONFIRMED' },
+  { id: 'appt-003', appointmentNumber: 'RAP-2026-0003', appointmentDate: '2026-07-10', startTime: '09:00', endTime: '11:00', dockCode: 'RD-03', supplierName: 'Premium Packaging Solutions', vehicleNumber: 'MH-14-KL-2345', driverName: 'Vijay Patil', asnNumber: null, warehouseName: 'Packaging Warehouse', priority: 'NORMAL', status: 'SCHEDULED' },
+  { id: 'appt-004', appointmentNumber: 'RAP-2026-0004', appointmentDate: '2026-07-08', startTime: '14:00', endTime: '16:00', dockCode: 'RD-02', supplierName: 'Internal Manufacturing Receipt', vehicleNumber: 'WH-INT-001', driverName: 'Internal Lift', asnNumber: 'ASN-2026-0005', warehouseName: 'Finished Goods Warehouse', priority: 'EMERGENCY', status: 'COMPLETED' },
+]
+
+const RECV_GATE_ENTRIES = [
+  { id: 'ge-001', gatePassNumber: 'GP-IN-2026-0001', gateDate: '2026-07-09 07:55', entryType: 'INBOUND', vehicleNumber: 'MH-04-AB-1234', vehicleType: 'TRUCK', driverName: 'Ramesh Yadav', sealNumber: 'SL-2026-A001', sealIntact: true, arrivalTime: '07:55', exitTime: null, referenceNumber: 'ASN-2026-0001', warehouseName: 'Raw Material Warehouse', status: 'IN_WAREHOUSE', remarks: 'On-time arrival. Seal verified intact.' },
+  { id: 'ge-002', gatePassNumber: 'GP-IN-2026-0002', gateDate: '2026-07-09 06:30', entryType: 'INBOUND', vehicleNumber: 'GJ-01-IJ-7890', vehicleType: 'CONTAINER', driverName: 'Imran Khan', sealNumber: 'SL-2026-B002', sealIntact: false, arrivalTime: '06:30', exitTime: '09:45', referenceNumber: 'ASN-2026-0003', warehouseName: 'Finished Goods Warehouse', status: 'DEPARTED', remarks: 'BROKEN SEAL detected. Cargo quarantined, supplier replacement authorized.' },
+  { id: 'ge-003', gatePassNumber: 'GP-IN-2026-0003', gateDate: '2026-07-09 10:45', entryType: 'INBOUND', vehicleNumber: 'WH-INT-001', vehicleType: 'VAN', driverName: 'Internal Material Handler', sealNumber: 'N/A', sealIntact: true, arrivalTime: '10:45', exitTime: null, referenceNumber: 'ASN-2026-0005', warehouseName: 'Finished Goods Warehouse', status: 'IN_WAREHOUSE', remarks: 'Internal inter-warehouse transfer. No seal (internal vehicle).' },
+]
+
+const RECV_DOCKS = [
+  { id: 'dock-rm-01', warehouseName: 'Raw Material Warehouse', dockCode: 'RD-01', dockName: 'Receiving Dock 01 — Raw Material Bulk', dockType: 'RECEIVING_DOCK', dockDoorNumber: 'D-RM-01', maxVehicleSize: 'LARGE', isTemperatureControlled: false, temperatureZone: 'AMBIENT', hasForkliftAccess: true, hasPalletJack: true, hasConveyor: false, status: 'OCCUPIED', currentVehicleNumber: 'MH-04-AB-1234', totalOperations: 247, avgUnloadTime: 38 },
+  { id: 'dock-fg-01', warehouseName: 'Finished Goods Warehouse', dockCode: 'RD-02', dockName: 'Mixed Dock 02 — FG Receiving & Dispatch', dockType: 'MIXED_DOCK', dockDoorNumber: 'D-FG-02', maxVehicleSize: 'MEDIUM', isTemperatureControlled: false, temperatureZone: 'AMBIENT', hasForkliftAccess: true, hasPalletJack: true, hasConveyor: true, status: 'OCCUPIED', currentVehicleNumber: 'WH-INT-001', totalOperations: 412, avgUnloadTime: 22 },
+  { id: 'dock-fg-02', warehouseName: 'Finished Goods Warehouse', dockCode: 'DD-03', dockName: 'Dispatch Dock 03 — FG Outbound', dockType: 'DISPATCH_DOCK', dockDoorNumber: 'D-FG-03', maxVehicleSize: 'LARGE', isTemperatureControlled: false, temperatureZone: 'AMBIENT', hasForkliftAccess: true, hasPalletJack: true, hasConveyor: false, status: 'AVAILABLE', currentVehicleNumber: null, totalOperations: 305, avgUnloadTime: 18 },
+  { id: 'dock-cs-01', warehouseName: 'Cold Storage Warehouse', dockCode: 'CD-04', dockName: 'Cold Dock 04 — Chilled Receiving', dockType: 'COLD_DOCK', dockDoorNumber: 'D-CS-04', maxVehicleSize: 'MEDIUM', isTemperatureControlled: true, temperatureZone: 'CHILLED', hasForkliftAccess: true, hasPalletJack: true, hasConveyor: false, status: 'MAINTENANCE', currentVehicleNumber: null, totalOperations: 158, avgUnloadTime: 45 },
+  { id: 'dock-pkg-01', warehouseName: 'Packaging Warehouse', dockCode: 'BD-05', dockName: 'Bulk Dock 05 — Packaging Materials', dockType: 'BULK_DOCK', dockDoorNumber: 'D-PKG-05', maxVehicleSize: 'CONTAINER', isTemperatureControlled: false, temperatureZone: 'AMBIENT', hasForkliftAccess: true, hasPalletJack: false, hasConveyor: true, status: 'AVAILABLE', currentVehicleNumber: null, totalOperations: 89, avgUnloadTime: 55 },
+]
+
+const RECV_EXCEPTIONS = [
+  { id: 're-001', exceptionNumber: 'RE-2026-0009', exceptionDate: '2026-07-09 09:30', asnNumber: 'ASN-2026-0001', exceptionType: 'SHORT_DELIVERY', description: 'Supplier shipped 55 sacks instead of expected 60. Verified via physical count at receiving dock.', productName: 'Raw Cashew W240 (25kg sack)', expectedQty: 60, receivedQty: 55, differenceQty: -5, resolutionStatus: 'ACCEPTED', resolutionAction: 'SUPPLIER_CREDIT_NOTE', resolutionNotes: 'Credit note CN-2026-0098 raised for 5 sacks (₹6,250).', resolvedByName: 'Receiving Clerk A', status: 'RESOLVED' },
+  { id: 're-002', exceptionNumber: 'RE-2026-0010', exceptionDate: '2026-07-09 10:15', asnNumber: 'ASN-2026-0001', exceptionType: 'DAMAGED_GOODS', description: '4 boxes of California Almonds damaged in transit — outer carton crushed, inner product intact.', productName: 'Almond California (10kg box)', expectedQty: 80, receivedQty: 76, differenceQty: -4, resolutionStatus: 'UNDER_REVIEW', resolutionAction: null, resolutionNotes: 'Quality team evaluating salvageability.', resolvedByName: null, status: 'ACTIVE' },
+  { id: 're-003', exceptionNumber: 'RE-2026-0011', exceptionDate: '2026-07-09 06:45', asnNumber: 'ASN-2026-0003', exceptionType: 'BROKEN_SEAL', description: 'Vehicle seal (SL-2026-B002) broken on arrival at gate. Cargo quarantined pending supplier verification.', productName: 'Kaju Katli 500g (Box of 12)', expectedQty: 24, receivedQty: 24, differenceQty: 0, resolutionStatus: 'REJECTED', resolutionAction: 'SUPPLIER_REPLACEMENT_ASN', resolutionNotes: 'Chain-of-custody broken. Supplier issued replacement ASN-2026-0004.', resolvedByName: 'QA Manager', status: 'RESOLVED' },
+  { id: 're-004', exceptionNumber: 'RE-2026-0012', exceptionDate: '2026-07-09 11:30', asnNumber: 'ASN-2026-0005', exceptionType: 'WRONG_PRODUCT', description: 'Production line sent 240 boxes of Soan Cake 1kg with 750g variant label mixup. Mismatch detected during receiving scan.', productName: 'Soan Cake 1kg (Box of 6)', expectedQty: 360, receivedQty: 240, differenceQty: -120, resolutionStatus: 'PENDING', resolutionAction: null, resolutionNotes: null, resolvedByName: null, status: 'ACTIVE' },
+]
+
+function ReceivingModule() {
+  const [tab, setTab] = useState<RecvTab>('overview')
+  const tabs: Array<{ key: RecvTab; label: string; icon: React.ReactNode }> = [
+    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+    { key: 'asns', label: 'ASNs', icon: <Truck className="h-4 w-4" /> },
+    { key: 'appointments', label: 'Appointments', icon: <Calendar className="h-4 w-4" /> },
+    { key: 'docks', label: 'Docks', icon: <Warehouse className="h-4 w-4" /> },
+    { key: 'exceptions', label: 'Exceptions', icon: <AlertTriangle className="h-4 w-4" /> },
+  ]
+
+  const overviewStats = [
+    { label: 'Active ASNs', value: '4', sub: '2 ARRIVED · 2 CONFIRMED', icon: <Truck className="h-5 w-5 text-blue-600" />, color: 'text-blue-600' },
+    { label: "Today's Appointments", value: '2', sub: '1 ARRIVED · 1 CONFIRMED', icon: <Calendar className="h-5 w-5 text-cyan-600" />, color: 'text-cyan-600' },
+    { label: 'Available Docks', value: '2', sub: 'of 5 docks', icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />, color: 'text-emerald-600' },
+    { label: 'Occupied Docks', value: '2', sub: 'RD-01, RD-02', icon: <Activity className="h-5 w-5 text-amber-600" />, color: 'text-amber-600' },
+    { label: 'Gate Entries Today', value: '3', sub: '1 broken seal', icon: <ShieldCheck className="h-5 w-5 text-purple-600" />, color: 'text-purple-600' },
+    { label: 'Active Exceptions', value: '2', sub: '1 PENDING · 1 REVIEW', icon: <AlertTriangle className="h-5 w-5 text-red-600" />, color: 'text-red-600' },
+    { label: 'Avg Dock-to-Stock', value: '42 min', sub: 'SLA: ≤ 60 min', icon: <Clock className="h-5 w-5 text-indigo-600" />, color: 'text-indigo-600' },
+    { label: 'Receiving Efficiency', value: '94.5%', sub: 'On-time: 87.5%', icon: <Gauge className="h-5 w-5 text-teal-600" />, color: 'text-teal-600' },
+  ]
+
+  const receivingFlow = [
+    { label: 'Supplier', icon: <Users2 className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+    { label: 'ASN', icon: <FileText className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+    { label: 'Appointment', icon: <Calendar className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
+    { label: 'Gate Entry', icon: <ShieldCheck className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+    { label: 'Dock', icon: <Warehouse className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+    { label: 'Unload', icon: <ArrowDownToLine className="h-4 w-4" />, color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+    { label: 'Verify', icon: <ClipboardCheck className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
+    { label: 'Goods Receipt', icon: <PackageCheck className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
+    { label: 'Putaway', icon: <ArrowUpFromLine className="h-4 w-4" />, color: 'bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300' },
+  ]
+
+  const palletHierarchy = [
+    { level: '1 Pallet', qty: '1', color: 'bg-emerald-500', desc: 'Scan ONE barcode — receive entire pallet' },
+    { level: 'Boxes', qty: '48', color: 'bg-blue-500', desc: 'Pallet-internal packing list (printed by supplier)' },
+    { level: 'Packs', qty: '24', color: 'bg-purple-500', desc: 'Inner packs per box (6 packs × 8 boxes)' },
+    { level: 'Units', qty: '12', color: 'bg-amber-500', desc: 'Smallest sellable unit per pack' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-cyan-900 text-white border-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><Truck className="h-7 w-7" /> Receiving Operations & ASN Engine</h2>
+            <p className="text-emerald-100 text-sm max-w-3xl">Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — the physical warehouse receiving layer. 9-step flow: Supplier → ASN → Appointment → Gate Entry → Dock → Unload → Verify → Goods Receipt → Putaway.</p>
+          </div>
+          <Badge className="bg-emerald-500 text-emerald-950 hover:bg-emerald-500">Sprint 24 · Part 4 WMS</Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 24 · 204 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 ASNs</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Appointments</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">3 Gate Entries</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">5 Loading Docks</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Receiving Exceptions</Badge>
+        </div>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map(t => (
+          <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)} className="gap-2">
+            {t.icon}{t.label}
+          </Button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {overviewStats.map(s => (
+              <Card key={s.label} className="p-4">
+                <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+                <p className="text-2xl font-bold">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2"><Workflow className="h-5 w-5" /> Receiving Flow — 9 Steps</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {receivingFlow.map((step, i) => (
+                <div key={step.label} className="flex items-center gap-2">
+                  <div className={cn('flex flex-col items-center gap-1 px-3 py-2 rounded-lg min-w-[90px]', step.color)}>
+                    {step.icon}
+                    <span className="text-xs font-medium">{step.label}</span>
+                  </div>
+                  {i < receivingFlow.length - 1 && <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">The ASN is the digital twin of incoming cargo before it physically arrives. Without an ASN, the gate cannot pre-validate, the dock cannot be pre-assigned, and the receiving clerk has no expected-quantity to scan against.</p>
+          </Card>
+
+          <Card className="p-6 border-l-4 border-l-amber-500">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 flex-shrink-0">
+                <Boxes className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 flex items-center gap-2">Pallet-Level Receiving <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">Chief Architect Recommendation</Badge></h3>
+                <p className="text-sm text-muted-foreground mb-4">Receive by scanning ONE pallet barcode instead of 48 individual box barcodes. The system trusts the pallet-internal packing list (printed by supplier) and verifies via 5% statistical sampling. This reduces receiving time by 80% (40 min → 8 min/vehicle) and barcode-scan errors by 95% (3% → 0.1%).</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {palletHierarchy.map((h, i) => (
+                    <div key={h.level} className="flex items-center gap-2">
+                      <div className={cn('flex h-9 w-9 items-center justify-center rounded-md text-white font-bold text-sm', h.color)}>{h.qty}</div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium">{h.level}</p>
+                        <p className="text-xs text-muted-foreground">{i === 0 ? 'Pallet level' : `per ${palletHierarchy[i - 1].level.toLowerCase()}`}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+                  <ArrowRight className="h-3 w-3" />
+                  <span>1 Pallet → 48 Boxes → 24 Packs → 12 Units · Each level has its own barcode + packing slip</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === 'asns' && (
+        <Card className="p-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="py-2 px-3 font-medium">ASN Number</th>
+                  <th className="py-2 px-3 font-medium">Type</th>
+                  <th className="py-2 px-3 font-medium">Supplier</th>
+                  <th className="py-2 px-3 font-medium">Expected Arrival</th>
+                  <th className="py-2 px-3 font-medium">Vehicle</th>
+                  <th className="py-2 px-3 font-medium">Warehouse</th>
+                  <th className="py-2 px-3 font-medium text-center">Lines</th>
+                  <th className="py-2 px-3 font-medium text-center">Pallets</th>
+                  <th className="py-2 px-3 font-medium text-center">Cartons</th>
+                  <th className="py-2 px-3 font-medium text-center">Total Qty</th>
+                  <th className="py-2 px-3 font-medium">Status</th>
+                  <th className="py-2 px-3 font-medium text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {RECV_ASNS.map(a => (
+                  <tr key={a.id} className="border-b hover:bg-muted/30">
+                    <td className="py-2 px-3 font-mono text-xs font-semibold">{a.asnNumber}</td>
+                    <td className="py-2 px-3"><Badge className={cn('text-xs', RECV_TYPE_COLORS[a.receivingType])}>{a.receivingType.replace(/_/g, ' ')}</Badge></td>
+                    <td className="py-2 px-3 text-xs">{a.supplierName}</td>
+                    <td className="py-2 px-3 text-xs font-mono">{a.expectedArrival}</td>
+                    <td className="py-2 px-3 text-xs font-mono">{a.vehicleNumber}</td>
+                    <td className="py-2 px-3 text-xs">{a.warehouseName}</td>
+                    <td className="py-2 px-3 text-center font-mono">{a.totalLines}</td>
+                    <td className="py-2 px-3 text-center font-mono">{a.totalPallets}</td>
+                    <td className="py-2 px-3 text-center font-mono">{a.totalCartons}</td>
+                    <td className="py-2 px-3 text-center font-mono font-semibold">{a.totalQuantity}</td>
+                    <td className="py-2 px-3"><Badge className={cn('text-xs', ASN_STATUS_COLORS[a.status])}>{a.status.replace(/_/g, ' ')}</Badge></td>
+                    <td className="py-2 px-3 text-center">
+                      {a.status === 'CONFIRMED' && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><CheckCircle2 className="h-3 w-3" />Confirm</Button>
+                      )}
+                      {a.status !== 'CONFIRMED' && <span className="text-xs text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+            <p className="text-xs text-muted-foreground">6 ASNs across 8 receiving types — PURCHASE_ORDER, INTER_WAREHOUSE_TRANSFER, CUSTOMER_RETURN, SUPPLIER_REPLACEMENT, MANUFACTURING_RECEIPT, VENDOR_MANAGED_INVENTORY</p>
+            <Badge variant="outline">7 status colors · 8 type colors</Badge>
+          </div>
+        </Card>
+      )}
+
+      {tab === 'appointments' && (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {RECV_APPOINTMENTS.map(a => (
+              <Card key={a.id} className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-mono text-sm font-semibold">{a.appointmentNumber}</p>
+                    <p className="text-xs text-muted-foreground">{a.warehouseName} · Dock {a.dockCode}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge className={cn('text-xs', APPT_PRIORITY_COLORS[a.priority])}>{a.priority}</Badge>
+                    <Badge className={cn('text-xs', APPT_STATUS_COLORS[a.status])}>{a.status.replace(/_/g, ' ')}</Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div className="rounded-md bg-muted/50 p-2">
+                    <p className="text-xs text-muted-foreground">Date</p>
+                    <p className="font-mono text-sm font-semibold">{a.appointmentDate}</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-2">
+                    <p className="text-xs text-muted-foreground">Time Slot</p>
+                    <p className="font-mono text-sm font-semibold">{a.startTime}–{a.endTime}</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-2">
+                    <p className="text-xs text-muted-foreground">ASN</p>
+                    <p className="font-mono text-sm font-semibold">{a.asnNumber || '—'}</p>
+                  </div>
+                </div>
+                <Separator className="my-3" />
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center gap-2"><Users2 className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">Supplier:</span><span className="font-medium">{a.supplierName}</span></div>
+                  <div className="flex items-center gap-2"><Truck className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">Vehicle:</span><span className="font-mono font-medium">{a.vehicleNumber}</span></div>
+                  <div className="flex items-center gap-2"><UserCog className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">Driver:</span><span className="font-medium">{a.driverName}</span></div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'docks' && (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {RECV_DOCKS.map(d => (
+              <Card key={d.id} className={cn('p-4 border-l-4', d.status === 'AVAILABLE' && 'border-l-emerald-500', d.status === 'OCCUPIED' && 'border-l-amber-500', d.status === 'MAINTENANCE' && 'border-l-red-500', d.status === 'CLOSED' && 'border-l-slate-500')}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-mono text-sm font-bold">{d.dockCode}</p>
+                    <p className="text-xs text-muted-foreground">{d.dockName}</p>
+                  </div>
+                  <Badge className={cn('text-xs', DOCK_STATUS_COLORS[d.status])}>{d.status}</Badge>
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge className={cn('text-xs', DOCK_TYPE_COLORS[d.dockType])}>{d.dockType.replace(/_/g, ' ')}</Badge>
+                  <Badge variant="outline" className="text-xs">{d.maxVehicleSize}</Badge>
+                  {d.isTemperatureControlled && <Badge className="text-xs bg-cyan-500 text-white"><Snowflake className="h-3 w-3 mr-1" />{d.temperatureZone}</Badge>}
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Warehouse</span>
+                    <span className="font-medium text-right">{d.warehouseName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Door #</span>
+                    <span className="font-mono font-medium">{d.dockDoorNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Vehicle</span>
+                    <span className="font-mono font-medium">{d.currentVehicleNumber || '—'}</span>
+                  </div>
+                </div>
+                <Separator className="my-3" />
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className={cn('rounded-md p-1.5', d.hasForkliftAccess ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-muted text-muted-foreground')}>
+                    <Truck className="h-3 w-3 mx-auto mb-0.5" />
+                    <p className="text-[10px] font-medium">Forklift</p>
+                  </div>
+                  <div className={cn('rounded-md p-1.5', d.hasPalletJack ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-muted text-muted-foreground')}>
+                    <Package className="h-3 w-3 mx-auto mb-0.5" />
+                    <p className="text-[10px] font-medium">Pallet Jack</p>
+                  </div>
+                  <div className={cn('rounded-md p-1.5', d.hasConveyor ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-muted text-muted-foreground')}>
+                    <ArrowDownToLine className="h-3 w-3 mx-auto mb-0.5" />
+                    <p className="text-[10px] font-medium">Conveyor</p>
+                  </div>
+                </div>
+                <Separator className="my-3" />
+                <div className="flex items-center justify-between text-xs">
+                  <div>
+                    <p className="text-muted-foreground">Avg Unload</p>
+                    <p className="font-mono font-semibold">{d.avgUnloadTime} min</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-muted-foreground">Operations</p>
+                    <p className="font-mono font-semibold">{d.totalOperations}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'exceptions' && (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {RECV_EXCEPTIONS.map(e => (
+              <Card key={e.id} className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-mono text-sm font-bold">{e.exceptionNumber}</p>
+                    <p className="text-xs text-muted-foreground">ASN {e.asnNumber} · {e.exceptionDate}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Badge className={cn('text-xs', EXCEPTION_TYPE_COLORS[e.exceptionType])}>{e.exceptionType.replace(/_/g, ' ')}</Badge>
+                    <Badge className={cn('text-xs', RESOLUTION_STATUS_COLORS[e.resolutionStatus])}>{e.resolutionStatus.replace(/_/g, ' ')}</Badge>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">{e.description}</p>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="rounded-md bg-muted/50 p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Expected</p>
+                    <p className="font-mono text-sm font-semibold">{e.expectedQty}</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Received</p>
+                    <p className="font-mono text-sm font-semibold">{e.receivedQty}</p>
+                  </div>
+                  <div className={cn('rounded-md p-2 text-center', e.differenceQty < 0 ? 'bg-red-100 dark:bg-red-950' : e.differenceQty > 0 ? 'bg-amber-100 dark:bg-amber-950' : 'bg-muted/50')}>
+                    <p className="text-xs text-muted-foreground">Difference</p>
+                    <p className={cn('font-mono text-sm font-bold', e.differenceQty < 0 ? 'text-red-600 dark:text-red-400' : e.differenceQty > 0 ? 'text-amber-600 dark:text-amber-400' : '')}>{e.differenceQty > 0 ? '+' : ''}{e.differenceQty}</p>
+                  </div>
+                </div>
+                <Separator className="my-3" />
+                <div className="space-y-1 text-xs mb-3">
+                  <div className="flex items-center gap-2"><Package className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">Product:</span><span className="font-medium">{e.productName}</span></div>
+                  {e.resolutionNotes && (
+                    <div className="flex items-start gap-2"><FileText className="h-3 w-3 text-muted-foreground mt-0.5" /><span className="text-muted-foreground">Notes:</span><span className="font-medium flex-1">{e.resolutionNotes}</span></div>
+                  )}
+                  {e.resolvedByName && (
+                    <div className="flex items-center gap-2"><UserCog className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">Resolved by:</span><span className="font-medium">{e.resolvedByName}</span></div>
+                  )}
+                </div>
+                {e.resolutionStatus === 'PENDING' && (
+                  <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1"><CheckCircle2 className="h-3 w-3" />Resolve Exception</Button>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Settings Module (Sprint 2) ─────────────────────────
 function SettingsModule() {
   return (
@@ -7923,7 +8379,7 @@ export default function Home() {
     partners: 'Business Partners', identification: 'Identification & Traceability',
     governance: 'Data Governance', inventory: 'Inventory Engine',
     goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
-    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', manufacturing: 'Manufacturing',
+    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
     ai: 'AI Copilot',
@@ -7972,7 +8428,7 @@ export default function Home() {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
           <div className="flex-1" />
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 23 · 198 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 24 · 204 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
@@ -7999,11 +8455,12 @@ export default function Home() {
             {activeModule === 'analytics' && <MissionControlModule />}
             {activeModule === 'warehouse' && <WarehouseModule />}
             {activeModule === 'whlocations' && <WarehouseLocationModule />}
+            {activeModule === 'receiving' && <ReceivingModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-23 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins) · 198 Database Tables</p>
+              <p className="mt-1">Sprints 1-24 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins, Receiving & ASN Engine) · 204 Database Tables</p>
             </div>
           </main>
         </ScrollArea>

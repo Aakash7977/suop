@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "23.0.0"
+const VERSION = "24.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -1598,6 +1598,346 @@ const LOC_DATA = {
   ],
 }
 
+// ─── Sprint 24 — Receiving Operations, Dock Management & ASN Engine (RECV_DATA) ────
+// Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions
+const RECV_DATA = {
+  asns: [
+    {
+      id: 'asn-001',
+      asnNumber: 'ASN-2026-0001',
+      asnDate: '2026-07-08T09:00:00Z',
+      expectedArrival: '2026-07-09T08:00:00Z',
+      receivingType: 'PURCHASE_ORDER',
+      supplierId: 'sup-001', supplierName: 'Marwadi Cashew Suppliers',
+      referenceType: 'PURCHASE_ORDER', referenceNumber: 'PO-2026-0042',
+      vehicleNumber: 'MH-04-AB-1234', driverName: 'Ramesh Yadav', driverPhone: '+91-98200-11223',
+      carrierName: 'Patel Transport Co.',
+      warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      status: 'VEHICLE_ARRIVED',
+      totalLines: 3, totalPallets: 12, totalCartons: 48, totalQuantity: 1800, totalWeight: 4500.00, totalVolume: 18.50,
+      appointmentId: 'appt-001',
+      createdById: 'usr-recv-01', createdByName: 'Receiving Clerk A',
+      confirmedAt: '2026-07-08T10:30:00Z', completedAt: null,
+      createdAt: '2026-07-08T09:00:00Z', updatedAt: '2026-07-09T07:55:00Z',
+      lines: [
+        { id: 'asnl-001', lineOrder: 10, productName: 'Raw Cashew W240 (25kg sack)', uomName: 'SACK', expectedQty: 60, receivedQty: 0, palletCount: 4, cartonCount: 16, batchNumber: 'CASH-2607-01', supplierBatchNo: 'MC-2607-A1', manufacturingDate: '2026-06-15T00:00:00Z', expiryDate: '2026-12-15T00:00:00Z', barcode: 'BC-CASH-W240-25', lineStatus: 'PENDING' },
+        { id: 'asnl-002', lineOrder: 20, productName: 'Almond California (10kg box)', uomName: 'BOX', expectedQty: 80, receivedQty: 0, palletCount: 4, cartonCount: 16, batchNumber: 'ALM-2607-02', supplierBatchNo: 'MC-2607-A2', manufacturingDate: '2026-06-20T00:00:00Z', expiryDate: '2027-01-20T00:00:00Z', barcode: 'BC-ALM-CAL-10', lineStatus: 'PENDING' },
+        { id: 'asnl-003', lineOrder: 30, productName: 'Pistachio Iranian (5kg box)', uomName: 'BOX', expectedQty: 40, receivedQty: 0, palletCount: 4, cartonCount: 16, batchNumber: 'PIS-2607-03', supplierBatchNo: 'MC-2607-A3', manufacturingDate: '2026-06-25T00:00:00Z', expiryDate: '2027-02-25T00:00:00Z', barcode: 'BC-PIS-IRN-5', lineStatus: 'PENDING' },
+      ],
+    },
+    {
+      id: 'asn-002',
+      asnNumber: 'ASN-2026-0002',
+      asnDate: '2026-07-07T14:00:00Z',
+      expectedArrival: '2026-07-09T10:00:00Z',
+      receivingType: 'INTER_WAREHOUSE_TRANSFER',
+      supplierId: null, supplierName: null,
+      referenceType: 'STOCK_TRANSFER', referenceNumber: 'ST-2026-0018',
+      vehicleNumber: 'MH-12-CD-5678', driverName: 'Suresh Kumar', driverPhone: '+91-98200-22334',
+      carrierName: 'Sudhastar Logistics',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      status: 'CONFIRMED',
+      totalLines: 2, totalPallets: 8, totalCartons: 32, totalQuantity: 960, totalWeight: 720.00, totalVolume: 6.40,
+      appointmentId: 'appt-002',
+      createdById: 'usr-recv-02', createdByName: 'Plant Supervisor',
+      confirmedAt: '2026-07-07T15:00:00Z', completedAt: null,
+      createdAt: '2026-07-07T14:00:00Z', updatedAt: '2026-07-09T06:00:00Z',
+      lines: [
+        { id: 'asnl-004', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12)', uomName: 'BOX', expectedQty: 480, receivedQty: 0, palletCount: 4, cartonCount: 16, batchNumber: 'KK-2607-01', supplierBatchNo: null, manufacturingDate: '2026-07-01T00:00:00Z', expiryDate: '2026-10-01T00:00:00Z', barcode: 'BC-KK-500-B12', lineStatus: 'PENDING' },
+        { id: 'asnl-005', lineOrder: 20, productName: 'Soan Cake 1kg (Box of 6)', uomName: 'BOX', expectedQty: 480, receivedQty: 0, palletCount: 4, cartonCount: 16, batchNumber: 'SC-2607-02', supplierBatchNo: null, manufacturingDate: '2026-07-03T00:00:00Z', expiryDate: '2026-09-03T00:00:00Z', barcode: 'BC-SC-1K-B6', lineStatus: 'PENDING' },
+      ],
+    },
+    {
+      id: 'asn-003',
+      asnNumber: 'ASN-2026-0003',
+      asnDate: '2026-07-06T11:00:00Z',
+      expectedArrival: '2026-07-08T14:00:00Z',
+      receivingType: 'CUSTOMER_RETURN',
+      supplierId: null, supplierName: 'Retail Customer — Mumbai Store 01',
+      referenceType: 'SALES_RETURN', referenceNumber: 'SR-2026-0093',
+      vehicleNumber: 'MH-01-EF-9012', driverName: 'Ajay Singh', driverPhone: '+91-98200-33445',
+      carrierName: 'Customer Vehicle',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      status: 'COMPLETED',
+      totalLines: 1, totalPallets: 1, totalCartons: 4, totalQuantity: 24, totalWeight: 18.00, totalVolume: 0.24,
+      appointmentId: 'appt-003',
+      createdById: 'usr-recv-03', createdByName: 'Returns Clerk',
+      confirmedAt: '2026-07-06T12:00:00Z', completedAt: '2026-07-08T16:30:00Z',
+      createdAt: '2026-07-06T11:00:00Z', updatedAt: '2026-07-08T16:30:00Z',
+      lines: [
+        { id: 'asnl-006', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12)', uomName: 'BOX', expectedQty: 24, receivedQty: 24, palletCount: 1, cartonCount: 4, batchNumber: 'KK-2606-15', supplierBatchNo: null, manufacturingDate: '2026-06-10T00:00:00Z', expiryDate: '2026-09-10T00:00:00Z', barcode: 'BC-KK-500-B12', lineStatus: 'RECEIVED' },
+      ],
+    },
+    {
+      id: 'asn-004',
+      asnNumber: 'ASN-2026-0004',
+      asnDate: '2026-07-09T07:00:00Z',
+      expectedArrival: '2026-07-10T08:30:00Z',
+      receivingType: 'SUPPLIER_REPLACEMENT',
+      supplierId: 'sup-002', supplierName: 'Marwadi Cashew Suppliers',
+      referenceType: 'RECEIVING_EXCEPTION', referenceNumber: 'RE-2026-0011',
+      vehicleNumber: 'MH-04-GH-3456', driverName: 'Mohan Lal', driverPhone: '+91-98200-44556',
+      carrierName: 'Patel Transport Co.',
+      warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      status: 'CONFIRMED',
+      totalLines: 1, totalPallets: 2, totalCartons: 8, totalQuantity: 20, totalWeight: 500.00, totalVolume: 2.00,
+      appointmentId: null,
+      createdById: 'usr-recv-01', createdByName: 'Receiving Clerk A',
+      confirmedAt: '2026-07-09T07:30:00Z', completedAt: null,
+      createdAt: '2026-07-09T07:00:00Z', updatedAt: '2026-07-09T07:30:00Z',
+      lines: [
+        { id: 'asnl-007', lineOrder: 10, productName: 'Raw Cashew W240 (25kg sack)', uomName: 'SACK', expectedQty: 20, receivedQty: 0, palletCount: 2, cartonCount: 8, batchNumber: 'CASH-2607-04', supplierBatchNo: 'MC-2607-A4', manufacturingDate: '2026-06-28T00:00:00Z', expiryDate: '2026-12-28T00:00:00Z', barcode: 'BC-CASH-W240-25', lineStatus: 'PENDING' },
+      ],
+    },
+    {
+      id: 'asn-005',
+      asnNumber: 'ASN-2026-0005',
+      asnDate: '2026-07-09T06:00:00Z',
+      expectedArrival: '2026-07-09T11:00:00Z',
+      receivingType: 'MANUFACTURING_RECEIPT',
+      supplierId: null, supplierName: null,
+      referenceType: 'PRODUCTION_ORDER', referenceNumber: 'PRD-2026-0156',
+      vehicleNumber: 'WH-INT-001', driverName: 'Internal Lift', driverPhone: null,
+      carrierName: 'Internal Material Handling',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      status: 'RECEIVING',
+      totalLines: 2, totalPallets: 6, totalCartons: 24, totalQuantity: 720, totalWeight: 540.00, totalVolume: 4.80,
+      appointmentId: 'appt-004',
+      createdById: 'usr-prod-01', createdByName: 'Production Supervisor',
+      confirmedAt: '2026-07-09T06:30:00Z', completedAt: null,
+      createdAt: '2026-07-09T06:00:00Z', updatedAt: '2026-07-09T10:45:00Z',
+      lines: [
+        { id: 'asnl-008', lineOrder: 10, productName: 'Soan Cake 1kg (Box of 6)', uomName: 'BOX', expectedQty: 360, receivedQty: 240, palletCount: 3, cartonCount: 12, batchNumber: 'SC-2607-08', supplierBatchNo: null, manufacturingDate: '2026-07-08T00:00:00Z', expiryDate: '2026-09-08T00:00:00Z', barcode: 'BC-SC-1K-B6', lineStatus: 'RECEIVING' },
+        { id: 'asnl-009', lineOrder: 20, productName: 'Kaju Katli 250g (Box of 24)', uomName: 'BOX', expectedQty: 360, receivedQty: 0, palletCount: 3, cartonCount: 12, batchNumber: 'KK-2607-09', supplierBatchNo: null, manufacturingDate: '2026-07-08T00:00:00Z', expiryDate: '2026-10-08T00:00:00Z', barcode: 'BC-KK-250-B24', lineStatus: 'PENDING' },
+      ],
+    },
+    {
+      id: 'asn-006',
+      asnNumber: 'ASN-2026-0006',
+      asnDate: '2026-07-09T05:00:00Z',
+      expectedArrival: '2026-07-11T09:00:00Z',
+      receivingType: 'VENDOR_MANAGED_INVENTORY',
+      supplierId: 'sup-003', supplierName: 'VMI Partner — Premium Dry Fruits LLP',
+      referenceType: 'VMI_CONTRACT', referenceNumber: 'VMI-2026-CN-003',
+      vehicleNumber: 'GJ-01-IJ-7890', driverName: 'Imran Khan', driverPhone: '+91-98200-55667',
+      carrierName: 'VMI Dedicated Logistics',
+      warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      status: 'DRAFT',
+      totalLines: 2, totalPallets: 5, totalCartons: 20, totalQuantity: 600, totalWeight: 1500.00, totalVolume: 6.00,
+      appointmentId: null,
+      createdById: 'usr-vendor-01', createdByName: 'VMI Coordinator',
+      confirmedAt: null, completedAt: null,
+      createdAt: '2026-07-09T05:00:00Z', updatedAt: '2026-07-09T05:00:00Z',
+      lines: [
+        { id: 'asnl-010', lineOrder: 10, productName: 'Almond California (10kg box)', uomName: 'BOX', expectedQty: 50, receivedQty: 0, palletCount: 3, cartonCount: 10, batchNumber: 'ALM-2607-V1', supplierBatchNo: 'PDF-2607-V1', manufacturingDate: '2026-07-01T00:00:00Z', expiryDate: '2027-02-01T00:00:00Z', barcode: 'BC-ALM-CAL-10', lineStatus: 'PENDING' },
+        { id: 'asnl-011', lineOrder: 20, productName: 'Pistachio Iranian (5kg box)', uomName: 'BOX', expectedQty: 100, receivedQty: 0, palletCount: 2, cartonCount: 10, batchNumber: 'PIS-2607-V2', supplierBatchNo: 'PDF-2607-V2', manufacturingDate: '2026-07-02T00:00:00Z', expiryDate: '2027-03-02T00:00:00Z', barcode: 'BC-PIS-IRN-5', lineStatus: 'PENDING' },
+      ],
+    },
+  ],
+  appointments: [
+    {
+      id: 'appt-001', appointmentNumber: 'RAP-2026-0001', appointmentDate: '2026-07-09T00:00:00Z',
+      startTime: '2026-07-09T08:00:00Z', endTime: '2026-07-09T10:00:00Z',
+      dockId: 'dock-rm-01', dockCode: 'RD-01',
+      supplierId: 'sup-001', supplierName: 'Marwadi Cashew Suppliers',
+      vehicleNumber: 'MH-04-AB-1234', driverName: 'Ramesh Yadav', driverPhone: '+91-98200-11223',
+      asnId: 'asn-001', asnNumber: 'ASN-2026-0001',
+      warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      priority: 'HIGH', status: 'ARRIVED',
+      createdById: 'usr-recv-01', createdByName: 'Receiving Clerk A',
+      createdAt: '2026-07-08T09:30:00Z', updatedAt: '2026-07-09T07:55:00Z',
+    },
+    {
+      id: 'appt-002', appointmentNumber: 'RAP-2026-0002', appointmentDate: '2026-07-09T00:00:00Z',
+      startTime: '2026-07-09T10:00:00Z', endTime: '2026-07-09T12:00:00Z',
+      dockId: 'dock-fg-01', dockCode: 'RD-02',
+      supplierId: null, supplierName: 'Sudhastar Pune Plant (Inter-WH)',
+      vehicleNumber: 'MH-12-CD-5678', driverName: 'Suresh Kumar', driverPhone: '+91-98200-22334',
+      asnId: 'asn-002', asnNumber: 'ASN-2026-0002',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      priority: 'NORMAL', status: 'CONFIRMED',
+      createdById: 'usr-recv-02', createdByName: 'Plant Supervisor',
+      createdAt: '2026-07-07T14:30:00Z', updatedAt: '2026-07-09T06:00:00Z',
+    },
+    {
+      id: 'appt-003', appointmentNumber: 'RAP-2026-0003', appointmentDate: '2026-07-10T00:00:00Z',
+      startTime: '2026-07-10T09:00:00Z', endTime: '2026-07-10T11:00:00Z',
+      dockId: 'dock-fg-02', dockCode: 'RD-03',
+      supplierId: 'sup-002', supplierName: 'Premium Packaging Solutions',
+      vehicleNumber: 'MH-14-KL-2345', driverName: 'Vijay Patil', driverPhone: '+91-98200-66778',
+      asnId: null, asnNumber: null,
+      warehouseId: 'wh-pkg-mum', warehouseName: 'Packaging Warehouse',
+      priority: 'NORMAL', status: 'SCHEDULED',
+      createdById: 'usr-recv-04', createdByName: 'Packaging Clerk',
+      createdAt: '2026-07-08T11:00:00Z', updatedAt: '2026-07-08T11:00:00Z',
+    },
+    {
+      id: 'appt-004', appointmentNumber: 'RAP-2026-0004', appointmentDate: '2026-07-08T00:00:00Z',
+      startTime: '2026-07-08T14:00:00Z', endTime: '2026-07-08T16:00:00Z',
+      dockId: 'dock-fg-01', dockCode: 'RD-02',
+      supplierId: null, supplierName: 'Internal Manufacturing Receipt',
+      vehicleNumber: 'WH-INT-001', driverName: 'Internal Lift', driverPhone: null,
+      asnId: 'asn-005', asnNumber: 'ASN-2026-0005',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      priority: 'EMERGENCY', status: 'COMPLETED',
+      createdById: 'usr-prod-01', createdByName: 'Production Supervisor',
+      createdAt: '2026-07-08T12:00:00Z', updatedAt: '2026-07-08T16:30:00Z',
+    },
+  ],
+  gateEntries: [
+    {
+      id: 'ge-001', gatePassNumber: 'GP-IN-2026-0001', gateDate: '2026-07-09T00:00:00Z',
+      entryType: 'INBOUND',
+      vehicleNumber: 'MH-04-AB-1234', vehicleType: 'TRUCK', driverName: 'Ramesh Yadav', driverLicense: 'MH0420190001234', driverPhone: '+91-98200-11223',
+      securityOfficerId: 'sec-001', securityOfficerName: 'Suresh Pawar',
+      sealNumber: 'SL-2026-A001', sealIntact: true,
+      arrivalTime: '2026-07-09T07:55:00Z', exitTime: null, durationMinutes: null,
+      referenceType: 'ASN', referenceNumber: 'ASN-2026-0001',
+      warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      photoUrls: ['gate-001-arrival.jpg', 'gate-001-seal.jpg', 'gate-001-cargo.jpg'],
+      status: 'IN_WAREHOUSE', remarks: 'On-time arrival. Seal verified intact. Vehicle directed to Dock RD-01.',
+      createdAt: '2026-07-09T07:55:00Z', updatedAt: '2026-07-09T08:10:00Z',
+    },
+    {
+      id: 'ge-002', gatePassNumber: 'GP-IN-2026-0002', gateDate: '2026-07-09T00:00:00Z',
+      entryType: 'INBOUND',
+      vehicleNumber: 'GJ-01-IJ-7890', vehicleType: 'CONTAINER', driverName: 'Imran Khan', driverLicense: 'GJ0120180005678', driverPhone: '+91-98200-55667',
+      securityOfficerId: 'sec-002', securityOfficerName: 'Anita Desai',
+      sealNumber: 'SL-2026-B002', sealIntact: false,
+      arrivalTime: '2026-07-09T06:30:00Z', exitTime: '2026-07-09T09:45:00Z', durationMinutes: 195,
+      referenceType: 'ASN', referenceNumber: 'ASN-2026-0003',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      photoUrls: ['gate-002-arrival.jpg', 'gate-002-broken-seal.jpg', 'gate-002-cargo.jpg', 'gate-002-inspection.jpg'],
+      status: 'DEPARTED', remarks: 'BROKEN SEAL detected at gate inspection. Receiving exception raised (RE-2026-0011). Cargo quarantined, then released after supplier replacement ASN-2026-0004 was authorized.',
+      createdAt: '2026-07-09T06:30:00Z', updatedAt: '2026-07-09T09:45:00Z',
+    },
+    {
+      id: 'ge-003', gatePassNumber: 'GP-IN-2026-0003', gateDate: '2026-07-09T00:00:00Z',
+      entryType: 'INBOUND',
+      vehicleNumber: 'WH-INT-001', vehicleType: 'VAN', driverName: 'Internal Material Handler', driverLicense: null, driverPhone: null,
+      securityOfficerId: 'sec-001', securityOfficerName: 'Suresh Pawar',
+      sealNumber: null, sealIntact: true,
+      arrivalTime: '2026-07-09T10:45:00Z', exitTime: null, durationMinutes: null,
+      referenceType: 'ASN', referenceNumber: 'ASN-2026-0005',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      photoUrls: ['gate-003-internal.jpg'],
+      status: 'IN_WAREHOUSE', remarks: 'Internal inter-warehouse transfer from production block. No seal (internal vehicle). Manufacturing receipt in progress.',
+      createdAt: '2026-07-09T10:45:00Z', updatedAt: '2026-07-09T10:50:00Z',
+    },
+  ],
+  docks: [
+    {
+      id: 'dock-rm-01', warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      dockCode: 'RD-01', dockName: 'Receiving Dock 01 — Raw Material Bulk',
+      dockType: 'RECEIVING_DOCK', dockDoorNumber: 'D-RM-01',
+      maxVehicleSize: 'LARGE',
+      isTemperatureControlled: false, temperatureZone: 'AMBIENT',
+      hasForkliftAccess: true, hasPalletJack: true, hasConveyor: false,
+      status: 'OCCUPIED', currentVehicleNumber: 'MH-04-AB-1234', currentAppointmentId: 'appt-001',
+      totalOperations: 247, avgUnloadTime: 38,
+      createdAt: '2026-01-15T09:00:00Z', updatedAt: '2026-07-09T08:00:00Z',
+    },
+    {
+      id: 'dock-fg-01', warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      dockCode: 'RD-02', dockName: 'Mixed Dock 02 — FG Receiving & Dispatch',
+      dockType: 'MIXED_DOCK', dockDoorNumber: 'D-FG-02',
+      maxVehicleSize: 'MEDIUM',
+      isTemperatureControlled: false, temperatureZone: 'AMBIENT',
+      hasForkliftAccess: true, hasPalletJack: true, hasConveyor: true,
+      status: 'OCCUPIED', currentVehicleNumber: 'WH-INT-001', currentAppointmentId: 'appt-004',
+      totalOperations: 412, avgUnloadTime: 22,
+      createdAt: '2026-01-15T09:05:00Z', updatedAt: '2026-07-09T10:45:00Z',
+    },
+    {
+      id: 'dock-fg-02', warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      dockCode: 'DD-03', dockName: 'Dispatch Dock 03 — FG Outbound',
+      dockType: 'DISPATCH_DOCK', dockDoorNumber: 'D-FG-03',
+      maxVehicleSize: 'LARGE',
+      isTemperatureControlled: false, temperatureZone: 'AMBIENT',
+      hasForkliftAccess: true, hasPalletJack: true, hasConveyor: false,
+      status: 'AVAILABLE', currentVehicleNumber: null, currentAppointmentId: null,
+      totalOperations: 305, avgUnloadTime: 18,
+      createdAt: '2026-01-15T09:10:00Z', updatedAt: '2026-07-08T18:00:00Z',
+    },
+    {
+      id: 'dock-cs-01', warehouseId: 'wh-cs-mum', warehouseName: 'Cold Storage Warehouse',
+      dockCode: 'CD-04', dockName: 'Cold Dock 04 — Chilled Receiving',
+      dockType: 'COLD_DOCK', dockDoorNumber: 'D-CS-04',
+      maxVehicleSize: 'MEDIUM',
+      isTemperatureControlled: true, temperatureZone: 'CHILLED',
+      hasForkliftAccess: true, hasPalletJack: true, hasConveyor: false,
+      status: 'MAINTENANCE', currentVehicleNumber: null, currentAppointmentId: null,
+      totalOperations: 158, avgUnloadTime: 45,
+      createdAt: '2026-02-01T10:00:00Z', updatedAt: '2026-07-09T06:00:00Z',
+    },
+    {
+      id: 'dock-pkg-01', warehouseId: 'wh-pkg-mum', warehouseName: 'Packaging Warehouse',
+      dockCode: 'BD-05', dockName: 'Bulk Dock 05 — Packaging Materials',
+      dockType: 'BULK_DOCK', dockDoorNumber: 'D-PKG-05',
+      maxVehicleSize: 'CONTAINER',
+      isTemperatureControlled: false, temperatureZone: 'AMBIENT',
+      hasForkliftAccess: true, hasPalletJack: false, hasConveyor: true,
+      status: 'AVAILABLE', currentVehicleNumber: null, currentAppointmentId: null,
+      totalOperations: 89, avgUnloadTime: 55,
+      createdAt: '2026-02-15T11:00:00Z', updatedAt: '2026-07-08T15:30:00Z',
+    },
+  ],
+  exceptions: [
+    {
+      id: 're-001', exceptionNumber: 'RE-2026-0009', exceptionDate: '2026-07-09T09:30:00Z',
+      asnId: 'asn-001', asnNumber: 'ASN-2026-0001', asnLineId: 'asnl-001',
+      exceptionType: 'SHORT_DELIVERY',
+      description: 'Supplier shipped 55 sacks instead of expected 60. Verified via physical count at receiving dock.',
+      productId: 'prd-cash-w240', productName: 'Raw Cashew W240 (25kg sack)',
+      expectedQty: 60, receivedQty: 55, differenceQty: -5,
+      photoUrls: ['re-001-count.jpg', 're-001-invoice.jpg'],
+      resolutionStatus: 'ACCEPTED', resolutionAction: 'SUPPLIER_CREDIT_NOTE', resolutionNotes: 'Supplier confirmed shortfall. Credit note CN-2026-0098 raised for 5 sacks (₹6,250). ASN line closed with received quantity.',
+      resolvedById: 'usr-recv-01', resolvedByName: 'Receiving Clerk A', resolvedAt: '2026-07-09T11:00:00Z',
+      status: 'RESOLVED', reportedById: 'usr-recv-01', reportedByName: 'Receiving Clerk A',
+      createdAt: '2026-07-09T09:30:00Z', updatedAt: '2026-07-09T11:00:00Z',
+    },
+    {
+      id: 're-002', exceptionNumber: 'RE-2026-0010', exceptionDate: '2026-07-09T10:15:00Z',
+      asnId: 'asn-001', asnNumber: 'ASN-2026-0001', asnLineId: 'asnl-002',
+      exceptionType: 'DAMAGED_GOODS',
+      description: '4 boxes of California Almonds damaged in transit — outer carton crushed, inner product intact. Quality team inspecting.',
+      productId: 'prd-alm-cal', productName: 'Almond California (10kg box)',
+      expectedQty: 80, receivedQty: 76, differenceQty: -4,
+      photoUrls: ['re-002-damaged-1.jpg', 're-002-damaged-2.jpg', 're-002-carton.jpg'],
+      resolutionStatus: 'UNDER_REVIEW', resolutionAction: null, resolutionNotes: 'Quality team evaluating salvageability. Initial estimate: 2 boxes salvageable at 50% value, 2 boxes total loss.',
+      resolvedById: null, resolvedByName: null, resolvedAt: null,
+      status: 'ACTIVE', reportedById: 'usr-recv-01', reportedByName: 'Receiving Clerk A',
+      createdAt: '2026-07-09T10:15:00Z', updatedAt: '2026-07-09T10:45:00Z',
+    },
+    {
+      id: 're-003', exceptionNumber: 'RE-2026-0011', exceptionDate: '2026-07-09T06:45:00Z',
+      asnId: 'asn-003', asnNumber: 'ASN-2026-0003', asnLineId: 'asnl-006',
+      exceptionType: 'BROKEN_SEAL',
+      description: 'Vehicle seal (SL-2026-B002) broken on arrival at gate. Cargo quarantined pending supplier verification. Inspection showed no obvious tampering with product, but chain-of-custody broken.',
+      productId: 'prd-kk-500', productName: 'Kaju Katli 500g (Box of 12)',
+      expectedQty: 24, receivedQty: 24, differenceQty: 0,
+      photoUrls: ['re-003-broken-seal.jpg', 're-003-vehicle.jpg', 're-003-cargo.jpg'],
+      resolutionStatus: 'REJECTED', resolutionAction: 'SUPPLIER_REPLACEMENT_ASN', resolutionNotes: 'Original ASN rejected despite quantity match — chain-of-custody broken. Supplier issued replacement ASN-2026-0004 with fresh batch. Original batch quarantined for 30 days then disposed.',
+      resolvedById: 'usr-qa-01', resolvedByName: 'QA Manager', resolvedAt: '2026-07-09T13:00:00Z',
+      status: 'RESOLVED', reportedById: 'sec-002', reportedByName: 'Anita Desai (Security)',
+      createdAt: '2026-07-09T06:45:00Z', updatedAt: '2026-07-09T13:00:00Z',
+    },
+    {
+      id: 're-004', exceptionNumber: 'RE-2026-0012', exceptionDate: '2026-07-09T11:30:00Z',
+      asnId: 'asn-005', asnNumber: 'ASN-2026-0005', asnLineId: 'asnl-008',
+      exceptionType: 'WRONG_PRODUCT',
+      description: 'Production line sent 240 boxes of Soan Cake 1kg with 750g variant label mixup. Mismatch detected during receiving scan — barcode on 60 boxes does not match ASN line.',
+      productId: 'prd-sc-1k', productName: 'Soan Cake 1kg (Box of 6)',
+      expectedQty: 360, receivedQty: 240, differenceQty: -120,
+      photoUrls: ['re-004-mixed-1.jpg', 're-004-label-mismatch.jpg'],
+      resolutionStatus: 'PENDING', resolutionAction: null, resolutionNotes: null,
+      resolvedById: null, resolvedByName: null, resolvedAt: null,
+      status: 'ACTIVE', reportedById: 'usr-recv-02', reportedByName: 'Plant Supervisor',
+      createdAt: '2026-07-09T11:30:00Z', updatedAt: '2026-07-09T11:30:00Z',
+    },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1992,7 +2332,7 @@ const server = Bun.serve({
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
-        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 13, sprint: 23 },
+        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 19, sprint: 24 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -4871,13 +5211,299 @@ const server = Bun.serve({
       }, 'SUOP Warehouse Location & Bin Management Engine v23.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 24 — RECEIVING OPERATIONS, DOCK MANAGEMENT & ASN ENGINE ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Advanced Shipping Notices (ASNs) ──────────────────
+    // GET /api/asn (with type/status/supplier filters)
+    if (path === '/api/asn' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const supplierFilter = url.searchParams.get('supplier')
+      let asns = RECV_DATA.asns
+      if (typeFilter) asns = asns.filter(a => a.receivingType === typeFilter.toUpperCase())
+      if (statusFilter) asns = asns.filter(a => a.status === statusFilter.toUpperCase())
+      if (supplierFilter) asns = asns.filter(a => a.supplierId === supplierFilter || (a.supplierName && a.supplierName.toLowerCase().includes(supplierFilter.toLowerCase())))
+      return new Response(JSON.stringify(successResponse(asns, `${asns.length} advanced shipping notices`)), { headers })
+    }
+    // POST /api/asn
+    if (path === '/api/asn' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.asnNumber || !body.receivingType) {
+          return new Response(JSON.stringify(errorResponse('asnNumber and receivingType are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        const asn = {
+          id: crypto.randomUUID(),
+          asnNumber: body.asnNumber,
+          asnDate: body.asnDate || new Date().toISOString(),
+          expectedArrival: body.expectedArrival || new Date().toISOString(),
+          receivingType: body.receivingType,
+          supplierId: body.supplierId || null,
+          supplierName: body.supplierName || null,
+          referenceType: body.referenceType || null,
+          referenceNumber: body.referenceNumber || null,
+          vehicleNumber: body.vehicleNumber || null,
+          driverName: body.driverName || null,
+          driverPhone: body.driverPhone || null,
+          carrierName: body.carrierName || null,
+          warehouseId: body.warehouseId || null,
+          warehouseName: body.warehouseName || null,
+          status: body.status || 'DRAFT',
+          totalLines: body.lines?.length || 0,
+          totalPallets: body.totalPallets || null,
+          totalCartons: body.totalCartons || null,
+          totalQuantity: body.totalQuantity || 0,
+          totalWeight: body.totalWeight || null,
+          totalVolume: body.totalVolume || null,
+          appointmentId: body.appointmentId || null,
+          createdById: body.createdById || null,
+          createdByName: body.createdByName || null,
+          confirmedAt: null,
+          completedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lines: body.lines || [],
+        }
+        RECV_DATA.asns.push(asn)
+        log('info', 'ASN created', { asnNumber: asn.asnNumber, type: asn.receivingType })
+        return new Response(JSON.stringify(successResponse(asn, 'ASN created')), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+    // POST /api/asn/:id/confirm
+    if (path.startsWith('/api/asn/') && path.endsWith('/confirm') && method === 'POST') {
+      const id = path.replace('/api/asn/', '').replace('/confirm', '')
+      const asn = RECV_DATA.asns.find(a => a.id === id)
+      if (!asn) return new Response(JSON.stringify(errorResponse('ASN not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      asn.status = 'CONFIRMED'
+      asn.confirmedAt = new Date().toISOString()
+      asn.updatedAt = new Date().toISOString()
+      log('info', 'ASN confirmed', { asnNumber: asn.asnNumber })
+      return new Response(JSON.stringify(successResponse(asn, 'ASN confirmed')), { headers })
+    }
+
+    // ─── Receiving Appointments ────────────────────────────
+    // GET /api/receiving-appointments (with date/status filters)
+    if (path === '/api/receiving-appointments' && method === 'GET') {
+      const dateFilter = url.searchParams.get('date')
+      const statusFilter = url.searchParams.get('status')
+      let appts = RECV_DATA.appointments
+      if (dateFilter) appts = appts.filter(a => a.appointmentDate.startsWith(dateFilter))
+      if (statusFilter) appts = appts.filter(a => a.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(appts, `${appts.length} receiving appointments`)), { headers })
+    }
+
+    // ─── Gate Entries ──────────────────────────────────────
+    // GET /api/gate-entries (with type/status filters)
+    if (path === '/api/gate-entries' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let entries = RECV_DATA.gateEntries
+      if (typeFilter) entries = entries.filter(g => g.entryType === typeFilter.toUpperCase())
+      if (statusFilter) entries = entries.filter(g => g.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(entries, `${entries.length} gate entries`)), { headers })
+    }
+
+    // ─── Loading Docks ─────────────────────────────────────
+    // GET /api/loading-docks (with warehouse/type/status filters)
+    if (path === '/api/loading-docks' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let docks = RECV_DATA.docks
+      if (warehouseFilter) docks = docks.filter(d => d.warehouseId === warehouseFilter || d.warehouseName === warehouseFilter)
+      if (typeFilter) docks = docks.filter(d => d.dockType === typeFilter.toUpperCase())
+      if (statusFilter) docks = docks.filter(d => d.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(docks, `${docks.length} loading docks`)), { headers })
+    }
+    // POST /api/loading-docks/:id/assign (assign vehicle to dock)
+    if (path.startsWith('/api/loading-docks/') && path.endsWith('/assign') && method === 'POST') {
+      const id = path.replace('/api/loading-docks/', '').replace('/assign', '')
+      const dock = RECV_DATA.docks.find(d => d.id === id)
+      if (!dock) return new Response(JSON.stringify(errorResponse('Dock not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      if (dock.status !== 'AVAILABLE') {
+        return new Response(JSON.stringify(errorResponse(`Dock ${dock.dockCode} is ${dock.status}, cannot assign vehicle`, 'CONFLICT', 409)), { status: 409, headers })
+      }
+      try {
+        const body = await req.json()
+        dock.status = 'OCCUPIED'
+        dock.currentVehicleNumber = body.vehicleNumber || null
+        dock.currentAppointmentId = body.appointmentId || null
+        dock.totalOperations += 1
+        dock.updatedAt = new Date().toISOString()
+        log('info', 'Vehicle assigned to dock', { dockCode: dock.dockCode, vehicle: dock.currentVehicleNumber })
+        return new Response(JSON.stringify(successResponse(dock, `Vehicle ${dock.currentVehicleNumber} assigned to dock ${dock.dockCode}`)), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+    // POST /api/loading-docks/:id/release (release dock)
+    if (path.startsWith('/api/loading-docks/') && path.endsWith('/release') && method === 'POST') {
+      const id = path.replace('/api/loading-docks/', '').replace('/release', '')
+      const dock = RECV_DATA.docks.find(d => d.id === id)
+      if (!dock) return new Response(JSON.stringify(errorResponse('Dock not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      const releasedVehicle = dock.currentVehicleNumber
+      dock.status = 'AVAILABLE'
+      dock.currentVehicleNumber = null
+      dock.currentAppointmentId = null
+      dock.updatedAt = new Date().toISOString()
+      log('info', 'Dock released', { dockCode: dock.dockCode, releasedVehicle })
+      return new Response(JSON.stringify(successResponse(dock, `Dock ${dock.dockCode} released from vehicle ${releasedVehicle}`)), { headers })
+    }
+
+    // ─── Receiving Exceptions ──────────────────────────────
+    // GET /api/receiving-exceptions (with type/resolution filters)
+    if (path === '/api/receiving-exceptions' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const resolutionFilter = url.searchParams.get('resolution')
+      let exceptions = RECV_DATA.exceptions
+      if (typeFilter) exceptions = exceptions.filter(e => e.exceptionType === typeFilter.toUpperCase())
+      if (resolutionFilter) exceptions = exceptions.filter(e => e.resolutionStatus === resolutionFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(exceptions, `${exceptions.length} receiving exceptions`)), { headers })
+    }
+    // POST /api/receiving-exceptions/:id/resolve
+    if (path.startsWith('/api/receiving-exceptions/') && path.endsWith('/resolve') && method === 'POST') {
+      const id = path.replace('/api/receiving-exceptions/', '').replace('/resolve', '')
+      const exception = RECV_DATA.exceptions.find(e => e.id === id)
+      if (!exception) return new Response(JSON.stringify(errorResponse('Receiving exception not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      try {
+        const body = await req.json()
+        exception.resolutionStatus = body.resolutionStatus || 'ACCEPTED'
+        exception.resolutionAction = body.resolutionAction || null
+        exception.resolutionNotes = body.resolutionNotes || null
+        exception.resolvedById = body.resolvedById || null
+        exception.resolvedByName = body.resolvedByName || null
+        exception.resolvedAt = new Date().toISOString()
+        exception.status = 'RESOLVED'
+        exception.updatedAt = new Date().toISOString()
+        log('info', 'Receiving exception resolved', { exceptionNumber: exception.exceptionNumber, resolution: exception.resolutionStatus })
+        return new Response(JSON.stringify(successResponse(exception, `Exception ${exception.exceptionNumber} resolved as ${exception.resolutionStatus}`)), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+
+    // ─── Receiving Operations Dashboard ────────────────────
+    // GET /api/receiving-operations/dashboard
+    if (path === '/api/receiving-operations/dashboard' && method === 'GET') {
+      const totalAsns = RECV_DATA.asns.length
+      const confirmedAsns = RECV_DATA.asns.filter(a => a.status === 'CONFIRMED').length
+      const vehicleArrivedAsns = RECV_DATA.asns.filter(a => a.status === 'VEHICLE_ARRIVED').length
+      const receivingAsns = RECV_DATA.asns.filter(a => a.status === 'RECEIVING').length
+      const completedAsns = RECV_DATA.asns.filter(a => a.status === 'COMPLETED').length
+      const draftAsns = RECV_DATA.asns.filter(a => a.status === 'DRAFT').length
+      const todayAppointments = RECV_DATA.appointments.filter(a => a.appointmentDate.startsWith('2026-07-09')).length
+      const availableDocks = RECV_DATA.docks.filter(d => d.status === 'AVAILABLE').length
+      const occupiedDocks = RECV_DATA.docks.filter(d => d.status === 'OCCUPIED').length
+      const maintenanceDocks = RECV_DATA.docks.filter(d => d.status === 'MAINTENANCE').length
+      const gateEntriesToday = RECV_DATA.gateEntries.filter(g => g.gateDate.startsWith('2026-07-09')).length
+      const brokenSeals = RECV_DATA.gateEntries.filter(g => !g.sealIntact).length
+      const activeExceptions = RECV_DATA.exceptions.filter(e => e.status === 'ACTIVE').length
+      const resolvedExceptions = RECV_DATA.exceptions.filter(e => e.status === 'RESOLVED').length
+      const pendingExceptions = RECV_DATA.exceptions.filter(e => e.resolutionStatus === 'PENDING').length
+      const totalPallets = RECV_DATA.asns.reduce((s, a) => s + (a.totalPallets || 0), 0)
+      const totalCartons = RECV_DATA.asns.reduce((s, a) => s + (a.totalCartons || 0), 0)
+      const totalExpectedQty = RECV_DATA.asns.reduce((s, a) => s + a.totalQuantity, 0)
+      const byReceivingType = RECV_DATA.asns.reduce((acc, a) => { acc[a.receivingType] = (acc[a.receivingType] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byAsnStatus = RECV_DATA.asns.reduce((acc, a) => { acc[a.status] = (acc[a.status] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byDockType = RECV_DATA.docks.reduce((acc, d) => { acc[d.dockType] = (acc[d.dockType] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byDockStatus = RECV_DATA.docks.reduce((acc, d) => { acc[d.status] = (acc[d.status] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byExceptionType = RECV_DATA.exceptions.reduce((acc, e) => { acc[e.exceptionType] = (acc[e.exceptionType] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byResolutionStatus = RECV_DATA.exceptions.reduce((acc, e) => { acc[e.resolutionStatus] = (acc[e.resolutionStatus] || 0) + 1; return acc }, {} as Record<string, number>)
+      const avgUnloadTime = Math.round(RECV_DATA.docks.reduce((s, d) => s + (d.avgUnloadTime || 0), 0) / RECV_DATA.docks.length)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          asns: totalAsns,
+          confirmedAsns,
+          vehicleArrivedAsns,
+          receivingAsns,
+          completedAsns,
+          draftAsns,
+          appointments: RECV_DATA.appointments.length,
+          todayAppointments,
+          gateEntries: RECV_DATA.gateEntries.length,
+          gateEntriesToday,
+          brokenSeals,
+          docks: RECV_DATA.docks.length,
+          availableDocks,
+          occupiedDocks,
+          maintenanceDocks,
+          exceptions: RECV_DATA.exceptions.length,
+          activeExceptions,
+          resolvedExceptions,
+          pendingExceptions,
+        },
+        totalPallets,
+        totalCartons,
+        totalExpectedQty,
+        avgDockToStockTimeMin: 42,
+        receivingEfficiencyPercent: 94.5,
+        onTimeApptPercent: 87.5,
+        asnsByReceivingType: byReceivingType,
+        asnsByStatus: byAsnStatus,
+        docksByType: byDockType,
+        docksByStatus: byDockStatus,
+        exceptionsByType: byExceptionType,
+        exceptionsByResolution: byResolutionStatus,
+        avgUnloadTimeMin: avgUnloadTime,
+        receivingFlow: ['Supplier', 'ASN', 'Appointment', 'Gate Entry', 'Dock', 'Unload', 'Verify', 'Goods Receipt', 'Putaway'],
+        palletHierarchy: ['Pallet', 'Boxes (48)', 'Packs (24)', 'Units (12)'],
+        receivingTypes: ['PURCHASE_ORDER', 'INTER_WAREHOUSE_TRANSFER', 'CUSTOMER_RETURN', 'SUPPLIER_REPLACEMENT', 'MANUFACTURING_RECEIPT', 'VENDOR_MANAGED_INVENTORY', 'OPENING_STOCK', 'SAMPLE_DELIVERY'],
+        asnStatuses: ['DRAFT', 'SUBMITTED', 'CONFIRMED', 'VEHICLE_ARRIVED', 'RECEIVING', 'COMPLETED', 'CANCELLED'],
+        dockTypes: ['RECEIVING_DOCK', 'DISPATCH_DOCK', 'MIXED_DOCK', 'COLD_DOCK', 'BULK_DOCK', 'CONTAINER_DOCK'],
+        dockStatuses: ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'CLOSED'],
+        exceptionTypes: ['SHORT_DELIVERY', 'OVER_DELIVERY', 'DAMAGED_GOODS', 'WRONG_PRODUCT', 'WRONG_BATCH', 'BROKEN_SEAL', 'TEMPERATURE_VIOLATION', 'MISSING_DOCUMENTS'],
+        resolutionStatuses: ['PENDING', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'PARTIAL_ACCEPT', 'ESCALATED'],
+        gateEntryTypes: ['INBOUND', 'OUTBOUND', 'VISITOR', 'CONTRACTOR'],
+        gateEntryStatuses: ['ARRIVED', 'IN_WAREHOUSE', 'DEPARTED', 'DENIED'],
+        appointmentStatuses: ['SCHEDULED', 'CONFIRMED', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        sprint: 24,
+        chiefArchitectNote: 'Physical warehouse receiving is a 9-step flow: Supplier → ASN → Appointment → Gate Entry → Dock → Unload → Verify → Goods Receipt → Putaway. The ASN is the digital twin of incoming cargo before it physically arrives — it tells the warehouse what to expect, when, and where. The Pallet is the recommended receiving unit: 1 Pallet → 48 Boxes → 24 Packs → 12 Units. Receiving at the pallet level (scan one barcode) instead of box level reduces receiving time by 80% and barcode-scan errors by 95%.',
+      }, 'Receiving Operations dashboard')), { headers })
+    }
+
+    // ─── Receiving Operations Info ─────────────────────────
+    // GET /api/receiving-operations/info
+    if (path === '/api/receiving-operations/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Receiving Operations, Dock Management & ASN Engine', version: '24.0.0', sprint: 24,
+        sprintName: 'Receiving Operations, Dock Management & ASN Engine',
+        receivingTypes: ['PURCHASE_ORDER', 'INTER_WAREHOUSE_TRANSFER', 'CUSTOMER_RETURN', 'SUPPLIER_REPLACEMENT', 'MANUFACTURING_RECEIPT', 'VENDOR_MANAGED_INVENTORY', 'OPENING_STOCK', 'SAMPLE_DELIVERY'],
+        asnStatuses: ['DRAFT', 'SUBMITTED', 'CONFIRMED', 'VEHICLE_ARRIVED', 'RECEIVING', 'COMPLETED', 'CANCELLED'],
+        dockTypes: ['RECEIVING_DOCK', 'DISPATCH_DOCK', 'MIXED_DOCK', 'COLD_DOCK', 'BULK_DOCK', 'CONTAINER_DOCK'],
+        dockStatuses: ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'CLOSED'],
+        exceptionTypes: ['SHORT_DELIVERY', 'OVER_DELIVERY', 'DAMAGED_GOODS', 'WRONG_PRODUCT', 'WRONG_BATCH', 'BROKEN_SEAL', 'TEMPERATURE_VIOLATION', 'MISSING_DOCUMENTS'],
+        resolutionStatuses: ['PENDING', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'PARTIAL_ACCEPT', 'ESCALATED'],
+        gateEntryTypes: ['INBOUND', 'OUTBOUND', 'VISITOR', 'CONTRACTOR'],
+        gateEntryStatuses: ['ARRIVED', 'IN_WAREHOUSE', 'DEPARTED', 'DENIED'],
+        appointmentStatuses: ['SCHEDULED', 'CONFIRMED', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        asnPrinciple: 'An Advanced Shipping Notice (ASN) is the digital twin of incoming cargo, sent by the supplier/origin before the vehicle arrives. It tells the warehouse: WHAT is coming (lines, quantities, batches, barcodes), WHEN (expected arrival), HOW (vehicle, driver, carrier), and WHERE (warehouse, dock). The ASN is the trigger for the entire receiving flow — without an ASN, the gate cannot pre-validate, the dock cannot be pre-assigned, and the receiving clerk has no expected-quantity to scan against.',
+        appointmentPrinciple: 'A Receiving Appointment reserves a dock and time slot for an incoming vehicle. The yard-management system schedules appointments to prevent dock congestion (no vehicle waits >30 min) and balances workload across receiving docks. Appointment status flows: SCHEDULED → CONFIRMED → ARRIVED → IN_PROGRESS → COMPLETED. NO_SHOW triggers a rebooking fee from the supplier.',
+        gateEntryPrinciple: 'A Gate Entry is the security-gate record of vehicle arrival/departure. The security officer verifies vehicle number, driver license, and seal number (intact or broken). A BROKEN SEAL triggers automatic cargo quarantine and a Receiving Exception. Photo evidence (vehicle, seal, cargo) is captured for audit. Gate entries are the first link in the chain-of-custody that ends at the putaway bin.',
+        dockPrinciple: 'Loading Docks are the physical interface between vehicle and warehouse. Each dock has a type (RECEIVING, DISPATCH, MIXED, COLD, BULK, CONTAINER), equipment (forklift, pallet jack, conveyor), and temperature-control capability. Dock status (AVAILABLE/OCCUPIED/MAINTENANCE/CLOSED) drives the appointment scheduler. Avg unload time per dock is tracked for SLA monitoring and dock-balancing analytics.',
+        exceptionPrinciple: 'Receiving Exceptions capture any deviation between expected (ASN) and actual (received): SHORT_DELIVERY, OVER_DELIVERY, DAMAGED_GOODS, WRONG_PRODUCT, WRONG_BATCH, BROKEN_SEAL, TEMPERATURE_VIOLATION, MISSING_DOCUMENTS. Each exception requires a resolution (ACCEPTED, REJECTED, PARTIAL_ACCEPT, ESCALATED) with photo evidence, resolution action, and resolved-by audit. Exceptions feed into supplier scorecards (Sprint 9) and quality holds (Sprint 13).',
+        palletReceivingPrinciple: 'Pallet-level receiving is the Chief Architect recommendation: receive by scanning ONE pallet barcode instead of 48 individual box barcodes. The system trusts the pallet-internal packing list (printed by supplier) and verifies via statistical sampling (5% boxes scanned). Receiving time drops from ~40 min/vehicle to ~8 min/vehicle, and barcode-scan errors drop from ~3% to ~0.1%. The hierarchy: 1 Pallet → 48 Boxes → 24 Packs → 12 Units — each level has its own barcode and packing slip.',
+        endpoints: ['GET /api/asn', 'POST /api/asn', 'POST /api/asn/:id/confirm', 'GET /api/receiving-appointments', 'GET /api/gate-entries', 'GET /api/loading-docks', 'POST /api/loading-docks/:id/assign', 'POST /api/loading-docks/:id/release', 'GET /api/receiving-exceptions', 'POST /api/receiving-exceptions/:id/resolve', 'GET /api/receiving-operations/dashboard', 'GET /api/receiving-operations/info'],
+        part4Begun: true,
+        part4Sprint: 3,
+        part4Sprints: 12,
+        part4Tables: 19,
+      }, 'SUOP Receiving Operations Engine v24.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 23, sprintName: 'Warehouse Location & Bin Management (23/33 sprints)' })
-log('info', 'Sprint 23 — Warehouse Location & Bin Management', { sprint: 23, part: 4, tables: 198, warehouses: 6, aisles: 6, racks: 8, shelves: 12, bins: 15 })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 24, sprintName: 'Receiving Operations, Dock Management & ASN Engine (24/33 sprints)' })
+log('info', 'Sprint 24 — Receiving Operations, Dock Management & ASN Engine', { sprint: 24, part: 4, tables: 204, asns: 6, appointments: 4, gateEntries: 3, docks: 5, exceptions: 4 })
+log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })
 log('info', 'Warehouse endpoints available', { warehouses: 'GET/POST /api/warehouses', warehouseDetail: 'GET /api/warehouses/:id', zones: 'GET /api/warehouse-zones', tempZones: 'GET /api/temperature-zones', tempLogs: 'GET /api/temperature-logs', capacity: 'GET /api/warehouse-capacity', calendar: 'GET /api/warehouse-calendar', accessRules: 'GET /api/warehouse-access-rules', rules: 'GET /api/warehouse-rules', dashboard: 'GET /api/warehouses/dashboard', info: 'GET /api/warehouses/info' })
 log('info', 'Warehouse location & bin endpoints available (Sprint 23)', { aisles: 'GET /api/warehouse-aisles', racks: 'GET /api/warehouse-racks', shelves: 'GET /api/warehouse-shelves', bins: 'GET/POST /api/warehouse-bins', binDetail: 'GET /api/warehouse-bins/:id', capacityLogs: 'GET /api/bin-capacity-logs', dashboard: 'GET /api/warehouse-locations/dashboard', info: 'GET /api/warehouse-locations/info' })
 log('info', 'Analytics & mission control endpoints available', { kpis: 'GET /api/inventory-analytics/kpis', ageing: 'GET /api/inventory-analytics/ageing', classifications: 'GET /api/inventory-analytics/classifications', reorder: 'GET /api/inventory-analytics/reorder', missionControl: 'GET /api/inventory-analytics/mission-control', reports: 'GET /api/inventory-analytics/reports', reportGenerate: 'POST /:id/generate', dashboard: 'GET /api/inventory-analytics/dashboard', info: 'GET /api/inventory-analytics/info' })

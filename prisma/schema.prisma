@@ -6465,3 +6465,267 @@ model BinCapacityLog {
   @@index([alertType], map: "idx_bcl_alert")
   @@index([warehouseId, snapshotAt], map: "idx_bcl_wh_time")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 24 — RECEIVING OPERATIONS, DOCK MANAGEMENT & ASN ENGINE
+// Physical warehouse receiving: truck → dock → verify → receive
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Advanced Shipping Notice (ASN) ────────────
+model AdvancedShippingNotice {
+  id              String   @id @default(uuid()) @db.Uuid
+  asnNumber       String   @unique @map("asn_number")
+  asnDate         DateTime @default(now()) @map("asn_date")
+  expectedArrival DateTime @map("expected_arrival")
+  // ─── Type ───
+  receivingType   String   @map("receiving_type") // PURCHASE_ORDER, MANUFACTURING_RECEIPT, INTER_WAREHOUSE_TRANSFER, CUSTOMER_RETURN, SUPPLIER_REPLACEMENT, OPENING_STOCK, SAMPLE_DELIVERY, VENDOR_MANAGED_INVENTORY
+  // ─── Supplier ───
+  supplierId      String?  @db.Uuid @map("supplier_id")
+  supplierName    String?  @map("supplier_name")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Logistics ───
+  vehicleNumber   String?  @map("vehicle_number")
+  driverName      String?  @map("driver_name")
+  driverPhone     String?  @map("driver_phone")
+  carrierName     String?  @map("carrier_name")
+  // ─── Warehouse ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, SUBMITTED, CONFIRMED, VEHICLE_ARRIVED, RECEIVING, COMPLETED, CANCELLED
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  totalPallets    Int?     @map("total_pallets")
+  totalCartons    Int?     @map("total_cartons")
+  totalQuantity   Decimal  @db.Decimal(18, 4) @default(0) @map("total_quantity")
+  totalWeight     Decimal? @db.Decimal(12, 2) @map("total_weight")
+  totalVolume     Decimal? @db.Decimal(12, 2) @map("total_volume")
+  // ─── Appointment ───
+  appointmentId   String?  @db.Uuid @map("appointment_id")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  confirmedAt     DateTime? @map("confirmed_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           ASNLine[]
+  appointment     ReceivingAppointment? @relation(fields: [appointmentId], references: [id])
+  exceptions      ReceivingException[]
+
+  @@map("advanced_shipping_notices")
+  @@index([receivingType, status], map: "idx_asn_type_status")
+  @@index([supplierId, expectedArrival], map: "idx_asn_supplier_date")
+  @@index([warehouseId, status], map: "idx_asn_wh_status")
+  @@index([status, expectedArrival], map: "idx_asn_status_date")
+}
+
+model ASNLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  asnId           String   @db.Uuid @map("asn_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  productVariantId String? @db.Uuid @map("product_variant_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Quantity ───
+  expectedQty     Decimal  @db.Decimal(18, 4) @map("expected_qty")
+  receivedQty     Decimal  @db.Decimal(18, 4) @default(0) @map("received_qty")
+  // ─── Packaging ───
+  palletCount     Int?     @map("pallet_count")
+  cartonCount     Int?     @map("carton_count")
+  // ─── Batch ───
+  batchNumber     String?  @map("batch_number")
+  supplierBatchNo String?  @map("supplier_batch_no")
+  manufacturingDate DateTime? @map("manufacturing_date")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Barcode ───
+  barcode         String?  @map("barcode")
+  // ─── Status ───
+  lineStatus      String   @default("PENDING") @map("line_status") // PENDING, RECEIVING, RECEIVED, SHORT, OVER, DAMAGED, REJECTED
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  asn             AdvancedShippingNotice @relation(fields: [asnId], references: [id], onDelete: Cascade)
+
+  @@map("asn_lines")
+  @@index([asnId, lineOrder], map: "idx_asnl_asn_order")
+  @@index([productId], map: "idx_asnl_product")
+  @@index([lineStatus], map: "idx_asnl_status")
+}
+
+// ─── Epic 2: Receiving Appointments ────────────────────
+model ReceivingAppointment {
+  id              String   @id @default(uuid()) @db.Uuid
+  appointmentNumber String  @unique @map("appointment_number")
+  appointmentDate DateTime @map("appointment_date")
+  // ─── Time slot ───
+  startTime       DateTime @map("start_time")
+  endTime         DateTime @map("end_time")
+  // ─── Dock ───
+  dockId          String?  @db.Uuid @map("dock_id")
+  dockCode        String?  @map("dock_code")
+  // ─── Supplier ───
+  supplierId      String?  @db.Uuid @map("supplier_id")
+  supplierName    String?  @map("supplier_name")
+  // ─── Vehicle ───
+  vehicleNumber   String?  @map("vehicle_number")
+  driverName      String?  @map("driver_name")
+  driverPhone     String?  @map("driver_phone")
+  // ─── ASN link ───
+  asnId           String?  @db.Uuid @map("asn_id")
+  asnNumber       String?  @map("asn_number")
+  // ─── Warehouse ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Status ───
+  status          String   @default("SCHEDULED") // SCHEDULED, CONFIRMED, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  asns            AdvancedShippingNotice[]
+
+  @@map("receiving_appointments")
+  @@index([appointmentDate, status], map: "idx_ra_date_status")
+  @@index([dockId, appointmentDate], map: "idx_ra_dock_date")
+  @@index([supplierId], map: "idx_ra_supplier")
+  @@index([status], map: "idx_ra_status")
+}
+
+// ─── Epic 3: Gate Entry ────────────────────────────────
+model GateEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  gatePassNumber  String   @unique @map("gate_pass_number")
+  gateDate        DateTime @map("gate_date")
+  // ─── Type ───
+  entryType       String   @map("entry_type") // INBOUND, OUTBOUND, VISITOR, CONTRACTOR
+  // ─── Vehicle ───
+  vehicleNumber   String   @map("vehicle_number")
+  vehicleType     String?  @map("vehicle_type") // TRUCK, CONTAINER, TEMPO, VAN, CAR
+  driverName      String   @map("driver_name")
+  driverLicense   String?  @map("driver_license")
+  driverPhone     String?  @map("driver_phone")
+  // ─── Security ───
+  securityOfficerId String? @db.Uuid @map("security_officer_id")
+  securityOfficerName String? @map("security_officer_name")
+  // ─── Seal ───
+  sealNumber      String?  @map("seal_number")
+  sealIntact      Boolean  @default(true) @map("seal_intact")
+  // ─── Timing ───
+  arrivalTime     DateTime @default(now()) @map("arrival_time")
+  exitTime        DateTime? @map("exit_time")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // ASN, APPOINTMENT, SALES_ORDER, TRANSFER
+  referenceNumber String?  @map("reference_number")
+  // ─── Warehouse ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Photos ───
+  photoUrls       String[] @default([]) @map("photo_urls")
+  // ─── Status ───
+  status          String   @default("ARRIVED") // ARRIVED, IN_WAREHOUSE, DEPARTED, DENIED
+  remarks         String?
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("gate_entries")
+  @@index([entryType, gateDate], map: "idx_ge_type_date")
+  @@index([vehicleNumber], map: "idx_ge_vehicle")
+  @@index([status], map: "idx_ge_status")
+  @@index([gateDate], map: "idx_ge_date")
+}
+
+// ─── Epic 4: Dock Management ───────────────────────────
+model LoadingDock {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  dockCode        String   @map("dock_code")
+  dockName        String   @map("dock_name")
+  // ─── Type ───
+  dockType        String   @map("dock_type") // RECEIVING_DOCK, DISPATCH_DOCK, MIXED_DOCK, COLD_DOCK, BULK_DOCK, CONTAINER_DOCK
+  // ─── Physical ───
+  dockDoorNumber  String?  @map("dock_door_number")
+  // ─── Capacity ───
+  maxVehicleSize  String?  @map("max_vehicle_size") // SMALL, MEDIUM, LARGE, CONTAINER
+  // ─── Temperature ───
+  isTemperatureControlled Boolean @default(false) @map("is_temperature_controlled")
+  temperatureZone String?  @map("temperature_zone")
+  // ─── Equipment ───
+  hasForkliftAccess Boolean @default(true) @map("has_forklift_access")
+  hasPalletJack    Boolean @default(true) @map("has_pallet_jack")
+  hasConveyor      Boolean @default(false) @map("has_conveyor")
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, MAINTENANCE, CLOSED
+  currentVehicleNumber String? @map("current_vehicle_number")
+  currentAppointmentId String? @db.Uuid @map("current_appointment_id")
+  // ─── Stats ───
+  totalOperations Int      @default(0) @map("total_operations")
+  avgUnloadTime   Int?     @map("avg_unload_time") // minutes
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([warehouseId, dockCode], map: "ld_unique_wh_dock")
+  @@map("loading_docks")
+  @@index([warehouseId, status], map: "idx_ld_wh_status")
+  @@index([dockType, status], map: "idx_ld_type_status")
+  @@index([status], map: "idx_ld_status")
+}
+
+// ─── Epic 7: Receiving Exceptions ──────────────────────
+model ReceivingException {
+  id              String   @id @default(uuid()) @db.Uuid
+  exceptionNumber String   @unique @map("exception_number")
+  exceptionDate   DateTime @map("exception_date")
+  // ─── Link ───
+  asnId           String?  @db.Uuid @map("asn_id")
+  asnNumber       String?  @map("asn_number")
+  asnLineId       String?  @db.Uuid @map("asn_line_id")
+  // ─── Type ───
+  exceptionType   String   @map("exception_type") // SHORT_DELIVERY, OVER_DELIVERY, DAMAGED_GOODS, WRONG_PRODUCT, WRONG_BATCH, BROKEN_SEAL, TEMPERATURE_VIOLATION, MISSING_DOCUMENTS
+  // ─── Details ───
+  description     String?
+  // ─── Item ───
+  productId       String?  @db.Uuid @map("product_id")
+  productName     String?  @map("product_name")
+  // ─── Quantity ───
+  expectedQty     Decimal? @db.Decimal(18, 4) @map("expected_qty")
+  receivedQty     Decimal? @db.Decimal(18, 4) @map("received_qty")
+  differenceQty   Decimal? @db.Decimal(18, 4) @map("difference_qty")
+  // ─── Photos ───
+  photoUrls       String[] @default([]) @map("photo_urls")
+  // ─── Resolution ───
+  resolutionStatus String  @default("PENDING") @map("resolution_status") // PENDING, UNDER_REVIEW, ACCEPTED, REJECTED, PARTIAL_ACCEPT, ESCALATED
+  resolutionAction String? @map("resolution_action")
+  resolutionNotes String?  @map("resolution_notes")
+  resolvedById    String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName  String?  @map("resolved_by_name")
+  resolvedAt      DateTime? @map("resolved_at")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, RESOLVED, CANCELLED
+  // ─── Audit ───
+  reportedById    String?  @db.Uuid @map("reported_by_id")
+  reportedByName  String?  @map("reported_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  asn             AdvancedShippingNotice? @relation(fields: [asnId], references: [id], onDelete: SetNull)
+
+  @@map("receiving_exceptions")
+  @@index([asnId], map: "idx_re_asn")
+  @@index([exceptionType, resolutionStatus], map: "idx_re_type_resolution")
+  @@index([resolutionStatus], map: "idx_re_resolution")
+  @@index([status], map: "idx_re_status")
+}
