@@ -12381,3 +12381,420 @@ model ProductionQualityCheck {
   @@index([checkType, result], map: "idx_pqc_type_result")
   @@index([checkedAt], map: "idx_pqc_time")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 41 — PACKAGING, LABELING & FINISHED GOODS MANAGEMENT ENGINE
+// Part 5: MES · 11 new models · Epic 1-8 (orders, levels, units, cartons, pallets,
+// labels, quality checks, finished goods, handover, cost)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Packaging Orders ───────────────────────────────────────────
+model PackagingOrder {
+  id                  String   @id @default(uuid()) @db.Uuid
+  packagingOrderNumber String  @unique @map("packaging_order_number") // PKG-2026-00001
+  // ─── Source ───
+  productionBatchId    String?  @db.Uuid @map("production_batch_id")
+  productionBatchNumber String? @map("production_batch_number")
+  productionOrderNumber String? @map("production_order_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Packaging Type ───
+  packagingType       String   @map("packaging_type") // PRIMARY, SECONDARY, TERTIARY, GIFT_BOX, BULK_PACK, RETAIL_PACK, EXPORT_PACK, PROMOTIONAL, COMBO, FAMILY
+  // ─── Quantity ───
+  plannedQuantity     Decimal  @db.Decimal(18, 4) @map("planned_quantity")
+  completedQuantity   Decimal  @db.Decimal(18, 4) @default(0) @map("completed_quantity")
+  rejectedQuantity    Decimal  @db.Decimal(18, 4) @default(0) @map("rejected_quantity")
+  uom                 String   @default("PCS") @map("uom")
+  // ─── Hierarchy Target ───
+  unitPerBox          Int      @default(12) @map("unit_per_box")
+  boxPerCarton        Int      @default(10) @map("box_per_carton")
+  cartonPerPallet     Int      @default(40) @map("carton_per_pallet")
+  // ─── Schedule ───
+  plannedStart        DateTime? @map("planned_start")
+  plannedFinish       DateTime? @map("planned_finish")
+  actualStart         DateTime? @map("actual_start")
+  actualFinish        DateTime? @map("actual_finish")
+  // ─── Priority & Status ───
+  priority            String   @default("NORMAL") @map("priority") // EMERGENCY, HIGH, NORMAL, LOW
+  status              String   @default("DRAFT") @map("status") // DRAFT, RELEASED, IN_PROGRESS, QUALITY_HOLD, COMPLETED, TRANSFERRED, CANCELLED
+  statusReason        String?  @map("status_reason")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  packagingLineCode   String?  @map("packaging_line_code")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Quality ───
+  qualityStatus       String   @default("PENDING") @map("quality_status") // PENDING, PASSED, FAILED, HOLD, REWORK
+  // ─── Handover ───
+  warehouseTransferId String?  @db.Uuid @map("warehouse_transfer_id")
+  warehouseReceiptNumber String? @map("warehouse_receipt_number")
+  transferredAt       DateTime? @map("transferred_at")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  lines               PackagingOrderLine[]
+  packageUnits        PackageUnit[]
+  packagingCartons    PackagingCarton[]
+  packagingPallets    PackagingPallet[]
+  qualityChecks       PackagingQualityCheck[]
+  labelJobs           PackagingLabelJob[]
+  costSummary         PackagingCostSummary?
+
+  @@map("packaging_orders")
+  @@index([status, priority], map: "idx_po41_status_priority")
+  @@index([productionBatchId], map: "idx_po41_batch")
+  @@index([productSku], map: "idx_po41_sku")
+  @@index([packagingType], map: "idx_po41_type")
+  @@index([plannedStart], map: "idx_po41_start")
+}
+
+model PackagingOrderLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  packagingOrderId    String   @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  // ─── Material ───
+  materialType        String   @map("material_type") // BOX, LABEL, SHRINK_WRAP, TAPE, POUCH, PLASTIC_TRAY, CORRUGATED_CARTON, PALLET_COVER, BARCODE_STICKER
+  materialCode        String   @map("material_code")
+  materialName        String   @map("material_name")
+  // ─── Quantity ───
+  plannedQty          Decimal  @db.Decimal(18, 4) @map("planned_qty")
+  consumedQty         Decimal  @db.Decimal(18, 4) @default(0) @map("consumed_qty")
+  wastageQty          Decimal  @db.Decimal(18, 4) @default(0) @map("wastage_qty")
+  uom                 String   @default("PCS") @map("uom")
+  // ─── Cost ───
+  unitCost            Decimal  @db.Decimal(12, 4) @default(0) @map("unit_cost")
+  totalCost           Decimal  @db.Decimal(14, 2) @default(0) @map("total_cost")
+  // ─── Batch (for traceability) ───
+  materialBatchNumber String?  @map("material_batch_number")
+  // ─── Audit ───
+  consumed            Boolean  @default(false)
+  consumedAt          DateTime? @map("consumed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("packaging_order_lines")
+  @@index([packagingOrderId], map: "idx_pol41_order")
+  @@index([materialCode], map: "idx_pol41_material")
+}
+
+// ─── Epic 2: Multi-Level Packaging Hierarchy ────────────────────────────
+// Unit → Inner Pack → Box → Carton → Pallet
+model PackagingLevel {
+  id                  String   @id @default(uuid()) @db.Uuid
+  levelCode           String   @unique @map("level_code") // L1-UNIT, L2-INNER, L3-BOX, L4-CARTON, L5-PALLET
+  levelName           String   @map("level_name")
+  levelNumber         Int      @map("level_number") // 1=Unit, 2=Inner, 3=Box, 4=Carton, 5=Pallet
+  // ─── Capacity ───
+  childPerParent      Int      @map("child_per_parent") // how many children fit in one parent (12 units per box, 10 boxes per carton, etc.)
+  // ─── Physical ───
+  lengthCm            Decimal? @db.Decimal(8, 2) @map("length_cm")
+  widthCm             Decimal? @db.Decimal(8, 2) @map("width_cm")
+  heightCm            Decimal? @db.Decimal(8, 2) @map("height_cm")
+  emptyWeightKg       Decimal? @db.Decimal(8, 3) @map("empty_weight_kg")
+  // ─── Barcode ───
+  barcodeType         String   @default("CODE_128") @map("barcode_type")
+  // ─── Audit ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("packaging_levels")
+  @@index([levelNumber], map: "idx_pl41_level_num")
+}
+
+model PackageUnit {
+  id                  String   @id @default(uuid()) @db.Uuid
+  packageId           String   @unique @map("package_id") // PKG-UNIT-2026-000001
+  // ─── Hierarchy ───
+  levelNumber         Int      @default(1) @map("level_number") // 1=Unit
+  parentPackageId     String?  @db.Uuid @map("parent_package_id") // links to PackagingCarton
+  parentPackageNumber String?  @map("parent_package_number")
+  // ─── Links ───
+  packagingOrderId    String   @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  batchNumber         String   @map("batch_number")
+  // ─── Quantity ───
+  quantity            Decimal  @db.Decimal(18, 4) @default(1) @map("quantity")
+  uom                 String   @default("PCS") @map("uom")
+  netWeightKg         Decimal? @db.Decimal(10, 3) @map("net_weight_kg")
+  grossWeightKg       Decimal? @db.Decimal(10, 3) @map("gross_weight_kg")
+  // ─── Barcode / QR ───
+  barcode             String   @unique
+  qrCode              String?  @map("qr_code")
+  // ─── Label ───
+  labelPrinted        Boolean  @default(false) @map("label_printed")
+  labelPrintedAt      DateTime? @map("label_printed_at")
+  // ─── Status ───
+  status              String   @default("PACKED") @map("status") // PACKED, SEALED, LABELED, IN_CARTON, TRANSFERRED, REJECTED
+  packedAt            DateTime @default(now()) @map("packed_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("package_units")
+  @@index([packagingOrderId], map: "idx_pu41_order")
+  @@index([parentPackageId], map: "idx_pu41_parent")
+  @@index([batchNumber], map: "idx_pu41_batch")
+  @@index([barcode], map: "idx_pu41_barcode")
+}
+
+model PackagingCarton {
+  id                  String   @id @default(uuid()) @db.Uuid
+  cartonNumber        String   @unique @map("carton_number") // CTN-2026-000001
+  // ─── Hierarchy ───
+  levelNumber         Int      @default(4) @map("level_number") // 4=Carton
+  parentPalletId      String?  @db.Uuid @map("parent_pallet_id")
+  parentPalletNumber  String?  @map("parent_pallet_number")
+  // ─── Links ───
+  packagingOrderId    String   @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  // ─── Contents ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  batchNumber         String   @map("batch_number")
+  // ─── Quantity ───
+  boxesCount          Int      @default(0) @map("boxes_count")
+  unitsCount          Int      @default(0) @map("units_count")
+  netWeightKg         Decimal  @db.Decimal(10, 3) @default(0) @map("net_weight_kg")
+  grossWeightKg       Decimal  @db.Decimal(10, 3) @default(0) @map("gross_weight_kg")
+  // ─── Physical ───
+  lengthCm            Decimal? @db.Decimal(8, 2) @map("length_cm")
+  widthCm             Decimal? @db.Decimal(8, 2) @map("width_cm")
+  heightCm            Decimal? @db.Decimal(8, 2) @map("height_cm")
+  // ─── Barcode / QR ───
+  barcode             String   @unique
+  qrCode              String?  @map("qr_code")
+  // ─── Label ───
+  labelPrinted        Boolean  @default(false) @map("label_printed")
+  labelPrintedAt      DateTime? @map("label_printed_at")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, SEALED, LABELED, ON_PALLET, TRANSFERRED, REJECTED
+  sealedAt            DateTime? @map("sealed_at")
+  // ─── Audit ───
+  packedAt            DateTime @default(now()) @map("packed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("packaging_cartons")
+  @@index([packagingOrderId], map: "idx_pc41_order")
+  @@index([parentPalletId], map: "idx_pc41_parent")
+  @@index([batchNumber], map: "idx_pc41_batch")
+  @@index([barcode], map: "idx_pc41_barcode")
+}
+
+model PackagingPallet {
+  id                  String   @id @default(uuid()) @db.Uuid
+  palletNumber        String   @unique @map("pallet_number") // PAL-2026-000001
+  // ─── Hierarchy ───
+  levelNumber         Int      @default(5) @map("level_number") // 5=Pallet
+  // ─── Links ───
+  packagingOrderId    String   @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  // ─── Contents ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  batchNumber         String   @map("batch_number")
+  // ─── Quantity ───
+  cartonsCount        Int      @default(0) @map("cartons_count")
+  boxesCount          Int      @default(0) @map("boxes_count")
+  unitsCount          Int      @default(0) @map("units_count")
+  netWeightKg         Decimal  @db.Decimal(12, 3) @default(0) @map("net_weight_kg")
+  grossWeightKg       Decimal  @db.Decimal(12, 3) @default(0) @map("gross_weight_kg")
+  // ─── Physical ───
+  lengthCm            Decimal? @db.Decimal(8, 2) @map("length_cm")
+  widthCm             Decimal? @db.Decimal(8, 2) @map("width_cm")
+  heightCm            Decimal? @db.Decimal(8, 2) @map("height_cm")
+  // ─── Destination ───
+  destinationWarehouseId String?  @db.Uuid @map("destination_warehouse_id")
+  destinationWarehouseName String? @map("destination_warehouse_name")
+  destinationBinCode  String?  @map("destination_bin_code")
+  // ─── Barcode / QR ───
+  barcode             String   @unique
+  qrCode              String?  @map("qr_code")
+  // ─── Label ───
+  labelPrinted        Boolean  @default(false) @map("label_printed")
+  labelPrintedAt      DateTime? @map("label_printed_at")
+  // ─── Status ───
+  status              String   @default("BUILDING") @map("status") // BUILDING, COMPLETED, SEALED, TRANSFERRED, REJECTED
+  sealedAt            DateTime? @map("sealed_at")
+  // ─── Audit ───
+  packedAt            DateTime @default(now()) @map("packed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("packaging_pallets")
+  @@index([packagingOrderId], map: "idx_pp41_order")
+  @@index([batchNumber], map: "idx_pp41_batch")
+  @@index([barcode], map: "idx_pp41_barcode")
+  @@index([destinationWarehouseId], map: "idx_pp41_dest_wh")
+}
+
+// ─── Epic 4: Packaging Labels ───────────────────────────────────────────
+model PackagingLabelJob {
+  id                  String   @id @default(uuid()) @db.Uuid
+  jobCode             String   @unique @map("job_code") // PLJ-2026-000001
+  // ─── Links ───
+  packagingOrderId    String   @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  batchNumber         String   @map("batch_number")
+  productName         String   @map("product_name")
+  // ─── Target ───
+  packageId           String?  @db.Uuid @map("package_id")
+  packageNumber       String   @map("package_number")
+  packageLevel        String   @map("package_level") // UNIT, BOX, CARTON, PALLET
+  // ─── Label Type ───
+  labelType           String   @map("label_type") // PRODUCT_LABEL, BATCH_LABEL, CARTON_LABEL, PALLET_LABEL, QR_LABEL, BARCODE_LABEL, SHIPPING_LABEL, INTERNAL_LABEL
+  // ─── Label Data ───
+  labelData           String   @map("label_data") // JSON: { productName, batch, mfg, expiry, mrp, netWeight, qrCode, barcode }
+  qrCode              String   @map("qr_code")
+  barcode             String   @map("barcode")
+  barcodeType         String   @default("CODE_128") @map("barcode_type")
+  // ─── Print ───
+  printerType         String   @default("BLUETOOTH") @map("printer_type")
+  printerName         String?  @map("printer_name")
+  copies              Int      @default(1)
+  // ─── Performance ───
+  printDurationMs     Int?     @map("print_duration_ms")
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Status ───
+  status              String   @default("QUEUED") @map("status") // QUEUED, PRINTING, COMPLETED, FAILED, CANCELLED
+  printStartedAt      DateTime? @map("print_started_at")
+  printCompletedAt    DateTime? @map("print_completed_at")
+  errorMessage        String?  @map("error_message")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("packaging_label_jobs")
+  @@index([packagingOrderId], map: "idx_plj41_order")
+  @@index([labelType, status], map: "idx_plj41_type_status")
+  @@index([batchNumber], map: "idx_plj41_batch")
+}
+
+// ─── Epic 6: Packaging Quality Checks ───────────────────────────────────
+model PackagingQualityCheck {
+  id                  String   @id @default(uuid()) @db.Uuid
+  checkCode           String   @unique @map("check_code") // PKG-QC-000001
+  // ─── Links ───
+  packagingOrderId    String   @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  batchNumber         String   @map("batch_number")
+  packageId           String?  @db.Uuid @map("package_id")
+  packageNumber       String?  @map("package_number")
+  // ─── Check ───
+  checkType           String   @map("check_type") // SEAL_QUALITY, WEIGHT, BARCODE_READABILITY, LABEL_ACCURACY, PRINT_QUALITY, PACKAGE_DAMAGE, MRP_ACCURACY, DATE_PRINTING
+  // ─── Results ───
+  measuredValue       String?  @map("measured_value")
+  targetValue         String?  @map("target_value")
+  result              String   @default("PASS") @map("result") // PASS, FAIL, REWORK, HOLD
+  remarks             String?
+  // ─── Actor ───
+  checkedById         String?  @db.Uuid @map("checked_by_id")
+  checkedByName       String?  @map("checked_by_name")
+  // ─── Audit ───
+  checkedAt           DateTime @default(now()) @map("checked_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("packaging_quality_checks")
+  @@index([packagingOrderId], map: "idx_pqc41_order")
+  @@index([checkType, result], map: "idx_pqc41_type_result")
+  @@index([batchNumber], map: "idx_pqc41_batch")
+}
+
+// ─── Epic 5,8: Finished Goods + Warehouse Handover ──────────────────────
+model FinishedGoodsConfirmation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  fgConfirmationCode  String   @unique @map("fg_confirmation_code") // FG-2026-000001
+  // ─── Source ───
+  packagingOrderId    String?  @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String?  @map("packaging_order_number")
+  productionBatchNumber String  @map("production_batch_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Quantity ───
+  fgQuantity          Decimal  @db.Decimal(18, 4) @map("fg_quantity")
+  uom                 String   @default("PCS") @map("uom")
+  // ─── Hierarchy Summary ───
+  unitsCount          Int      @default(0) @map("units_count")
+  boxesCount          Int      @default(0) @map("boxes_count")
+  cartonsCount        Int      @default(0) @map("cartons_count")
+  palletsCount        Int      @default(0) @map("pallets_count")
+  totalNetWeightKg    Decimal  @db.Decimal(12, 3) @default(0) @map("total_net_weight_kg")
+  // ─── Quality ───
+  qualityStatus       String   @default("PASSED") @map("quality_status") // PASSED, HOLD, FAILED
+  qualityApprovedAt   DateTime? @map("quality_approved_at")
+  qualityApprovedBy   String?  @map("quality_approved_by")
+  // ─── Inventory Posting ───
+  inventoryPosted     Boolean  @default(false) @map("inventory_posted")
+  inventoryPostedAt   DateTime? @map("inventory_posted_at")
+  inventoryTransactionNumber String? @map("inventory_transaction_number")
+  // ─── Warehouse Handover ───
+  warehouseReceiptNumber String? @map("warehouse_receipt_number")
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  putawayTaskId       String?  @db.Uuid @map("putaway_task_id")
+  putawayTaskNumber   String?  @map("putaway_task_number")
+  transferredAt       DateTime? @map("transferred_at")
+  transferDurationMs  Int?     @map("transfer_duration_ms") // target <5000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, QUALITY_APPROVED, INVENTORY_POSTED, WAREHOUSE_TRANSFERRED, COMPLETED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("finished_goods_confirmations")
+  @@index([packagingOrderId], map: "idx_fgc41_order")
+  @@index([productionBatchNumber], map: "idx_fgc41_batch")
+  @@index([productSku], map: "idx_fgc41_sku")
+  @@index([status], map: "idx_fgc41_status")
+}
+
+// ─── Epic 7: Packaging Cost Tracking ────────────────────────────────────
+model PackagingCostSummary {
+  id                  String   @id @default(uuid()) @db.Uuid
+  packagingOrderId    String   @unique @db.Uuid @map("packaging_order_id")
+  packagingOrderNumber String   @map("packaging_order_number")
+  // ─── Cost Components ───
+  materialCost        Decimal  @db.Decimal(14, 2) @default(0) @map("material_cost")
+  laborCost           Decimal  @db.Decimal(14, 2) @default(0) @map("labor_cost")
+  machineCost         Decimal  @db.Decimal(14, 2) @default(0) @map("machine_cost")
+  energyCost          Decimal  @db.Decimal(14, 2) @default(0) @map("energy_cost")
+  overheadCost        Decimal  @db.Decimal(14, 2) @default(0) @map("overhead_cost")
+  // ─── Total ───
+  totalPackagingCost  Decimal  @db.Decimal(14, 2) @default(0) @map("total_packaging_cost")
+  // ─── Per Unit ───
+  costPerUnit         Decimal  @db.Decimal(12, 4) @default(0) @map("cost_per_unit")
+  costPerKg           Decimal  @db.Decimal(12, 4) @default(0) @map("cost_per_kg")
+  // ─── Final Product Cost (Production + Packaging) ───
+  productionCost      Decimal  @db.Decimal(14, 2) @default(0) @map("production_cost")
+  finalProductCost    Decimal  @db.Decimal(14, 2) @default(0) @map("final_product_cost")
+  finalCostPerUnit    Decimal  @db.Decimal(12, 4) @default(0) @map("final_cost_per_unit")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  packagingOrder      PackagingOrder @relation(fields: [packagingOrderId], references: [id], onDelete: Cascade)
+
+  @@map("packaging_cost_summaries")
+  @@index([packagingOrderNumber], map: "idx_pcs41_order")
+}
