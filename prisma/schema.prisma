@@ -12798,3 +12798,420 @@ model PackagingCostSummary {
   @@map("packaging_cost_summaries")
   @@index([packagingOrderNumber], map: "idx_pcs41_order")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 42 — PRODUCTION COSTING, MANUFACTURING FINANCE & VARIANCE ANALYSIS ENGINE
+// Part 5: MES · 11 new models · Epic 1-8 (production cost, elements, transactions,
+// labor, machine, utility, overhead, batch cost, variance, journals)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Production Cost Engine ─────────────────────────────────────
+model ProductionCost {
+  id                  String   @id @default(uuid()) @db.Uuid
+  costCode            String   @unique @map("cost_code") // PC-2026-000001
+  // ─── Links ───
+  productionOrderId   String?  @db.Uuid @map("production_order_id")
+  productionOrderNumber String? @map("production_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  packagingOrderNumber String? @map("packaging_order_number")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Cost Type ───
+  costType            String   @map("cost_type") // STANDARD, ACTUAL, ESTIMATED, SIMULATION, HISTORICAL
+  // ─── Components ───
+  materialCost        Decimal  @db.Decimal(14, 2) @default(0) @map("material_cost")
+  packagingCost       Decimal  @db.Decimal(14, 2) @default(0) @map("packaging_cost")
+  laborCost           Decimal  @db.Decimal(14, 2) @default(0) @map("labor_cost")
+  machineCost         Decimal  @db.Decimal(14, 2) @default(0) @map("machine_cost")
+  utilityCost         Decimal  @db.Decimal(14, 2) @default(0) @map("utility_cost")
+  overheadCost        Decimal  @db.Decimal(14, 2) @default(0) @map("overhead_cost")
+  qualityCost         Decimal  @db.Decimal(14, 2) @default(0) @map("quality_cost")
+  warehouseTransferCost Decimal @db.Decimal(14, 2) @default(0) @map("warehouse_transfer_cost")
+  // ─── Total ───
+  totalManufacturingCost Decimal @db.Decimal(14, 2) @default(0) @map("total_manufacturing_cost")
+  // ─── Quantity ───
+  outputQuantity      Decimal  @db.Decimal(18, 4) @default(0) @map("output_quantity")
+  uom                 String   @default("KG") @map("uom")
+  costPerUnit         Decimal  @db.Decimal(12, 4) @default(0) @map("cost_per_unit")
+  costPerKg           Decimal  @db.Decimal(12, 4) @default(0) @map("cost_per_kg")
+  // ─── Variance ───
+  plannedCost         Decimal  @db.Decimal(14, 2) @default(0) @map("planned_cost")
+  actualCost          Decimal  @db.Decimal(14, 2) @default(0) @map("actual_cost")
+  varianceAmount      Decimal  @db.Decimal(14, 2) @default(0) @map("variance_amount")
+  variancePercent     Decimal  @db.Decimal(6, 2) @default(0) @map("variance_percent")
+  varianceStatus      String   @default("WITHIN_THRESHOLD") @map("variance_status") // WITHIN_THRESHOLD, REVIEW_REQUIRED, CRITICAL
+  // ─── Finance ───
+  journalPosted       Boolean  @default(false) @map("journal_posted")
+  journalEntryNumber  String?  @map("journal_entry_number")
+  journalPostedAt     DateTime? @map("journal_posted_at")
+  financialPeriod     String?  @map("financial_period") // FY2026-Q1-Jul
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  recalculatedAt      DateTime? @map("recalculated_at")
+  calculationDurationMs Int?   @map("calculation_duration_ms") // target <5000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  costElements        CostElement[]
+  costTransactions    CostTransaction[]
+
+  @@map("production_costs")
+  @@index([costType], map: "idx_pc42_type")
+  @@index([productionOrderNumber], map: "idx_pc42_po")
+  @@index([productSku], map: "idx_pc42_sku")
+  @@index([varianceStatus], map: "idx_pc42_variance")
+  @@index([journalPosted], map: "idx_pc42_journal")
+}
+
+model CostElement {
+  id                  String   @id @default(uuid()) @db.Uuid
+  productionCostId    String   @db.Uuid @map("production_cost_id")
+  costCode            String   @map("cost_code")
+  // ─── Element ───
+  elementType         String   @map("element_type") // MATERIAL, PACKAGING, LABOR, MACHINE, UTILITY, OVERHEAD, QUALITY, WAREHOUSE
+  elementCode         String   @map("element_code") // RAW-CASHEW, LABOR-MIXING, MACHINE-COOK-01, ELEC, RENT
+  elementName         String   @map("element_name")
+  // ─── Cost ───
+  plannedCost         Decimal  @db.Decimal(14, 2) @default(0) @map("planned_cost")
+  actualCost          Decimal  @db.Decimal(14, 2) @default(0) @map("actual_cost")
+  varianceAmount      Decimal  @db.Decimal(14, 2) @default(0) @map("variance_amount")
+  variancePercent     Decimal  @db.Decimal(6, 2) @default(0) @map("variance_percent")
+  // ─── Driver ───
+  costDriver          String?  @map("cost_driver") // QTY, HOURS, KG, KWH, M3, FIXED
+  driverQuantity      Decimal? @db.Decimal(14, 4) @map("driver_quantity")
+  ratePerDriver       Decimal? @db.Decimal(12, 4) @map("rate_per_driver")
+  // ─── Source ───
+  source              String   @default("CALCULATED") @map("source") // CALCULATED, MANUAL, ALLOCATED, IMPORTED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  productionCost      ProductionCost @relation(fields: [productionCostId], references: [id], onDelete: Cascade)
+
+  @@map("cost_elements")
+  @@index([productionCostId], map: "idx_ce42_pc")
+  @@index([elementType], map: "idx_ce42_type")
+}
+
+model CostTransaction {
+  id                  String   @id @default(uuid()) @db.Uuid
+  transactionNumber   String   @unique @map("transaction_number") // CT-2026-000001
+  productionCostId    String?  @db.Uuid @map("production_cost_id")
+  // ─── Type ───
+  transactionType     String   @map("transaction_type") // MATERIAL_CONSUMPTION, LABOR_ALLOCATION, MACHINE_ALLOCATION, UTILITY_CONSUMPTION, OVERHEAD_ALLOCATION, VARIANCE_POSTING, FG_VALUATION, WIP_POSTING
+  // ─── Element ───
+  elementType         String   @map("element_type")
+  elementCode         String   @map("element_code")
+  elementName         String   @map("element_name")
+  // ─── Amount ───
+  debitAmount         Decimal  @db.Decimal(14, 2) @default(0) @map("debit_amount")
+  creditAmount        Decimal  @db.Decimal(14, 2) @default(0) @map("credit_amount")
+  // ─── GL ───
+  debitAccountCode    String?  @map("debit_account_code")
+  creditAccountCode   String?  @map("credit_account_code")
+  glPosted            Boolean  @default(false) @map("gl_posted")
+  glPostedAt          DateTime? @map("gl_posted_at")
+  // ─── Reference ───
+  referenceType       String?  @map("reference_type")
+  referenceNumber     String?  @map("reference_number")
+  remarks             String?
+  // ─── Audit ───
+  transactionDate     DateTime @default(now()) @map("transaction_date")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  productionCost      ProductionCost? @relation(fields: [productionCostId], references: [id], onDelete: SetNull)
+
+  @@map("cost_transactions")
+  @@index([productionCostId], map: "idx_ct42_pc")
+  @@index([transactionType, transactionDate], map: "idx_ct42_type_date")
+  @@index([glPosted], map: "idx_ct42_gl")
+}
+
+// ─── Epic 3: Labor Cost Allocation ──────────────────────────────────────
+model LaborCostAllocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  allocationCode      String   @unique @map("allocation_code") // LCA-2026-000001
+  // ─── Links ───
+  productionOrderNumber String? @map("production_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  shiftCode           String?  @map("shift_code")
+  // ─── Labor Type ───
+  laborType           String   @map("labor_type") // DIRECT, INDIRECT, OVERTIME, IDLE, TRAINING, CLEANING, SETUP
+  // ─── Time ───
+  startTime           DateTime @map("start_time")
+  endTime             DateTime? @map("end_time")
+  hoursWorked         Decimal  @db.Decimal(8, 3) @default(0) @map("hours_worked")
+  // ─── Rate ───
+  hourlyRate          Decimal  @db.Decimal(10, 2) @map("hourly_rate")
+  overtimeRate        Decimal? @db.Decimal(10, 2) @map("overtime_rate")
+  // ─── Cost ───
+  regularCost         Decimal  @db.Decimal(12, 2) @default(0) @map("regular_cost")
+  overtimeCost        Decimal  @db.Decimal(12, 2) @default(0) @map("overtime_cost")
+  totalCost           Decimal  @db.Decimal(12, 2) @default(0) @map("total_cost")
+  // ─── Product ───
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("labor_cost_allocations")
+  @@index([operatorId, startTime], map: "idx_lca42_op_time")
+  @@index([productionOrderNumber], map: "idx_lca42_po")
+  @@index([laborType], map: "idx_lca42_type")
+}
+
+// ─── Epic 4: Machine & Utility Cost Allocation ──────────────────────────
+model MachineCostAllocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  allocationCode      String   @unique @map("allocation_code") // MCA-2026-000001
+  // ─── Links ───
+  productionOrderNumber String? @map("production_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Machine ───
+  machineId           String?  @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Time ───
+  startTime           DateTime @map("start_time")
+  endTime             DateTime? @map("end_time")
+  runtimeHours        Decimal  @db.Decimal(8, 3) @default(0) @map("runtime_hours")
+  setupHours          Decimal  @db.Decimal(8, 3) @default(0) @map("setup_hours")
+  idleHours           Decimal  @db.Decimal(8, 3) @default(0) @map("idle_hours")
+  downtimeHours       Decimal  @db.Decimal(8, 3) @default(0) @map("downtime_hours")
+  // ─── Rate ───
+  machineCostRate     Decimal  @db.Decimal(10, 2) @map("machine_cost_rate") // per hour
+  // ─── Cost ───
+  runtimeCost         Decimal  @db.Decimal(12, 2) @default(0) @map("runtime_cost")
+  setupCost           Decimal  @db.Decimal(12, 2) @default(0) @map("setup_cost")
+  maintenanceCost     Decimal  @db.Decimal(12, 2) @default(0) @map("maintenance_cost")
+  totalCost           Decimal  @db.Decimal(12, 2) @default(0) @map("total_cost")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("machine_cost_allocations")
+  @@index([machineCode, startTime], map: "idx_mca42_machine_time")
+  @@index([productionOrderNumber], map: "idx_mca42_po")
+}
+
+model UtilityCost {
+  id                  String   @id @default(uuid()) @db.Uuid
+  utilityCode         String   @unique @map("utility_code") // UC-2026-000001
+  // ─── Links ───
+  productionOrderNumber String? @map("production_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  plantCode           String   @map("plant_code")
+  // ─── Utility Type ───
+  utilityType         String   @map("utility_type") // ELECTRICITY, GAS, STEAM, COMPRESSED_AIR, WATER, COOLING
+  // ─── Consumption ───
+  consumedQuantity    Decimal  @db.Decimal(14, 4) @default(0) @map("consumed_quantity")
+  unitOfMeasure       String   @map("unit_of_measure") // KWH, M3, LITER, TON
+  ratePerUnit         Decimal  @db.Decimal(10, 4) @map("rate_per_unit")
+  totalCost           Decimal  @db.Decimal(14, 2) @default(0) @map("total_cost")
+  // ─── Allocation ───
+  allocationMethod    String   @default("MACHINE_HOURS") @map("allocation_method") // MACHINE_HOURS, LABOR_HOURS, PRODUCTION_QTY, BATCH_QTY
+  allocatedCost       Decimal  @db.Decimal(14, 2) @default(0) @map("allocated_cost")
+  // ─── Period ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("utility_costs")
+  @@index([utilityType, periodStart], map: "idx_uc42_type_period")
+  @@index([productionOrderNumber], map: "idx_uc42_po")
+  @@index([plantCode], map: "idx_uc42_plant")
+}
+
+// ─── Epic 5: Overhead Allocation ────────────────────────────────────────
+model OverheadAllocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  allocationCode      String   @unique @map("allocation_code") // OHA-2026-000001
+  // ─── Links ───
+  productionOrderNumber String? @map("production_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  plantCode           String   @map("plant_code")
+  // ─── Overhead Type ───
+  overheadType        String   @map("overhead_type") // FACTORY_RENT, DEPRECIATION, CLEANING, SUPERVISION, INSURANCE, MAINTENANCE, ADMINISTRATION, QUALITY
+  description         String?
+  // ─── Cost ───
+  totalOverheadCost   Decimal  @db.Decimal(14, 2) @map("total_overhead_cost")
+  allocatedCost       Decimal  @db.Decimal(14, 2) @default(0) @map("allocated_cost")
+  // ─── Allocation Method ───
+  allocationMethod    String   @map("allocation_method") // MACHINE_HOURS, LABOR_HOURS, PRODUCTION_QTY, BATCH_QTY, FIXED_PERCENTAGE
+  allocationBase      Decimal  @db.Decimal(14, 4) @default(0) @map("allocation_base")
+  allocationRate      Decimal  @db.Decimal(12, 6) @default(0) @map("allocation_rate")
+  // ─── Period ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("overhead_allocations")
+  @@index([overheadType, periodStart], map: "idx_oa42_type_period")
+  @@index([productionOrderNumber], map: "idx_oa42_po")
+  @@index([plantCode], map: "idx_oa42_plant")
+}
+
+// ─── Epic 6: Batch Costing ──────────────────────────────────────────────
+model BatchCost {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batchCostCode       String   @unique @map("batch_cost_code") // BC-2026-000001
+  // ─── Links ───
+  productionBatchNumber String   @unique @map("production_batch_number")
+  productionOrderNumber String?  @map("production_order_number")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Quantity ───
+  batchQuantity       Decimal  @db.Decimal(18, 4) @map("batch_quantity")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Cost Components ───
+  materialCost        Decimal  @db.Decimal(14, 2) @default(0) @map("material_cost")
+  packagingCost       Decimal  @db.Decimal(14, 2) @default(0) @map("packaging_cost")
+  laborCost           Decimal  @db.Decimal(14, 2) @default(0) @map("labor_cost")
+  machineCost         Decimal  @db.Decimal(14, 2) @default(0) @map("machine_cost")
+  utilityCost         Decimal  @db.Decimal(14, 2) @default(0) @map("utility_cost")
+  overheadCost        Decimal  @db.Decimal(14, 2) @default(0) @map("overhead_cost")
+  qualityCost         Decimal  @db.Decimal(14, 2) @default(0) @map("quality_cost")
+  // ─── Total ───
+  totalBatchCost      Decimal  @db.Decimal(14, 2) @default(0) @map("total_batch_cost")
+  costPerUnit         Decimal  @db.Decimal(12, 4) @default(0) @map("cost_per_unit")
+  costPerKg           Decimal  @db.Decimal(12, 4) @default(0) @map("cost_per_kg")
+  // ─── Three-way Cost Comparison ───
+  plannedCost         Decimal  @db.Decimal(14, 2) @default(0) @map("planned_cost")
+  actualCost          Decimal  @db.Decimal(14, 2) @default(0) @map("actual_cost")
+  varianceCost        Decimal  @db.Decimal(14, 2) @default(0) @map("variance_cost")
+  variancePercent     Decimal  @db.Decimal(6, 2) @default(0) @map("variance_percent")
+  varianceStatus      String   @default("WITHIN_THRESHOLD") @map("variance_status")
+  // ─── Profitability ───
+  sellingPricePerUnit Decimal? @db.Decimal(12, 2) @map("selling_price_per_unit")
+  grossMarginPerUnit  Decimal? @db.Decimal(12, 2) @map("gross_margin_per_unit")
+  grossMarginPercent  Decimal? @db.Decimal(6, 2) @map("gross_margin_percent")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  calculationDurationMs Int?   @map("calculation_duration_ms")
+  withinTarget        Boolean  @default(true) @map("within_target")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  variances           BatchVariance[]
+
+  @@map("batch_costs")
+  @@index([productionBatchNumber], map: "idx_bc42_batch")
+  @@index([productSku], map: "idx_bc42_sku")
+  @@index([varianceStatus], map: "idx_bc42_variance")
+}
+
+// ─── Epic 7: Variance Analysis ──────────────────────────────────────────
+model BatchVariance {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batchCostId         String   @db.Uuid @map("batch_cost_id")
+  productionBatchNumber String  @map("production_batch_number")
+  // ─── Variance Type ───
+  varianceType        String   @map("variance_type") // MATERIAL, LABOR, MACHINE, YIELD, PURCHASE_PRICE, USAGE, OVERHEAD, TIME
+  // ─── Values ───
+  standardCost        Decimal  @db.Decimal(14, 2) @map("standard_cost")
+  actualCost          Decimal  @db.Decimal(14, 2) @map("actual_cost")
+  varianceAmount      Decimal  @db.Decimal(14, 2) @map("variance_amount")
+  variancePercent     Decimal  @db.Decimal(6, 2) @map("variance_percent")
+  // ─── Direction ───
+  varianceDirection   String   @map("variance_direction") // FAVORABLE (cost < standard), UNFAVORABLE (cost > standard)
+  // ─── Severity ───
+  severity            String   @default("LOW") @map("severity") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Root Cause ───
+  rootCauseCategory   String?  @map("root_cause_category") // RECIPE_DEVIATION, MACHINE_DOWNTIME, OPERATOR_ERROR, MATERIAL_QUALITY, YIELD_LOSS, OVERTIME, UTILITY_SPIKE
+  rootCauseDescription String? @map("root_cause_description")
+  // ─── Action ───
+  correctiveAction    String?  @map("corrective_action")
+  actionOwner         String?  @map("action_owner")
+  actionStatus        String   @default("OPEN") @map("action_status") // OPEN, IN_PROGRESS, RESOLVED, ACCEPTED
+  // ─── Audit ───
+  detectedAt          DateTime @default(now()) @map("detected_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  batchCost           BatchCost @relation(fields: [batchCostId], references: [id], onDelete: Cascade)
+
+  @@map("batch_variances")
+  @@index([batchCostId], map: "idx_bv42_batch_cost")
+  @@index([varianceType, severity], map: "idx_bv42_type_sev")
+  @@index([varianceDirection], map: "idx_bv42_direction")
+  @@index([actionStatus], map: "idx_bv42_action")
+}
+
+// ─── Epic 8: Manufacturing Finance Integration ──────────────────────────
+model ManufacturingJournal {
+  id                  String   @id @default(uuid()) @db.Uuid
+  journalEntryNumber  String   @unique @map("journal_entry_number") // MJE-2026-000001
+  // ─── Links ───
+  productionOrderNumber String? @map("production_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  packagingOrderNumber String? @map("packaging_order_number")
+  // ─── Journal ───
+  journalType         String   @map("journal_type") // MATERIAL_CONSUMPTION, WIP_POSTING, FG_VALUATION, VARIANCE_POSTING, LABOR_ALLOCATION, MACHINE_ALLOCATION, OVERHEAD_ALLOCATION
+  journalDate         DateTime @map("journal_date")
+  // ─── Amount ───
+  totalDebit          Decimal  @db.Decimal(14, 2) @default(0) @map("total_debit")
+  totalCredit         Decimal  @db.Decimal(14, 2) @default(0) @map("total_credit")
+  // ─── Balanced ───
+  isBalanced          Boolean  @default(true) @map("is_balanced")
+  // ─── GL ───
+  glPosted            Boolean  @default(false) @map("gl_posted")
+  glPostedAt          DateTime? @map("gl_posted_at")
+  glPostingDurationMs Int?     @map("gl_posting_duration_ms") // target <2000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  // ─── Period ───
+  financialPeriod     String   @map("financial_period") // FY2026-Q1-Jul
+  // ─── Description ───
+  description         String?
+  referenceType       String?  @map("reference_type")
+  referenceNumber     String?  @map("reference_number")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  lines               ManufacturingJournalLine[]
+
+  @@map("manufacturing_journals")
+  @@index([journalType, journalDate], map: "idx_mj42_type_date")
+  @@index([productionBatchNumber], map: "idx_mj42_batch")
+  @@index([glPosted], map: "idx_mj42_gl")
+  @@index([financialPeriod], map: "idx_mj42_period")
+}
+
+model ManufacturingJournalLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  journalId           String   @db.Uuid @map("journal_id")
+  lineNo              Int      @map("line_no")
+  // ─── Account ───
+  accountCode         String   @map("account_code")
+  accountName         String   @map("account_name")
+  accountType         String   @map("account_type") // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE, COGS
+  // ─── Amount ───
+  debitAmount         Decimal  @db.Decimal(14, 2) @default(0) @map("debit_amount")
+  creditAmount        Decimal  @db.Decimal(14, 2) @default(0) @map("credit_amount")
+  // ─── Cost Center ───
+  costCenterCode      String?  @map("cost_center_code")
+  costCenterName      String?  @map("cost_center_name")
+  // ─── Description ───
+  lineDescription     String?  @map("line_description")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  journal             ManufacturingJournal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+
+  @@map("manufacturing_journal_lines")
+  @@index([journalId], map: "idx_mjl42_journal")
+  @@index([accountCode], map: "idx_mjl42_account")
+}
