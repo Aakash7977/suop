@@ -13584,3 +13584,329 @@ model MaintenanceTrigger {
   @@index([triggerType, status], map: "idx_mt43_type_status")
   @@index([priority, status], map: "idx_mt43_priority_status")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 44 — OEE, PRODUCTION ANALYTICS & MANUFACTURING PERFORMANCE INTELLIGENCE
+// Part 5: MES · 9 new models · Epic 1-7 (OEE, KPIs, operator scores, downtime,
+// heatmaps, executive dashboard snapshots)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: OEE Engine ─────────────────────────────────────────────────
+model OEEResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  oeeCode             String   @unique @map("oee_code") // OEE-2026-000001
+  // ─── Scope ───
+  scopeType           String   @map("scope_type") // MACHINE, LINE, DEPARTMENT, PLANT, ENTERPRISE
+  scopeId             String?  @db.Uuid @map("scope_id")
+  scopeCode           String   @map("scope_code") // COOK-01, LINE-KK-01, THN
+  scopeName           String   @map("scope_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // SHIFT, DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUAL
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  shiftCode           String?  @map("shift_code")
+  // ─── Availability ───
+  plannedTimeMin      Int      @map("planned_time_min")
+  downtimeMin         Int      @default(0) @map("downtime_min")
+  availableTimeMin    Int      @map("available_time_min")
+  availabilityPercent Decimal  @db.Decimal(6, 2) @map("availability_percent")
+  // ─── Performance ───
+  idealCycleTimeSec   Decimal? @db.Decimal(10, 3) @map("ideal_cycle_time_sec")
+  totalCycles         Int      @default(0) @map("total_cycles")
+  actualOutput        Decimal  @db.Decimal(14, 3) @default(0) @map("actual_output")
+  theoreticalOutput   Decimal  @db.Decimal(14, 3) @default(0) @map("theoretical_output")
+  performancePercent  Decimal  @db.Decimal(6, 2) @map("performance_percent")
+  // ─── Quality ───
+  goodPieces          Decimal  @db.Decimal(14, 3) @default(0) @map("good_pieces")
+  rejectedPieces      Decimal  @db.Decimal(14, 3) @default(0) @map("rejected_pieces")
+  reworkedPieces      Decimal  @db.Decimal(14, 3) @default(0) @map("reworked_pieces")
+  qualityPercent      Decimal  @db.Decimal(6, 2) @map("quality_percent")
+  // ─── OEE ───
+  oeePercent          Decimal  @db.Decimal(6, 2) @map("oee_percent")
+  // ─── Comparison ───
+  oeeTarget           Decimal  @db.Decimal(6, 2) @default(85.00) @map("oee_target")
+  varianceFromTarget  Decimal  @db.Decimal(6, 2) @default(0) @map("variance_from_target")
+  oeeStatus           String   @default("WITHIN_TARGET") @map("oee_status") // WITHIN_TARGET, BELOW_TARGET, CRITICAL
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  calculationDurationMs Int?   @map("calculation_duration_ms") // target <2000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("oee_results")
+  @@index([scopeType, scopeCode, periodStart], map: "idx_oee44_scope_period")
+  @@index([periodType, periodStart], map: "idx_oee44_period")
+  @@index([oeeStatus], map: "idx_oee44_status")
+}
+
+model OEEHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scopeType           String   @map("scope_type")
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Snapshot ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  periodType          String   @map("period_type")
+  availabilityPercent Decimal  @db.Decimal(6, 2) @map("availability_percent")
+  performancePercent  Decimal  @db.Decimal(6, 2) @map("performance_percent")
+  qualityPercent      Decimal  @db.Decimal(6, 2) @map("quality_percent")
+  oeePercent          Decimal  @db.Decimal(6, 2) @map("oee_percent")
+  // ─── Audit ───
+  recordedAt          DateTime @default(now()) @map("recorded_at")
+
+  @@map("oee_history")
+  @@index([scopeCode, periodStart], map: "idx_oeeh44_scope_time")
+  @@index([periodType], map: "idx_oeeh44_period")
+}
+
+model OEETarget {
+  id                  String   @id @default(uuid()) @db.Uuid
+  targetCode          String   @unique @map("target_code")
+  scopeType           String   @map("scope_type")
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Targets ───
+  availabilityTarget  Decimal  @db.Decimal(6, 2) @default(95.00) @map("availability_target")
+  performanceTarget   Decimal  @db.Decimal(6, 2) @default(95.00) @map("performance_target")
+  qualityTarget       Decimal  @db.Decimal(6, 2) @default(99.00) @map("quality_target")
+  oeeTarget           Decimal  @db.Decimal(6, 2) @default(85.00) @map("oee_target")
+  // ─── Period ───
+  effectiveFrom       DateTime @map("effective_from")
+  effectiveTo         DateTime? @map("effective_to")
+  // ─── Audit ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("oee_targets")
+  @@index([scopeType, scopeCode], map: "idx_oeet44_scope")
+}
+
+// ─── Epic 2: Production KPI Engine ──────────────────────────────────────
+model ProductionKPI {
+  id                  String   @id @default(uuid()) @db.Uuid
+  kpiCode             String   @unique @map("kpi_code") // KPI-2026-000001
+  // ─── Scope ───
+  scopeType           String   @map("scope_type") // MACHINE, LINE, DEPARTMENT, PLANT
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // HOURLY, SHIFT, DAILY, WEEKLY, MONTHLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Production ───
+  plannedQty          Decimal  @db.Decimal(14, 3) @default(0) @map("planned_qty")
+  actualQty           Decimal  @db.Decimal(14, 3) @default(0) @map("actual_qty")
+  targetAchievement   Decimal  @db.Decimal(6, 2) @default(0) @map("target_achievement") // %
+  uom                 String   @default("KG") @map("uom")
+  // ─── Quality ───
+  goodQty             Decimal  @db.Decimal(14, 3) @default(0) @map("good_qty")
+  scrapQty            Decimal  @db.Decimal(14, 3) @default(0) @map("scrap_qty")
+  reworkQty           Decimal  @db.Decimal(14, 3) @default(0) @map("rework_qty")
+  yieldPercent        Decimal  @db.Decimal(6, 2) @default(0) @map("yield_percent")
+  scrapRate           Decimal  @db.Decimal(6, 2) @default(0) @map("scrap_rate")
+  reworkRate          Decimal  @db.Decimal(6, 2) @default(0) @map("rework_rate")
+  // ─── Time ───
+  cycleTimeSec        Decimal? @db.Decimal(10, 3) @map("cycle_time_sec")
+  setupTimeMin        Int      @default(0) @map("setup_time_min")
+  downtimeMin         Int      @default(0) @map("downtime_min")
+  runtimeMin          Int      @default(0) @map("runtime_min")
+  // ─── Throughput ───
+  throughputPerHour   Decimal  @db.Decimal(10, 2) @default(0) @map("throughput_per_hour")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("production_kpis")
+  @@index([scopeType, scopeCode, periodStart], map: "idx_pkpi44_scope_period")
+  @@index([periodType, periodStart], map: "idx_pkpi44_period")
+}
+
+// ─── Epic 3: Operator Productivity Analytics ────────────────────────────
+model ProductionOperatorScore {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scoreCode           String   @unique @map("score_code") // POS-2026-000001
+  // ─── Operator ───
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  role                String?  @map("role") // MIXING_OPERATOR, COOKING_OPERATOR, etc.
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Production Stats ───
+  unitsProduced       Decimal  @db.Decimal(14, 3) @default(0) @map("units_produced")
+  tasksCompleted      Int      @default(0) @map("tasks_completed")
+  batchesCompleted    Int      @default(0) @map("batches_completed")
+  // ─── Time ───
+  machineTimeMin      Int      @default(0) @map("machine_time_min")
+  idleTimeMin         Int      @default(0) @map("idle_time_min")
+  attendanceHours     Decimal  @db.Decimal(8, 2) @default(0) @map("attendance_hours")
+  overtimeHours       Decimal  @db.Decimal(8, 2) @default(0) @map("overtime_hours")
+  // ─── Quality & Safety ───
+  qualityScore        Decimal  @db.Decimal(5, 2) @default(100) @map("quality_score") // 0-100
+  safetyScore         Decimal  @db.Decimal(5, 2) @default(100) @map("safety_score") // 0-100
+  // ─── Overall ───
+  overallScore        Decimal  @db.Decimal(5, 2) @default(100) @map("overall_score") // 0-100
+  efficiencyPercent   Decimal  @db.Decimal(6, 2) @default(0) @map("efficiency_percent")
+  // ─── Training/Certification ───
+  trainingNeeded      Boolean  @default(false) @map("training_needed")
+  certificationExpiry DateTime? @map("certification_expiry")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("production_operator_scores")
+  @@index([operatorId, periodStart], map: "idx_pos44_op_time")
+  @@index([periodType, periodStart], map: "idx_pos44_period")
+  @@index([overallScore], map: "idx_pos44_score")
+}
+
+// ─── Epic 5: Downtime Analysis ──────────────────────────────────────────
+model DowntimeEvent {
+  id                  String   @id @default(uuid()) @db.Uuid
+  eventCode           String   @unique @map("event_code") // DTE-2026-000001
+  // ─── Scope ───
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  productionLineCode  String?  @map("production_line_code")
+  productionBatchNumber String? @map("production_batch_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Reason ───
+  reasonCode          String   @map("reason_code") // MACHINE_FAILURE, MATERIAL_SHORTAGE, OPERATOR_DELAY, POWER_FAILURE, CLEANING, MAINTENANCE, QUALITY_HOLD, SETUP
+  reasonCategory      String   @map("reason_category") // EQUIPMENT, MATERIAL, OPERATOR, UTILITY, PLANNED, QUALITY
+  reasonDescription   String   @map("reason_description")
+  // ─── Time ───
+  startTime           DateTime @map("start_time")
+  endTime             DateTime? @map("end_time")
+  durationMin         Int?     @map("duration_min")
+  // ─── Shift / Operator ───
+  shiftCode           String?  @map("shift_code")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Impact ───
+  lostOutputQty       Decimal? @db.Decimal(14, 3) @map("lost_output_qty")
+  lostOutputUom       String?  @map("lost_output_uom")
+  estimatedCost       Decimal? @db.Decimal(14, 2) @map("estimated_cost")
+  // ─── Resolution ───
+  resolutionNotes     String?  @map("resolution_notes")
+  resolvedById        String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName      String?  @map("resolved_by_name")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("downtime_events")
+  @@index([machineCode, startTime], map: "idx_dte44_machine_time")
+  @@index([reasonCode], map: "idx_dte44_reason")
+  @@index([reasonCategory], map: "idx_dte44_category")
+  @@index([startTime], map: "idx_dte44_time")
+}
+
+model DowntimeReason {
+  id                  String   @id @default(uuid()) @db.Uuid
+  reasonCode          String   @unique @map("reason_code")
+  reasonName          String   @map("reason_name")
+  reasonCategory      String   @map("reason_category") // EQUIPMENT, MATERIAL, OPERATOR, UTILITY, PLANNED, QUALITY
+  description         String?
+  // ─── Classification ───
+  isPlanned           Boolean  @default(false) @map("is_planned")
+  impactSeverity      String   @default("MEDIUM") @map("impact_severity") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Status ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("downtime_reasons")
+  @@index([reasonCategory, status], map: "idx_dr44_cat_status")
+  @@index([impactSeverity], map: "idx_dr44_severity")
+}
+
+// ─── Epic 6: Manufacturing Heat Maps ────────────────────────────────────
+model ManufacturingHeatmap {
+  id                  String   @id @default(uuid()) @db.Uuid
+  heatmapCode         String   @unique @map("heatmap_code") // HM-2026-000001
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Type ───
+  heatmapType         String   @map("heatmap_type") // MACHINE_UTILIZATION, OPERATOR_ACTIVITY, PRODUCTION_SPEED, DOWNTIME, QUALITY_FAILURES, BOTTLENECKS
+  // ─── Cell ───
+  cellType            String   @map("cell_type") // MACHINE, WORK_CENTER, LINE, ZONE
+  cellCode            String   @map("cell_code")
+  cellName            String   @map("cell_name")
+  // ─── Intensity ───
+  intensityPercent    Int      @map("intensity_percent") // 0-100
+  metricValue         Decimal? @db.Decimal(10, 2) @map("metric_value")
+  metricUnit          String?  @map("metric_unit") // %, KG/H, MIN, PCS
+  // ─── Status ───
+  statusIndicator     String   @default("NORMAL") @map("status_indicator") // NORMAL, WARNING, CRITICAL, BOTTLENECK
+  // ─── Period ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("manufacturing_heatmaps")
+  @@index([heatmapType, periodStart], map: "idx_hm44_type_period")
+  @@index([cellCode], map: "idx_hm44_cell")
+  @@index([statusIndicator], map: "idx_hm44_status")
+}
+
+// ─── Epic 8: Executive Dashboard Snapshots ──────────────────────────────
+model ExecutiveDashboardSnapshot {
+  id                  String   @id @default(uuid()) @db.Uuid
+  snapshotCode        String   @unique @map("snapshot_code") // EDS-2026-000001
+  // ─── Scope ───
+  scopeType           String   @map("scope_type") // PLANT, ENTERPRISE
+  scopeCode           String   @map("scope_code")
+  scopeName           String   @map("scope_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUAL
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Factory Health ───
+  factoryHealthScore  Decimal  @db.Decimal(5, 2) @default(0) @map("factory_health_score") // 0-100
+  factoryHealthStatus String   @default("HEALTHY") @map("factory_health_status") // HEALTHY, WARNING, CRITICAL
+  // ─── Production ───
+  totalProductionQty  Decimal  @db.Decimal(14, 3) @default(0) @map("total_production_qty")
+  productionUom       String   @default("KG") @map("production_uom")
+  targetAchievement   Decimal  @db.Decimal(6, 2) @default(0) @map("target_achievement")
+  // ─── OEE Roll-up ───
+  avgAvailability     Decimal  @db.Decimal(6, 2) @default(0) @map("avg_availability")
+  avgPerformance      Decimal  @db.Decimal(6, 2) @default(0) @map("avg_performance")
+  avgQuality          Decimal  @db.Decimal(6, 2) @default(0) @map("avg_quality")
+  avgOEE              Decimal  @db.Decimal(6, 2) @default(0) @map("avg_oee")
+  // ─── Machine Status ───
+  totalMachines       Int      @default(0) @map("total_machines")
+  runningMachines     Int      @default(0) @map("running_machines")
+  faultedMachines     Int      @default(0) @map("faulted_machines")
+  // ─── Labor ───
+  totalOperators      Int      @default(0) @map("total_operators")
+  activeOperators     Int      @default(0) @map("active_operators")
+  laborEfficiency     Decimal  @db.Decimal(6, 2) @default(0) @map("labor_efficiency")
+  // ─── Quality ───
+  firstPassYield      Decimal  @db.Decimal(6, 2) @default(0) @map("first_pass_yield")
+  scrapRate           Decimal  @db.Decimal(6, 2) @default(0) @map("scrap_rate")
+  // ─── Cost ───
+  totalProductionCost Decimal  @db.Decimal(14, 2) @default(0) @map("total_production_cost")
+  costPerKg           Decimal  @db.Decimal(10, 2) @default(0) @map("cost_per_kg")
+  costVariancePercent Decimal  @db.Decimal(6, 2) @default(0) @map("cost_variance_percent")
+  // ─── Downtime ───
+  totalDowntimeMin    Int      @default(0) @map("total_downtime_min")
+  topDowntimeReason   String?  @map("top_downtime_reason")
+  // ─── Alerts ───
+  activeAlerts        Int      @default(0) @map("active_alerts")
+  criticalAlerts      Int      @default(0) @map("critical_alerts")
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  generationDurationMs Int?    @map("generation_duration_ms") // target <5000ms
+  withinTarget        Boolean  @default(true) @map("within_target")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("executive_dashboard_snapshots")
+  @@index([scopeType, scopeCode, periodStart], map: "idx_eds44_scope_period")
+  @@index([periodType, periodStart], map: "idx_eds44_period")
+}
