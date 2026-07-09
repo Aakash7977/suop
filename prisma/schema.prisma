@@ -9733,3 +9733,308 @@ model WarehouseBottleneck {
   @@index([warehouseId, status, severity], map: "idx_wb_wh_status_sev")
   @@index([bottleneckType, status], map: "idx_wb_type_status")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 33 — MISSION CONTROL, AI OPS CENTER & DIGITAL TWIN (FINAL)
+// Epic 1: Mission Control · Epic 2: Control Tower · Epic 3: Digital Twin
+// Epic 4: AI Ops · Epic 5: Predictive · Epic 6: Alerts · Epic 7: Recovery
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Enterprise Mission Control Snapshot ────────
+model EnterpriseMissionControl {
+  id                  String   @id @default(uuid()) @db.Uuid
+  snapshotCode        String   @unique @map("snapshot_code")
+  // ─── Scope ───
+  scope               String   @default("ENTERPRISE") // ENTERPRISE, REGION, WAREHOUSE
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  // ─── Health Scores ───
+  overallHealthScore  Int      @map("overall_health_score") // 0-100
+  operationsScore     Int      @map("operations_score")
+  inventoryScore      Int      @map("inventory_score")
+  equipmentScore      Int      @map("equipment_score")
+  workforceScore      Int      @map("workforce_score")
+  slaScore            Int      @map("sla_score")
+  // ─── Live Counts ───
+  totalWarehouses     Int      @default(0) @map("total_warehouses")
+  healthyWarehouses   Int      @default(0) @map("healthy_warehouses")
+  warningWarehouses   Int      @default(0) @map("warning_warehouses")
+  criticalWarehouses  Int      @default(0) @map("critical_warehouses")
+  totalLiveTasks      Int      @default(0) @map("total_live_tasks")
+  totalActiveOperators Int     @default(0) @map("total_active_operators")
+  totalEquipmentActive Int     @default(0) @map("total_equipment_active")
+  totalCriticalAlerts Int      @default(0) @map("total_critical_alerts")
+  // ─── Throughput ───
+  ordersToday         Int      @default(0) @map("orders_today")
+  linesToday          Int      @default(0) @map("lines_today")
+  unitsToday          Int      @default(0) @map("units_today")
+  // ─── SLA ───
+  enterpriseSlaPct    Decimal? @db.Decimal(5, 2) @map("enterprise_sla_pct")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("enterprise_mission_control")
+  @@index([scope, calculatedAt], map: "idx_emc_scope_time")
+  @@index([warehouseId], map: "idx_emc_wh")
+}
+
+// ─── Epic 2: Warehouse Status (for Control Tower) ───────
+model WarehouseStatus {
+  id                  String   @id @default(uuid()) @db.Uuid
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  warehouseCode       String   @map("warehouse_code")
+  region              String?  @map("region")
+  // ─── Live Status ───
+  healthScore         Int      @map("health_score") // 0-100
+  healthGrade         String   @map("health_grade") // A+, A, B, C, D
+  status              String   @default("OPERATIONAL") // OPERATIONAL, WARNING, CRITICAL, OFFLINE, MAINTENANCE
+  // ─── Current Load ───
+  liveTasks           Int      @default(0) @map("live_tasks")
+  activeOperators     Int      @default(0) @map("active_operators")
+  equipmentActive     Int      @default(0) @map("equipment_active")
+  capacityUsedPct     Int      @default(0) @map("capacity_used_pct")
+  // ─── Today ───
+  ordersToday         Int      @default(0) @map("orders_today")
+  tasksCompletedToday Int      @default(0) @map("tasks_completed_today")
+  slaCompliancePct    Decimal? @db.Decimal(5, 2) @map("sla_compliance_pct")
+  // ─── Risks ───
+  riskScore           Int      @default(0) @map("risk_score") // 0-100
+  openAlerts          Int      @default(0) @map("open_alerts")
+  criticalAlerts      Int      @default(0) @map("critical_alerts")
+  bottlenecks         Int      @default(0) @map("bottlenecks")
+  // ─── Last Updated ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouse_status")
+  @@unique([warehouseId], map: "uq_ws_wh")
+  @@index([status, healthScore], map: "idx_ws_status_health")
+  @@index([region], map: "idx_ws_region")
+}
+
+// ─── Epic 3: Digital Twin Snapshot ──────────────────────
+model DigitalTwinSnapshot {
+  id                  String   @id @default(uuid()) @db.Uuid
+  snapshotCode        String   @unique @map("snapshot_code")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Zones ───
+  zoneCount           Int      @map("zone_count")
+  zonesJson           Json     @map("zones_json") // [{ name, occupancyPct, operators, equipment, heatScore }]
+  // ─── Bins ───
+  totalBins           Int      @map("total_bins")
+  occupiedBins        Int      @map("occupied_bins")
+  emptyBins           Int      @map("empty_bins")
+  binsJson            Json     @map("bins_json") // [{ code, zone, occupancyPct, productId? }]
+  // ─── Live Entities ───
+  operatorsJson       Json     @map("operators_json") // [{ id, name, zone, currentTask, location }]
+  equipmentJson       Json     @map("equipment_json") // [{ code, type, zone, battery, status }]
+  // ─── Heat Map ───
+  heatmapJson         Json     @map("heatmap_json") // [{ zone, intensity, type }]
+  // ─── Audit ───
+  capturedAt          DateTime @default(now()) @map("captured_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("digital_twin_snapshots")
+  @@index([warehouseId, capturedAt], map: "idx_dts_wh_time")
+}
+
+// ─── Epic 4: AI Recommendation ──────────────────────────
+model AIRecommendation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recommendationCode  String   @unique @map("recommendation_code")
+  // ─── Scope ───
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  scope               String   @default("WAREHOUSE") // ENTERPRISE, WAREHOUSE, ZONE
+  // ─── AI ───
+  category            String   @map("category") // STAFFING, INVENTORY, DOCK, WAVE, REPLENISHMENT, SHIPMENT, EQUIPMENT, CAPACITY
+  recommendationType  String   @map("recommendation_type") // ASSIGN_MORE_STAFF, MOVE_INVENTORY, OPEN_DOCK, START_WAVE, CREATE_REPLENISHMENT, DELAY_SHIPMENT, INCREASE_PICKING_TEAM
+  title               String
+  description         String
+  // ─── Risk ───
+  riskScore           Int      @default(50) @map("risk_score") // 0-100
+  confidencePct       Int      @default(80) @map("confidence_pct") // 0-100
+  impactScore         Int      @default(50) @map("impact_score") // 0-100
+  // ─── Recommended Action ───
+  recommendedAction   String   @map("recommended_action")
+  actionPayload       Json?    @map("action_payload") // structured action data
+  estimatedBenefit    String?  @map("estimated_benefit") // e.g. "+15% throughput", "-22% congestion"
+  // ─── Supporting Data ───
+  supportingData      Json     @map("supporting_data") // metrics that led to recommendation
+  // ─── Status ───
+  status              String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, IMPLEMENTED, EXPIRED
+  acceptedById        String?  @db.Uuid @map("accepted_by_id")
+  acceptedByName      String?  @map("accepted_by_name")
+  acceptedAt          DateTime? @map("accepted_at")
+  implementedAt       DateTime? @map("implemented_at")
+  rejectionReason     String?  @map("rejection_reason")
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_recommendations")
+  @@index([warehouseId, status], map: "idx_air_wh_status")
+  @@index([category, status], map: "idx_air_cat_status")
+  @@index([riskScore], map: "idx_air_risk")
+}
+
+// ─── Epic 5: Predictive Intelligence ────────────────────
+model PredictiveForecast {
+  id                  String   @id @default(uuid()) @db.Uuid
+  forecastCode        String   @unique @map("forecast_code")
+  // ─── Scope ───
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  // ─── Prediction ───
+  predictionType      String   @map("prediction_type") // CONGESTION, STOCK_SHORTAGE, DOCK_DELAY, EQUIPMENT_FAILURE, BATTERY_FAILURE, LABOR_SHORTAGE, PEAK_HOURS, ORDER_SURGE
+  title               String
+  description         String
+  // ─── Timing ───
+  predictedAt         DateTime @map("predicted_at") // when the event is predicted to occur
+  timeHorizon         String   @map("time_horizon") // 1H, 4H, 24H, 7D, 30D
+  // ─── Risk ───
+  probability         Int      @default(50) @map("probability") // 0-100
+  confidencePct       Int      @default(70) @map("confidence_pct")
+  impactScore         Int      @default(50) @map("impact_score")
+  // ─── Recommended Action ───
+  recommendedAction   String?  @map("recommended_action")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, MATERIALIZED, AVERTED, EXPIRED
+  materializedAt      DateTime? @map("materialized_at")
+  avertedAt           DateTime? @map("averted_at")
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("predictive_forecasts")
+  @@index([warehouseId, status], map: "idx_pf_wh_status")
+  @@index([predictionType, status], map: "idx_pf_type_status")
+  @@index([predictedAt], map: "idx_pf_predicted")
+}
+
+// ─── Epic 6: Enterprise Alert ───────────────────────────
+model EnterpriseAlert {
+  id                  String   @id @default(uuid()) @db.Uuid
+  alertCode           String   @unique @map("alert_code")
+  // ─── Scope ───
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  scope               String   @default("WAREHOUSE") // ENTERPRISE, WAREHOUSE, ZONE, EQUIPMENT
+  // ─── Alert ───
+  alertType           String   @map("alert_type") // CRITICAL, WARNING, INFORMATION, MAINTENANCE, EMERGENCY, SECURITY, QUALITY, INVENTORY
+  category            String   @map("category") // SLA_VIOLATION, EQUIPMENT_FAILURE, CONGESTION, STOCKOUT, SAFETY, SYSTEM, OPERATIONAL
+  title               String
+  message             String
+  severity            String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Source ───
+  sourceSystem        String   @map("source_system") // WMS, MOBILE_APP, IOT_SENSOR, ERP, AI_ENGINE
+  sourceEntity        String?  @map("source_entity") // task ID, equipment code, etc.
+  // ─── Notification ───
+  deliveryChannels    String[] @default(['DASHBOARD']) @map("delivery_channels") // DASHBOARD, MOBILE_APP, EMAIL, SMS, WHATSAPP, TEAMS, SLACK
+  deliveredTo         Json?    @map("delivered_to") // [{ channel, recipient, deliveredAt, readAt }]
+  // ─── Acknowledgement ───
+  requiresAck         Boolean  @default(false) @map("requires_ack")
+  acknowledgedById    String?  @db.Uuid @map("acknowledged_by_id")
+  acknowledgedByName  String?  @map("acknowledged_by_name")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  // ─── Escalation ───
+  escalationLevel     Int      @default(0) @map("escalation_level")
+  escalatedTo         String?  @map("escalated_to")
+  escalatedAt         DateTime? @map("escalated_at")
+  // ─── Resolution ───
+  status              String   @default("OPEN") // OPEN, ACKNOWLEDGED, ESCALATED, RESOLVED, CLOSED
+  resolutionNotes     String?  @map("resolution_notes")
+  resolvedById        String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName      String?  @map("resolved_by_name")
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Audit ───
+  raisedAt            DateTime @default(now()) @map("raised_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("enterprise_alerts")
+  @@index([warehouseId, status, severity], map: "idx_ea_wh_status_sev")
+  @@index([alertType, status], map: "idx_ea_type_status")
+  @@index([severity, status], map: "idx_ea_sev_status")
+  @@index([raisedAt], map: "idx_ea_raised")
+}
+
+// ─── Epic 7: Disaster Recovery & Business Continuity ────
+model RecoveryIncident {
+  id                  String   @id @default(uuid()) @db.Uuid
+  incidentCode        String   @unique @map("incident_code")
+  // ─── Scope ───
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  // ─── Incident ───
+  incidentType        String   @map("incident_type") // SYSTEM_HEALTH, API_HEALTH, DATABASE, OFFLINE_DEVICES, NETWORK, POWER_FAILURE, WAREHOUSE_CLOSURE, EQUIPMENT_FAILURE, CYBER_SECURITY
+  title               String
+  description         String
+  severity            String   @default("HIGH") // LOW, MEDIUM, HIGH, CRITICAL, DISASTER
+  // ─── Affected Systems ───
+  affectedSystems     String[] @default([]) @map("affected_systems")
+  affectedWarehouses  String[] @default([]) @map("affected_warehouses")
+  affectedUsers       Int      @default(0) @map("affected_users")
+  // ─── Timeline ───
+  detectedAt          DateTime @default(now()) @map("detected_at")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  recoveryStartedAt   DateTime? @map("recovery_started_at")
+  recoveredAt         DateTime? @map("recovered_at")
+  // ─── Duration ───
+  downtimeMinutes     Int?     @map("downtime_minutes")
+  // ─── Recovery ───
+  recoveryStrategy    String?  @map("recovery_strategy") // AUTO_FAILOVER, MANUAL_FAILOVER, OFFLINE_MODE, RESTART, RESTORE
+  recoveryActions     Json?    @map("recovery_actions") // [{ action, performedBy, performedAt, result }]
+  recoveryChecklist   Json?    @map("recovery_checklist") // [{ item, completed, completedBy, completedAt }]
+  // ─── Impact ───
+  businessImpact      String?  @map("business_impact")
+  estimatedLoss       Decimal? @db.Decimal(12, 2) @map("estimated_loss")
+  // ─── Post-Incident ───
+  rootCause           String?  @map("root_cause")
+  preventiveActions   String[] @default([]) @map("preventive_actions")
+  lessonsLearned      String?  @map("lessons_learned")
+  // ─── Status ───
+  status              String   @default("DETECTED") // DETECTED, ACKNOWLEDGED, RECOVERY_IN_PROGRESS, RECOVERED, CLOSED, POST_INCIDENT_REVIEW
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("recovery_incidents")
+  @@index([warehouseId, status], map: "idx_ri_wh_status")
+  @@index([incidentType, status], map: "idx_ri_type_status")
+  @@index([severity, status], map: "idx_ri_sev_status")
+  @@index([detectedAt], map: "idx_ri_detected")
+}
+
+model SystemHealthMonitor {
+  id                  String   @id @default(uuid()) @db.Uuid
+  // ─── System ───
+  systemName          String   @map("system_name") // ERP_BACKEND, DATABASE, REDIS, RABBITMQ, MOBILE_API, ANALYTICS_ENGINE
+  systemType          String   @map("system_type") // APPLICATION, DATABASE, CACHE, QUEUE, API, STORAGE
+  // ─── Health ───
+  status              String   @default("HEALTHY") // HEALTHY, DEGRADED, UNHEALTHY, OFFLINE
+  healthScore         Int      @default(100) @map("health_score") // 0-100
+  // ─── Metrics ───
+  uptimePct           Decimal? @db.Decimal(5, 2) @map("uptime_pct")
+  responseTimeMs      Int?     @map("response_time_ms")
+  errorRatePct        Decimal? @db.Decimal(5, 2) @map("error_rate_pct")
+  cpuUsagePct         Decimal? @db.Decimal(5, 2) @map("cpu_usage_pct")
+  memoryUsagePct      Decimal? @db.Decimal(5, 2) @map("memory_usage_pct")
+  diskUsagePct        Decimal? @db.Decimal(5, 2) @map("disk_usage_pct")
+  // ─── Last Check ───
+  lastCheckedAt       DateTime @default(now()) @map("last_checked_at")
+  lastIncidentAt      DateTime? @map("last_incident_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("system_health_monitors")
+  @@unique([systemName], map: "uq_shm_system")
+  @@index([status], map: "idx_shm_status")
+  @@index([healthScore], map: "idx_shm_health")
+}

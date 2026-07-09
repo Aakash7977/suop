@@ -27,7 +27,7 @@ import {
   Trash2, AlertTriangle as AlertTriangleIcon,
   Thermometer, Snowflake, Droplets, ScanLine as ScanIcon,
   Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon,
-  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer, Radar, Smartphone
+  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer, Radar, Smartphone, BellRing
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -53,6 +53,7 @@ type ModuleKey =
   | 'crossdock' | 'truckqueue' | 'dockschedule' | 'yardmap' | 'vehicletracker' | 'gateconsole' | 'yardtower' | 'crossdockanalytics'
   | 'equipmentmaster' | 'forkliftdashboard' | 'scannermgmt' | 'batterydashboard' | 'maintenanceplanner' | 'breakdownconsole' | 'certificationcenter' | 'equipmentanalytics'
   | 'missioncontrol' | 'kpidashboard' | 'operatoranalytics' | 'wareheatanalytics' | 'heatmaps' | 'costdashboard' | 'slaanalytics' | 'execreports'
+  | 'wmsmissioncontrol' | 'controltower' | 'digitaltwin' | 'aioperations' | 'execdashboard' | 'alertcenter' | 'recoverydashboard' | 'enterprisenalytics'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -199,6 +200,19 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Cost Dashboard', icon: <IndianRupee className="h-4 w-4" />, module: 'costdashboard', available: true },
       { name: 'SLA Analytics', icon: <Clock className="h-4 w-4" />, module: 'slaanalytics', available: true },
       { name: 'Executive Reports', icon: <FileText className="h-4 w-4" />, module: 'execreports', available: true },
+    ]
+  },
+  {
+    section: 'Sprint 33 — Command Center & AI Ops (FINAL)',
+    items: [
+      { name: 'WMS Mission Control', icon: <Radar className="h-4 w-4" />, module: 'wmsmissioncontrol', available: true },
+      { name: 'Control Tower', icon: <Grid3x3 className="h-4 w-4" />, module: 'controltower', available: true },
+      { name: 'Digital Twin', icon: <Boxes className="h-4 w-4" />, module: 'digitaltwin', available: true },
+      { name: 'AI Operations', icon: <Brain className="h-4 w-4" />, module: 'aioperations', available: true },
+      { name: 'Executive Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'execdashboard', available: true },
+      { name: 'Alert Center', icon: <BellRing className="h-4 w-4" />, module: 'alertcenter', available: true },
+      { name: 'Recovery Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'recoverydashboard', available: true },
+      { name: 'Enterprise Analytics', icon: <Activity className="h-4 w-4" />, module: 'enterprisenalytics', available: true },
     ]
   },
   {
@@ -14213,6 +14227,757 @@ function ExecutiveReportsModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 33 — MISSION CONTROL, AI OPS & DIGITAL TWIN (FINAL)
+// Epic 1: Mission Control · Epic 2: Control Tower · Epic 3: Digital Twin
+// Epic 4: AI Ops · Epic 5: Predictive · Epic 6: Alerts · Epic 7: Recovery
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: WMS Mission Control ────────────────────────
+function WMSMissionControlModule() {
+  const [liveMode, setLiveMode] = useState(true)
+  const [scope, setScope] = useState<'ENTERPRISE' | 'WAREHOUSE'>('ENTERPRISE')
+
+  const sections = [
+    { label: 'Warehouse Health', value: '92/100', grade: 'A+', color: 'from-emerald-500 to-emerald-600', icon: <Activity className="h-5 w-5" /> },
+    { label: 'Inventory Health', value: '99.85%', sub: 'Accuracy', color: 'from-blue-500 to-blue-600', icon: <Boxes className="h-5 w-5" /> },
+    { label: 'Dock Activity', value: '6/9', sub: 'docks active', color: 'from-amber-500 to-amber-600', icon: <Truck className="h-5 w-5" /> },
+    { label: 'Receiving', value: '8', sub: 'in progress', color: 'from-cyan-500 to-cyan-600', icon: <ArrowDownToLine className="h-5 w-5" /> },
+    { label: 'Picking', value: '14', sub: 'active tasks', color: 'from-purple-500 to-purple-600', icon: <Package className="h-5 w-5" /> },
+    { label: 'Packing', value: '5', sub: 'in progress', color: 'from-pink-500 to-pink-600', icon: <PackageCheck className="h-5 w-5" /> },
+    { label: 'Dispatch', value: '3', sub: 'loading', color: 'from-indigo-500 to-indigo-600', icon: <Truck className="h-5 w-5" /> },
+    { label: 'Equipment', value: '8/10', sub: 'active', color: 'from-orange-500 to-orange-600', icon: <Wrench className="h-5 w-5" /> },
+    { label: 'Operators', value: '14', sub: 'active', color: 'from-teal-500 to-teal-600', icon: <Users className="h-5 w-5" /> },
+    { label: 'Alerts', value: '3', sub: '1 critical', color: 'from-red-500 to-red-600', icon: <BellRing className="h-5 w-5" /> },
+    { label: 'SLA Status', value: '94.2%', sub: 'compliance', color: 'from-emerald-500 to-emerald-600', icon: <Gauge className="h-5 w-5" /> },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">WMS Mission Control</h2><p className="text-sm text-muted-foreground mt-1">Real-time warehouse operations · 11 dashboard sections · drill-down · global search</p></div>
+        <div className="flex items-center gap-3">
+          <select value={scope} onChange={e => setScope(e.target.value as any)} className="px-3 py-1.5 text-sm border rounded-md">
+            <option value="ENTERPRISE">Enterprise (All Warehouses)</option>
+            <option value="WAREHOUSE">Single Warehouse</option>
+          </select>
+          <div className="flex items-center gap-2"><Switch checked={liveMode} onCheckedChange={setLiveMode} />{liveMode ? <span className="text-xs text-emerald-600 flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />LIVE</span> : <span className="text-xs text-muted-foreground">PAUSED</span>}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        {sections.map(s => (
+          <Card key={s.label} className="p-3 relative overflow-hidden">
+            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${s.color}`} />
+            <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${s.color} text-white flex items-center justify-center mb-2`}>{s.icon}</div>
+            <p className="text-[10px] text-muted-foreground uppercase">{s.label}</p>
+            <p className="text-lg font-bold">{s.value}</p>
+            {s.sub && <p className="text-[10px] text-muted-foreground">{s.sub}</p>}
+            {s.grade && <p className="text-[10px] text-emerald-600 font-bold">{s.grade}</p>}
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-4 lg:col-span-2 bg-slate-900 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center gap-2"><Radar className="h-5 w-5 text-amber-500" />Enterprise Operations Map</h3>
+            <Badge className="bg-emerald-500">4 Warehouses · 3 Operational · 1 Warning</Badge>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { wh: 'WH-MUM-MAIN', region: 'Mumbai', score: 92, grade: 'A+', status: 'OPERATIONAL', tasks: 47, operators: 14, alerts: 1 },
+              { wh: 'WH-DEL-NORTH', region: 'Delhi', score: 88, grade: 'A', status: 'OPERATIONAL', tasks: 32, operators: 10, alerts: 0 },
+              { wh: 'WH-BLR-CENTRAL', region: 'Bangalore', score: 85, grade: 'A', status: 'OPERATIONAL', tasks: 28, operators: 8, alerts: 0 },
+              { wh: 'WH-HYD-WEST', region: 'Hyderabad', score: 72, grade: 'B', status: 'WARNING', tasks: 18, operators: 6, alerts: 2 },
+            ].map(w => (
+              <div key={w.wh} className={`p-3 rounded-lg border ${w.status === 'WARNING' ? 'border-amber-500 bg-amber-500/10' : 'border-emerald-500 bg-emerald-500/10'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-xs font-bold">{w.wh}</span>
+                  <span className={`text-[9px] px-1 py-0.5 rounded ${w.status === 'WARNING' ? 'bg-amber-500 text-slate-900' : 'bg-emerald-500 text-slate-900'}`}>{w.grade}</span>
+                </div>
+                <p className="text-[10px] text-slate-400">{w.region}</p>
+                <div className="mt-2 space-y-0.5 text-[10px]">
+                  <div className="flex justify-between"><span className="text-slate-400">Health</span><span className="font-mono">{w.score}/100</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Tasks</span><span className="font-mono">{w.tasks}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Operators</span><span className="font-mono">{w.operators}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Alerts</span><span className={`font-mono ${w.alerts > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{w.alerts}</span></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Live Activity Feed</h3>
+          <div className="space-y-2 max-h-80 overflow-y-auto suop-main-scroll">
+            {[
+              { time: '10:45', type: 'TASK_COMPLETED', msg: 'TASK-2026-010 completed by Suresh M. (2m 14s)', color: 'text-emerald-600' },
+              { time: '10:43', type: 'WAVE_RELEASED', msg: 'WAVE-2026-006 released — 22 tasks generated', color: 'text-blue-600' },
+              { time: '10:42', type: 'SCAN', msg: 'OP-001 scanned Kaju Katli at C-02-03-A', color: 'text-slate-600' },
+              { time: '10:40', type: 'ALERT', msg: 'SLA breach on TASK-2026-009 — 35 min overdue', color: 'text-rose-600' },
+              { time: '10:38', type: 'EQUIPMENT', msg: 'FL-004 breakdown reported — hydraulic failure', color: 'text-rose-600' },
+              { time: '10:35', type: 'CROSS_DOCK', msg: 'CD-2026-001 65% complete — 20 min ETA', color: 'text-purple-600' },
+              { time: '10:32', type: 'RECEIVING', msg: 'ASN-2026-018 received at DOCK-02', color: 'text-cyan-600' },
+              { time: '10:30', type: 'DISPATCH', msg: 'DSP-2026-008 vehicle exited gate', color: 'text-indigo-600' },
+              { time: '10:28', type: 'TASK_ASSIGNED', msg: 'TASK-2026-015 auto-assigned to OP-001', color: 'text-blue-600' },
+              { time: '10:25', type: 'SYNC', msg: '12 offline transactions synced from MD-002', color: 'text-emerald-600' },
+            ].map((a, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs p-2 border rounded">
+                <span className="font-mono text-[10px] text-muted-foreground w-10">{a.time}</span>
+                <div className="flex-1"><span className={`font-mono font-semibold ${a.color}`}>{a.type}</span><p className="text-muted-foreground mt-0.5">{a.msg}</p></div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 2: Enterprise Control Tower ───────────────────
+function EnterpriseControlTowerModule() {
+  const [tvMode, setTvMode] = useState(false)
+  const warehouses = [
+    { wh: 'WH-MUM-MAIN', region: 'Mumbai', score: 92, grade: 'A+', status: 'OPERATIONAL', tasks: 47, operators: 14, capacity: 82, sla: 94.2, orders: 184, risk: 22, delays: 1, color: 'border-emerald-500' },
+    { wh: 'WH-DEL-NORTH', region: 'Delhi', score: 88, grade: 'A', status: 'OPERATIONAL', tasks: 32, operators: 10, capacity: 75, sla: 96.1, orders: 142, risk: 18, delays: 0, color: 'border-emerald-500' },
+    { wh: 'WH-BLR-CENTRAL', region: 'Bangalore', score: 85, grade: 'A', status: 'OPERATIONAL', tasks: 28, operators: 8, capacity: 78, sla: 95.5, orders: 128, risk: 20, delays: 0, color: 'border-emerald-500' },
+    { wh: 'WH-HYD-WEST', region: 'Hyderabad', score: 72, grade: 'B', status: 'WARNING', tasks: 18, operators: 6, capacity: 68, sla: 89.3, orders: 92, risk: 58, delays: 3, color: 'border-amber-500' },
+    { wh: 'WH-CHN-SOUTH', region: 'Chennai', score: 90, grade: 'A', status: 'OPERATIONAL', tasks: 24, operators: 7, capacity: 71, sla: 94.8, orders: 105, risk: 25, delays: 0, color: 'border-emerald-500' },
+    { wh: 'WH-KOL-EAST', region: 'Kolkata', score: 78, grade: 'B', status: 'WARNING', tasks: 15, operators: 5, capacity: 64, sla: 91.2, orders: 78, risk: 42, delays: 1, color: 'border-amber-500' },
+  ]
+
+  return (
+    <div className={`space-y-6 ${tvMode ? 'bg-slate-950 p-6 rounded-xl' : ''}`}>
+      <div className="flex items-center justify-between">
+        <div><h2 className={`text-2xl font-bold ${tvMode ? 'text-white' : ''}`}>Enterprise Control Tower</h2><p className={`text-sm mt-1 ${tvMode ? 'text-slate-400' : 'text-muted-foreground'}`}>Single screen · multi-monitor · TV dashboard · operations center</p></div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant={tvMode ? 'default' : 'outline'} onClick={() => setTvMode(!tvMode)}><Grid3x3 className="mr-1 h-4 w-4" />{tvMode ? 'Exit TV Mode' : 'TV Mode'}</Button>
+        </div>
+      </div>
+
+      {/* Enterprise KPI Strip */}
+      <div className={`grid grid-cols-2 md:grid-cols-6 gap-3 ${tvMode ? '' : ''}`}>
+        {[
+          { label: 'Total Warehouses', value: warehouses.length, color: tvMode ? 'text-blue-400' : 'text-blue-600' },
+          { label: 'Operational', value: warehouses.filter(w => w.status === 'OPERATIONAL').length, color: tvMode ? 'text-emerald-400' : 'text-emerald-600' },
+          { label: 'Warning', value: warehouses.filter(w => w.status === 'WARNING').length, color: tvMode ? 'text-amber-400' : 'text-amber-600' },
+          { label: 'Total Tasks', value: warehouses.reduce((a, w) => a + w.tasks, 0), color: tvMode ? 'text-purple-400' : 'text-purple-600' },
+          { label: 'Total Orders', value: warehouses.reduce((a, w) => a + w.orders, 0), color: tvMode ? 'text-cyan-400' : 'text-cyan-600' },
+          { label: 'Active Operators', value: warehouses.reduce((a, w) => a + w.operators, 0), color: tvMode ? 'text-pink-400' : 'text-pink-600' },
+        ].map(s => (
+          <Card key={s.label} className={`p-3 ${tvMode ? 'bg-slate-900 border-slate-700' : ''}`}>
+            <p className={`text-xs ${tvMode ? 'text-slate-400' : 'text-muted-foreground'}`}>{s.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Warehouse Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {warehouses.map(w => (
+          <Card key={w.wh} className={`p-4 border-l-4 ${w.color} ${tvMode ? 'bg-slate-900 text-white' : ''}`}>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className={`font-mono font-bold ${tvMode ? 'text-white' : ''}`}>{w.wh}</h3>
+                <p className={`text-xs ${tvMode ? 'text-slate-400' : 'text-muted-foreground'}`}>{w.region}</p>
+              </div>
+              <div className="text-right">
+                <span className={`text-lg font-bold ${w.status === 'WARNING' ? 'text-amber-500' : 'text-emerald-500'}`}>{w.grade}</span>
+                <p className={`text-[10px] ${tvMode ? 'text-slate-400' : 'text-muted-foreground'}`}>{w.score}/100</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Status</p><p className={w.status === 'WARNING' ? 'text-amber-500 font-bold' : 'text-emerald-500 font-bold'}>{w.status}</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Live Tasks</p><p className={`font-mono ${tvMode ? 'text-white' : ''}`}>{w.tasks}</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Operators</p><p className={`font-mono ${tvMode ? 'text-white' : ''}`}>{w.operators}</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Orders Today</p><p className={`font-mono ${tvMode ? 'text-white' : ''}`}>{w.orders}</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>SLA</p><p className={`font-mono ${w.sla > 95 ? 'text-emerald-500' : w.sla > 90 ? 'text-amber-500' : 'text-rose-500'}`}>{w.sla}%</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Capacity</p><p className={`font-mono ${tvMode ? 'text-white' : ''}`}>{w.capacity}%</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Risk Score</p><p className={`font-mono ${w.risk > 50 ? 'text-rose-500 font-bold' : w.risk > 30 ? 'text-amber-500' : 'text-emerald-500'}`}>{w.risk}/100</p></div>
+              <div><p className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Delays</p><p className={`font-mono ${w.delays > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{w.delays}</p></div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-200">
+              <div className="flex justify-between text-[10px] mb-1"><span className={tvMode ? 'text-slate-400' : 'text-muted-foreground'}>Capacity Utilization</span><span className={`font-mono ${tvMode ? 'text-white' : ''}`}>{w.capacity}%</span></div>
+              <div className={`h-1.5 rounded-full overflow-hidden ${tvMode ? 'bg-slate-700' : 'bg-muted'}`}><div className={`h-full ${w.capacity > 80 ? 'bg-emerald-500' : w.capacity > 70 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${w.capacity}%` }} /></div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 3: Warehouse Digital Twin ─────────────────────
+function DigitalTwinModule() {
+  const [view, setView] = useState<'2D' | 'HEATMAP' | 'ENTITIES'>('2D')
+  const [selectedZone, setSelectedZone] = useState<string | null>(null)
+
+  const zones = [
+    { name: 'A-Receiving', occupancy: 68, operators: 2, equipment: 1, heat: 75, x: 0, y: 0, w: 2, h: 1, color: 'bg-amber-500/30 border-amber-500' },
+    { name: 'B-Bulk', occupancy: 78, operators: 1, equipment: 2, heat: 45, x: 2, y: 0, w: 2, h: 2, color: 'bg-emerald-500/30 border-emerald-500' },
+    { name: 'C-Picking', occupancy: 84, operators: 5, equipment: 3, heat: 92, x: 4, y: 0, w: 2, h: 2, color: 'bg-rose-500/30 border-rose-500' },
+    { name: 'D-Pack', occupancy: 55, operators: 3, equipment: 1, heat: 68, x: 0, y: 1, w: 2, h: 1, color: 'bg-amber-500/30 border-amber-500' },
+    { name: 'E-Dispatch', occupancy: 62, operators: 2, equipment: 2, heat: 88, x: 0, y: 2, w: 3, h: 1, color: 'bg-rose-500/30 border-rose-500' },
+    { name: 'F-Cold', occupancy: 45, operators: 1, equipment: 1, heat: 30, x: 3, y: 2, w: 1, h: 1, color: 'bg-cyan-500/30 border-cyan-500' },
+    { name: 'Charging', occupancy: 50, operators: 0, equipment: 2, heat: 20, x: 4, y: 2, w: 2, h: 1, color: 'bg-blue-500/30 border-blue-500' },
+  ]
+
+  const getHeatColor = (h: number) => h > 80 ? 'bg-rose-500' : h > 60 ? 'bg-amber-500' : h > 30 ? 'bg-emerald-500' : 'bg-slate-400'
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Warehouse Digital Twin</h2><p className="text-sm text-muted-foreground mt-1">Live digital representation · zones · bins · operators · equipment · heat maps</p></div>
+        <div className="flex rounded-md border overflow-hidden">
+          {(['2D', 'HEATMAP', 'ENTITIES'] as const).map(v => <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 text-xs font-medium ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v}</button>)}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Bins', value: '1,247', color: 'text-blue-600' },
+          { label: 'Occupied', value: '892', color: 'text-amber-600' },
+          { label: 'Empty', value: '355', color: 'text-emerald-600' },
+          { label: 'Live Operators', value: '14', color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-4">Warehouse Layout — WH-MUM-MAIN</h3>
+        <div className="grid grid-cols-6 grid-rows-3 gap-2 h-96">
+          {zones.map(z => (
+            <button key={z.name} onClick={() => setSelectedZone(selectedZone === z.name ? null : z.name)}
+              className={`relative rounded-lg border-2 p-3 text-left transition-all ${view === 'HEATMAP' ? `${getHeatColor(z.heat)} border-transparent text-white` : z.color} ${selectedZone === z.name ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+              style={{ gridColumn: `${z.x + 1} / span ${z.w}`, gridRow: `${z.y + 1} / span ${z.h}` }}
+            >
+              <div className="font-semibold text-sm">{z.name}</div>
+              {view === '2D' && <div className="text-xs mt-1 opacity-70">Occ: {z.occupancy}%</div>}
+              {view === 'HEATMAP' && <div className="text-xs mt-1 opacity-90">Heat: {z.heat}%</div>}
+              {view === 'ENTITIES' && <div className="text-xs mt-1 space-y-0.5"><div>👤 {z.operators}</div><div>🚜 {z.equipment}</div></div>}
+              <div className="absolute bottom-2 right-2 text-[10px] opacity-60">{z.occupancy}%</div>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {selectedZone && (
+        <Card className="p-4 border-blue-300 bg-blue-50/50">
+          <h3 className="font-semibold mb-2">{selectedZone} — Zone Details</h3>
+          {(() => {
+            const z = zones.find(zn => zn.name === selectedZone)!
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div><p className="text-xs text-muted-foreground">Occupancy</p><p className="font-bold">{z.occupancy}%</p></div>
+                <div><p className="text-xs text-muted-foreground">Heat Score</p><p className="font-bold">{z.heat}%</p></div>
+                <div><p className="text-xs text-muted-foreground">Operators</p><p className="font-bold">{z.operators}</p></div>
+                <div><p className="text-xs text-muted-foreground">Equipment</p><p className="font-bold">{z.equipment}</p></div>
+              </div>
+            )
+          })()}
+        </Card>
+      )}
+
+      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+          <div>
+            <h3 className="font-semibold text-sm">Digital Twin — Future Roadmap</h3>
+            <div className="mt-2 space-y-1 text-xs">
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>3D Visualization:</strong> Render warehouse in 3D with WebGL — navigate aisles virtually.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Indoor Navigation:</strong> Guide operators to optimal pick path via AR overlays on mobile.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>IoT Integration:</strong> Real-time sensor data (temperature, humidity, weight) overlaid on twin.</span></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 4: AI Operations Center ───────────────────────
+function AIOperationsModule() {
+  const recommendations = [
+    { code: 'AIR-2026-018', category: 'STAFFING', type: 'ASSIGN_MORE_STAFF', title: 'Assign 2 more pickers to C-Picking', desc: 'C-Picking zone has 14 active tasks with only 5 operators. Picking SLA at risk (88% on-time).', risk: 78, confidence: 92, impact: 85, benefit: '+22% picking throughput', action: 'Reassign 2 operators from F-Cold (low activity) to C-Picking', status: 'PENDING' },
+    { code: 'AIR-2026-017', category: 'EQUIPMENT', type: 'INCREASE_PICKING_TEAM', title: 'FL-004 breakdown — rent replacement forklift', desc: 'FL-004 hydraulic failure, 95 min downtime. 3 tasks affected. Predict 2 more failures in 30 days based on age (2104h).', risk: 88, confidence: 95, impact: 92, benefit: 'Prevent 4h additional downtime', action: 'Rent temporary forklift immediately, schedule FL-004 replacement', status: 'ACCEPTED' },
+    { code: 'AIR-2026-016', category: 'WAVE', type: 'START_WAVE', title: 'Start WAVE-2026-006 early — pre-stage for 14:00 peak', desc: 'Friday 14:00-17:00 is recurring congestion window. Starting wave at 13:00 reduces peak load by 30%.', risk: 55, confidence: 82, impact: 70, benefit: '-30% peak congestion', action: 'Release WAVE-2026-006 at 13:00 instead of 14:00', status: 'PENDING' },
+    { code: 'AIR-2026-015', category: 'DOCK', type: 'OPEN_DOCK', title: 'Open DOCK-03 for outbound — DOCK-04 maintenance', desc: 'DOCK-04 under maintenance until 12:00. 3 outbound vehicles queued. DOCK-03 available and compatible.', risk: 65, confidence: 98, impact: 75, benefit: 'Reduce queue wait by 22 min', action: 'Activate DOCK-03 for outbound dispatch', status: 'IMPLEMENTED' },
+    { code: 'AIR-2026-014', category: 'REPLENISHMENT', type: 'CREATE_REPLENISHMENT', title: 'Replenish Kaju Katli picking bin', desc: 'C-02-03-A (Kaju Katli 500g) below minimum. 24 PCS available, demand for 48 in next wave. Bulk stock at B-01-03-A (156 PCS).', risk: 72, confidence: 96, impact: 80, benefit: 'Prevent stockout during WAVE-2026-001', action: 'Create replenishment task: move 48 PCS from B-01-03-A to C-02-03-A', status: 'ACCEPTED' },
+    { code: 'AIR-2026-013', category: 'SHIPMENT', type: 'DELAY_SHIPMENT', title: 'Delay DSP-2026-012 by 30 min — picking not complete', desc: 'DSP-2026-012 scheduled for 11:30 but 3 pick tasks incomplete. Vehicle arrival would cause idle loading.', risk: 45, confidence: 88, impact: 60, benefit: 'Avoid 45 min vehicle idle time', action: 'Reschedule DSP-2026-012 to 12:00, notify carrier', status: 'PENDING' },
+  ]
+
+  const predictions = [
+    { type: 'CONGESTION', title: 'C-Picking congestion in 45 min', prob: 85, confidence: 90, horizon: '1H', impact: 78 },
+    { type: 'EQUIPMENT_FAILURE', title: 'FL-002 battery failure predicted', prob: 72, confidence: 85, horizon: '24H', impact: 65 },
+    { type: 'ORDER_SURGE', title: 'Order surge expected Friday 14:00', prob: 88, confidence: 92, horizon: '4H', impact: 82 },
+    { type: 'STOCK_SHORTAGE', title: 'Gulab Jamun stockout in 2 days', prob: 65, confidence: 78, horizon: '7D', impact: 70 },
+    { type: 'LABOR_SHORTAGE', title: 'Morning shift understaffed tomorrow', prob: 58, confidence: 75, horizon: '24H', impact: 68 },
+    { type: 'PEAK_HOURS', title: 'Peak dispatch window 15:00-17:00', prob: 95, confidence: 98, horizon: '4H', impact: 75 },
+  ]
+
+  const catColors: Record<string, string> = { STAFFING: 'bg-blue-100 text-blue-700', EQUIPMENT: 'bg-amber-100 text-amber-700', WAVE: 'bg-purple-100 text-purple-700', DOCK: 'bg-cyan-100 text-cyan-700', REPLENISHMENT: 'bg-orange-100 text-orange-700', SHIPMENT: 'bg-pink-100 text-pink-700' }
+  const statusColors: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700', ACCEPTED: 'bg-blue-100 text-blue-700', IMPLEMENTED: 'bg-emerald-100 text-emerald-700', REJECTED: 'bg-rose-100 text-rose-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">AI Operations Center</h2><p className="text-sm text-muted-foreground mt-1">AI monitors 9 domains · generates recommendations · predicts risks · confidence-scored</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Active Recommendations', value: recommendations.filter(r => r.status === 'PENDING').length, color: 'text-amber-600' },
+          { label: 'Accepted (today)', value: recommendations.filter(r => r.status === 'ACCEPTED').length, color: 'text-blue-600' },
+          { label: 'Implemented', value: recommendations.filter(r => r.status === 'IMPLEMENTED').length, color: 'text-emerald-600' },
+          { label: 'Active Predictions', value: predictions.length, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+        <div className="flex items-start gap-3">
+          <div className="h-12 w-12 rounded-xl bg-purple-600 flex items-center justify-center text-white"><Brain className="h-6 w-6" /></div>
+          <div className="flex-1">
+            <h3 className="font-semibold">AI Monitoring 9 Operational Domains</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {['Receiving', 'Picking', 'Packing', 'Transfers', 'Equipment', 'Operators', 'Capacity', 'Inventory', 'Orders'].map(d => <span key={d} className="text-[10px] px-2 py-1 bg-white/60 rounded-full text-purple-700 font-medium">{d}</span>)}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">AI Recommendations</h3>
+          <div className="space-y-2 max-h-[600px] overflow-y-auto suop-main-scroll">
+            {recommendations.map(r => (
+              <div key={r.code} className={`p-3 border rounded ${r.status === 'IMPLEMENTED' ? 'border-emerald-300 bg-emerald-50/30' : r.status === 'ACCEPTED' ? 'border-blue-300 bg-blue-50/30' : 'border-amber-300 bg-amber-50/30'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-[10px] font-semibold text-blue-700">{r.code}</span>
+                  <div className="flex gap-1">
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${catColors[r.category]}`}>{r.category}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${statusColors[r.status]}`}>{r.status}</span>
+                  </div>
+                </div>
+                <p className="text-sm font-semibold">{r.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">{r.desc}</p>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-[10px]">
+                  <div><span className="text-muted-foreground">Risk:</span> <span className={`font-bold ${r.risk > 75 ? 'text-rose-600' : 'text-amber-600'}`}>{r.risk}/100</span></div>
+                  <div><span className="text-muted-foreground">Confidence:</span> <span className="font-bold text-emerald-600">{r.confidence}%</span></div>
+                  <div><span className="text-muted-foreground">Impact:</span> <span className="font-bold">{r.impact}/100</span></div>
+                </div>
+                <div className="mt-2 p-2 bg-white/60 rounded text-xs"><span className="text-purple-600 font-medium">Recommended:</span> {r.action}</div>
+                <div className="mt-1 text-[10px] text-emerald-600 font-medium">Estimated benefit: {r.benefit}</div>
+                {r.status === 'PENDING' && <div className="mt-2 flex gap-2"><Button size="sm" className="h-7 text-xs">Accept</Button><Button size="sm" variant="outline" className="h-7 text-xs">Reject</Button></div>}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Predictive Intelligence</h3>
+          <div className="space-y-2">
+            {predictions.map((p, i) => (
+              <div key={i} className="p-3 border rounded">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-mono">{p.type.replace(/_/g, ' ')}</span>
+                  <span className="text-[10px] text-muted-foreground">Horizon: {p.horizon}</span>
+                </div>
+                <p className="text-sm font-medium">{p.title}</p>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-[10px]">
+                  <div><span className="text-muted-foreground">Probability:</span> <span className={`font-bold ${p.prob > 80 ? 'text-rose-600' : p.prob > 60 ? 'text-amber-600' : 'text-emerald-600'}`}>{p.prob}%</span></div>
+                  <div><span className="text-muted-foreground">Confidence:</span> <span className="font-bold">{p.confidence}%</span></div>
+                  <div><span className="text-muted-foreground">Impact:</span> <span className="font-bold">{p.impact}/100</span></div>
+                </div>
+                <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${p.prob > 80 ? 'bg-rose-500' : p.prob > 60 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${p.prob}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 8: Executive Command Dashboard ────────────────
+function ExecutiveCommandDashboardModule() {
+  const warehouses = [
+    { wh: 'WH-MUM-MAIN', rank: 1, score: 92, orders: 184, sla: 94.2, cost: 3240000, revenue: 8420000, profit: 5180000, util: 82 },
+    { wh: 'WH-DEL-NORTH', rank: 2, score: 88, orders: 142, sla: 96.1, cost: 1860000, revenue: 5680000, profit: 3820000, util: 75 },
+    { wh: 'WH-BLR-CENTRAL', rank: 3, score: 85, orders: 128, sla: 95.5, cost: 1420000, revenue: 4820000, profit: 3400000, util: 78 },
+    { wh: 'WH-CHN-SOUTH', rank: 4, score: 90, orders: 105, sla: 94.8, cost: 1180000, revenue: 3920000, profit: 2740000, util: 71 },
+    { wh: 'WH-HYD-WEST', rank: 5, score: 72, orders: 92, sla: 89.3, cost: 980000, revenue: 3280000, profit: 2300000, util: 68 },
+    { wh: 'WH-KOL-EAST', rank: 6, score: 78, orders: 78, sla: 91.2, cost: 820000, revenue: 2840000, profit: 2020000, util: 64 },
+  ]
+
+  const kpis = [
+    { label: 'Enterprise SLA', value: '94.2%', target: '95%', trend: '+1.2%' },
+    { label: 'Total Orders (30d)', value: '14,287', target: '15,000', trend: '+8%' },
+    { label: 'Inventory Value', value: '₹42.8Cr', target: '₹45Cr', trend: '+5%' },
+    { label: 'Throughput', value: '189 u/hr', target: '200', trend: '+5%' },
+    { label: 'Total Cost (30d)', value: '₹60L', target: '₹58L', trend: '+3%' },
+    { label: 'Profit Impact', value: '₹1.95Cr', target: '₹2Cr', trend: '+12%' },
+    { label: 'Customer Service', value: '98.2%', target: '99%', trend: '+0.5%' },
+    { label: 'Open Alerts', value: '7', target: '0', trend: '+2' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Executive Command Dashboard</h2><p className="text-sm text-muted-foreground mt-1">For Directors, Operations Head, Plant Head, CEO · enterprise KPIs · warehouse rankings</p></div>
+        <div className="flex gap-2"><Button size="sm" variant="outline"><Download className="mr-1 h-4 w-4" />Export PDF</Button><Button size="sm" variant="outline"><FileText className="mr-1 h-4 w-4" />Schedule Report</Button></div>
+      </div>
+
+      {/* Enterprise KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {kpis.map(k => (
+          <Card key={k.label} className="p-4">
+            <p className="text-xs text-muted-foreground">{k.label}</p>
+            <p className="text-2xl font-bold mt-1">{k.value}</p>
+            <div className="flex items-center justify-between mt-1"><span className={`text-xs ${k.trend.startsWith('+') && !k.label.includes('Alert') && !k.label.includes('Cost') ? 'text-emerald-600' : k.trend.startsWith('-') ? 'text-emerald-600' : 'text-amber-600'}`}>{k.trend}</span><span className="text-[10px] text-muted-foreground">Target: {k.target}</span></div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Warehouse Rankings */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Warehouse Rankings — This Month</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Rank</th><th className="text-left px-4 py-3 font-medium">Warehouse</th>
+              <th className="text-left px-4 py-3 font-medium">Score</th><th className="text-left px-4 py-3 font-medium">Orders</th>
+              <th className="text-left px-4 py-3 font-medium">SLA</th><th className="text-left px-4 py-3 font-medium">Cost</th>
+              <th className="text-left px-4 py-3 font-medium">Revenue</th><th className="text-left px-4 py-3 font-medium">Profit</th>
+              <th className="text-left px-4 py-3 font-medium">Utilization</th><th className="text-left px-4 py-3 font-medium">Margin</th>
+            </tr></thead>
+            <tbody>
+              {warehouses.map(w => (
+                <tr key={w.wh} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3"><span className={`font-bold ${w.rank === 1 ? 'text-amber-600' : w.rank === 2 ? 'text-slate-500' : w.rank === 3 ? 'text-orange-700' : 'text-muted-foreground'}`}>#{w.rank}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold">{w.wh}</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><span className="font-mono font-bold">{w.score}</span><div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${w.score > 85 ? 'bg-emerald-500' : w.score > 75 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${w.score}%` }} /></div></div></td>
+                  <td className="px-4 py-3 font-mono">{w.orders}</td>
+                  <td className="px-4 py-3 font-mono"><span className={w.sla > 95 ? 'text-emerald-600' : w.sla > 90 ? 'text-amber-600' : 'text-rose-600'}>{w.sla}%</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">₹{(w.cost / 100000).toFixed(1)}L</td>
+                  <td className="px-4 py-3 font-mono text-xs">₹{(w.revenue / 100000).toFixed(1)}L</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-emerald-700">₹{(w.profit / 100000).toFixed(1)}L</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1"><span className="font-mono text-xs">{w.util}%</span><div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${w.util > 75 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${w.util}%` }} /></div></div></td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{((w.profit / w.revenue) * 100).toFixed(1)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Executive Summary */}
+      <Card className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+        <h3 className="font-semibold flex items-center gap-2 mb-3"><Award className="h-5 w-5 text-amber-500" />Executive Summary — July 2026</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="space-y-2">
+            <p><span className="text-slate-400">Enterprise Health:</span> <span className="font-bold text-emerald-400">STRONG (88/100, Grade A)</span></p>
+            <p><span className="text-slate-400">Top Performer:</span> <span className="font-bold">WH-MUM-MAIN (92/100)</span></p>
+            <p><span className="text-slate-400">Needs Attention:</span> <span className="font-bold text-amber-400">WH-HYD-WEST (72/100, SLA 89.3%)</span></p>
+            <p><span className="text-slate-400">Total Profit:</span> <span className="font-bold text-emerald-400">₹1.95Cr (+12% MoM)</span></p>
+          </div>
+          <div className="space-y-2">
+            <p><span className="text-slate-400">AI Recommendations:</span> <span className="font-bold text-purple-400">6 active (3 pending accept)</span></p>
+            <p><span className="text-slate-400">Critical Alerts:</span> <span className="font-bold text-rose-400">3 (1 SLA breach, 1 equipment, 1 staffing)</span></p>
+            <p><span className="text-slate-400">Predicted Risks:</span> <span className="font-bold text-amber-400">6 (congestion in 45 min, order surge Fri)</span></p>
+            <p><span className="text-slate-400">System Health:</span> <span className="font-bold text-emerald-400">All systems operational (99.97% uptime)</span></p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 6: Enterprise Alert Center ────────────────────
+function EnterpriseAlertCenterModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+  const alerts = [
+    { code: 'EA-2026-028', type: 'CRITICAL', category: 'SLA_VIOLATION', title: 'SLA breach — TASK-2026-009', msg: 'PICK task 35 min overdue at WH-MUM-MAIN', wh: 'WH-MUM-MAIN', severity: 'CRITICAL', source: 'WMS', channels: ['DASHBOARD', 'MOBILE_APP', 'SMS', 'TEAMS'], ack: false, escalated: 1, status: 'OPEN', time: '2 min ago' },
+    { code: 'EA-2026-027', type: 'EMERGENCY', category: 'EQUIPMENT_FAILURE', title: 'FL-004 hydraulic failure', msg: 'Forklift breakdown at DOCK-04 — 3 tasks affected', wh: 'WH-MUM-MAIN', severity: 'CRITICAL', source: 'MOBILE_APP', channels: ['DASHBOARD', 'MOBILE_APP', 'WHATSAPP'], ack: true, escalated: 0, status: 'ACKNOWLEDGED', time: '15 min ago' },
+    { code: 'EA-2026-026', type: 'WARNING', category: 'CONGESTION', title: 'C-Picking zone congestion', msg: '14 active tasks in single zone — exceeds threshold', wh: 'WH-MUM-MAIN', severity: 'HIGH', source: 'AI_ENGINE', channels: ['DASHBOARD', 'TEAMS'], ack: false, escalated: 0, status: 'OPEN', time: '8 min ago' },
+    { code: 'EA-2026-025', type: 'WARNING', category: 'INVENTORY', title: 'Kaju Katli below minimum', msg: 'C-02-03-A has 24 PCS, minimum is 48', wh: 'WH-MUM-MAIN', severity: 'MEDIUM', source: 'WMS', channels: ['DASHBOARD'], ack: false, escalated: 0, status: 'OPEN', time: '20 min ago' },
+    { code: 'EA-2026-024', type: 'INFORMATION', category: 'OPERATIONAL', title: 'WAVE-2026-001 64% complete', msg: 'On track for 11:30 completion', wh: 'WH-MUM-MAIN', severity: 'LOW', source: 'WMS', channels: ['DASHBOARD'], ack: true, escalated: 0, status: 'CLOSED', time: '30 min ago' },
+    { code: 'EA-2026-023', type: 'MAINTENANCE', category: 'SYSTEM', title: 'DOCK-04 maintenance window', msg: 'Bay door repair — unavailable until 12:00', wh: 'WH-MUM-MAIN', severity: 'MEDIUM', source: 'ERP', channels: ['DASHBOARD', 'EMAIL'], ack: true, escalated: 0, status: 'ACKNOWLEDGED', time: '1 hour ago' },
+    { code: 'EA-2026-022', type: 'CRITICAL', category: 'SAFETY', title: 'Cold zone temp alarm', msg: 'F-Cold exceeded 8°C threshold — IoT sensor', wh: 'WH-MUM-MAIN', severity: 'CRITICAL', source: 'IOT_SENSOR', channels: ['DASHBOARD', 'MOBILE_APP', 'SMS', 'WHATSAPP', 'TEAMS'], ack: true, escalated: 2, status: 'RESOLVED', time: '2 hours ago' },
+    { code: 'EA-2026-021', type: 'SECURITY', category: 'OPERATIONAL', title: 'Gate exit denied — seal mismatch', msg: 'Vehicle MH12-XY-1111 seal number did not match', wh: 'WH-MUM-MAIN', severity: 'HIGH', source: 'WMS', channels: ['DASHBOARD', 'TEAMS'], ack: true, escalated: 1, status: 'RESOLVED', time: '3 hours ago' },
+  ]
+
+  const filtered = alerts.filter(a => filter === 'ALL' || a.type === filter || a.severity === filter)
+  const typeColors: Record<string, string> = { CRITICAL: 'bg-rose-100 text-rose-700', EMERGENCY: 'bg-red-100 text-red-700', WARNING: 'bg-amber-100 text-amber-700', INFORMATION: 'bg-blue-100 text-blue-700', MAINTENANCE: 'bg-orange-100 text-orange-700', SECURITY: 'bg-purple-100 text-purple-700' }
+  const sevColors: Record<string, string> = { CRITICAL: 'border-rose-400 bg-rose-50/50', HIGH: 'border-orange-300 bg-orange-50/30', MEDIUM: 'border-amber-200 bg-amber-50/20', LOW: 'border-slate-200' }
+
+  const channelIcons: Record<string, string> = { DASHBOARD: '🖥', MOBILE_APP: '📱', EMAIL: '✉', SMS: '💬', WHATSAPP: '🟢', TEAMS: '💬', SLACK: '💬' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Enterprise Alert Center</h2><p className="text-sm text-muted-foreground mt-1">8 alert types · 7 notification channels · acknowledgement · escalation</p></div>
+        <Button size="sm" variant="destructive"><BellRing className="mr-2 h-4 w-4" />Raise Alert</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Open', value: alerts.filter(a => a.status === 'OPEN').length, color: 'text-rose-600' },
+          { label: 'Acknowledged', value: alerts.filter(a => a.status === 'ACKNOWLEDGED').length, color: 'text-blue-600' },
+          { label: 'Resolved', value: alerts.filter(a => a.status === 'RESOLVED').length, color: 'text-emerald-600' },
+          { label: 'Critical', value: alerts.filter(a => a.severity === 'CRITICAL').length, color: 'text-red-600' },
+          { label: 'Escalated', value: alerts.filter(a => a.escalated > 0).length, color: 'text-amber-600' },
+          { label: 'Pending Ack', value: alerts.filter(a => !a.ack && a.status === 'OPEN').length, color: 'text-orange-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <h3 className="font-semibold mb-2 text-sm">Notification Channels</h3>
+        <div className="flex flex-wrap gap-2">
+          {['Dashboard', 'Mobile App', 'Email', 'SMS', 'WhatsApp', 'Microsoft Teams', 'Slack'].map(c => <span key={c} className="text-xs px-3 py-1 bg-white/60 rounded-full text-blue-700 font-medium">{c}</span>)}
+        </div>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'CRITICAL', 'EMERGENCY', 'WARNING', 'INFORMATION', 'MAINTENANCE', 'SECURITY'].map(f => <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full border ${filter === f ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{f}</button>)}
+      </div>
+
+      <div className="space-y-2">
+        {filtered.map(a => (
+          <Card key={a.code} className={`p-4 border-l-4 ${sevColors[a.severity]}`}>
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="font-mono text-xs font-semibold text-blue-700">{a.code}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${typeColors[a.type]}`}>{a.type}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono">{a.category.replace(/_/g, ' ')}</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">{a.wh}</span>
+                  <span className="text-[10px] text-muted-foreground">· {a.time}</span>
+                  {a.escalated > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">⚠ Escalated L{a.escalated}</span>}
+                </div>
+                <p className="text-sm font-semibold">{a.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{a.msg}</p>
+                <div className="flex items-center gap-3 mt-2 text-[10px]">
+                  <span className="text-muted-foreground">Source: <span className="font-mono font-semibold">{a.source}</span></span>
+                  <span className="text-muted-foreground">Channels: {a.channels.map(c => channelIcons[c] || c).join(' ')}</span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <span className={`text-xs px-2 py-1 rounded ${a.status === 'OPEN' ? 'bg-rose-100 text-rose-700' : a.status === 'ACKNOWLEDGED' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>{a.status}</span>
+                {!a.ack && a.status === 'OPEN' && <Button size="sm" className="h-7 text-xs">Acknowledge</Button>}
+                {a.status === 'ACKNOWLEDGED' && <Button size="sm" variant="outline" className="h-7 text-xs">Resolve</Button>}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 7: Disaster Recovery Dashboard ────────────────
+function DisasterRecoveryModule() {
+  const systems = [
+    { name: 'ERP Backend', type: 'APPLICATION', status: 'HEALTHY', score: 99, uptime: 99.97, response: 142, error: 0.03, cpu: 42, mem: 58, disk: 45 },
+    { name: 'Database (PostgreSQL)', type: 'DATABASE', status: 'HEALTHY', score: 100, uptime: 99.99, response: 8, error: 0, cpu: 35, mem: 62, disk: 52 },
+    { name: 'Redis Cache', type: 'CACHE', status: 'HEALTHY', score: 98, uptime: 99.95, response: 2, error: 0.01, cpu: 22, mem: 71, disk: 12 },
+    { name: 'RabbitMQ Queue', type: 'QUEUE', status: 'HEALTHY', score: 97, uptime: 99.93, response: 5, error: 0.02, cpu: 28, mem: 45, disk: 18 },
+    { name: 'Mobile API', type: 'API', status: 'DEGRADED', score: 82, uptime: 98.82, response: 385, error: 1.2, cpu: 78, mem: 82, disk: 38 },
+    { name: 'Analytics Engine', type: 'APPLICATION', status: 'HEALTHY', score: 95, uptime: 99.85, response: 245, error: 0.15, cpu: 55, mem: 68, disk: 62 },
+    { name: 'MinIO Storage', type: 'STORAGE', status: 'HEALTHY', score: 99, uptime: 99.96, response: 18, error: 0.05, cpu: 31, mem: 48, disk: 71 },
+    { name: 'OpenSearch', type: 'APPLICATION', status: 'HEALTHY', score: 96, uptime: 99.88, response: 32, error: 0.08, cpu: 48, mem: 65, disk: 58 },
+  ]
+
+  const incidents = [
+    { code: 'INC-2026-008', type: 'API_HEALTH', title: 'Mobile API degraded — high response time', sev: 'HIGH', status: 'RECOVERY_IN_PROGRESS', detected: '15 min ago', systems: ['Mobile API'], downtime: 15, strategy: 'AUTO_FAILOVER', impact: 'Mobile app slow response for 14 operators' },
+    { code: 'INC-2026-007', type: 'NETWORK', title: 'WH-HYD-WEST network instability', sev: 'MEDIUM', status: 'RECOVERED', detected: '2 hours ago', systems: ['Network'], downtime: 22, strategy: 'AUTO_FAILOVER', impact: '2 mobile devices went offline, auto-synced on recovery' },
+    { code: 'INC-2026-006', type: 'OFFLINE_DEVICES', title: '3 scanners disconnected at WH-MUM-MAIN', sev: 'MEDIUM', status: 'RECOVERED', detected: '4 hours ago', systems: ['Mobile Devices'], downtime: 18, strategy: 'OFFLINE_MODE', impact: 'Operators continued offline, 12 transactions synced on reconnect' },
+    { code: 'INC-2026-005', type: 'POWER_FAILURE', title: 'WH-KOL-EAST brief power outage', sev: 'HIGH', status: 'RECOVERED', detected: '1 day ago', systems: ['All Systems'], downtime: 8, strategy: 'AUTO_FAILOVER', impact: 'UPS held systems, generators kicked in within 30s' },
+  ]
+
+  const checklist = [
+    { item: 'Verify all warehouse systems online', completed: true },
+    { item: 'Check mobile device connectivity', completed: true },
+    { item: 'Verify database replication lag < 1s', completed: true },
+    { item: 'Confirm API response time < 200ms', completed: false },
+    { item: 'Validate offline transaction sync queue', completed: true },
+    { item: 'Test alert delivery to all channels', completed: true },
+    { item: 'Verify backup integrity', completed: true },
+    { item: 'Confirm failover systems ready', completed: true },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Disaster Recovery & Business Continuity</h2><p className="text-sm text-muted-foreground mt-1">System health · automatic failover · offline mode · recovery checklist · incident timeline</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Systems Healthy', value: systems.filter(s => s.status === 'HEALTHY').length, total: systems.length, color: 'text-emerald-600' },
+          { label: 'Degraded', value: systems.filter(s => s.status === 'DEGRADED').length, color: 'text-amber-600' },
+          { label: 'Offline', value: systems.filter(s => s.status === 'OFFLINE').length, color: 'text-rose-600' },
+          { label: 'Active Incidents', value: incidents.filter(i => i.status !== 'RECOVERED').length, color: 'text-orange-600' },
+          { label: 'Avg Uptime', value: `${(systems.reduce((a, s) => a + s.uptime, 0) / systems.length).toFixed(2)}%`, color: 'text-blue-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}{s.total && <span className="text-sm text-muted-foreground">/{s.total}</span>}</p></Card>)}
+      </div>
+
+      {/* System Health */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">System Health Monitors</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-2 font-medium">System</th><th className="text-left px-4 py-2 font-medium">Type</th>
+              <th className="text-left px-4 py-2 font-medium">Status</th><th className="text-left px-4 py-2 font-medium">Health</th>
+              <th className="text-left px-4 py-2 font-medium">Uptime</th><th className="text-left px-4 py-2 font-medium">Response</th>
+              <th className="text-left px-4 py-2 font-medium">Errors</th><th className="text-left px-4 py-2 font-medium">CPU</th>
+              <th className="text-left px-4 py-2 font-medium">Memory</th><th className="text-left px-4 py-2 font-medium">Disk</th>
+            </tr></thead>
+            <tbody>
+              {systems.map(s => (
+                <tr key={s.name} className={`border-b hover:bg-muted/30 ${s.status === 'DEGRADED' ? 'bg-amber-50/30' : ''}`}>
+                  <td className="px-4 py-2 text-xs font-semibold">{s.name}</td>
+                  <td className="px-4 py-2 text-[10px] font-mono">{s.type}</td>
+                  <td className="px-4 py-2"><span className={`text-[10px] px-2 py-0.5 rounded ${s.status === 'HEALTHY' ? 'bg-emerald-100 text-emerald-700' : s.status === 'DEGRADED' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>{s.status}</span></td>
+                  <td className="px-4 py-2 font-mono text-xs"><span className={s.score > 95 ? 'text-emerald-600' : 'text-amber-600'}>{s.score}</span></td>
+                  <td className="px-4 py-2 font-mono text-xs">{s.uptime}%</td>
+                  <td className="px-4 py-2 font-mono text-xs"><span className={s.response > 200 ? 'text-amber-600' : 'text-emerald-600'}>{s.response}ms</span></td>
+                  <td className="px-4 py-2 font-mono text-xs">{s.error}%</td>
+                  <td className="px-4 py-2"><div className="flex items-center gap-1"><div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${s.cpu > 70 ? 'bg-rose-500' : s.cpu > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${s.cpu}%` }} /></div><span className="font-mono text-[10px]">{s.cpu}%</span></div></td>
+                  <td className="px-4 py-2"><div className="flex items-center gap-1"><div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${s.mem > 80 ? 'bg-rose-500' : s.mem > 60 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${s.mem}%` }} /></div><span className="font-mono text-[10px]">{s.mem}%</span></div></td>
+                  <td className="px-4 py-2"><div className="flex items-center gap-1"><div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${s.disk > 80 ? 'bg-rose-500' : s.disk > 60 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${s.disk}%` }} /></div><span className="font-mono text-[10px]">{s.disk}%</span></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Incidents */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Recovery Incidents</h3>
+          <div className="space-y-2">
+            {incidents.map(inc => {
+              const sevColors: Record<string, string> = { HIGH: 'border-orange-300 bg-orange-50/30', MEDIUM: 'border-amber-200 bg-amber-50/20', CRITICAL: 'border-rose-400 bg-rose-50/30', DISASTER: 'border-red-500 bg-red-50/30' }
+              return (
+                <div key={inc.code} className={`p-3 border rounded ${sevColors[inc.sev]}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-[10px] font-semibold text-blue-700">{inc.code}</span>
+                    <div className="flex gap-1">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted font-mono">{inc.sev}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${inc.status === 'RECOVERED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{inc.status.replace(/_/g, ' ')}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs font-medium">{inc.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{inc.impact}</p>
+                  <div className="flex items-center justify-between mt-2 text-[10px]">
+                    <span className="text-muted-foreground">Detected: {inc.detected}</span>
+                    <span className="text-muted-foreground">Downtime: <span className="font-mono font-bold">{inc.downtime}m</span></span>
+                    <span className="text-muted-foreground">Strategy: <span className="font-mono">{inc.strategy.replace(/_/g, ' ')}</span></span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* Recovery Checklist */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Recovery Checklist</h3>
+          <div className="space-y-2">
+            {checklist.map((c, i) => (
+              <div key={i} className={`flex items-center gap-2 p-2 rounded ${c.completed ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center ${c.completed ? 'bg-emerald-500 text-white' : 'bg-amber-300'}`}>{c.completed && <CheckCircle2 className="h-3 w-3" />}</div>
+                <span className={`text-xs ${c.completed ? 'text-emerald-900' : 'text-amber-900'}`}>{c.item}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 pt-3 border-t flex justify-between text-xs">
+            <span className="text-muted-foreground">Completion: {checklist.filter(c => c.completed).length}/{checklist.length}</span>
+            <span className="font-bold">{((checklist.filter(c => c.completed).length / checklist.length) * 100).toFixed(0)}%</span>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 9: Enterprise Analytics ───────────────────────
+function EnterpriseAnalyticsModule() {
+  const trends = [
+    { month: 'Jan', orders: 12450, revenue: 38.2, sla: 92.1, cost: 5.2 },
+    { month: 'Feb', orders: 13420, revenue: 41.8, sla: 93.5, cost: 5.8 },
+    { month: 'Mar', orders: 14280, revenue: 44.5, sla: 94.2, cost: 5.4 },
+    { month: 'Apr', orders: 13890, revenue: 43.1, sla: 94.8, cost: 6.1 },
+    { month: 'May', orders: 15120, revenue: 47.2, sla: 95.1, cost: 6.8 },
+    { month: 'Jun', orders: 14850, revenue: 46.5, sla: 94.5, cost: 6.0 },
+    { month: 'Jul', orders: 14287, revenue: 44.8, sla: 94.2, cost: 5.9 },
+  ]
+  const maxOrders = Math.max(...trends.map(t => t.orders))
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Enterprise Analytics</h2><p className="text-sm text-muted-foreground mt-1">Cross-warehouse trends · revenue · SLA · cost · executive insights</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Orders (7mo)', value: trends.reduce((a, t) => a + t.orders, 0).toLocaleString('en-IN'), color: 'text-blue-600' },
+          { label: 'Total Revenue', value: `₹${trends.reduce((a, t) => a + t.revenue, 0).toFixed(1)}Cr`, color: 'text-emerald-600' },
+          { label: 'Avg SLA', value: `${(trends.reduce((a, t) => a + t.sla, 0) / trends.length).toFixed(1)}%`, color: 'text-purple-600' },
+          { label: 'Total Cost', value: `₹${trends.reduce((a, t) => a + t.cost, 0).toFixed(1)}L`, color: 'text-rose-600' },
+          { label: 'Avg Margin', value: '62.4%', color: 'text-amber-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Enterprise Trends — 7 Months</h3>
+        <div className="flex items-end justify-between gap-3 h-56">
+          {trends.map(t => (
+            <div key={t.month} className="flex-1 flex flex-col items-center gap-1">
+              <div className="text-[10px] font-mono text-emerald-700">₹{t.revenue}Cr</div>
+              <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end relative">
+                <div className="w-full bg-gradient-to-t from-blue-600 to-blue-400 absolute bottom-0" style={{ height: `${(t.orders / maxOrders) * 100}%` }} />
+                <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 absolute bottom-0" style={{ height: `${(t.revenue / 50) * 100}%` }} />
+              </div>
+              <div className="text-xs">{t.month}</div>
+              <div className="text-[10px] text-muted-foreground">{(t.orders / 1000).toFixed(1)}k ord</div>
+              <div className="text-[10px] text-purple-600">{t.sla}%</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-2 w-2 bg-blue-500 rounded" />Orders</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 bg-emerald-500 rounded" />Revenue (₹Cr)</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 bg-purple-500 rounded" />SLA %</span>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+          <h3 className="font-semibold flex items-center gap-2 mb-3"><Award className="h-5 w-5 text-amber-500" />Part 4 WMS — Complete</h3>
+          <div className="space-y-2 text-sm">
+            <p className="text-slate-300">The Enterprise Warehouse Management System is now <span className="font-bold text-emerald-400">100% complete</span> across 12 sprints (Sprint 22-33).</p>
+            <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+              <div><p className="text-slate-400">Total Database Tables</p><p className="text-2xl font-bold text-amber-400">282</p></div>
+              <div><p className="text-slate-400">Frontend Modules</p><p className="text-2xl font-bold text-amber-400">55+</p></div>
+              <div><p className="text-slate-400">API Endpoints</p><p className="text-2xl font-bold text-amber-400">120+</p></div>
+              <div><p className="text-slate-400">Sprints Completed</p><p className="text-2xl font-bold text-amber-400">12/12</p></div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+            <div>
+              <h3 className="font-semibold text-sm">Next: Part 5 — Manufacturing Execution System (MES)</h3>
+              <p className="text-xs text-muted-foreground mt-1">Production Planning · BOM · Recipes & Formulations (critical for Sudhamrit) · Work Orders · Shop Floor Execution · Machine Integration · Quality Control · OEE · Production Costing · Batch Manufacturing · AI Production Optimization</p>
+              <p className="text-xs text-purple-700 mt-2 font-medium">This is where food manufacturing operations become fully digitized and integrated with the Inventory Engine and WMS you've just completed.</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -14271,6 +15036,7 @@ export default function Home() {
     crossdock: 'Cross-Dock Console', truckqueue: 'Truck Queue', dockschedule: 'Dock Schedule', yardmap: 'Yard Map', vehicletracker: 'Vehicle Tracker', gateconsole: 'Gate Console', yardtower: 'Yard Control Tower', crossdockanalytics: 'Cross-Dock Analytics',
     equipmentmaster: 'Equipment Master', forkliftdashboard: 'Forklift Dashboard', scannermgmt: 'Scanner Management', batterydashboard: 'Battery Dashboard', maintenanceplanner: 'Maintenance Planner', breakdownconsole: 'Breakdown Console', certificationcenter: 'Certification Center', equipmentanalytics: 'Equipment Analytics',
     missioncontrol: 'Warehouse Mission Control', kpidashboard: 'KPI Dashboard', operatoranalytics: 'Operator Analytics', wareheatanalytics: 'Equipment Analytics+', heatmaps: 'Warehouse Heat Maps', costdashboard: 'Warehouse Cost Dashboard', slaanalytics: 'SLA Analytics', execreports: 'Executive Reports',
+    wmsmissioncontrol: 'WMS Mission Control', controltower: 'Enterprise Control Tower', digitaltwin: 'Warehouse Digital Twin', aioperations: 'AI Operations Center', execdashboard: 'Executive Command Dashboard', alertcenter: 'Enterprise Alert Center', recoverydashboard: 'Disaster Recovery Dashboard', enterprisenalytics: 'Enterprise Analytics',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -14336,7 +15102,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 32 · 274 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 33 · 282 Tables · Part 4 WMS COMPLETE</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -14414,11 +15180,19 @@ export default function Home() {
             {activeModule === 'costdashboard' && <WarehouseCostDashboardModule />}
             {activeModule === 'slaanalytics' && <SLAAnalyticsModule />}
             {activeModule === 'execreports' && <ExecutiveReportsModule />}
+            {activeModule === 'wmsmissioncontrol' && <WMSMissionControlModule />}
+            {activeModule === 'controltower' && <EnterpriseControlTowerModule />}
+            {activeModule === 'digitaltwin' && <DigitalTwinModule />}
+            {activeModule === 'aioperations' && <AIOperationsModule />}
+            {activeModule === 'execdashboard' && <ExecutiveCommandDashboardModule />}
+            {activeModule === 'alertcenter' && <EnterpriseAlertCenterModule />}
+            {activeModule === 'recoverydashboard' && <DisasterRecoveryModule />}
+            {activeModule === 'enterprisenalytics' && <EnterpriseAnalyticsModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-32 · Part 4 WMS (Warehouse Foundation → Mobile Platform → Analytics & KPI Engine) · 274 Database Tables</p>
+              <p className="mt-1">🎉 Sprints 1-33 COMPLETE · Part 4 WMS 100% · 282 Database Tables · Mission Control + AI Ops + Digital Twin + Disaster Recovery</p>
             </div>
           </main>
         </div>
