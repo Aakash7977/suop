@@ -54,6 +54,7 @@ type ModuleKey =
   | 'equipmentmaster' | 'forkliftdashboard' | 'scannermgmt' | 'batterydashboard' | 'maintenanceplanner' | 'breakdownconsole' | 'certificationcenter' | 'equipmentanalytics'
   | 'missioncontrol' | 'kpidashboard' | 'operatoranalytics' | 'wareheatanalytics' | 'heatmaps' | 'costdashboard' | 'slaanalytics' | 'execreports'
   | 'wmsmissioncontrol' | 'controltower' | 'digitaltwin' | 'aioperations' | 'execdashboard' | 'alertcenter' | 'recoverydashboard' | 'enterprisenalytics'
+  | 'plantmaster' | 'productiondept' | 'productionlines' | 'workcenters' | 'mfgcalendar' | 'mfgresources' | 'plantconfig' | 'productiondashboard'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -213,6 +214,19 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Alert Center', icon: <BellRing className="h-4 w-4" />, module: 'alertcenter', available: true },
       { name: 'Recovery Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'recoverydashboard', available: true },
       { name: 'Enterprise Analytics', icon: <Activity className="h-4 w-4" />, module: 'enterprisenalytics', available: true },
+    ]
+  },
+  {
+    section: 'Part 5 — Manufacturing (Sprint 34) — NEW',
+    items: [
+      { name: 'Plant Master', icon: <Factory className="h-4 w-4" />, module: 'plantmaster', available: true },
+      { name: 'Departments', icon: <Layers3 className="h-4 w-4" />, module: 'productiondept', available: true },
+      { name: 'Production Lines', icon: <GitBranch className="h-4 w-4" />, module: 'productionlines', available: true },
+      { name: 'Work Centers', icon: <Grid3x3 className="h-4 w-4" />, module: 'workcenters', available: true },
+      { name: 'Mfg Calendar', icon: <Calendar className="h-4 w-4" />, module: 'mfgcalendar', available: true },
+      { name: 'Resources', icon: <Wrench className="h-4 w-4" />, module: 'mfgresources', available: true },
+      { name: 'Plant Config', icon: <Settings className="h-4 w-4" />, module: 'plantconfig', available: true },
+      { name: 'Production Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'productiondashboard', available: true },
     ]
   },
   {
@@ -15037,6 +15051,7 @@ export default function Home() {
     equipmentmaster: 'Equipment Master', forkliftdashboard: 'Forklift Dashboard', scannermgmt: 'Scanner Management', batterydashboard: 'Battery Dashboard', maintenanceplanner: 'Maintenance Planner', breakdownconsole: 'Breakdown Console', certificationcenter: 'Certification Center', equipmentanalytics: 'Equipment Analytics',
     missioncontrol: 'Warehouse Mission Control', kpidashboard: 'KPI Dashboard', operatoranalytics: 'Operator Analytics', wareheatanalytics: 'Equipment Analytics+', heatmaps: 'Warehouse Heat Maps', costdashboard: 'Warehouse Cost Dashboard', slaanalytics: 'SLA Analytics', execreports: 'Executive Reports',
     wmsmissioncontrol: 'WMS Mission Control', controltower: 'Enterprise Control Tower', digitaltwin: 'Warehouse Digital Twin', aioperations: 'AI Operations Center', execdashboard: 'Executive Command Dashboard', alertcenter: 'Enterprise Alert Center', recoverydashboard: 'Disaster Recovery Dashboard', enterprisenalytics: 'Enterprise Analytics',
+    plantmaster: 'Plant Master', productiondept: 'Production Departments', productionlines: 'Production Lines', workcenters: 'Work Centers', mfgcalendar: 'Manufacturing Calendar', mfgresources: 'Production Resources', plantconfig: 'Plant Configuration', productiondashboard: 'Production Dashboard',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -15102,7 +15117,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 33 · 282 Tables · Part 4 WMS COMPLETE</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 34 · 291 Tables · Part 5 MES</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -15188,11 +15203,19 @@ export default function Home() {
             {activeModule === 'alertcenter' && <EnterpriseAlertCenterModule />}
             {activeModule === 'recoverydashboard' && <DisasterRecoveryModule />}
             {activeModule === 'enterprisenalytics' && <EnterpriseAnalyticsModule />}
+            {activeModule === 'plantmaster' && <PlantMasterModule />}
+            {activeModule === 'productiondept' && <ProductionDepartmentsModule />}
+            {activeModule === 'productionlines' && <ProductionLinesModule />}
+            {activeModule === 'workcenters' && <WorkCentersModule />}
+            {activeModule === 'mfgcalendar' && <ManufacturingCalendarModule />}
+            {activeModule === 'mfgresources' && <ProductionResourcesModule />}
+            {activeModule === 'plantconfig' && <PlantConfigModule />}
+            {activeModule === 'productiondashboard' && <ProductionDashboardModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">🎉 Sprints 1-33 COMPLETE · Part 4 WMS 100% · 282 Database Tables · Mission Control + AI Ops + Digital Twin + Disaster Recovery</p>
+              <p className="mt-1">Sprints 1-34 · Part 4 WMS 100% + Part 5 MES Started · 291 Database Tables · Manufacturing Foundation</p>
             </div>
           </main>
         </div>

@@ -10038,3 +10038,324 @@ model SystemHealthMonitor {
   @@index([status], map: "idx_shm_status")
   @@index([healthScore], map: "idx_shm_health")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 34 — MANUFACTURING FOUNDATION & PLANT MASTER (PART 5 MES)
+// Epic 1: Plant · Epic 2: Department · Epic 3: Line · Epic 4: Work Center
+// Epic 5: Calendar · Epic 6: Resources · Epic 7: Config · Epic 8: Rules
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Manufacturing Plant Master ─────────────────
+model ManufacturingPlant {
+  id                  String   @id @default(uuid()) @db.Uuid
+  plantCode           String   @unique @map("plant_code")
+  plantName           String   @map("plant_name")
+  // ─── Type ───
+  plantType           String   @map("plant_type") // SWEET_MANUFACTURING, NAMKEEN_MANUFACTURING, BAKERY, BATTER_PRODUCTION, READY_TO_EAT_KITCHEN, CENTRAL_KITCHEN, PACKAGING_PLANT, SEMI_FINISHED_PLANT, COLD_PROCESSING, DRY_PROCESSING
+  // ─── Org Hierarchy ───
+  companyId           String?  @db.Uuid @map("company_id")
+  companyName         String?  @map("company_name")
+  branchId            String?  @db.Uuid @map("branch_id")
+  branchName          String?  @map("branch_name")
+  // ─── Manager ───
+  managerId           String?  @db.Uuid @map("manager_id")
+  managerName         String?  @map("manager_name")
+  // ─── Location ───
+  addressLine1        String?  @map("address_line1")
+  addressLine2        String?  @map("address_line2")
+  city                String?
+  state               String?
+  pincode             String?
+  country             String?  @default("India")
+  timezone            String   @default("Asia/Kolkata") @map("timezone")
+  // ─── Capacity ───
+  capacityPerDayKg    Decimal? @db.Decimal(10, 2) @map("capacity_per_day_kg")
+  capacityPerDayUnits Int?     @map("capacity_per_day_units")
+  // ─── Operating Hours ───
+  operatingHoursStart String?  @default("06:00") @map("operating_hours_start")
+  operatingHoursEnd   String?  @default("22:00") @map("operating_hours_end")
+  operatingDays       String[] @default(["MON","TUE","WED","THU","FRI","SAT"]) @map("operating_days")
+  // ─── Warehouse Links ───
+  defaultRawMaterialWarehouseId   String?  @db.Uuid @map("default_raw_material_warehouse_id")
+  defaultRawMaterialWarehouseName String?  @map("default_raw_material_warehouse_name")
+  defaultFinishedGoodsWarehouseId String?  @db.Uuid @map("default_finished_goods_warehouse_id")
+  defaultFinishedGoodsWarehouseName String? @map("default_finished_goods_warehouse_name")
+  // ─── Numbering ───
+  batchNumberFormat   String?  @default("BATCH-{YYYY}-{SEQ:0000}") @map("batch_number_format")
+  productionNumberFormat String? @default("PROD-{YYYY}-{SEQ:0000}") @map("production_number_format")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, MAINTENANCE, SHUTDOWN
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  departments         ProductionDepartment[]
+  productionLines     ProductionLine[]
+  resources           ProductionResource[]
+  calendar            ProductionCalendar[]
+  shifts              ProductionShift[]
+  holidays            PlantHoliday[]
+  configuration       PlantConfiguration?
+
+  @@map("manufacturing_plants")
+  @@index([plantType, status], map: "idx_mp_type_status")
+  @@index([branchId], map: "idx_mp_branch")
+}
+
+// ─── Epic 2: Production Departments ─────────────────────
+model ProductionDepartment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  departmentCode      String   @unique @map("department_code")
+  departmentName      String   @map("department_name")
+  // ─── Plant Link ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Type ───
+  departmentType      String   @map("department_type") // SWEET_PRODUCTION, NAMKEEN_PRODUCTION, BATTER_PRODUCTION, PACKAGING, QUALITY_HOLD, FINISHED_GOODS, MAINTENANCE, UTILITIES, CLEANING
+  // ─── Manager ───
+  managerId           String?  @db.Uuid @map("manager_id")
+  managerName         String?  @map("manager_name")
+  // ─── Capacity ───
+  capacityPerDayKg    Decimal? @db.Decimal(10, 2) @map("capacity_per_day_kg")
+  capacityPerShiftKg  Decimal? @db.Decimal(10, 2) @map("capacity_per_shift_kg")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, MAINTENANCE
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id])
+  productionLines     ProductionLine[]
+
+  @@map("production_departments")
+  @@index([plantId, status], map: "idx_pd_plant_status")
+  @@index([departmentType], map: "idx_pd_type")
+}
+
+// ─── Epic 3: Production Lines ───────────────────────────
+model ProductionLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  lineCode            String   @unique @map("line_code")
+  lineName            String   @map("line_name")
+  // ─── Department Link ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  departmentId        String   @db.Uuid @map("department_id")
+  departmentName      String   @map("department_name")
+  // ─── Capacity ───
+  capacityPerHourKg   Decimal? @db.Decimal(10, 2) @map("capacity_per_hour_kg")
+  capacityPerShiftKg  Decimal? @db.Decimal(10, 2) @map("capacity_per_shift_kg")
+  capacityPerDayKg    Decimal? @db.Decimal(10, 2) @map("capacity_per_day_kg")
+  hourlyOutputTarget  Int?     @map("hourly_output_target")
+  // ─── Product Link ───
+  primaryProduct      String?  @map("primary_product")
+  supportedProducts   String[] @default([]) @map("supported_products")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, MAINTENANCE, CLEANING, SETUP
+  currentStatus       String   @default("IDLE") // IDLE, RUNNING, PAUSED, CHANGEOVER, CLEANING, MAINTENANCE
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id])
+  department          ProductionDepartment @relation(fields: [departmentId], references: [id])
+  workCenters         WorkCenter[]
+
+  @@map("production_lines")
+  @@index([plantId, status], map: "idx_pl_plant_status")
+  @@index([departmentId], map: "idx_pl_dept")
+}
+
+// ─── Epic 4: Work Centers ───────────────────────────────
+model WorkCenter {
+  id                  String   @id @default(uuid()) @db.Uuid
+  workCenterCode      String   @unique @map("work_center_code")
+  workCenterName      String   @map("work_center_name")
+  // ─── Line Link ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  departmentId        String   @db.Uuid @map("department_id")
+  departmentName      String   @map("department_name")
+  lineId              String   @db.Uuid @map("line_id")
+  lineName            String   @map("line_name")
+  // ─── Type ───
+  workCenterType      String   @map("work_center_type") // MIXING, COOKING, ROASTING, FRYING, COOLING, CUTTING, ROLLING, PACKING, INSPECTION, DISPATCH_PREP, RAW_MATERIAL_PREP
+  // ─── Sequence ───
+  sequenceNo          Int      @map("sequence_no") // order in the production line
+  // ─── Capacity ───
+  capacityPerHourKg   Decimal? @db.Decimal(10, 2) @map("capacity_per_hour_kg")
+  cycleTimeMinutes    Decimal? @db.Decimal(8, 2) @map("cycle_time_minutes")
+  // ─── Resources ───
+  assignedOperators   Int      @default(1) @map("assigned_operators")
+  assignedMachines    Int      @default(0) @map("assigned_machines")
+  // ─── Efficiency ───
+  efficiencyTargetPct Decimal? @db.Decimal(5, 2) @default(85) @map("efficiency_target_pct")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, MAINTENANCE
+  currentStatus       String   @default("IDLE") // IDLE, RUNNING, PAUSED, SETUP, CLEANING, MAINTENANCE
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  line                ProductionLine @relation(fields: [lineId], references: [id])
+
+  @@map("work_centers")
+  @@index([lineId, sequenceNo], map: "idx_wc_line_seq")
+  @@index([plantId, status], map: "idx_wc_plant_status")
+  @@index([workCenterType], map: "idx_wc_type")
+}
+
+// ─── Epic 5: Manufacturing Calendar ─────────────────────
+model ProductionCalendar {
+  id                  String   @id @default(uuid()) @db.Uuid
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Date ───
+  calendarDate        DateTime @map("calendar_date")
+  dayOfWeek           String   @map("day_of_week") // MON, TUE, WED, THU, FRI, SAT, SUN
+  // ─── Type ───
+  dayType             String   @map("day_type") // WORKING, HOLIDAY, MAINTENANCE_SHUTDOWN, FESTIVAL, EMERGENCY_SHUTDOWN
+  // ─── Operating ───
+  isOperatingDay      Boolean  @default(true) @map("is_operating_day")
+  operatingHoursStart String?  @map("operating_hours_start")
+  operatingHoursEnd   String?  @map("operating_hours_end")
+  // ─── Notes ───
+  notes               String?
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@map("production_calendar")
+  @@unique([plantId, calendarDate], map: "uq_pc_plant_date")
+  @@index([plantId, calendarDate], map: "idx_pc_plant_date")
+}
+
+model ProductionShift {
+  id                  String   @id @default(uuid()) @db.Uuid
+  shiftCode           String   @unique @map("shift_code")
+  shiftName           String   @map("shift_name") // Morning, Afternoon, Night
+  // ─── Plant ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Schedule ───
+  startTime           String   @map("start_time") // HH:mm
+  endTime             String   @map("end_time") // HH:mm
+  breakStart          String?  @map("break_start")
+  breakEnd            String?  @map("break_end")
+  // ─── Days ───
+  workingDays         String[] @default([]) @map("working_days")
+  // ─── Type ───
+  shiftType           String   @default("REGULAR") @map("shift_type") // REGULAR, OVERTIME, WEEKEND, HOLIDAY
+  // ─── Grace ───
+  graceEarlyMinutes   Int      @default(15) @map("grace_early_minutes")
+  graceLateMinutes    Int      @default(15) @map("grace_late_minutes")
+  // ─── Status ───
+  isActive            Boolean  @default(true) @map("is_active")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id])
+
+  @@map("production_shifts")
+  @@index([plantId, isActive], map: "idx_ps_plant_active")
+}
+
+model PlantHoliday {
+  id                  String   @id @default(uuid()) @db.Uuid
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Holiday ───
+  holidayDate         DateTime @map("holiday_date")
+  holidayName         String   @map("holiday_name")
+  holidayType         String   @default("PUBLIC") @map("holiday_type") // PUBLIC, FESTIVAL, NATIONAL, COMPANY, MAINTENANCE
+  // ─── Impact ───
+  isFullDay           Boolean  @default(true) @map("is_full_day")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@map("plant_holidays")
+  @@unique([plantId, holidayDate], map: "uq_ph_plant_date")
+  @@index([plantId, holidayDate], map: "idx_ph_plant_date")
+}
+
+// ─── Epic 6: Production Resources ───────────────────────
+model ProductionResource {
+  id                  String   @id @default(uuid()) @db.Uuid
+  resourceCode        String   @unique @map("resource_code")
+  resourceName        String   @map("resource_name")
+  // ─── Plant ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Type ───
+  resourceType        String   @map("resource_type") // MACHINE, OPERATOR, TOOL, UTILITY, PRODUCTION_TABLE, PACKAGING_STATION, CLEANING_EQUIPMENT
+  // ─── Machine Link (if applicable) ───
+  equipmentId         String?  @db.Uuid @map("equipment_id")
+  equipmentCode       String?  @map("equipment_code")
+  // ─── Work Center Link (if assigned) ───
+  workCenterId        String?  @db.Uuid @map("work_center_id")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── Capacity ───
+  capacityPerHour     Decimal? @db.Decimal(10, 2) @map("capacity_per_hour")
+  capacityUnit        String?  @default("KG") @map("capacity_unit")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE, CLEANING, OFFLINE
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id])
+
+  @@map("production_resources")
+  @@index([plantId, resourceType, status], map: "idx_pr_plant_type_status")
+  @@index([workCenterId], map: "idx_pr_workcenter")
+}
+
+// ─── Epic 7: Plant Configuration ────────────────────────
+model PlantConfiguration {
+  id                  String   @id @default(uuid()) @db.Uuid
+  plantId             String   @unique @db.Uuid @map("plant_id")
+  // ─── Production Start Time ───
+  defaultProductionStart String? @default("06:00") @map("default_production_start")
+  // ─── Shift Rules ───
+  requireShiftLogin   Boolean  @default(true) @map("require_shift_login")
+  autoEndShiftAt      String?  @default("22:00") @map("auto_end_shift_at")
+  // ─── Warehouse Defaults ───
+  defaultRawMaterialWarehouseId   String?  @db.Uuid @map("default_raw_material_warehouse_id")
+  defaultFinishedGoodsWarehouseId String?  @db.Uuid @map("default_finished_goods_warehouse_id")
+  // ─── Batch Numbering ───
+  batchNumberFormat   String   @default("BATCH-{YYYY}-{SEQ:0000}") @map("batch_number_format")
+  batchSeqCounter     Int      @default(0) @map("batch_seq_counter")
+  // ─── Production Numbering ───
+  productionNumberFormat String @default("PROD-{YYYY}-{SEQ:0000}") @map("production_number_format")
+  productionSeqCounter Int     @default(0) @map("production_seq_counter")
+  // ─── Quality Hold Rules ───
+  autoQualityHoldOnNewBatch Boolean @default(true) @map("auto_quality_hold_on_new_batch")
+  qualityHoldDurationHours  Int     @default(24) @map("quality_hold_duration_hours")
+  requireSupervisorApproval Boolean @default(true) @map("require_supervisor_approval")
+  // ─── Barcode Rules ───
+  requireBatchBarcode Boolean  @default(true) @map("require_batch_barcode")
+  requireProductBarcode Boolean @default(true) @map("require_product_barcode")
+  // ─── Manufacturing Rules ───
+  enforceFIFO         Boolean  @default(true) @map("enforce_fifo")
+  enforceFEFO         Boolean  @default(true) @map("enforce_fefo")
+  mandatoryBatch      Boolean  @default(true) @map("mandatory_batch")
+  recipeLocking       Boolean  @default(true) @map("recipe_locking")
+  digitalSignoff      Boolean  @default(false) @map("digital_signoff")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plant               ManufacturingPlant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@map("plant_configurations")
+}
