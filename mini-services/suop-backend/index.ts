@@ -8718,12 +8718,131 @@ const server = Bun.serve({
       }, 'SUOP Recipe & Formula Engine v35.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 36 — PRODUCTION PLANNING, MRP & MPS
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/planning/dashboard — Planning dashboard
+    if (path === '/api/planning/dashboard' && method === 'GET') {
+      const data = {
+        kpis: { activeMps: 3, mrpRuns: 12, materialShortages: 5, purchaseSuggestions: 18, capacityUtil: 82, demandCoverage: 94 },
+        planningFlow: ['Sales Orders', 'Retail POS', 'Restaurant POS', 'Distributor Orders', 'Safety Stock', 'Demand Planning', 'MPS', 'MRP', 'Capacity Check', 'Production Plan', 'Purchase Suggestions'],
+        todayProduction: [
+          { product: 'Kaju Katli 500g', line: 'LINE-KK-01', qty: 285, batches: 3, shift: 'Morning', status: 'SCHEDULED' },
+          { product: 'Shwet Idli Batter 1kg', line: 'LINE-IB-01', qty: 200, batches: 2, shift: 'Morning', status: 'IN_PROGRESS' },
+        ],
+        materialAvailability: [
+          { material: 'Cashew (W320)', required: 380, available: 420, status: 'OK' },
+          { material: 'Sugar', required: 250, available: 120, status: 'SHORTAGE' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Planning dashboard data')), { headers })
+    }
+
+    // GET /api/planning/mps — MPS lines
+    if (path === '/api/planning/mps' && method === 'GET') {
+      const mps = [
+        { no: 1, product: 'Kaju Katli 500g', line: 'LINE-KK-01', qty: 95, date: 'Jul 10', shift: 'Morning', demand: 'Retail POS (180 boxes)', status: 'SCHEDULED' },
+        { no: 2, product: 'Shwet Idli Batter 1kg', line: 'LINE-IB-01', qty: 100, date: 'Jul 10', shift: 'Morning', demand: 'Restaurant POS (100 units)', status: 'IN_PROGRESS' },
+      ]
+      return new Response(JSON.stringify(successResponse(mps, 'MPS retrieved')), { headers })
+    }
+
+    // POST /api/planning/mrp/run — Run MRP
+    if (path === '/api/planning/mrp/run' && method === 'POST') {
+      const result = {
+        runNumber: `MRP-${Date.now()}`,
+        status: 'COMPLETED',
+        totalMaterials: 9, totalShortages: 5, totalPurchaseSuggestions: 6,
+        durationSeconds: 4.2,
+        results: [
+          { material: 'Cashew (W320)', demand: 380, available: 420, net: 110, suggestion: 'NONE', shortage: false },
+          { material: 'Sugar', demand: 250, available: 120, net: 240, suggestion: 'PURCHASE', shortage: true },
+          { material: 'Packaging Box 500g', demand: 570, available: 200, net: 520, suggestion: 'PURCHASE', shortage: true },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(result, 'MRP run completed')), { headers })
+    }
+
+    // GET /api/planning/demand — Demand forecasts
+    if (path === '/api/planning/demand' && method === 'GET') {
+      const demands = [
+        { product: 'Kaju Katli 500g', salesOrder: 180, retailPos: 120, restaurantPos: 0, distributor: 60, export: 0, safetyStock: 30, total: 390, forecast: 420, method: 'MOVING_AVERAGE', confidence: 85 },
+        { product: 'Shwet Idli Batter 1kg', salesOrder: 0, retailPos: 0, restaurantPos: 150, distributor: 0, export: 0, safetyStock: 50, total: 200, forecast: 220, method: 'MOVING_AVERAGE', confidence: 92 },
+      ]
+      return new Response(JSON.stringify(successResponse(demands, 'Demand forecasts retrieved')), { headers })
+    }
+
+    // GET /api/planning/capacity — Capacity plans
+    if (path === '/api/planning/capacity' && method === 'GET') {
+      const capacity = [
+        { line: 'LINE-KK-01', available: 16, required: 14, utilization: 88, status: 'BALANCED' },
+        { line: 'LINE-NM-01', available: 16, required: 18, utilization: 113, status: 'OVERLOAD' },
+        { line: 'LINE-MP-01', available: 16, required: 8, utilization: 50, status: 'UNDERUTILIZED' },
+      ]
+      return new Response(JSON.stringify(successResponse(capacity, 'Capacity plans retrieved')), { headers })
+    }
+
+    // GET /api/planning/shortages — Material shortages
+    if (path === '/api/planning/shortages' && method === 'GET') {
+      const shortages = [
+        { material: 'Sugar', required: 250, available: 120, shortage: 130, severity: 'CRITICAL', affected: ['Kaju Katli', 'Mysore Pak', 'Laddu'], status: 'OPEN' },
+        { material: 'Packaging Box 500g', required: 570, available: 200, shortage: 370, severity: 'CRITICAL', affected: ['Kaju Katli', 'Mysore Pak'], status: 'IN_PROGRESS' },
+        { material: 'Urad Dal', required: 60, available: 45, shortage: 15, severity: 'HIGH', affected: ['Idli Batter', 'Dosa Batter'], status: 'OPEN', hasAlternate: true },
+      ]
+      return new Response(JSON.stringify(successResponse(shortages, 'Material shortages retrieved')), { headers })
+    }
+
+    // GET /api/planning/purchase-suggestions — Purchase recommendations
+    if (path === '/api/planning/purchase-suggestions' && method === 'GET') {
+      const suggestions = [
+        { code: 'PUR-2026-018', material: 'Sugar', required: 380, available: 120, suggest: 380, supplier: 'Madhur Sugar Co.', leadTime: 5, reqDate: 'Jul 12', priority: 'EMERGENCY', totalCost: 17100, status: 'PENDING' },
+        { code: 'PUR-2026-019', material: 'Packaging Box 500g', required: 570, available: 200, suggest: 520, supplier: 'Packwell India', leadTime: 7, reqDate: 'Jul 14', priority: 'HIGH', totalCost: 4160, status: 'PENDING' },
+        { code: 'PUR-2026-023', material: 'Cashew (W320)', required: 380, available: 420, suggest: 110, supplier: 'NutriNuts Import', leadTime: 14, reqDate: 'Jul 25', priority: 'NORMAL', totalCost: 93500, status: 'PENDING' },
+      ]
+      return new Response(JSON.stringify(successResponse(suggestions, 'Purchase suggestions retrieved')), { headers })
+    }
+
+    // POST /api/planning/simulate — What-if simulation
+    if (path === '/api/planning/simulate' && method === 'POST') {
+      const body = await req.json()
+      const param = body.parameter || 20
+      const result = {
+        scenarioType: body.scenarioType || 'DEMAND_INCREASE',
+        parameter: param,
+        materialImpact: [
+          { material: 'Cashew (W320)', base: 380, simulated: Math.round(380 * (1 + param / 100)), delta: Math.round(380 * param / 100) },
+          { material: 'Sugar', base: 250, simulated: Math.round(250 * (1 + param / 100)), delta: Math.round(250 * param / 100) },
+        ],
+        capacityImpact: { baseUtil: 82, simulatedUtil: Math.min(100, 82 + param * 0.8), overload: 82 + param * 0.8 > 100 },
+        costImpact: { baseCost: 66200, simulatedCost: Math.round(66200 * (1 + param / 100)) },
+        shortageImpact: { baseShortages: 5, simulatedShortages: 5 + Math.floor(param / 10) },
+        recommendation: param > 25 ? 'High impact — recommend adding overtime shift and expediting procurement.' : 'Moderate impact — current capacity can handle with minor adjustments.',
+        status: 'COMPLETED',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Simulation completed')), { headers })
+    }
+
+    // GET /api/planning/info — Sprint 36 info
+    if (path === '/api/planning/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 36, sprintName: 'Production Planning, MRP & Master Production Scheduling', version: '36.0.0', part: 5, tables: 9,
+        epics: ['MPS (Master Production Schedule)', 'MRP (Material Requirements Planning)', 'Demand Planning (multi-channel)', 'Capacity Planning', 'Purchase Recommendations', 'Material Shortage Analysis', 'Production Calendar Planning', 'What-if Simulation'],
+        mrpFormula: 'Gross Demand - Available Inventory - Reserved + Safety Stock = Net Requirement',
+        chiefArchitectRecommendation: 'Combine demand from Retail POS + Restaurant POS + Distributor + Export + Safety Stock → Unified Demand → MPS → MRP. POS systems remain billing-only, supply demand data to SUOP for planning.',
+        endpoints: ['GET /api/planning/dashboard', 'GET /api/planning/mps', 'POST /api/planning/mrp/run', 'GET /api/planning/demand', 'GET /api/planning/capacity', 'GET /api/planning/shortages', 'GET /api/planning/purchase-suggestions', 'POST /api/planning/simulate', 'GET /api/planning/info'],
+        part5Sprint: 3, part5Sprints: 15, totalProjectTables: 312,
+      }, 'SUOP Production Planning & MRP Engine v36.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 35, sprintName: 'Recipe, Formula, BOM & Version Management — PART 5 MES (35/48 sprints)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 36, sprintName: 'Production Planning, MRP & MPS — PART 5 MES (36/48 sprints)' })
+log('info', 'Sprint 36 — Production Planning & MRP Engine', { sprint: 36, part: 5, tables: 312, mpsLines: 8, mrpMaterials: 9, shortages: 5, purchaseSuggestions: 6 })
+log('info', 'Planning endpoints available (Sprint 36)', { dashboard: 'GET /api/planning/dashboard', mps: 'GET /api/planning/mps', mrpRun: 'POST /api/planning/mrp/run', demand: 'GET /api/planning/demand', capacity: 'GET /api/planning/capacity', shortages: 'GET /api/planning/shortages', purchaseSuggestions: 'GET /api/planning/purchase-suggestions', simulate: 'POST /api/planning/simulate', info: 'GET /api/planning/info' })
 log('info', 'Sprint 35 — Recipe & Formula Engine', { sprint: 35, part: 5, tables: 303, recipes: 10, formulaLines: 6, bomLines: 8 })
 log('info', 'Recipe endpoints available (Sprint 35)', { recipes: 'GET/POST /api/recipes', approve: 'POST /api/recipes/:id/approve', formula: 'GET /api/recipes/:id/formula', bom: 'GET /api/recipes/:id/bom', scale: 'POST /api/recipes/:id/scale', costRollup: 'GET /api/recipes/:id/cost-rollup', info: 'GET /api/recipes/info' })
 log('info', 'Sprint 34 — Manufacturing Foundation', { sprint: 34, part: 5, tables: 291, plants: 5, departments: 8, lines: 8, workCenters: 10 })

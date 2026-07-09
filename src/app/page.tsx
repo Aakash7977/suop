@@ -56,6 +56,7 @@ type ModuleKey =
   | 'wmsmissioncontrol' | 'controltower' | 'digitaltwin' | 'aioperations' | 'execdashboard' | 'alertcenter' | 'recoverydashboard' | 'enterprisenalytics'
   | 'plantmaster' | 'productiondept' | 'productionlines' | 'workcenters' | 'mfgcalendar' | 'mfgresources' | 'plantconfig' | 'productiondashboard'
   | 'recipemaster' | 'formulabuilder' | 'bombuilder' | 'recipeversions' | 'yielddashboard' | 'batchscaling' | 'nutritioncenter' | 'costrollup' | 'recipeapproval'
+  | 'planningdashboard' | 'mpsconsole' | 'mrpworkbench' | 'demandplanning' | 'capacityplanner' | 'shortagecenter' | 'purchasesuggestions' | 'whatifsimulator'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -237,6 +238,14 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Nutrition Center', icon: <FlaskConical className="h-4 w-4" />, module: 'nutritioncenter', available: true },
       { name: 'Cost Roll-Up', icon: <IndianRupee className="h-4 w-4" />, module: 'costrollup', available: true },
       { name: 'Recipe Approval', icon: <ShieldCheck className="h-4 w-4" />, module: 'recipeapproval', available: true },
+      { name: 'Planning Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'planningdashboard', available: true },
+      { name: 'MPS Console', icon: <Calendar className="h-4 w-4" />, module: 'mpsconsole', available: true },
+      { name: 'MRP Workbench', icon: <Calculator className="h-4 w-4" />, module: 'mrpworkbench', available: true },
+      { name: 'Demand Planning', icon: <TrendingUp className="h-4 w-4" />, module: 'demandplanning', available: true },
+      { name: 'Capacity Planner', icon: <Gauge className="h-4 w-4" />, module: 'capacityplanner', available: true },
+      { name: 'Material Shortage', icon: <AlertTriangle className="h-4 w-4" />, module: 'shortagecenter', available: true },
+      { name: 'Purchase Suggestions', icon: <Package className="h-4 w-4" />, module: 'purchasesuggestions', available: true },
+      { name: 'What-if Simulator', icon: <Sparkles className="h-4 w-4" />, module: 'whatifsimulator', available: true },
     ]
   },
   {
@@ -16305,6 +16314,604 @@ function RecipeApprovalModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 36 — PRODUCTION PLANNING, MRP & MPS (PART 5)
+// Epic 1: MPS · Epic 2: MRP · Epic 3: Demand · Epic 4: Capacity
+// Epic 5: Purchase · Epic 6: Shortage · Epic 7: Calendar · Epic 8: Simulation
+// ═════════════════════════════════════════════════════════
+
+// ─── Planning Dashboard ─────────────────────────────────
+function PlanningDashboardModule() {
+  const kpis = [
+    { label: 'Active MPS', value: '3', sub: '2 approved, 1 draft', color: 'text-blue-600' },
+    { label: 'MRP Runs (30d)', value: '12', sub: 'Last: 2 hours ago', color: 'text-purple-600' },
+    { label: 'Material Shortages', value: '5', sub: '2 critical', color: 'text-rose-600' },
+    { label: 'Purchase Suggestions', value: '18', sub: '₹4.2L pending', color: 'text-amber-600' },
+    { label: 'Capacity Utilization', value: '82%', sub: '1 line overload', color: 'text-emerald-600' },
+    { label: 'Demand Coverage', value: '94%', sub: '6% gap', color: 'text-cyan-600' },
+  ]
+
+  const planningFlow = ['Sales Orders', 'Retail POS', 'Restaurant POS', 'Distributor Orders', 'Safety Stock', 'Demand Planning', 'MPS', 'MRP', 'Capacity Check', 'Production Plan', 'Purchase Suggestions']
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Production Planning Dashboard</h2><p className="text-sm text-muted-foreground mt-1">The planning brain — what to manufacture, when, how much, do we have materials?</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpis.map(k => <Card key={k.label} className="p-3"><p className="text-[10px] text-muted-foreground uppercase">{k.label}</p><p className={`text-xl font-bold mt-1 ${k.color}`}>{k.value}</p><p className="text-[10px] text-muted-foreground">{k.sub}</p></Card>)}
+      </div>
+
+      {/* Planning Flow */}
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <h3 className="font-semibold mb-3 text-sm">Production Planning Flow — Multi-Channel Demand (Chief Architect Recommendation)</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {planningFlow.map((step, i, arr) => (
+            <div key={i} className="flex items-center gap-2 flex-shrink-0">
+              <div className={`px-3 py-1.5 border rounded-md font-medium ${i < 5 ? 'bg-amber-50 border-amber-300 text-amber-800' : i < 7 ? 'bg-blue-50 border-blue-300 text-blue-800' : i < 9 ? 'bg-purple-50 border-purple-300 text-purple-800' : 'bg-emerald-50 border-emerald-300 text-emerald-800'}`}>{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-blue-600 flex-shrink-0" />}
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">Demand from Retail POS + Restaurant POS + Distributors + Sales Orders + Safety Stock → Unified Demand → MPS → MRP → Capacity Check → Production Plan → Purchase Suggestions</p>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Today's Production Plan</h3>
+          <div className="space-y-2">
+            {[
+              { product: 'Kaju Katli 500g', line: 'LINE-KK-01', qty: 285, batches: 3, shift: 'Morning', status: 'SCHEDULED' },
+              { product: 'Mysore Pak 250g', line: 'LINE-MP-01', qty: 120, batches: 2, shift: 'Morning', status: 'SCHEDULED' },
+              { product: 'Shwet Idli Batter 1kg', line: 'LINE-IB-01', qty: 200, batches: 2, shift: 'Morning', status: 'IN_PROGRESS' },
+              { product: 'Mixed Namkeen 500g', line: 'LINE-NM-01', qty: 180, batches: 2, shift: 'Afternoon', status: 'PLANNED' },
+              { product: 'Motichoor Laddu 1kg', line: 'LINE-LD-01', qty: 100, batches: 1, shift: 'Afternoon', status: 'PLANNED' },
+            ].map((p, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 border rounded">
+                <div className="flex-1"><p className="text-xs font-medium">{p.product}</p><p className="text-[10px] text-muted-foreground">{p.line} · {p.shift}</p></div>
+                <div className="text-right"><p className="font-mono text-xs font-bold">{p.qty} kg</p><p className="text-[10px] text-muted-foreground">{p.batches} batches</p></div>
+                <span className={`text-[10px] px-2 py-1 rounded ${p.status === 'IN_PROGRESS' ? 'bg-emerald-100 text-emerald-700' : p.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>{p.status}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Material Availability Summary</h3>
+          <div className="space-y-2">
+            {[
+              { material: 'Cashew (W320)', required: 380, available: 420, status: 'OK' },
+              { material: 'Sugar', required: 250, available: 120, status: 'SHORTAGE' },
+              { material: 'Ghee', required: 45, available: 80, status: 'OK' },
+              { material: 'Packaging Box 500g', required: 570, available: 200, status: 'SHORTAGE' },
+              { material: 'Rice (Idli)', required: 180, available: 220, status: 'OK' },
+              { material: 'Urad Dal', required: 60, available: 45, status: 'SHORTAGE' },
+            ].map((m, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 border rounded">
+                <div className="flex-1"><p className="text-xs font-medium">{m.material}</p><div className="flex gap-2 text-[10px] text-muted-foreground"><span>Req: {m.required}kg</span><span>Avail: {m.available}kg</span></div></div>
+                <span className={`text-[10px] px-2 py-1 rounded ${m.status === 'OK' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{m.status}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── MPS Console ────────────────────────────────────────
+function MPSConsoleModule() {
+  const mpsLines = [
+    { no: 1, product: 'Kaju Katli 500g', sku: 'SK-KAJU-500', line: 'LINE-KK-01', qty: 95, batches: 1, date: 'Jul 10', shift: 'Morning', demand: 'Retail POS (180 boxes)', status: 'SCHEDULED' },
+    { no: 2, product: 'Kaju Katli 500g', sku: 'SK-KAJU-500', line: 'LINE-KK-01', qty: 95, batches: 1, date: 'Jul 10', shift: 'Afternoon', demand: 'Distributor (180 boxes)', status: 'SCHEDULED' },
+    { no: 3, product: 'Mysore Pak 250g', sku: 'SK-MYSORE-250', line: 'LINE-MP-01', qty: 60, batches: 1, date: 'Jul 10', shift: 'Morning', demand: 'Retail POS (240 boxes)', status: 'SCHEDULED' },
+    { no: 4, product: 'Shwet Idli Batter 1kg', sku: 'SK-IB-1K', line: 'LINE-IB-01', qty: 100, batches: 1, date: 'Jul 10', shift: 'Morning', demand: 'Restaurant POS (100 units)', status: 'IN_PROGRESS' },
+    { no: 5, product: 'Shwet Idli Batter 1kg', sku: 'SK-IB-1K', line: 'LINE-IB-01', qty: 100, batches: 1, date: 'Jul 10', shift: 'Afternoon', demand: 'Safety Stock (100 units)', status: 'PLANNED' },
+    { no: 6, product: 'Mixed Namkeen 500g', sku: 'SK-NM-500', line: 'LINE-NM-01', qty: 150, batches: 1, date: 'Jul 11', shift: 'Morning', demand: 'Sales Orders (300 boxes)', status: 'PLANNED' },
+    { no: 7, product: 'Motichoor Laddu 1kg', sku: 'SK-LAD-1K', line: 'LINE-LD-01', qty: 100, batches: 1, date: 'Jul 11', shift: 'Morning', demand: 'Festival Forecast (100 boxes)', status: 'PLANNED' },
+    { no: 8, product: 'Dosa Batter 1kg', sku: 'SK-DB-1K', line: 'LINE-DB-01', qty: 70, batches: 1, date: 'Jul 11', shift: 'Morning', demand: 'Restaurant POS (70 units)', status: 'PLANNED' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">MPS Console — Master Production Schedule</h2><p className="text-sm text-muted-foreground mt-1">What to produce · when · how much · on which line · which shift</p></div>
+        <div className="flex gap-2"><Button size="sm" variant="outline"><Download className="mr-1 h-4 w-4" />Export</Button><Button size="sm"><Plus className="mr-2 h-4 w-4" />New MPS</Button></div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'MPS Number', value: 'MPS-2026-W28', color: 'text-blue-600' },
+          { label: 'Period', value: 'Week 28 (Jul 10-16)', color: 'text-purple-600' },
+          { label: 'Total Products', value: '5', color: 'text-amber-600' },
+          { label: 'Total Quantity', value: '770 KG', color: 'text-emerald-600' },
+          { label: 'Status', value: 'APPROVED', color: 'text-emerald-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-lg font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">MPS Lines — Week 28</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">#</th><th className="text-left px-4 py-3 font-medium">Product</th>
+              <th className="text-left px-4 py-3 font-medium">Line</th><th className="text-left px-4 py-3 font-medium">Qty (kg)</th>
+              <th className="text-left px-4 py-3 font-medium">Batches</th><th className="text-left px-4 py-3 font-medium">Date</th>
+              <th className="text-left px-4 py-3 font-medium">Shift</th><th className="text-left px-4 py-3 font-medium">Demand Source</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {mpsLines.map(l => (
+                <tr key={l.no} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs">{l.no}</td>
+                  <td className="px-4 py-3"><div className="text-xs font-medium">{l.product}</div><div className="text-[10px] text-muted-foreground font-mono">{l.sku}</div></td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.line}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{l.qty}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.batches}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.date}</td>
+                  <td className="px-4 py-3 text-xs">{l.shift}</td>
+                  <td className="px-4 py-3 text-[10px]">{l.demand}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-2 py-1 rounded ${l.status === 'IN_PROGRESS' ? 'bg-emerald-100 text-emerald-700' : l.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>{l.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── MRP Workbench ──────────────────────────────────────
+function MRPWorkbenchModule() {
+  const [runStatus, setRunStatus] = useState<'IDLE' | 'RUNNING' | 'COMPLETED'>('COMPLETED')
+  const mrpResults = [
+    { material: 'Cashew (W320)', type: 'RAW_MATERIAL', demand: 380, available: 420, reserved: 50, safety: 100, net: 110, suggestion: 'NONE', shortage: false },
+    { material: 'Sugar', type: 'RAW_MATERIAL', demand: 250, available: 120, reserved: 30, safety: 80, net: 240, suggestion: 'PURCHASE', shortage: true },
+    { material: 'Ghee', type: 'RAW_MATERIAL', demand: 45, available: 80, reserved: 10, safety: 20, net: 0, suggestion: 'NONE', shortage: false },
+    { material: 'Packaging Box 500g', type: 'PACKAGING', demand: 570, available: 200, reserved: 50, safety: 100, net: 520, suggestion: 'PURCHASE', shortage: true },
+    { material: 'Rice (Idli)', type: 'RAW_MATERIAL', demand: 180, available: 220, reserved: 40, safety: 50, net: 50, suggestion: 'NONE', shortage: false },
+    { material: 'Urad Dal', type: 'RAW_MATERIAL', demand: 60, available: 45, reserved: 10, safety: 20, net: 45, suggestion: 'PURCHASE', shortage: true },
+    { material: 'Cardamom Powder', type: 'RAW_MATERIAL', demand: 3.5, available: 12, reserved: 1, safety: 2, net: 0, suggestion: 'NONE', shortage: false },
+    { material: 'Silver Leaf (Vark)', type: 'CONSUMABLE', demand: 300, available: 150, reserved: 50, safety: 100, net: 300, suggestion: 'PURCHASE', shortage: true },
+    { material: 'Product Label', type: 'LABEL', demand: 570, available: 500, reserved: 100, safety: 100, net: 270, suggestion: 'PURCHASE', shortage: true },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">MRP Workbench — Material Requirements Planning</h2><p className="text-sm text-muted-foreground mt-1">Demand − Available − Reserved + Safety Stock = Net Requirement</p></div>
+        <Button size="sm" onClick={() => { setRunStatus('RUNNING'); setTimeout(() => setRunStatus('COMPLETED'), 2000) }}><RefreshCw className={`mr-2 h-4 w-4 ${runStatus === 'RUNNING' ? 'animate-spin' : ''}`} />{runStatus === 'RUNNING' ? 'Running MRP...' : 'Run MRP'}</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'MRP Run', value: 'MRP-2026-018', color: 'text-blue-600' },
+          { label: 'Total Materials', value: mrpResults.length, color: 'text-purple-600' },
+          { label: 'Shortages', value: mrpResults.filter(r => r.shortage).length, color: 'text-rose-600' },
+          { label: 'Purchase Suggestions', value: mrpResults.filter(r => r.suggestion === 'PURCHASE').length, color: 'text-amber-600' },
+          { label: 'Run Duration', value: '4.2s', color: 'text-emerald-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {/* MRP Formula */}
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <h3 className="font-semibold mb-2 text-sm">MRP Calculation Formula</h3>
+        <div className="flex items-center gap-2 text-sm font-mono">
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded">Gross Demand</span>
+          <span className="text-rose-600">−</span>
+          <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded">Available Inventory</span>
+          <span className="text-rose-600">−</span>
+          <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded">Reserved</span>
+          <span className="text-blue-600">+</span>
+          <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded">Safety Stock</span>
+          <span className="text-blue-600">=</span>
+          <span className="px-3 py-1 bg-rose-100 text-rose-700 rounded font-bold">Net Requirement</span>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">MRP Results — Material Requirements</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Material</th><th className="text-left px-4 py-3 font-medium">Type</th>
+              <th className="text-left px-4 py-3 font-medium">Demand</th><th className="text-left px-4 py-3 font-medium">Available</th>
+              <th className="text-left px-4 py-3 font-medium">Reserved</th><th className="text-left px-4 py-3 font-medium">Safety</th>
+              <th className="text-left px-4 py-3 font-medium">Net Req</th><th className="text-left px-4 py-3 font-medium">Suggestion</th>
+              <th className="text-left px-4 py-3 font-medium">Shortage</th>
+            </tr></thead>
+            <tbody>
+              {mrpResults.map((r, i) => (
+                <tr key={i} className={`border-b hover:bg-muted/30 ${r.shortage ? 'bg-rose-50/30' : ''}`}>
+                  <td className="px-4 py-3 text-xs font-medium">{r.material}</td>
+                  <td className="px-4 py-3"><span className="text-[10px] px-1.5 py-0.5 rounded bg-muted font-mono">{r.type.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">{r.demand}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={r.available < r.demand ? 'text-rose-600 font-bold' : 'text-emerald-600'}>{r.available}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs text-amber-600">{r.reserved}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{r.safety}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={`font-bold ${r.net > 0 ? 'text-rose-700' : 'text-emerald-600'}`}>{r.net}</span></td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-2 py-1 rounded ${r.suggestion === 'PURCHASE' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{r.suggestion}</span></td>
+                  <td className="px-4 py-3">{r.shortage ? <span className="text-rose-600 text-xs">⚠ Shortage</span> : <span className="text-emerald-600 text-xs">✓ OK</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Demand Planning ────────────────────────────────────
+function DemandPlanningModule() {
+  const demands = [
+    { product: 'Kaju Katli 500g', sales: 180, retail: 120, restaurant: 0, distributor: 60, export: 0, safety: 30, total: 390, forecast: 420, method: 'MOVING_AVERAGE', confidence: 85 },
+    { product: 'Mysore Pak 250g', sales: 80, retail: 60, restaurant: 0, distributor: 40, export: 0, safety: 20, total: 200, forecast: 210, method: 'SEASONAL_TREND', confidence: 78 },
+    { product: 'Shwet Idli Batter 1kg', sales: 0, retail: 0, restaurant: 150, distributor: 0, export: 0, safety: 50, total: 200, forecast: 220, method: 'MOVING_AVERAGE', confidence: 92 },
+    { product: 'Mixed Namkeen 500g', sales: 120, retail: 80, restaurant: 0, distributor: 50, export: 30, safety: 40, total: 320, forecast: 340, method: 'AI_FORECAST', confidence: 88 },
+    { product: 'Motichoor Laddu 1kg', sales: 40, retail: 30, restaurant: 0, distributor: 20, export: 10, safety: 20, total: 120, forecast: 180, method: 'SEASONAL_TREND', confidence: 75 },
+    { product: 'Dosa Batter 1kg', sales: 0, retail: 0, restaurant: 70, distributor: 0, export: 0, safety: 20, total: 90, forecast: 100, method: 'MOVING_AVERAGE', confidence: 90 },
+  ]
+
+  const methodColors: Record<string, string> = { MOVING_AVERAGE: 'bg-blue-100 text-blue-700', SEASONAL_TREND: 'bg-amber-100 text-amber-700', AI_FORECAST: 'bg-purple-100 text-purple-700', MANUAL_OVERRIDE: 'bg-slate-100 text-slate-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Demand Planning</h2><p className="text-sm text-muted-foreground mt-1">Multi-channel demand: Sales Orders + Retail POS + Restaurant POS + Distributors + Export + Safety Stock</p></div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <h3 className="font-semibold mb-2 text-sm">Chief Architect: Unified Multi-Channel Demand</h3>
+        <p className="text-xs text-muted-foreground">Manufacturing is driven by complete business demand — Retail POS + Restaurant POS + Distributor + Export + Safety Stock → Unified Demand → MPS → MRP. POS systems remain billing-only; they supply demand data to SUOP for planning.</p>
+      </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Demand (kg)', value: demands.reduce((a, d) => a + d.total, 0), color: 'text-blue-600' },
+          { label: 'Total Forecast (kg)', value: demands.reduce((a, d) => a + d.forecast, 0), color: 'text-purple-600' },
+          { label: 'Forecast Coverage', value: `${Math.round(demands.reduce((a, d) => a + d.forecast, 0) / demands.reduce((a, d) => a + d.total, 0) * 100)}%`, color: 'text-emerald-600' },
+          { label: 'Avg Confidence', value: `${Math.round(demands.reduce((a, d) => a + d.confidence, 0) / demands.length)}%`, color: 'text-amber-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Demand Forecast — Week 28</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Product</th>
+              <th className="text-left px-4 py-3 font-medium">Sales Orders</th><th className="text-left px-4 py-3 font-medium">Retail POS</th>
+              <th className="text-left px-4 py-3 font-medium">Restaurant POS</th><th className="text-left px-4 py-3 font-medium">Distributor</th>
+              <th className="text-left px-4 py-3 font-medium">Export</th><th className="text-left px-4 py-3 font-medium">Safety Stock</th>
+              <th className="text-left px-4 py-3 font-medium">Total Demand</th><th className="text-left px-4 py-3 font-medium">Forecast</th>
+              <th className="text-left px-4 py-3 font-medium">Method</th><th className="text-left px-4 py-3 font-medium">Confidence</th>
+            </tr></thead>
+            <tbody>
+              {demands.map((d, i) => (
+                <tr key={i} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 text-xs font-medium">{d.product}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{d.sales || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{d.retail || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{d.restaurant || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{d.distributor || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{d.export || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-purple-600">{d.safety}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{d.total}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-blue-700">{d.forecast}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded ${methodColors[d.method]}`}>{d.method.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1"><span className="font-mono text-xs">{d.confidence}%</span><div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${d.confidence > 85 ? 'bg-emerald-500' : d.confidence > 75 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${d.confidence}%` }} /></div></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Capacity Planner ───────────────────────────────────
+function CapacityPlannerModule() {
+  const lines = [
+    { line: 'LINE-KK-01 (Kaju Katli)', avail: 16, req: 14, util: 88, machineAvail: 16, machineReq: 14, opAvail: 16, opReq: 12, status: 'BALANCED' },
+    { line: 'LINE-MP-01 (Mysore Pak)', avail: 16, req: 8, util: 50, machineAvail: 16, machineReq: 8, opAvail: 16, opReq: 8, status: 'UNDERUTILIZED' },
+    { line: 'LINE-IB-01 (Idli Batter)', avail: 15, req: 15, util: 100, machineAvail: 15, machineReq: 15, opAvail: 15, opReq: 14, status: 'BALANCED' },
+    { line: 'LINE-NM-01 (Namkeen)', avail: 16, req: 18, util: 113, machineAvail: 16, machineReq: 18, opAvail: 16, opReq: 16, status: 'OVERLOAD' },
+    { line: 'LINE-LD-01 (Laddu)', avail: 16, req: 10, util: 63, machineAvail: 16, machineReq: 10, opAvail: 16, opReq: 10, status: 'UNDERUTILIZED' },
+    { line: 'LINE-DB-01 (Dosa Batter)', avail: 15, req: 11, util: 73, machineAvail: 15, machineReq: 11, opAvail: 15, opReq: 11, status: 'BALANCED' },
+  ]
+
+  const statusColors: Record<string, string> = { BALANCED: 'bg-emerald-100 text-emerald-700', OVERLOAD: 'bg-rose-100 text-rose-700', UNDERUTILIZED: 'bg-amber-100 text-amber-700', BOTTLENECK: 'bg-red-100 text-red-700' }
+  const utilColor = (u: number) => u > 100 ? 'bg-rose-500' : u > 85 ? 'bg-emerald-500' : u > 60 ? 'bg-amber-500' : 'bg-slate-400'
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Capacity Planner</h2><p className="text-sm text-muted-foreground mt-1">Machine hours · operator hours · line capacity · overload detection · bottleneck analysis</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Available Hours', value: lines.reduce((a, l) => a + l.avail, 0), color: 'text-blue-600' },
+          { label: 'Total Required Hours', value: lines.reduce((a, l) => a + l.req, 0), color: 'text-amber-600' },
+          { label: 'Overload Lines', value: lines.filter(l => l.status === 'OVERLOAD').length, color: 'text-rose-600' },
+          { label: 'Underutilized Lines', value: lines.filter(l => l.status === 'UNDERUTILIZED').length, color: 'text-amber-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Capacity by Production Line — This Week</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Production Line</th>
+              <th className="text-left px-4 py-3 font-medium">Available (hrs)</th><th className="text-left px-4 py-3 font-medium">Required (hrs)</th>
+              <th className="text-left px-4 py-3 font-medium">Utilization</th><th className="text-left px-4 py-3 font-medium">Machine (Avail/Req)</th>
+              <th className="text-left px-4 py-3 font-medium">Operator (Avail/Req)</th><th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {lines.map((l, i) => (
+                <tr key={i} className={`border-b hover:bg-muted/30 ${l.status === 'OVERLOAD' ? 'bg-rose-50/30' : ''}`}>
+                  <td className="px-4 py-3 text-xs font-medium">{l.line}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.avail}h</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={l.req > l.avail ? 'text-rose-600 font-bold' : ''}>{l.req}h</span></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-20 h-3 bg-muted rounded-full overflow-hidden"><div className={`h-full ${utilColor(l.util)}`} style={{ width: `${Math.min(100, l.util)}%` }} /></div><span className={`font-mono text-xs font-bold ${l.util > 100 ? 'text-rose-600' : ''}`}>{l.util}%</span></div></td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.machineAvail}h / {l.machineReq}h</td>
+                  <td className="px-4 py-3 font-mono text-xs">{l.opAvail}h / {l.opReq}h</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-2 py-1 rounded ${statusColors[l.status]}`}>{l.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Material Shortage Center ───────────────────────────
+function MaterialShortageModule() {
+  const shortages = [
+    { material: 'Sugar', type: 'RAW_MATERIAL', required: 250, available: 120, shortage: 130, severity: 'CRITICAL', affected: ['Kaju Katli', 'Mysore Pak', 'Laddu'], orders: 5, resolution: 'PURCHASE', status: 'OPEN', alternate: false },
+    { material: 'Packaging Box 500g', type: 'PACKAGING', required: 570, available: 200, shortage: 370, severity: 'CRITICAL', affected: ['Kaju Katli', 'Mysore Pak'], orders: 3, resolution: 'PURCHASE', status: 'IN_PROGRESS', alternate: false },
+    { material: 'Urad Dal', type: 'RAW_MATERIAL', required: 60, available: 45, shortage: 15, severity: 'HIGH', affected: ['Idli Batter', 'Dosa Batter'], orders: 2, resolution: 'PURCHASE', status: 'OPEN', alternate: true },
+    { material: 'Silver Leaf (Vark)', type: 'CONSUMABLE', required: 300, available: 150, shortage: 150, severity: 'MEDIUM', affected: ['Kaju Katli'], orders: 1, resolution: 'PURCHASE', status: 'OPEN', alternate: false },
+    { material: 'Product Label', type: 'LABEL', required: 570, available: 500, shortage: 270, severity: 'HIGH', affected: ['All products'], orders: 6, resolution: 'PURCHASE', status: 'OPEN', alternate: false },
+  ]
+
+  const sevColors: Record<string, string> = { CRITICAL: 'border-rose-400 bg-rose-50/50', HIGH: 'border-orange-300 bg-orange-50/30', MEDIUM: 'border-amber-200 bg-amber-50/20' }
+  const sevBadge: Record<string, string> = { CRITICAL: 'bg-rose-100 text-rose-700', HIGH: 'bg-orange-100 text-orange-700', MEDIUM: 'bg-amber-100 text-amber-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Material Shortage Center</h2><p className="text-sm text-muted-foreground mt-1">Critical ingredients · packaging shortages · alternate materials · resolution workflow</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Shortages', value: shortages.length, color: 'text-rose-600' },
+          { label: 'Critical', value: shortages.filter(s => s.severity === 'CRITICAL').length, color: 'text-red-600' },
+          { label: 'High', value: shortages.filter(s => s.severity === 'HIGH').length, color: 'text-orange-600' },
+          { label: 'Open', value: shortages.filter(s => s.status === 'OPEN').length, color: 'text-amber-600' },
+          { label: 'In Progress', value: shortages.filter(s => s.status === 'IN_PROGRESS').length, color: 'text-blue-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 border-rose-300">
+        <h3 className="font-semibold mb-2 text-sm">Shortage Resolution Workflow</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Material Shortage', 'Find Alternate', 'Approval', 'Continue Production'].map((step, i, arr) => (
+            <div key={i} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-rose-600" />}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="space-y-2">
+        {shortages.map((s, i) => (
+          <Card key={i} className={`p-4 border-l-4 ${sevColors[s.severity]}`}>
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <span className="text-sm font-semibold">{s.material}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded ${sevBadge[s.severity]}`}>{s.severity}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded font-mono">{s.type.replace(/_/g, ' ')}</span>
+                  {s.alternate && <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-300">Has Alternate</Badge>}
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div><p className="text-muted-foreground">Required</p><p className="font-mono font-bold">{s.required} kg</p></div>
+                  <div><p className="text-muted-foreground">Available</p><p className="font-mono font-bold text-emerald-600">{s.available} kg</p></div>
+                  <div><p className="text-muted-foreground">Shortage</p><p className="font-mono font-bold text-rose-600">{s.shortage} kg</p></div>
+                </div>
+                <div className="mt-2 text-xs"><span className="text-muted-foreground">Affected products:</span> {s.affected.join(', ')} <span className="text-muted-foreground ml-2">·</span> <span className="text-muted-foreground">{s.orders} orders affected</span></div>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <span className={`text-xs px-2 py-1 rounded ${s.status === 'OPEN' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>{s.status}</span>
+                <Button size="sm" className="h-7 text-xs">{s.resolution === 'PURCHASE' ? 'Create PO' : 'Find Alternate'}</Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Purchase Suggestions ───────────────────────────────
+function PurchaseSuggestionsModule() {
+  const suggestions = [
+    { code: 'PUR-2026-018', material: 'Sugar', req: 380, avail: 120, suggest: 380, supplier: 'Madhur Sugar Co.', leadTime: 5, reqDate: 'Jul 12', orderDate: 'Jul 7', unitCost: 45, totalCost: 17100, priority: 'EMERGENCY', status: 'PENDING' },
+    { code: 'PUR-2026-019', material: 'Packaging Box 500g', req: 570, avail: 200, suggest: 520, supplier: 'Packwell India', leadTime: 7, reqDate: 'Jul 14', orderDate: 'Jul 7', unitCost: 8, totalCost: 4160, priority: 'HIGH', status: 'PENDING' },
+    { code: 'PUR-2026-020', material: 'Urad Dal', req: 60, avail: 45, suggest: 45, supplier: 'Pulse Mart', leadTime: 3, reqDate: 'Jul 11', orderDate: 'Jul 8', unitCost: 120, totalCost: 5400, priority: 'HIGH', status: 'PENDING' },
+    { code: 'PUR-2026-021', material: 'Silver Leaf (Vark)', req: 300, avail: 150, suggest: 300, supplier: 'Silver Arts', leadTime: 4, reqDate: 'Jul 12', orderDate: 'Jul 8', unitCost: 2, totalCost: 600, priority: 'NORMAL', status: 'PENDING' },
+    { code: 'PUR-2026-022', material: 'Product Label', req: 570, avail: 500, suggest: 270, supplier: 'PrintTech', leadTime: 5, reqDate: 'Jul 13', orderDate: 'Jul 8', unitCost: 0.5, totalCost: 135, priority: 'NORMAL', status: 'PENDING' },
+    { code: 'PUR-2026-023', material: 'Cashew (W320)', req: 380, avail: 420, suggest: 110, supplier: 'NutriNuts Import', leadTime: 14, reqDate: 'Jul 25', orderDate: 'Jul 11', unitCost: 850, totalCost: 93500, priority: 'NORMAL', status: 'PENDING' },
+  ]
+
+  const priorityColors: Record<string, string> = { EMERGENCY: 'bg-red-100 text-red-700', HIGH: 'bg-orange-100 text-orange-700', NORMAL: 'bg-blue-100 text-blue-700', LOW: 'bg-slate-100 text-slate-700' }
+  const totalValue = suggestions.reduce((a, s) => a + s.totalCost, 0)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Purchase Suggestions</h2><p className="text-sm text-muted-foreground mt-1">Auto-generated from MRP · supplier recommendations · lead-time aware · priority ranked</p></div>
+        <Button size="sm"><CheckCircle2 className="mr-2 h-4 w-4" />Approve All</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Suggestions', value: suggestions.length, color: 'text-blue-600' },
+          { label: 'Emergency', value: suggestions.filter(s => s.priority === 'EMERGENCY').length, color: 'text-red-600' },
+          { label: 'High Priority', value: suggestions.filter(s => s.priority === 'HIGH').length, color: 'text-orange-600' },
+          { label: 'Total Value', value: `₹${(totalValue / 1000).toFixed(1)}K`, color: 'text-rose-600' },
+          { label: 'Pending', value: suggestions.filter(s => s.status === 'PENDING').length, color: 'text-amber-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Purchase Recommendations — Week 28</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">Material</th>
+              <th className="text-left px-4 py-3 font-medium">Required</th><th className="text-left px-4 py-3 font-medium">Available</th>
+              <th className="text-left px-4 py-3 font-medium">Suggest Qty</th><th className="text-left px-4 py-3 font-medium">Supplier</th>
+              <th className="text-left px-4 py-3 font-medium">Lead Time</th><th className="text-left px-4 py-3 font-medium">Req Date</th>
+              <th className="text-left px-4 py-3 font-medium">Order By</th><th className="text-left px-4 py-3 font-medium">Cost</th>
+              <th className="text-left px-4 py-3 font-medium">Priority</th><th className="text-left px-4 py-3 font-medium">Action</th>
+            </tr></thead>
+            <tbody>
+              {suggestions.map(s => (
+                <tr key={s.code} className={`border-b hover:bg-muted/30 ${s.priority === 'EMERGENCY' ? 'bg-rose-50/30' : ''}`}>
+                  <td className="px-4 py-3 font-mono text-xs text-blue-700">{s.code}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{s.material}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{s.req}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-emerald-600">{s.avail}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold">{s.suggest}</td>
+                  <td className="px-4 py-3 text-xs">{s.supplier}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{s.leadTime}d</td>
+                  <td className="px-4 py-3 font-mono text-xs">{s.reqDate}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={s.orderDate <= new Date().toLocaleDateString('en-IN').split('/').reverse().join('-') ? 'text-rose-600 font-bold' : ''}>{s.orderDate}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">₹{s.totalCost.toLocaleString('en-IN')}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-2 py-1 rounded ${priorityColors[s.priority]}`}>{s.priority}</span></td>
+                  <td className="px-4 py-3"><Button size="sm" variant="outline" className="h-7 text-xs">Create PO</Button></td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/50 font-bold">
+                <td colSpan={9} className="px-4 py-3 text-right text-xs">Total Estimated Cost:</td>
+                <td className="px-4 py-3 font-mono text-sm text-rose-700">₹{totalValue.toLocaleString('en-IN')}</td>
+                <td colSpan={2}></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── What-if Simulator ──────────────────────────────────
+function WhatIfSimulatorModule() {
+  const [scenario, setScenario] = useState<string>('DEMAND_INCREASE')
+  const [param, setParam] = useState('20')
+  const [simulated, setSimulated] = useState(false)
+
+  const scenarios = [
+    { type: 'DEMAND_INCREASE', label: 'Demand Increase (+%)', icon: <TrendingUp className="h-5 w-5" />, color: 'bg-blue-500' },
+    { type: 'PRICE_CHANGE', label: 'Price Change (+%)', icon: <IndianRupee className="h-5 w-5" />, color: 'bg-emerald-500' },
+    { type: 'SUPPLIER_DELAY', label: 'Supplier Delay (days)', icon: <Clock className="h-5 w-5" />, color: 'bg-amber-500' },
+    { type: 'MACHINE_BREAKDOWN', label: 'Machine Breakdown (hrs)', icon: <Wrench className="h-5 w-5" />, color: 'bg-rose-500' },
+    { type: 'CAPACITY_REDUCTION', label: 'Capacity Reduction (%)', icon: <Gauge className="h-5 w-5" />, color: 'bg-purple-500' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">What-if Simulator</h2><p className="text-sm text-muted-foreground mt-1">Simulate scenarios before approving production — demand, price, supplier delay, machine breakdown</p></div>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        {scenarios.map(s => (
+          <button key={s.type} onClick={() => { setScenario(s.type); setSimulated(false) }} className={`p-4 rounded-xl border-2 text-left transition-all ${scenario === s.type ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
+            <div className={`h-10 w-10 rounded-lg ${s.color} text-white flex items-center justify-center mb-2`}>{s.icon}</div>
+            <p className="text-xs font-medium">{s.label}</p>
+          </button>
+        ))}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div className="md:col-span-2">
+            <Label className="text-xs">Scenario Parameter</Label>
+            <Input type="number" value={param} onChange={e => setParam(e.target.value)} className="mt-1 font-mono text-lg font-bold" />
+            <p className="text-[10px] text-muted-foreground mt-1">{scenario === 'DEMAND_INCREASE' ? 'Increase demand by this %' : scenario === 'SUPPLIER_DELAY' ? 'Delay in days' : scenario === 'MACHINE_BREAKDOWN' ? 'Breakdown hours' : 'Percentage change'}</p>
+          </div>
+          <div><Label className="text-xs">Base MPS</Label><div className="mt-1 p-2 bg-white border rounded-md font-mono text-sm">MPS-2026-W28</div></div>
+          <div><Button size="sm" className="w-full" onClick={() => setSimulated(true)}><Sparkles className="mr-2 h-4 w-4" />Run Simulation</Button></div>
+        </div>
+      </Card>
+
+      {simulated && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 text-sm">Material Impact</h3>
+            <div className="space-y-2">
+              {[
+                { material: 'Cashew (W320)', base: 380, simulated: 380 * (1 + parseInt(param) / 100), unit: 'kg' },
+                { material: 'Sugar', base: 250, simulated: 250 * (1 + parseInt(param) / 100), unit: 'kg' },
+                { material: 'Ghee', base: 45, simulated: 45 * (1 + parseInt(param) / 100), unit: 'kg' },
+                { material: 'Packaging Box', base: 570, simulated: 570 * (1 + parseInt(param) / 100), unit: 'pcs' },
+              ].map((m, i) => {
+                const delta = m.simulated - m.base
+                return (
+                  <div key={i} className="flex items-center gap-3 p-2 border rounded">
+                    <div className="flex-1"><p className="text-xs font-medium">{m.material}</p></div>
+                    <div className="text-right"><p className="text-[10px] text-muted-foreground">Base: {m.base} {m.unit}</p><p className="font-mono text-xs font-bold">Sim: {m.simulated.toFixed(0)} {m.unit}</p></div>
+                    <span className={`text-xs font-mono font-bold ${delta > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{delta > 0 ? '+' : ''}{delta.toFixed(0)}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 text-sm">Capacity & Cost Impact</h3>
+            <div className="space-y-3 text-sm">
+              <div className="p-3 bg-muted/50 rounded">
+                <p className="text-xs text-muted-foreground">Capacity Utilization</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <div><span className="text-[10px] text-muted-foreground">Base:</span> <span className="font-mono font-bold">82%</span></div>
+                  <ArrowRight className="h-3 w-3" />
+                  <div><span className="text-[10px] text-muted-foreground">Simulated:</span> <span className="font-mono font-bold text-rose-600">{Math.min(100, 82 + parseInt(param) * 0.8).toFixed(0)}%</span></div>
+                </div>
+                {82 + parseInt(param) * 0.8 > 100 && <p className="text-[10px] text-rose-600 mt-1">⚠ Capacity overload! Additional shift required.</p>}
+              </div>
+              <div className="p-3 bg-muted/50 rounded">
+                <p className="text-xs text-muted-foreground">Production Cost</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <div><span className="text-[10px] text-muted-foreground">Base:</span> <span className="font-mono font-bold">₹66,200</span></div>
+                  <ArrowRight className="h-3 w-3" />
+                  <div><span className="text-[10px] text-muted-foreground">Simulated:</span> <span className="font-mono font-bold text-amber-600">₹{(66200 * (1 + parseInt(param) / 100)).toLocaleString('en-IN')}</span></div>
+                </div>
+              </div>
+              <div className="p-3 bg-muted/50 rounded">
+                <p className="text-xs text-muted-foreground">New Material Shortages</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <div><span className="text-[10px] text-muted-foreground">Base:</span> <span className="font-mono font-bold">5</span></div>
+                  <ArrowRight className="h-3 w-3" />
+                  <div><span className="text-[10px] text-muted-foreground">Simulated:</span> <span className="font-mono font-bold text-rose-600">{5 + Math.floor(parseInt(param) / 10)}</span></div>
+                </div>
+              </div>
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-xs font-semibold text-blue-900">Recommendation:</p>
+                <p className="text-[11px] text-blue-700 mt-1">{parseInt(param) > 25 ? 'High impact — recommend adding overtime shift and expediting sugar + packaging procurement before increasing production.' : 'Moderate impact — current capacity can handle the increase with minor adjustments to purchase timing.'}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -16366,6 +16973,7 @@ export default function Home() {
     wmsmissioncontrol: 'WMS Mission Control', controltower: 'Enterprise Control Tower', digitaltwin: 'Warehouse Digital Twin', aioperations: 'AI Operations Center', execdashboard: 'Executive Command Dashboard', alertcenter: 'Enterprise Alert Center', recoverydashboard: 'Disaster Recovery Dashboard', enterprisenalytics: 'Enterprise Analytics',
     plantmaster: 'Plant Master', productiondept: 'Production Departments', productionlines: 'Production Lines', workcenters: 'Work Centers', mfgcalendar: 'Manufacturing Calendar', mfgresources: 'Production Resources', plantconfig: 'Plant Configuration', productiondashboard: 'Production Dashboard',
     recipemaster: 'Recipe Master', formulabuilder: 'Formula Builder', bombuilder: 'BOM Builder', recipeversions: 'Recipe Version History', yielddashboard: 'Yield Dashboard', batchscaling: 'Batch Scaling Engine', nutritioncenter: 'Nutrition & Allergen Center', costrollup: 'Cost Roll-Up Engine', recipeapproval: 'Recipe Approval Center',
+    planningdashboard: 'Production Planning Dashboard', mpsconsole: 'MPS Console', mrpworkbench: 'MRP Workbench', demandplanning: 'Demand Planning', capacityplanner: 'Capacity Planner', shortagecenter: 'Material Shortage Center', purchasesuggestions: 'Purchase Suggestions', whatifsimulator: 'What-if Simulator',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -16431,7 +17039,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 35 · 303 Tables · Part 5 MES</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 36 · 312 Tables · Part 5 MES</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -16534,11 +17142,19 @@ export default function Home() {
             {activeModule === 'nutritioncenter' && <NutritionCenterModule />}
             {activeModule === 'costrollup' && <CostRollupModule />}
             {activeModule === 'recipeapproval' && <RecipeApprovalModule />}
+            {activeModule === 'planningdashboard' && <PlanningDashboardModule />}
+            {activeModule === 'mpsconsole' && <MPSConsoleModule />}
+            {activeModule === 'mrpworkbench' && <MRPWorkbenchModule />}
+            {activeModule === 'demandplanning' && <DemandPlanningModule />}
+            {activeModule === 'capacityplanner' && <CapacityPlannerModule />}
+            {activeModule === 'shortagecenter' && <MaterialShortageModule />}
+            {activeModule === 'purchasesuggestions' && <PurchaseSuggestionsModule />}
+            {activeModule === 'whatifsimulator' && <WhatIfSimulatorModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-35 · Part 5 MES · 303 Database Tables · Recipe & Formula Engine</p>
+              <p className="mt-1">Sprints 1-36 · Part 5 MES · 312 Database Tables · Production Planning & MRP Engine</p>
             </div>
           </main>
         </div>

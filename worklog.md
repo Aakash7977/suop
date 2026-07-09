@@ -2250,3 +2250,42 @@ Stage Summary:
 - Total project state: Sprints 1-35 complete, 303 database tables, 72+ ERP modules + mobile app + React Native app
 - Chief Architect Recommendation implemented: Recipe separated from Production Instructions (mixing sequence, cooking temp/duration, cooling time, rolling thickness, cutting dimensions, silver leaf application, packing instructions, quality checkpoints)
 - Next: Sprint 36 — Production Planning, MRP & Master Production Scheduling
+
+---
+Task ID: 36
+Agent: Main Agent (Super Z)
+Task: Sprint 36 — Production Planning, MRP & Master Production Scheduling (Part 5 MES Sprint 3 of 15)
+
+Work Log:
+- Added 9 new Sprint 36 Prisma models (312 total tables):
+  * Epic 1: `MasterProductionSchedule`, `MPSLine` (schedule, line, shift, demand source, batches)
+  * Epic 2: `MRPRun`, `MRPResult`, `MaterialShortage` (demand−available−reserved+safety=net req, shortage tracking)
+  * Epic 3: `DemandForecast` (6 demand channels: sales/retail/restaurant/distributor/export/safety stock)
+  * Epic 4: `CapacityPlan` (machine hours, operator hours, utilization, overload/bottleneck detection)
+  * Epic 5: `PurchaseRecommendation` (supplier, lead time, priority, cost, suggested order date)
+  * Epic 7: `ProductionPlan` (MPS link, shifts, batches, total quantity)
+  * Epic 8: `WhatIfSimulation` (5 scenario types, material/capacity/cost/shortage impact as JSON)
+- Added 8 new Sprint 36 frontend modules (~2,500 lines):
+  1. `PlanningDashboardModule` — 6 KPIs, production planning flow diagram (11 steps), today's production plan, material availability summary
+  2. `MPSConsoleModule` — 8 MPS lines with product/line/qty/shift/demand source, MPS metadata header
+  3. `MRPWorkbenchModule` — 9 material results with MRP formula visualization, run MRP button, shortage/purchase suggestion indicators
+  4. `DemandPlanningModule` — 6 products with 6 demand channels (sales/retail/restaurant/distributor/export/safety), forecast method badges, confidence bars
+  5. `CapacityPlannerModule` — 6 production lines with available/required hours, utilization bars, overload/underutilized/balanced status
+  6. `MaterialShortageModule` — 5 shortages with severity colors, affected products, resolution workflow diagram, alternate material indicator
+  7. `PurchaseSuggestionsModule` — 6 recommendations with supplier, lead time, required date, order-by date, cost, priority, create PO button
+  8. `WhatIfSimulatorModule` — 5 scenario types (demand increase/price change/supplier delay/machine breakdown/capacity reduction), interactive parameter input, simulated material/capacity/cost/shortage impact with recommendations
+- Added 9 new backend API endpoints under `/api/planning/*`:
+  * `GET /dashboard`, `GET /mps`, `POST /mrp/run`, `GET /demand`, `GET /capacity`
+  * `GET /shortages`, `GET /purchase-suggestions`, `POST /simulate`, `GET /info`
+- Added 8 new module entries to sidebar, moduleNames, ModuleKey, and routing
+- Updated header badge: `Sprint 36 · 312 Tables · Part 5 MES`
+- Backend `info` endpoint includes MRP formula and Chief Architect Recommendation (multi-channel unified demand)
+- Verified `npm run build` succeeds
+- Verified backend starts with all 9 planning endpoints
+
+Stage Summary:
+- Sprint 36 implementation COMPLETE: 9 new Prisma models, 8 new frontend modules (~2,500 LOC), 9 new API endpoints
+- Part 5 MES: Sprint 3 of 15 complete (20%)
+- Total project state: Sprints 1-36 complete, 312 database tables, 80+ ERP modules + mobile app + React Native app
+- Chief Architect Recommendation implemented: Multi-channel demand (Retail POS + Restaurant POS + Distributor + Export + Safety Stock) → Unified Demand → MPS → MRP → Production Plan → Purchase Suggestions. POS systems remain billing-only, supply demand data to SUOP.
+- Next: Sprint 37 — Production Orders, Work Orders & Shop Floor Scheduling

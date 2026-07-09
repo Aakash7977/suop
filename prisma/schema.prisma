@@ -10705,3 +10705,351 @@ model CostRollup {
   @@index([recipeId, costType], map: "idx_cr_recipe_type")
   @@index([calculatedAt], map: "idx_cr_calculated")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 36 — PRODUCTION PLANNING, MRP & MASTER PRODUCTION SCHED
+// Epic 1: MPS · Epic 2: MRP · Epic 3: Demand · Epic 4: Capacity
+// Epic 5: Purchase · Epic 6: Shortage · Epic 7: Calendar · Epic 8: Simulation
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Master Production Schedule (MPS) ───────────
+model MasterProductionSchedule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scheduleNumber      String   @unique @map("schedule_number")
+  // ─── Scope ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Planner ───
+  plannerId           String?  @db.Uuid @map("planner_id")
+  plannerName         String?  @map("planner_name")
+  // ─── Version ───
+  version             Int      @default(1)
+  // ─── Status ───
+  status              String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, ACTIVE, COMPLETED, CANCELLED
+  approvalStatus      String   @default("PENDING") // PENDING, UNDER_REVIEW, APPROVED, REJECTED
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Summary ───
+  totalProducts       Int      @default(0) @map("total_products")
+  totalQuantity       Decimal  @db.Decimal(14, 3) @default(0) @map("total_quantity")
+  totalUom            String   @default("KG") @map("total_uom")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  lines               MPSLine[]
+
+  @@map("master_production_schedule")
+  @@index([plantId, periodType, periodStart], map: "idx_mps_plant_period")
+  @@index([status], map: "idx_mps_status")
+}
+
+model MPSLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  mpsId               String   @db.Uuid @map("mps_id")
+  lineNo              Int      @map("line_no")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  recipeId            String?  @db.Uuid @map("recipe_id")
+  recipeCode          String?  @map("recipe_code")
+  // ─── Production ───
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  plannedQuantity     Decimal  @db.Decimal(14, 3) @map("planned_quantity")
+  uom                 String   @default("KG")
+  // ─── Schedule ───
+  plannedDate         DateTime @map("planned_date")
+  plannedShift        String?  @map("planned_shift") // MORNING, AFTERNOON, NIGHT
+  // ─── Demand Source ───
+  demandSource        String   @map("demand_source") // SALES_ORDER, RETAIL_POS, RESTAURANT_POS, FORECAST, SAFETY_STOCK, DISTRIBUTOR, EXPORT
+  demandQuantity      Decimal  @db.Decimal(14, 3) @map("demand_quantity")
+  // ─── Batches ───
+  estimatedBatches    Int?     @map("estimated_batches")
+  // ─── Status ───
+  status              String   @default("PLANNED") // PLANNED, SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  mps                 MasterProductionSchedule @relation(fields: [mpsId], references: [id], onDelete: Cascade)
+
+  @@map("mps_lines")
+  @@index([mpsId, lineNo], map: "idx_mpsl_mps_line")
+  @@index([plannedDate], map: "idx_mpsl_date")
+}
+
+// ─── Epic 2: Material Requirements Planning (MRP) ───────
+model MRPRun {
+  id                  String   @id @default(uuid()) @db.Uuid
+  runNumber           String   @unique @map("run_number")
+  // ─── Scope ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  mpsId               String?  @db.Uuid @map("mps_id")
+  mpsNumber           String?  @map("mps_number")
+  // ─── Period ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Run ───
+  runType             String   @default("FULL") // FULL, INCREMENTAL, SIMULATION
+  runBy               String?  @map("run_by")
+  runStartedAt        DateTime @default(now()) @map("run_started_at")
+  runCompletedAt      DateTime? @map("run_completed_at")
+  durationSeconds     Int?     @map("duration_seconds")
+  // ─── Summary ───
+  totalMaterials      Int      @default(0) @map("total_materials")
+  totalShortages      Int      @default(0) @map("total_shortages")
+  totalPurchaseSuggestions Int  @default(0) @map("total_purchase_suggestions")
+  totalProductionSuggestions Int @default(0) @map("total_production_suggestions")
+  // ─── Status ───
+  status              String   @default("RUNNING") // RUNNING, COMPLETED, FAILED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  results             MRPResult[]
+  shortages           MaterialShortage[]
+
+  @@map("mrp_runs")
+  @@index([plantId, periodStart], map: "idx_mrp_plant_period")
+  @@index([status], map: "idx_mrp_status")
+}
+
+model MRPResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  mrpRunId            String   @db.Uuid @map("mrp_run_id")
+  // ─── Material ───
+  materialId          String?  @db.Uuid @map("material_id")
+  materialSku         String   @map("material_sku")
+  materialName        String   @map("material_name")
+  materialType        String   @default("RAW_MATERIAL") // RAW_MATERIAL, PACKAGING, SEMI_FINISHED
+  // ─── Calculation ───
+  grossDemand         Decimal  @db.Decimal(14, 3) @default(0) @map("gross_demand")
+  availableInventory  Decimal  @db.Decimal(14, 3) @default(0) @map("available_inventory")
+  reservedInventory   Decimal  @db.Decimal(14, 3) @default(0) @map("reserved_inventory")
+  safetyStock         Decimal  @db.Decimal(14, 3) @default(0) @map("safety_stock")
+  netRequirement      Decimal  @db.Decimal(14, 3) @default(0) @map("net_requirement")
+  // ─── Suggestion ───
+  suggestionType      String   @map("suggestion_type") // PURCHASE, PRODUCE, TRANSFER, NONE
+  suggestedQuantity   Decimal  @db.Decimal(14, 3) @default(0) @map("suggested_quantity")
+  suggestedDate       DateTime? @map("suggested_date")
+  // ─── Supplier ───
+  suggestedSupplierId String?  @db.Uuid @map("suggested_supplier_id")
+  suggestedSupplierName String? @map("suggested_supplier_name")
+  leadTimeDays        Int?     @map("lead_time_days")
+  // ─── Status ───
+  isShortage          Boolean  @default(false) @map("is_shortage")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  mrpRun              MRPRun @relation(fields: [mrpRunId], references: [id], onDelete: Cascade)
+
+  @@map("mrp_results")
+  @@index([mrpRunId, materialSku], map: "idx_mrr_run_material")
+  @@index([isShortage], map: "idx_mrr_shortage")
+}
+
+model MaterialShortage {
+  id                  String   @id @default(uuid()) @db.Uuid
+  mrpRunId            String   @db.Uuid @map("mrp_run_id")
+  // ─── Material ───
+  materialSku         String   @map("material_sku")
+  materialName        String   @map("material_name")
+  materialType        String   @map("material_type")
+  // ─── Shortage ───
+  requiredQuantity    Decimal  @db.Decimal(14, 3) @map("required_quantity")
+  availableQuantity   Decimal  @db.Decimal(14, 3) @map("available_quantity")
+  shortageQuantity    Decimal  @db.Decimal(14, 3) @map("shortage_quantity")
+  // ─── Impact ───
+  severity            String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  affectedProducts    String[] @default([]) @map("affected_products")
+  affectedOrders      Int      @default(0) @map("affected_orders")
+  // ─── Resolution ───
+  resolutionType      String?  @map("resolution_type") // PURCHASE, ALTERNATE, TRANSFER, PRODUCE, MANUAL
+  resolutionStatus    String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, BLOCKED
+  resolvedById        String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName      String?  @map("resolved_by_name")
+  resolvedAt          DateTime? @map("resolved_at")
+  resolutionNotes     String?  @map("resolution_notes")
+  // ─── Alternate ───
+  hasAlternate        Boolean  @default(false) @map("has_alternate")
+  alternateMaterialSku String? @map("alternate_material_sku")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  mrpRun              MRPRun @relation(fields: [mrpRunId], references: [id], onDelete: Cascade)
+
+  @@map("material_shortages")
+  @@index([mrpRunId, severity], map: "idx_ms_run_severity")
+  @@index([resolutionStatus], map: "idx_ms_resolution")
+}
+
+// ─── Epic 3: Demand Planning ────────────────────────────
+model DemandForecast {
+  id                  String   @id @default(uuid()) @db.Uuid
+  forecastCode        String   @unique @map("forecast_code")
+  // ─── Product ───
+  productId           String?  @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Demand by Channel ───
+  salesOrderDemand    Decimal  @db.Decimal(14, 3) @default(0) @map("sales_order_demand")
+  retailPosDemand     Decimal  @db.Decimal(14, 3) @default(0) @map("retail_pos_demand")
+  restaurantPosDemand Decimal  @db.Decimal(14, 3) @default(0) @map("restaurant_pos_demand")
+  distributorDemand   Decimal  @db.Decimal(14, 3) @default(0) @map("distributor_demand")
+  exportDemand        Decimal  @db.Decimal(14, 3) @default(0) @map("export_demand")
+  safetyStockDemand   Decimal  @db.Decimal(14, 3) @default(0) @map("safety_stock_demand")
+  // ─── Total ───
+  totalDemand         Decimal  @db.Decimal(14, 3) @default(0) @map("total_demand")
+  // ─── Forecast ───
+  forecastMethod      String   @default("MOVING_AVERAGE") // MOVING_AVERAGE, SEASONAL_TREND, MANUAL_OVERRIDE, AI_FORECAST
+  forecastQuantity    Decimal  @db.Decimal(14, 3) @default(0) @map("forecast_quantity")
+  confidencePct       Int      @default(70) @map("confidence_pct")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("demand_forecasts")
+  @@index([productSku, periodStart], map: "idx_df_product_period")
+  @@index([periodStart], map: "idx_df_period")
+}
+
+// ─── Epic 4: Capacity Planning ──────────────────────────
+model CapacityPlan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planCode            String   @unique @map("plan_code")
+  // ─── Scope ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Period ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Capacity ───
+  availableHours      Decimal  @db.Decimal(10, 2) @default(0) @map("available_hours")
+  requiredHours       Decimal  @db.Decimal(10, 2) @default(0) @map("required_hours")
+  utilizationPct      Decimal  @db.Decimal(5, 2) @default(0) @map("utilization_pct")
+  // ─── Capacity by Type ───
+  machineHoursAvail   Decimal  @db.Decimal(10, 2) @default(0) @map("machine_hours_avail")
+  machineHoursReq     Decimal  @db.Decimal(10, 2) @default(0) @map("machine_hours_req")
+  operatorHoursAvail  Decimal  @db.Decimal(10, 2) @default(0) @map("operator_hours_avail")
+  operatorHoursReq    Decimal  @db.Decimal(10, 2) @default(0) @map("operator_hours_req")
+  // ─── Status ───
+  status              String   @default("BALANCED") // BALANCED, OVERLOAD, UNDERUTILIZED, BOTTLENECK
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("capacity_plans")
+  @@index([plantId, periodStart], map: "idx_cp_plant_period")
+  @@index([status], map: "idx_cp_status")
+}
+
+// ─── Epic 5: Purchase Recommendation ────────────────────
+model PurchaseRecommendation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recommendationCode  String   @unique @map("recommendation_code")
+  mrpRunId            String?  @db.Uuid @map("mrp_run_id")
+  // ─── Material ───
+  materialSku         String   @map("material_sku")
+  materialName        String   @map("material_name")
+  // ─── Requirement ───
+  requiredQuantity    Decimal  @db.Decimal(14, 3) @map("required_quantity")
+  availableQuantity   Decimal  @db.Decimal(14, 3) @map("available_quantity")
+  suggestedQuantity   Decimal  @db.Decimal(14, 3) @map("suggested_quantity")
+  uom                 String   @default("KG")
+  // ─── Supplier ───
+  suggestedSupplierId String?  @db.Uuid @map("suggested_supplier_id")
+  suggestedSupplierName String? @map("suggested_supplier_name")
+  // ─── Timing ───
+  requiredDate        DateTime @map("required_date")
+  leadTimeDays        Int      @default(7) @map("lead_time_days")
+  suggestedOrderDate  DateTime @map("suggested_order_date")
+  // ─── Priority ───
+  priority            String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Cost ───
+  estimatedUnitCost   Decimal? @db.Decimal(10, 2) @map("estimated_unit_cost")
+  estimatedTotalCost  Decimal? @db.Decimal(12, 2) @map("estimated_total_cost")
+  // ─── Status ───
+  status              String   @default("PENDING") // PENDING, APPROVED, CONVERTED_TO_PO, REJECTED, EXPIRED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("purchase_recommendations")
+  @@index([status, priority], map: "idx_pr_status_priority")
+  @@index([requiredDate], map: "idx_pr_required_date")
+}
+
+// ─── Epic 7: Production Plan ────────────────────────────
+model ProductionPlan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planCode            String   @unique @map("plan_code")
+  // ─── MPS Link ───
+  mpsId               String?  @db.Uuid @map("mps_id")
+  mpsNumber           String?  @map("mps_number")
+  // ─── Scope ───
+  plantId             String   @db.Uuid @map("plant_id")
+  plantName           String   @map("plant_name")
+  // ─── Period ───
+  periodType          String   @map("period_type")
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Plan ───
+  totalProducts       Int      @default(0) @map("total_products")
+  totalBatches        Int      @default(0) @map("total_batches")
+  totalQuantity       Decimal  @db.Decimal(14, 3) @default(0) @map("total_quantity")
+  uom                 String   @default("KG")
+  // ─── Shifts ───
+  morningShifts       Int      @default(0) @map("morning_shifts")
+  afternoonShifts     Int      @default(0) @map("afternoon_shifts")
+  nightShifts         Int      @default(0) @map("night_shifts")
+  overtimeShifts      Int      @default(0) @map("overtime_shifts")
+  // ─── Status ───
+  status              String   @default("DRAFT") // DRAFT, APPROVED, ACTIVE, COMPLETED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("production_plans")
+  @@index([plantId, periodStart], map: "idx_pp_plant_period")
+  @@index([status], map: "idx_pp_status")
+}
+
+// ─── Epic 8: What-If Simulation ─────────────────────────
+model WhatIfSimulation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  simulationCode      String   @unique @map("simulation_code")
+  simulationName      String   @map("simulation_name")
+  // ─── Scenario ───
+  scenarioType        String   @map("scenario_type") // DEMAND_INCREASE, PRICE_CHANGE, SUPPLIER_DELAY, MACHINE_BREAKDOWN, CAPACITY_REDUCTION
+  scenarioParams      Json     @map("scenario_params") // { demandIncreasePct: 20, ... }
+  // ─── Base ───
+  baseMpsId           String?  @db.Uuid @map("base_mps_id")
+  // ─── Results ───
+  materialImpact      Json?    @map("material_impact") // [{ material, baseReq, simulatedReq, delta }]
+  capacityImpact      Json?    @map("capacity_impact") // [{ line, baseUtil, simulatedUtil, delta }]
+  costImpact          Json?    @map("cost_impact") // { baseCost, simulatedCost, delta }
+  shortageImpact      Json?    @map("shortage_impact") // { baseShortages, simulatedShortages, newShortages }
+  // ─── Summary ───
+  summaryText         String?  @map("summary_text")
+  recommendationText  String?  @map("recommendation_text")
+  // ─── Status ───
+  status              String   @default("COMPLETED") // RUNNING, COMPLETED, FAILED
+  // ─── Audit ───
+  simulatedBy         String?  @map("simulated_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("what_if_simulations")
+  @@index([scenarioType], map: "idx_wis_type")
+  @@index([createdAt], map: "idx_wis_created")
+}
