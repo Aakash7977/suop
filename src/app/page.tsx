@@ -13390,8 +13390,13 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 30 · 261 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 31 · 268 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
+          <a href="/mobile" target="_blank" rel="noopener noreferrer">
+            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
+              <Smartphone className="mr-1 h-4 w-4" />Launch Mobile App
+            </Button>
+          </a>
         </header>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden suop-main-scroll" style={{ scrollBehavior: 'smooth' }}>
@@ -13459,7 +13464,7 @@ export default function Home() {
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-30 · Part 4 WMS (Warehouse Foundation, Locations, Receiving, Putaway, Picking & Packing, Dispatch, Wave Planning, Cross-Docking & Yard, Resource & Equipment Management) · 261 Database Tables</p>
+              <p className="mt-1">Sprints 1-31 · Part 4 WMS (Warehouse Foundation → Mobile Platform & Barcode Scanning App) · 268 Database Tables · Launch Mobile App →</p>
             </div>
           </main>
         </div>

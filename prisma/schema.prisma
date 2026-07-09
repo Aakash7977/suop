@@ -9228,3 +9228,234 @@ model OperatorCertification {
   @@index([certificationType, status], map: "idx_oc_type_status")
   @@index([validUntil], map: "idx_oc_valid_until")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 31 — WAREHOUSE MOBILE PLATFORM & BARCODE SCANNING APP
+// Epic 1: Auth & Device · Epic 5: Offline Sync · Epic 7: Notifications
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Device Session & Token ─────────────────────
+model MobileDeviceSession {
+  id                  String   @id @default(uuid()) @db.Uuid
+  sessionCode         String   @unique @map("session_code")
+  // ─── Device ───
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  imei                String?  @map("imei")
+  // ─── Operator ───
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Auth ───
+  loginMethod         String   @map("login_method") // EMPLOYEE_LOGIN, PIN_LOGIN, BIOMETRIC_LOGIN, QR_LOGIN, OFFLINE_LOGIN
+  jwtToken            String?  @map("jwt_token")
+  refreshToken        String?  @map("refresh_token")
+  // ─── Session ───
+  loginAt             DateTime @default(now()) @map("login_at")
+  logoutAt            DateTime? @map("logout_at")
+  lastActivityAt      DateTime @default(now()) @map("last_activity_at")
+  expiresAt           DateTime @map("expires_at")
+  // ─── Network ───
+  ipAddress           String?  @map("ip_address")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, EXPIRED, LOGGED_OUT, REVOKED, FORCE_LOGOUT
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("mobile_device_sessions")
+  @@index([deviceId, status], map: "idx_mds_device_status")
+  @@index([operatorId, status], map: "idx_mds_op_status")
+  @@index([expiresAt], map: "idx_mds_expires")
+}
+
+model DeviceToken {
+  id                  String   @id @default(uuid()) @db.Uuid
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  // ─── Token ───
+  tokenType           String   @map("token_type") // FCM, APNS, PUSH, VAPID
+  token               String   @unique @map("token")
+  // ─── Operator ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  // ─── Status ───
+  isActive            Boolean  @default(true) @map("is_active")
+  lastUsedAt          DateTime? @map("last_used_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("device_tokens")
+  @@index([deviceId, isActive], map: "idx_dt_device_active")
+  @@index([operatorId], map: "idx_dt_operator")
+}
+
+// ─── Epic 5: Offline Sync Engine ────────────────────────
+model OfflineTransaction {
+  id                  String   @id @default(uuid()) @db.Uuid
+  transactionCode     String   @unique @map("transaction_code")
+  // ─── Device ───
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  // ─── Transaction ───
+  transactionType     String   @map("transaction_type") // RECEIVE, PUTAWAY, PICK, TRANSFER, COUNT, DISPATCH, INSPECT
+  taskId              String?  @db.Uuid @map("task_id")
+  taskNumber          String?  @map("task_number")
+  // ─── Scan Data ───
+  barcodeScanned      String?  @map("barcode_scanned")
+  barcodeType         String?  @map("barcode_type") // CODE_128, CODE_39, EAN_13, EAN_8, UPC, QR_CODE, GS1_128, GS1_DATAMATRIX, PDF417, AZTEC
+  productSku          String?  @map("product_sku")
+  batchNumber         String?  @map("batch_number")
+  binCode             String?  @map("bin_code")
+  // ─── Qty ───
+  qty                 Decimal  @db.Decimal(18, 4) @default(0)
+  uom                 String?  @map("uom")
+  // ─── Crypto Signature ───
+  payload             Json     @map("payload")
+  signature           String   @map("signature") // HMAC signature for tamper-evidence
+  // ─── Status ───
+  status              String   @default("PENDING_SYNC") // PENDING_SYNC, SYNCING, SYNCED, CONFLICT, FAILED, CANCELLED
+  // ─── Offline Timestamp ───
+  offlineCreatedAt    DateTime @default(now()) @map("offline_created_at")
+  syncedAt            DateTime? @map("synced_at")
+  // ─── Conflict ───
+  conflictReason      String?  @map("conflict_reason")
+  conflictResolution  String?  @map("conflict_resolution") // OVERWRITE_SERVER, KEEP_SERVER, MERGE, MANUAL_REVIEW
+  resolvedById        String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName      String?  @map("resolved_by_name")
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("offline_transactions")
+  @@index([deviceId, status], map: "idx_ot_device_status")
+  @@index([status], map: "idx_ot_status")
+  @@index([operatorId], map: "idx_ot_operator")
+  @@index([offlineCreatedAt], map: "idx_ot_offline_time")
+}
+
+model SyncQueue {
+  id                  String   @id @default(uuid()) @db.Uuid
+  queueCode           String   @unique @map("queue_code")
+  // ─── Transaction ───
+  offlineTransactionId String? @db.Uuid @map("offline_transaction_id")
+  transactionCode     String?  @map("transaction_code")
+  // ─── Device ───
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  // ─── Sync ───
+  syncType            String   @map("sync_type") // TRANSACTION, MASTER_DATA, TASK_PUSH, DEVICE_CONFIG
+  priority            Int      @default(50) @map("priority") // 0-100
+  // ─── Retry ───
+  attemptCount        Int      @default(0) @map("attempt_count")
+  maxAttempts         Int      @default(5) @map("max_attempts")
+  lastAttemptAt       DateTime? @map("last_attempt_at")
+  nextAttemptAt       DateTime? @map("next_attempt_at")
+  lastError           String?  @map("last_error")
+  // ─── Status ───
+  status              String   @default("QUEUED") // QUEUED, PROCESSING, COMPLETED, FAILED, RETRY, CANCELLED
+  // ─── Audit ───
+  enqueuedAt          DateTime @default(now()) @map("enqueued_at")
+  completedAt         DateTime? @map("completed_at")
+
+  @@map("sync_queue")
+  @@index([deviceId, status], map: "idx_sq_device_status")
+  @@index([status, priority], map: "idx_sq_status_priority")
+  @@index([nextAttemptAt], map: "idx_sq_next_attempt")
+}
+
+model SyncHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  // ─── Sync Session ───
+  syncSessionCode     String   @map("sync_session_code")
+  syncDirection       String   @map("sync_direction") // UPLOAD, DOWNLOAD, BIDIRECTIONAL
+  // ─── Counts ───
+  transactionsUploaded Int     @default(0) @map("transactions_uploaded")
+  transactionsDownloaded Int   @default(0) @map("transactions_downloaded")
+  conflictsCount      Int      @default(0) @map("conflicts_count")
+  failedCount         Int      @default(0) @map("failed_count")
+  // ─── Timing ───
+  startedAt           DateTime @default(now()) @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  durationSeconds     Int?     @map("duration_seconds")
+  // ─── Network ───
+  networkType         String?  @map("network_type") // WIFI, 4G, 3G, ETHERNET
+  // ─── Status ───
+  status              String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, PARTIAL, FAILED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("sync_history")
+  @@index([deviceId, startedAt], map: "idx_sh_device_time")
+  @@index([status], map: "idx_sh_status")
+}
+
+// ─── Epic 7: Notifications ──────────────────────────────
+model MobileNotification {
+  id                  String   @id @default(uuid()) @db.Uuid
+  notificationCode    String   @unique @map("notification_code")
+  // ─── Recipient ───
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  deviceId            String?  @db.Uuid @map("device_id")
+  // ─── Notification ───
+  notificationType    String   @map("notification_type") // TASK_ASSIGNED, PRIORITY_ORDER, EMERGENCY_TASK, LOW_BATTERY, SYNC_FAILURE, SYSTEM_MAINTENANCE, WAREHOUSE_ALERT, TASK_REASSIGNED
+  title               String
+  message             String
+  priority            String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Action ───
+  actionType          String?  @map("action_type") // OPEN_TASK, OPEN_SYNC, OPEN_LOOKUP, DISMISS
+  actionPayload       Json?    @map("action_payload")
+  // ─── Delivery ───
+  deliveryChannel     String[] @default(['IN_APP']) @map("delivery_channel") // IN_APP, PUSH, VIBRATION, VOICE
+  deliveredAt         DateTime? @map("delivered_at")
+  readAt              DateTime? @map("read_at")
+  dismissedAt         DateTime? @map("dismissed_at")
+  // ─── Status ───
+  status              String   @default("PENDING") // PENDING, DELIVERED, READ, DISMISSED, FAILED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("mobile_notifications")
+  @@index([operatorId, status], map: "idx_mn_op_status")
+  @@index([priority, status], map: "idx_mn_priority_status")
+  @@index([createdAt], map: "idx_mn_created")
+}
+
+// ─── Epic 3: Scan Event Audit ───────────────────────────
+model ScanEvent {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scanCode            String   @unique @map("scan_code")
+  // ─── Device & Operator ───
+  deviceId            String   @db.Uuid @map("device_id")
+  deviceCode          String   @map("device_code")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorCode        String?  @map("operator_code")
+  // ─── Scan ───
+  barcodeValue       String   @map("barcode_value")
+  barcodeType         String   @map("barcode_type") // CODE_128, CODE_39, EAN_13, EAN_8, UPC, QR_CODE, GS1_128, GS1_DATAMATRIX, PDF417, AZTEC
+  scanSource          String   @map("scan_source") // CAMERA, INDUSTRIAL_SCANNER, BLUETOOTH_SCANNER, SOFTWARE
+  // ─── Context ───
+  taskType            String?  @map("task_type") // RECEIVE, PUTAWAY, PICK, TRANSFER, COUNT, DISPATCH, LOOKUP
+  taskId              String?  @db.Uuid @map("task_id")
+  // ─── Validation ───
+  validationResult    String   @map("validation_result") // VALID, WRONG_PRODUCT, WRONG_BATCH, WRONG_BIN, WRONG_QTY, DUPLICATE_SCAN, UNKNOWN_BARCODE
+  validationMessage   String?  @map("validation_message")
+  // ─── Performance ───
+  scanDurationMs      Int?     @map("scan_duration_ms")
+  // ─── Timestamp ───
+  scannedAt           DateTime @default(now()) @map("scanned_at")
+
+  @@map("scan_events")
+  @@index([deviceId, scannedAt], map: "idx_se_device_time")
+  @@index([operatorId, scannedAt], map: "idx_se_op_time")
+  @@index([validationResult], map: "idx_se_validation")
+  @@index([barcodeValue], map: "idx_se_barcode")
+}

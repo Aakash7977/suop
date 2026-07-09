@@ -7906,14 +7906,264 @@ const server = Bun.serve({
       }, 'SUOP Warehouse Resource & Equipment Management Engine v30.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 31 — WAREHOUSE MOBILE PLATFORM & BARCODE SCANNING
+    // ═════════════════════════════════════════════════════════
+
+    // POST /api/mobile/login — Mobile operator login
+    if (path === '/api/mobile/login' && method === 'POST') {
+      const body = await req.json()
+      const session = {
+        sessionCode: `SESS-${Date.now()}`,
+        operatorId: 'op-001',
+        operatorCode: body.operatorCode || 'OP-001',
+        operatorName: 'Rajesh Kumar',
+        warehouseId: 'wh-001',
+        warehouseName: 'WH-MUM-MAIN',
+        loginMethod: body.loginMethod || 'PIN_LOGIN',
+        jwtToken: `jwt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        refreshToken: `refresh-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        loginAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
+        status: 'ACTIVE',
+      }
+      return new Response(JSON.stringify(successResponse(session, 'Operator logged in successfully')), { headers })
+    }
+
+    // POST /api/mobile/register — Register mobile device
+    if (path === '/api/mobile/register' && method === 'POST') {
+      const body = await req.json()
+      const device = {
+        id: `md-${Date.now()}`,
+        deviceCode: body.deviceCode || `DEV-${Math.floor(Math.random() * 9000) + 1000}`,
+        deviceName: body.deviceName,
+        deviceType: body.deviceType || 'ANDROID_SCANNER',
+        manufacturer: body.manufacturer,
+        model: body.model,
+        serialNumber: body.serialNumber,
+        imei: body.imei,
+        operatingSystem: body.operatingSystem || 'Android',
+        osVersion: body.osVersion,
+        warehouseId: body.warehouseId,
+        warehouseName: body.warehouseName,
+        status: 'REGISTERED',
+        registeredAt: new Date().toISOString(),
+        message: 'Device registered — binding confirmed with warehouse',
+      }
+      return new Response(JSON.stringify(successResponse(device, 'Device registered')), { status: 201, headers })
+    }
+
+    // POST /api/mobile/logout — Logout
+    if (path === '/api/mobile/logout' && method === 'POST') {
+      return new Response(JSON.stringify(successResponse({ status: 'LOGGED_OUT', logoutAt: new Date().toISOString() }, 'Operator logged out')), { headers })
+    }
+
+    // GET /api/mobile/profile — Get operator profile
+    if (path === '/api/mobile/profile' && method === 'GET') {
+      const profile = {
+        operatorId: 'op-001', operatorCode: 'OP-001', operatorName: 'Rajesh Kumar',
+        warehouseId: 'wh-001', warehouseName: 'WH-MUM-MAIN',
+        primaryZoneName: 'C-Picking', shiftName: 'Morning (06:00-14:00)',
+        skillLevel: 'EXPERT', overallRating: 92,
+        certifications: ['FORKLIFT_LICENSE', 'REACH_TRUCK', 'SAFETY_TRAINING'],
+        assignedEquipment: [{ type: 'FORKLIFT', code: 'FL-001' }, { type: 'SCANNER', code: 'SC-001' }],
+        todayStats: { tasksCompleted: 14, tasksPending: 3, accuracyPercent: 98.5, utilizationPercent: 87 },
+        device: { code: 'MD-002', name: 'Zebra TC52', batteryPercent: 88, connectivityStatus: 'ONLINE' },
+      }
+      return new Response(JSON.stringify(successResponse(profile, 'Profile retrieved')), { headers })
+    }
+
+    // GET /api/mobile/tasks — Get assigned tasks for operator
+    if (path === '/api/mobile/tasks' && method === 'GET') {
+      const tasks = [
+        { id: 'wt-001', taskNumber: 'TASK-2026-001', taskType: 'PICK', priority: 'EMERGENCY', status: 'IN_PROGRESS', fromLocationCode: 'C-02-03-A', toLocationCode: 'PK-01', productSku: 'SK-KAJU-500', productName: 'Kaju Katli 500g', batchNumber: 'BATCH-2026-A018', plannedQty: '24', uom: 'PCS', slaDeadline: '2026-07-09T05:15:00Z', waveNumber: 'WAVE-2026-004' },
+        { id: 'wt-003', taskNumber: 'TASK-2026-003', taskType: 'PICK', priority: 'HIGH', status: 'OPEN', fromLocationCode: 'C-03-01-B', toLocationCode: 'PK-02', productSku: 'SK-MYSORE-250', productName: 'Mysore Pak 250g', batchNumber: 'BATCH-2026-B042', plannedQty: '48', uom: 'PCS', slaDeadline: '2026-07-09T06:00:00Z', waveNumber: 'WAVE-2026-001' },
+        { id: 'wt-011', taskNumber: 'TASK-2026-011', taskType: 'PUTAWAY', priority: 'NORMAL', status: 'OPEN', fromLocationCode: 'RECV-01', toLocationCode: 'B-01-02-C', productSku: 'SK-SAFFRON-10', productName: 'Saffron 10g', batchNumber: 'BATCH-2026-C015', plannedQty: '100', uom: 'PCS', slaDeadline: '2026-07-09T07:00:00Z', waveNumber: null },
+        { id: 'wt-015', taskNumber: 'TASK-2026-015', taskType: 'COUNT', priority: 'LOW', status: 'OPEN', fromLocationCode: 'B-01-01', toLocationCode: null, productSku: null, productName: 'Cycle Count Zone B1', batchNumber: null, plannedQty: null, uom: null, slaDeadline: '2026-07-09T12:30:00Z', waveNumber: null },
+      ]
+      return new Response(JSON.stringify(successResponse(tasks, 'Assigned tasks retrieved')), { headers })
+    }
+
+    // POST /api/mobile/scan — Process barcode scan
+    if (path === '/api/mobile/scan' && method === 'POST') {
+      const body = await req.json()
+      const scanResult = {
+        scanCode: `SCAN-${Date.now()}`,
+        barcodeValue: body.barcodeValue,
+        barcodeType: body.barcodeType || 'CODE_128',
+        scanSource: body.scanSource || 'INDUSTRIAL_SCANNER',
+        validationResult: 'VALID',
+        validationMessage: 'Barcode matched — product confirmed',
+        product: { sku: 'SK-KAJU-500', name: 'Kaju Katli 500g', batchNumber: 'BATCH-2026-A018', expiryDate: '2026-09-15' },
+        bin: { code: 'C-02-03-A', zone: 'C-Picking', availableQty: 156 },
+        scanDurationMs: Math.floor(Math.random() * 200) + 80,
+        scannedAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(scanResult, 'Scan processed in <300ms')), { headers })
+    }
+
+    // POST /api/mobile/tasks/:id/complete — Complete task from mobile
+    if (path.match(/^\/api\/mobile\/tasks\/[\w-]+\/complete$/) && method === 'POST') {
+      const taskId = path.split('/')[4]
+      const body = await req.json().catch(() => ({}))
+      const result = {
+        taskId, status: 'COMPLETED',
+        completedAt: new Date().toISOString(),
+        actualQty: body.actualQty || null,
+        durationSeconds: body.durationSeconds || null,
+        offlineTransactionCode: body.offlineTransactionCode || null,
+        nextTaskId: 'wt-003',
+        nextTaskNumber: 'TASK-2026-003',
+        message: 'Task completed from mobile — next task auto-pushed',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Task completed')), { headers })
+    }
+
+    // POST /api/mobile/sync — Sync offline transactions
+    if (path === '/api/mobile/sync' && method === 'POST') {
+      const body = await req.json().catch(() => ({}))
+      const result = {
+        syncSessionCode: `SYNC-${Date.now()}`,
+        syncDirection: 'BIDIRECTIONAL',
+        transactionsUploaded: body.transactions?.length || 12,
+        transactionsDownloaded: 3,
+        conflictsCount: 1,
+        failedCount: 0,
+        conflicts: [
+          { transactionCode: 'OFF-2026-018', conflictReason: 'Bin C-02-03-A qty changed by another operator', suggestedResolution: 'MERGE' },
+        ],
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationSeconds: 4,
+        status: 'PARTIAL',
+        message: 'Sync completed with 1 conflict requiring resolution',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Sync completed')), { headers })
+    }
+
+    // POST /api/mobile/sync/resolve — Resolve sync conflict
+    if (path === '/api/mobile/sync/resolve' && method === 'POST') {
+      const body = await req.json()
+      const result = {
+        transactionCode: body.transactionCode,
+        conflictResolution: body.resolution || 'MERGE',
+        resolvedAt: new Date().toISOString(),
+        status: 'SYNCED',
+        message: 'Conflict resolved — transaction synced to server',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Conflict resolved')), { headers })
+    }
+
+    // GET /api/mobile/sync/status — Sync status
+    if (path === '/api/mobile/sync/status' && method === 'GET') {
+      const status = {
+        isOnline: true,
+        lastSyncAt: '2026-07-09T05:30:00Z',
+        pendingUploads: 2,
+        pendingDownloads: 0,
+        failedSyncs: 0,
+        conflictsPending: 1,
+        storageUsed: '12.4 MB',
+        storageLimit: '50 MB',
+        networkType: 'WIFI',
+        syncHealth: 'GOOD',
+      }
+      return new Response(JSON.stringify(successResponse(status, 'Sync status retrieved')), { headers })
+    }
+
+    // GET /api/mobile/inventory-lookup — Inventory lookup
+    if (path === '/api/mobile/inventory-lookup' && method === 'GET') {
+      const results = [
+        { productSku: 'SK-KAJU-500', productName: 'Kaju Katli 500g', batchNumber: 'BATCH-2026-A018', binCode: 'C-02-03-A', availableQty: 156, reservedQty: 24, allocatedQty: 0, expiryDate: '2026-09-15', status: 'AVAILABLE' },
+        { productSku: 'SK-KAJU-500', productName: 'Kaju Katli 500g', batchNumber: 'BATCH-2026-A019', binCode: 'C-02-04-B', availableQty: 84, reservedQty: 0, allocatedQty: 0, expiryDate: '2026-09-22', status: 'AVAILABLE' },
+        { productSku: 'SK-KAJU-500', productName: 'Kaju Katli 500g', batchNumber: 'BATCH-2026-A015', binCode: 'B-01-03-A', availableQty: 12, reservedQty: 0, allocatedQty: 0, expiryDate: '2026-08-10', status: 'NEAR_EXPIRY' },
+      ]
+      return new Response(JSON.stringify(successResponse(results, 'Inventory lookup results')), { headers })
+    }
+
+    // GET /api/mobile/notifications — Notifications
+    if (path === '/api/mobile/notifications' && method === 'GET') {
+      const notifications = [
+        { id: 'mn-001', notificationType: 'TASK_ASSIGNED', title: 'New Task Assigned', message: 'TASK-2026-015 (Cycle Count) assigned to you', priority: 'NORMAL', status: 'DELIVERED', actionType: 'OPEN_TASK', createdAt: '2026-07-09T05:00:00Z' },
+        { id: 'mn-002', notificationType: 'EMERGENCY_TASK', title: 'EMERGENCY: Pick Task', message: 'TASK-2026-001 — Kaju Katli 500g, 24 PCS from C-02-03-A', priority: 'EMERGENCY', status: 'DELIVERED', actionType: 'OPEN_TASK', createdAt: '2026-07-09T04:45:00Z' },
+        { id: 'mn-003', notificationType: 'LOW_BATTERY', title: 'Low Battery Alert', message: 'Scanner SC-005 at 18% — please return to charging station', priority: 'HIGH', status: 'DELIVERED', actionType: 'DISMISS', createdAt: '2026-07-09T04:30:00Z' },
+        { id: 'mn-004', notificationType: 'SYNC_FAILURE', title: 'Sync Failed', message: '1 transaction failed to sync — will retry automatically', priority: 'NORMAL', status: 'DELIVERED', actionType: 'OPEN_SYNC', createdAt: '2026-07-09T04:15:00Z' },
+      ]
+      return new Response(JSON.stringify(successResponse(notifications, 'Notifications retrieved')), { headers })
+    }
+
+    // GET /api/mobile/dashboard — Mobile dashboard data
+    if (path === '/api/mobile/dashboard' && method === 'GET') {
+      const data = {
+        operator: { code: 'OP-001', name: 'Rajesh Kumar', shift: 'Morning (06:00-14:00)' },
+        todayStats: { tasksCompleted: 14, tasksPending: 3, tasksTotal: 17, accuracyPercent: 98.5, utilizationPercent: 87, hoursWorked: 4.5 },
+        assignedTasks: 4,
+        equipment: [{ type: 'FORKLIFT', code: 'FL-001', batteryPercent: 78 }, { type: 'SCANNER', code: 'SC-001', batteryPercent: 88 }],
+        device: { code: 'MD-002', batteryPercent: 88, isCharging: false, connectivityStatus: 'ONLINE', lastSyncAt: '2026-07-09T05:30:00Z' },
+        syncStatus: { isOnline: true, pendingUploads: 2, conflictsPending: 1, storageUsed: '12.4 MB' },
+        announcements: [
+          { title: 'Shift Change Reminder', message: 'Morning shift ends at 14:00 — please complete handover', priority: 'NORMAL' },
+          { title: 'New SKU Added', message: 'Shwet Idli Batter 1kg now available in Zone C', priority: 'LOW' },
+        ],
+        warehouseAlerts: [
+          { title: 'Dock DOCK-04 Maintenance', message: 'DOCK-04 unavailable until 12:00', severity: 'WARNING' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Dashboard data retrieved')), { headers })
+    }
+
+    // GET /api/mobile/info — Sprint 31 info
+    if (path === '/api/mobile/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 31,
+        sprintName: 'Enterprise Warehouse Mobile Platform & Barcode Scanning Application',
+        version: '31.0.0',
+        part: 4,
+        tables: 7,
+        epics: [
+          'Epic 1: Authentication & Device Registration (PIN/Biometric/QR/Offline login)',
+          'Epic 2: Warehouse Home Dashboard (tasks, performance, equipment, sync)',
+          'Epic 3: Barcode Scanning Engine (10 symbologies, <300ms target)',
+          'Epic 4: Task Execution Engine (8 task types: Receive/Putaway/Pick/Pack/Transfer/Count/Load/Inspect)',
+          'Epic 5: Offline Sync Engine (offline login, offline scan, conflict resolution, retry queue)',
+          'Epic 6: Inventory Lookup (by barcode/QR/product/batch/bin/serial/lot)',
+          'Epic 7: Notifications (task assigned, emergency, low battery, sync failure)',
+          'Epic 8: Mobile Settings (dark mode, language, scanner sensitivity, offline storage)',
+        ],
+        domainEvents: ['DeviceRegistered', 'OperatorLoggedIn', 'TaskAccepted', 'BarcodeScanned', 'TaskCompleted', 'OfflineSyncStarted', 'OfflineSyncCompleted', 'ConflictResolved'],
+        supportedDevices: ['Android Phone', 'Industrial Handheld', 'Zebra TC Series', 'Honeywell Scanner', 'Chainway', 'Urovo', 'Bluetooth Scanner', 'Built-in Camera Scanner', 'Android Tablet'],
+        supportedBarcodes: ['Code 128', 'Code 39', 'EAN-13', 'EAN-8', 'UPC', 'QR Code', 'GS1-128', 'GS1 DataMatrix', 'PDF417', 'Aztec'],
+        authPrinciple: 'Mobile Auth supports 5 login methods: EMPLOYEE_LOGIN (email+password), PIN_LOGIN (4-6 digit PIN), BIOMETRIC_LOGIN (fingerprint/face), QR_LOGIN (scan QR from desktop ERP), OFFLINE_LOGIN (cached credentials). JWT token + refresh token, 8-hour session, auto-renewal. Device binding: only registered devices can log in. Operators can only log in to assigned warehouses. Remote device logout and remote device wipe supported for lost devices.',
+        scannerPrinciple: 'Scanner Engine supports 4 scan modes: CONTINUOUS_SCAN (keep scanning for bulk operations), SINGLE_SCAN (one scan, then confirm), BULK_SCAN (accumulate multiple, then submit), LOOKUP_SCAN (scan to search inventory). 10 barcode symbologies supported. Validation: WRONG_PRODUCT, WRONG_BATCH, WRONG_BIN, WRONG_QTY, DUPLICATE_SCAN, UNKNOWN_BARCODE. Performance target: <300ms per scan including validation. Sources: CAMERA (built-in), INDUSTRIAL_SCANNER (Zebra/Honeywell hardware), BLUETOOTH_SCANNER (paired device), SOFTWARE (manual entry).',
+        offlinePrinciple: 'Offline Sync Engine enables full warehouse operations without network. Offline capabilities: login (cached credentials), task execution (pre-downloaded tasks), scanning (validated locally against cached master data), inventory lookup (cached). Every offline transaction is cryptographically signed (HMAC) for tamper-evidence. On reconnect: transactions uploaded, conflicts detected, resolution rules applied (OVERWRITE_SERVER, KEEP_SERVER, MERGE, MANUAL_REVIEW). Retry queue with exponential backoff. Max 5 attempts per transaction.',
+        conflictResolutionPrinciple: 'Conflict Resolution handles 4 scenarios: (1) Bin qty changed by another operator — MERGE (sum the changes), (2) Batch expired since offline — KEEP_SERVER (reject offline transaction), (3) Product moved to different bin — MANUAL_REVIEW (supervisor decides), (4) Duplicate scan detected — OVERWRITE_SERVER (latest wins). Conflicts require explicit resolution before transaction is marked SYNCED. All resolutions are audited.',
+        taskExecutionPrinciple: 'Task Execution follows 5-step workflow: Task → Scan → Validate → Confirm → Next Task. Maximum 3 taps to complete any operation after scanning. One screen = one task (no multi-tasking on mobile). Large touch targets for gloved operators. Voice and vibration feedback for successful and failed scans. Live task push from ERP (no manual selection). Next task auto-assigned based on priority + proximity + skill.',
+        mobileSecurityPrinciple: 'Mobile Security enforces: JWT authentication with refresh tokens, device binding (registered IMEI only), encrypted offline storage (AES-256), TLS 1.3 communication, role-based access (operator sees only assigned tasks), session timeout (8 hours), remote device logout, remote device wipe (for lost devices). Every mobile action generates an audit log. Cryptographic signatures on offline transactions prevent tampering.',
+        chiefArchitectRecommendation: 'For Sudhamrit, evolve the existing warehouse barcode scanning app into the SUOP Warehouse Execution App with these design principles: Scanner-first, keyboard-last. One screen = one task. Maximum 3 taps to complete any operation after scanning. Large touch targets for gloved operators. Full offline capability with automatic synchronization. Live task push from the ERP. Voice and vibration feedback for successful and failed scans. Support for industrial handheld scanners (Zebra, Honeywell, Chainway, Urovo) in addition to standard Android devices.',
+        endpoints: [
+          'POST /api/mobile/login', 'POST /api/mobile/register', 'POST /api/mobile/logout', 'GET /api/mobile/profile',
+          'GET /api/mobile/tasks', 'POST /api/mobile/tasks/:id/complete',
+          'POST /api/mobile/scan',
+          'POST /api/mobile/sync', 'POST /api/mobile/sync/resolve', 'GET /api/mobile/sync/status',
+          'GET /api/mobile/inventory-lookup',
+          'GET /api/mobile/notifications',
+          'GET /api/mobile/dashboard',
+          'GET /api/mobile/info',
+        ],
+        part4Sprint: 10,
+        part4Sprints: 12,
+        part4Tables: 83,
+      }, 'SUOP Warehouse Mobile Platform v31.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 30, sprintName: 'Warehouse Resource, Equipment & Maintenance Management Engine (30/33 sprints)' })
-log('info', 'Sprint 30 — Warehouse Resource & Equipment Management Engine', { sprint: 30, part: 4, tables: 261, equipment: 10, forklifts: 7, scanners: 6, mobileDevices: 4, batteries: 6, chargingStations: 4, maintenancePlans: 5, breakdowns: 6, certifications: 8 })
-log('info', 'Warehouse resource endpoints available (Sprint 30)', { equipment: 'GET/POST /api/equipment-master', forklifts: 'GET /api/forklifts', scanners: 'GET /api/barcode-scanners', mobileDevices: 'GET /api/mobile-devices', battery: 'GET /api/battery-status', chargingStations: 'GET /api/charging-stations', maintenancePlans: 'GET /api/maintenance-plans', maintenanceSchedule: 'GET /api/maintenance-schedule', maintenanceTasks: 'GET /api/maintenance-tasks', maintenanceComplete: 'POST /api/maintenance-tasks/:id/complete', breakdowns: 'GET/POST /api/equipment-breakdowns', breakdownRepair: 'POST /api/equipment-breakdowns/:id/repair', certifications: 'GET /api/operator-certifications', certValidate: 'POST /api/operator-certifications/validate', analytics: 'GET /api/equipment-analytics', info: 'GET /api/warehouse-resource/info' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 31, sprintName: 'Warehouse Mobile Platform & Barcode Scanning Application (31/33 sprints)' })
+log('info', 'Sprint 31 — Warehouse Mobile Platform', { sprint: 31, part: 4, tables: 268, mobileEndpoints: 14, barcodes: 10, devices: 9 })
+log('info', 'Mobile platform endpoints available (Sprint 31)', { login: 'POST /api/mobile/login', register: 'POST /api/mobile/register', logout: 'POST /api/mobile/logout', profile: 'GET /api/mobile/profile', tasks: 'GET /api/mobile/tasks', taskComplete: 'POST /api/mobile/tasks/:id/complete', scan: 'POST /api/mobile/scan', sync: 'POST /api/mobile/sync', syncResolve: 'POST /api/mobile/sync/resolve', syncStatus: 'GET /api/mobile/sync/status', inventoryLookup: 'GET /api/mobile/inventory-lookup', notifications: 'GET /api/mobile/notifications', dashboard: 'GET /api/mobile/dashboard', info: 'GET /api/mobile/info' })
 log('info', 'Dispatch & shipping endpoints available (Sprint 27)', { dispatchOrders: 'GET/POST /api/dispatch-orders', dispatchComplete: 'POST /api/dispatch-orders/:id/complete', dispatchVehicles: 'GET /api/dispatch-vehicles', loadPlans: 'GET /api/load-plans', shippingDocuments: 'GET /api/shipping-documents', vehicleSeals: 'GET /api/vehicle-seals', gateExitLogs: 'GET /api/gate-exit-logs', gateExitApprove: 'POST /api/gate-exit-logs/:id/approve', dashboard: 'GET /api/dispatch/dashboard', info: 'GET /api/dispatch/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })
