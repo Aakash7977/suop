@@ -6951,3 +6951,295 @@ model ForkliftTask {
   @@index([status, priority], map: "idx_ft_status_priority")
   @@index([putawayTaskId], map: "idx_ft_putaway")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 26 — PICKING, PACKING & ORDER FULFILLMENT ENGINE
+// Heart of warehouse outbound: orders become shipments
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Picking Task Engine ───────────────────────
+model WmsPickingTask {
+  id              String   @id @default(uuid()) @db.Uuid
+  pickingNumber   String   @unique @map("picking_number")
+  pickingDate     DateTime @default(now()) @map("picking_date")
+  // ─── Type ───
+  fulfillmentType String   @map("fulfillment_type") // RETAIL_ORDER, WHOLESALE_ORDER, DISTRIBUTOR_ORDER, RESTAURANT_REPLENISHMENT, BRANCH_TRANSFER, EXPORT_ORDER, CORPORATE_ORDER, ECOMMERCE_ORDER, SAMPLE_ORDER
+  pickingStrategy String   @map("picking_strategy") // SINGLE_ORDER, BATCH, ZONE, CLUSTER, WAVE, PICK_AND_PASS, CART, PALLET
+  // ─── Scope ───
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseName   String   @map("warehouse_name")
+  // ─── Wave ───
+  waveId          String?  @db.Uuid @map("wave_id")
+  waveNumber      String?  @map("wave_number")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // SALES_ORDER, TRANSFER_ORDER, PRODUCTION_ORDER
+  referenceNumber String?  @map("reference_number")
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  priorityScore   Int      @default(50) @map("priority_score")
+  // ─── Assignment ───
+  pickerId        String?  @db.Uuid @map("picker_id")
+  pickerName      String?  @map("picker_name")
+  assignedAt      DateTime? @map("assigned_at")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, ASSIGNED, IN_PROGRESS, PICKED, PACKING, PACKED, READY_TO_SHIP, DISPATCHED, CANCELLED, EXCEPTION
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  pickedLines     Int      @default(0) @map("picked_lines")
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  pickedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("picked_qty")
+  // ─── Pick path ───
+  pickRouteId     String?  @db.Uuid @map("pick_route_id")
+  totalDistanceM  Decimal? @db.Decimal(8, 2) @map("total_distance_m")
+  estimatedTimeMin Int?    @map("estimated_time_min")
+  // ─── Timing ───
+  startedAt       DateTime? @map("started_at")
+  pickedAt        DateTime? @map("picked_at")
+  packedAt        DateTime? @map("packed_at")
+  readyToShipAt   DateTime? @map("ready_to_ship_at")
+  dispatchedAt    DateTime? @map("dispatched_at")
+  pickDurationMin Int?     @map("pick_duration_min")
+  packDurationMin Int?     @map("pack_duration_min")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           WmsPickingTaskLine[]
+  packingJob      PackingJob?
+
+  @@map("wms_picking_tasks")
+  @@index([fulfillmentType, status], map: "idx_wfk_type_status")
+  @@index([warehouseId, status], map: "idx_wfk_wh_status")
+  @@index([pickerId, status], map: "idx_wfk_picker_status")
+  @@index([waveId], map: "idx_wfk_wave")
+  @@index([status, priority], map: "idx_wfk_status_priority")
+}
+
+model WmsPickingTaskLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  pickingTaskId   String   @db.Uuid @map("picking_task_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Location ───
+  binId           String?  @db.Uuid @map("bin_id")
+  binCode         String?  @map("bin_code")
+  zoneCode        String?  @map("zone_code")
+  aisleCode       String?  @map("aisle_code")
+  // ─── Quantities ───
+  requiredQty     Decimal  @db.Decimal(18, 4) @map("required_qty")
+  pickedQty       Decimal  @db.Decimal(18, 4) @default(0) @map("picked_qty")
+  remainingQty    Decimal  @db.Decimal(18, 4) @default(0) @map("remaining_qty")
+  // ─── FEFO ───
+  fefoPriority    Int?     @map("fefo_priority")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Barcode ───
+  binBarcodeScanned  String? @map("bin_barcode_scanned")
+  productBarcodeScanned String? @map("product_barcode_scanned")
+  batchBarcodeScanned String? @map("batch_barcode_scanned")
+  barcodeVerified Boolean  @default(false) @map("barcode_verified")
+  // ─── Pick path ───
+  pickSequence    Int      @default(0) @map("pick_sequence")
+  // ─── Status ───
+  lineStatus      String   @default("PENDING") @map("line_status") // PENDING, IN_PROGRESS, PICKED, SHORT_PICKED, SKIPPED, EXCEPTION
+  shortPickReason String?  @map("short_pick_reason")
+  // ─── Exception ───
+  exceptionType   String?  @map("exception_type") // WRONG_BIN, WRONG_PRODUCT, WRONG_BATCH, WRONG_QTY, EXPIRED_BATCH, BLOCKED_BATCH, DUPLICATE_SCAN
+  exceptionNotes  String?  @map("exception_notes")
+  // ─── Timing ───
+  pickedAt        DateTime? @map("picked_at")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  pickingTask     WmsPickingTask @relation(fields: [pickingTaskId], references: [id], onDelete: Cascade)
+
+  @@map("wms_picking_task_lines")
+  @@index([pickingTaskId, lineOrder], map: "idx_wfkl_task_order")
+  @@index([productId, batchId], map: "idx_wfkl_product_batch")
+  @@index([lineStatus], map: "idx_wfkl_status")
+  @@index([pickSequence], map: "idx_wfkl_sequence")
+}
+
+// ─── Epic 5: Packing Station Management ────────────────
+model PackingStation {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  stationCode     String   @map("station_code")
+  stationName     String   @map("station_name")
+  // ─── Type ───
+  stationType     String   @default("STANDARD") @map("station_type") // STANDARD, BULK, COLD, EXPORT, FRAGILE, GIFT
+  // ─── Equipment ───
+  hasLabelPrinter Boolean  @default(true) @map("has_label_printer")
+  hasScale        Boolean  @default(true) @map("has_scale")
+  hasBarcodeScanner Boolean @default(true) @map("has_barcode_scanner")
+  hasConveyor     Boolean  @default(false) @map("has_conveyor")
+  // ─── Capacity ───
+  maxConcurrentJobs Int    @default(1) @map("max_concurrent_jobs")
+  currentJobs     Int      @default(0) @map("current_jobs")
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, BUSY, MAINTENANCE, CLOSED
+  // ─── Stats ───
+  totalJobsCompleted Int   @default(0) @map("total_jobs_completed")
+  avgPackTimeMin  Int?     @map("avg_pack_time_min")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([warehouseId, stationCode], map: "ps_unique_wh_station")
+  @@map("packing_stations")
+  @@index([warehouseId, status], map: "idx_ps_wh_status")
+  @@index([status], map: "idx_ps_status")
+}
+
+model PackingJob {
+  id              String   @id @default(uuid()) @db.Uuid
+  jobNumber       String   @unique @map("job_number")
+  jobDate         DateTime @default(now()) @map("job_date")
+  // ─── Link ───
+  pickingTaskId   String?  @unique @db.Uuid @map("picking_task_id")
+  // ─── Station ───
+  stationId       String?  @db.Uuid @map("station_id")
+  stationCode     String?  @map("station_code")
+  // ─── Packer ───
+  packerId        String?  @db.Uuid @map("packer_id")
+  packerName      String?  @map("packer_name")
+  assignedAt      DateTime? @map("assigned_at")
+  // ─── Verification ───
+  verificationRequired Boolean @default(true) @map("verification_required")
+  verificationStatus String @default("PENDING") @map("verification_status") // PENDING, VERIFIED, MISMATCH, EXCEPTION
+  verificationNotes String? @map("verification_notes")
+  // ─── Package ───
+  cartonCount     Int      @default(1) @map("carton_count")
+  totalWeightKg   Decimal? @db.Decimal(12, 2) @map("total_weight_kg")
+  totalVolumeM3   Decimal? @db.Decimal(12, 2) @map("total_volume_m3")
+  // ─── Photos ───
+  photoUrls       String[] @default([]) @map("photo_urls")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, IN_PROGRESS, PACKED, LABELED, READY_TO_SHIP, EXCEPTION, CANCELLED
+  // ─── Timing ───
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Label ───
+  labelPrinted    Boolean  @default(false) @map("label_printed")
+  labelPrintedAt  DateTime? @map("label_printed_at")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  pickingTask     WmsPickingTask? @relation(fields: [pickingTaskId], references: [id], onDelete: SetNull)
+
+  @@map("packing_jobs")
+  @@index([pickingTaskId], map: "idx_pj_picking")
+  @@index([stationId, status], map: "idx_pj_station_status")
+  @@index([status], map: "idx_pj_status")
+  @@index([packerId, status], map: "idx_pj_packer_status")
+}
+
+// ─── Epic 6: Cartonization Engine ──────────────────────
+model CartonType {
+  id              String   @id @default(uuid()) @db.Uuid
+  cartonCode      String   @unique @map("carton_code")
+  cartonName      String   @map("carton_name")
+  // ─── Physical ───
+  lengthCm        Decimal  @db.Decimal(8, 2)
+  widthCm         Decimal  @db.Decimal(8, 2)
+  heightCm        Decimal  @db.Decimal(8, 2)
+  volumeM3        Decimal  @db.Decimal(12, 4) @map("volume_m3")
+  maxWeightKg     Decimal  @db.Decimal(12, 2) @map("max_weight_kg")
+  emptyWeightKg   Decimal  @db.Decimal(12, 2) @default(0) @map("empty_weight_kg")
+  // ─── Type ───
+  cartonCategory  String   @default("STANDARD") @map("carton_category") // STANDARD, BULK, PALLET, MIXED, GIFT_BOX, EXPORT, FRAGILE, COLD
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("carton_types")
+  @@index([cartonCategory, status], map: "idx_ct_category_status")
+}
+
+model Carton {
+  id              String   @id @default(uuid()) @db.Uuid
+  cartonNumber    String   @unique @map("carton_number")
+  barcode         String?  @unique
+  // ─── Type ───
+  cartonTypeId    String?  @db.Uuid @map("carton_type_id")
+  // ─── Link ───
+  packingJobId    String?  @db.Uuid @map("packing_job_id")
+  pickingTaskId   String?  @unique @db.Uuid @map("picking_task_id")
+  // ─── Contents ───
+  productCount    Int      @default(0) @map("product_count")
+  totalUnits      Decimal  @db.Decimal(18, 4) @default(0) @map("total_units")
+  // ─── Physical ───
+  weightKg        Decimal  @db.Decimal(12, 2) @default(0) @map("weight_kg")
+  // ─── Label ───
+  labelPrinted    Boolean  @default(false) @map("label_printed")
+  // ─── Status ───
+  status          String   @default("OPEN") // OPEN, SEALED, LABELED, LOADED, SHIPPED
+  sealedAt        DateTime? @map("sealed_at")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("cartons")
+  @@index([packingJobId], map: "idx_c_packing_job")
+  @@index([status], map: "idx_c_status")
+}
+
+// ─── Epic 7: Shipping Labels ───────────────────────────
+model ShippingLabel {
+  id              String   @id @default(uuid()) @db.Uuid
+  labelNumber     String   @unique @map("label_number")
+  labelDate       DateTime @default(now()) @map("label_date")
+  // ─── Type ───
+  labelType       String   @map("label_type") // ORDER_LABEL, PALLET_LABEL, CARTON_LABEL, COURIER_LABEL, INTERNAL_LABEL, QR_LABEL, BARCODE_LABEL
+  // ─── Link ───
+  packingJobId    String?  @db.Uuid @map("packing_job_id")
+  cartonId        String?  @db.Uuid @map("carton_id")
+  pickingTaskId   String?  @unique @db.Uuid @map("picking_task_id")
+  // ─── Recipient ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  shipToName      String?  @map("ship_to_name")
+  shipToAddress   String?  @map("ship_to_address")
+  shipToCity      String?  @map("ship_to_city")
+  shipToState     String?  @map("ship_to_state")
+  shipToPincode   String?  @map("ship_to_pincode")
+  // ─── Shipment ───
+  carrierName     String?  @map("carrier_name")
+  trackingNumber  String?  @map("tracking_number")
+  // ─── Content ───
+  contentSummary  String?  @map("content_summary")
+  totalWeight     Decimal? @db.Decimal(12, 2) @map("total_weight")
+  totalCartons    Int?     @map("total_cartons")
+  // ─── Format ───
+  format          String   @default("PDF") // PDF, ZPL, PNG, DPL
+  // ─── Print ───
+  printStatus     String   @default("PENDING") // PENDING, PRINTED, FAILED
+  printedAt       DateTime? @map("printed_at")
+  printedById     String?  @db.Uuid @map("printed_by_id")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, VOID, REPRINTED
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("shipping_labels")
+  @@index([labelType, status], map: "idx_sl_type_status")
+  @@index([packingJobId], map: "idx_sl_packing_job")
+  @@index([carrierName], map: "idx_sl_carrier")
+  @@index([status], map: "idx_sl_status")
+}

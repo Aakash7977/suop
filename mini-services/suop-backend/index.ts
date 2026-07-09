@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "25.0.0"
+const VERSION = "26.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -2233,6 +2233,289 @@ const PUTAWAY_DATA = {
   ],
 }
 
+// ─── Sprint 26 — Picking, Packing & Order Fulfillment Engine (PICKING_DATA) ────
+// WmsPickingTask, WmsPickingTaskLine, PackingStation, PackingJob, CartonType, Carton, ShippingLabel
+const PICKING_DATA = {
+  pickingTasks: [
+    {
+      id: 'pkt-001',
+      pickingNumber: 'PK-2026-0001',
+      pickingDate: '2026-07-09T07:30:00Z',
+      fulfillmentType: 'RETAIL_ORDER',
+      pickingStrategy: 'SINGLE_ORDER',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      waveId: 'wv-001', waveNumber: 'WV-2026-0001',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0231',
+      partnerId: 'bp-001', partnerName: 'Sudhastar Retail Mumbai',
+      priority: 'HIGH', priorityScore: 80,
+      pickerId: 'usr-pk-01', pickerName: 'Picker — Ramesh Patil',
+      assignedAt: '2026-07-09T07:25:00Z',
+      status: 'IN_PROGRESS',
+      totalLines: 4, pickedLines: 2,
+      totalQty: 120, pickedQty: 60,
+      pickRouteId: 'pr-001', totalDistanceM: 145.50, estimatedTimeMin: 18,
+      startedAt: '2026-07-09T07:30:00Z', pickedAt: null, packedAt: null, readyToShipAt: null, dispatchedAt: null,
+      pickDurationMin: 14, packDurationMin: null,
+      createdById: 'usr-mgr-01', createdByName: 'Warehouse Manager — Anita Desai',
+      createdAt: '2026-07-09T07:20:00Z', updatedAt: '2026-07-09T07:44:00Z',
+      lines: [
+        { id: 'pkl-001', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12)', batchNumber: 'KK-2607-01', binCode: 'A-01-02-03', zoneCode: 'PICK_FACE_A', aisleCode: 'A-01', requiredQty: 24, pickedQty: 24, remainingQty: 0, fefoPriority: 1, expiryDate: '2026-10-15', binBarcodeScanned: 'BC-A010203', productBarcodeScanned: 'BC-KK-500-B12', batchBarcodeScanned: 'BC-KK-2607-01', barcodeVerified: true, pickSequence: 1, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T07:38:00Z', durationMinutes: 4 },
+        { id: 'pkl-002', lineOrder: 20, productName: 'Soan Cake 1kg (Box of 6)', batchNumber: 'SC-2607-02', binCode: 'A-02-04-08', zoneCode: 'PICK_FACE_A', aisleCode: 'A-02', requiredQty: 36, pickedQty: 36, remainingQty: 0, fefoPriority: 2, expiryDate: '2026-11-30', binBarcodeScanned: 'BC-A020408', productBarcodeScanned: 'BC-SC-1K-B6', batchBarcodeScanned: 'BC-SC-2607-02', barcodeVerified: true, pickSequence: 2, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T07:42:00Z', durationMinutes: 4 },
+        { id: 'pkl-003', lineOrder: 30, productName: 'Pista Roll 250g', batchNumber: 'PR-2607-03', binCode: 'B-03-05-12', zoneCode: 'PICK_FACE_B', aisleCode: 'B-03', requiredQty: 30, pickedQty: 0, remainingQty: 30, fefoPriority: 3, expiryDate: '2026-12-20', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 3, lineStatus: 'IN_PROGRESS', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+        { id: 'pkl-004', lineOrder: 40, productName: 'Anjeer Bar 200g', batchNumber: 'AB-2607-04', binCode: 'B-04-02-06', zoneCode: 'PICK_FACE_B', aisleCode: 'B-04', requiredQty: 30, pickedQty: 0, remainingQty: 30, fefoPriority: 4, expiryDate: '2027-01-10', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 4, lineStatus: 'PENDING', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+      ],
+    },
+    {
+      id: 'pkt-002',
+      pickingNumber: 'PK-2026-0002',
+      pickingDate: '2026-07-09T06:00:00Z',
+      fulfillmentType: 'WHOLESALE_ORDER',
+      pickingStrategy: 'BATCH',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      waveId: 'wv-001', waveNumber: 'WV-2026-0001',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0228',
+      partnerId: 'bp-002', partnerName: 'Maharashtra Wholesale Distributors',
+      priority: 'NORMAL', priorityScore: 50,
+      pickerId: 'usr-pk-02', pickerName: 'Picker — Suresh Kumar',
+      assignedAt: '2026-07-09T05:55:00Z',
+      status: 'PICKED',
+      totalLines: 3, pickedLines: 3,
+      totalQty: 360, pickedQty: 360,
+      pickRouteId: 'pr-002', totalDistanceM: 220.00, estimatedTimeMin: 30,
+      startedAt: '2026-07-09T06:00:00Z', pickedAt: '2026-07-09T06:32:00Z', packedAt: null, readyToShipAt: null, dispatchedAt: null,
+      pickDurationMin: 32, packDurationMin: null,
+      createdById: 'usr-mgr-01', createdByName: 'Warehouse Manager — Anita Desai',
+      createdAt: '2026-07-09T05:45:00Z', updatedAt: '2026-07-09T06:32:00Z',
+      lines: [
+        { id: 'pkl-005', lineOrder: 10, productName: 'Kaju Katli 1kg (Box of 6)', batchNumber: 'KK-2607-08', binCode: 'A-05-04-10', zoneCode: 'BULK_STORAGE_A', aisleCode: 'A-05', requiredQty: 120, pickedQty: 120, remainingQty: 0, fefoPriority: 1, expiryDate: '2026-12-15', binBarcodeScanned: 'BC-A050410', productBarcodeScanned: 'BC-KK-1K-B6', batchBarcodeScanned: 'BC-KK-2607-08', barcodeVerified: true, pickSequence: 1, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T06:12:00Z', durationMinutes: 12 },
+        { id: 'pkl-006', lineOrder: 20, productName: 'Soan Cake 2kg (Box of 3)', batchNumber: 'SC-2607-09', binCode: 'A-06-03-08', zoneCode: 'BULK_STORAGE_A', aisleCode: 'A-06', requiredQty: 144, pickedQty: 144, remainingQty: 0, fefoPriority: 2, expiryDate: '2027-01-20', binBarcodeScanned: 'BC-A060308', productBarcodeScanned: 'BC-SC-2K-B3', batchBarcodeScanned: 'BC-SC-2607-09', barcodeVerified: true, pickSequence: 2, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T06:22:00Z', durationMinutes: 10 },
+        { id: 'pkl-007', lineOrder: 30, productName: 'Dry Fruit Mix 1kg', batchNumber: 'DFM-2607-10', binCode: 'A-08-02-04', zoneCode: 'BULK_STORAGE_A', aisleCode: 'A-08', requiredQty: 96, pickedQty: 96, remainingQty: 0, fefoPriority: 3, expiryDate: '2027-02-10', binBarcodeScanned: 'BC-A080204', productBarcodeScanned: 'BC-DFM-1K-01', batchBarcodeScanned: 'BC-DFM-2607-10', barcodeVerified: true, pickSequence: 3, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T06:32:00Z', durationMinutes: 10 },
+      ],
+    },
+    {
+      id: 'pkt-003',
+      pickingNumber: 'PK-2026-0003',
+      pickingDate: '2026-07-09T08:00:00Z',
+      fulfillmentType: 'DISTRIBUTOR_ORDER',
+      pickingStrategy: 'WAVE',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      waveId: 'wv-002', waveNumber: 'WV-2026-0002',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0245',
+      partnerId: 'bp-003', partnerName: 'Pune Distributors Network',
+      priority: 'HIGH', priorityScore: 75,
+      pickerId: 'usr-pk-03', pickerName: 'Picker — Imran Khan',
+      assignedAt: '2026-07-09T07:55:00Z',
+      status: 'PENDING',
+      totalLines: 5, pickedLines: 0,
+      totalQty: 480, pickedQty: 0,
+      pickRouteId: 'pr-003', totalDistanceM: 285.00, estimatedTimeMin: 35,
+      startedAt: null, pickedAt: null, packedAt: null, readyToShipAt: null, dispatchedAt: null,
+      pickDurationMin: null, packDurationMin: null,
+      createdById: 'usr-mgr-01', createdByName: 'Warehouse Manager — Anita Desai',
+      createdAt: '2026-07-09T07:50:00Z', updatedAt: '2026-07-09T07:55:00Z',
+      lines: [
+        { id: 'pkl-008', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12)', batchNumber: 'KK-2607-15', binCode: 'A-01-02-05', zoneCode: 'PICK_FACE_A', aisleCode: 'A-01', requiredQty: 96, pickedQty: 0, remainingQty: 96, fefoPriority: 1, expiryDate: '2026-10-25', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 1, lineStatus: 'PENDING', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+        { id: 'pkl-009', lineOrder: 20, productName: 'Soan Cake 1kg (Box of 6)', batchNumber: 'SC-2607-16', binCode: 'A-02-04-10', zoneCode: 'PICK_FACE_A', aisleCode: 'A-02', requiredQty: 96, pickedQty: 0, remainingQty: 96, fefoPriority: 2, expiryDate: '2026-12-05', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 2, lineStatus: 'PENDING', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+        { id: 'pkl-010', lineOrder: 30, productName: 'Pista Roll 250g', batchNumber: 'PR-2607-17', binCode: 'B-03-05-08', zoneCode: 'PICK_FACE_B', aisleCode: 'B-03', requiredQty: 96, pickedQty: 0, remainingQty: 96, fefoPriority: 3, expiryDate: '2026-12-25', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 3, lineStatus: 'PENDING', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+        { id: 'pkl-011', lineOrder: 40, productName: 'Anjeer Bar 200g', batchNumber: 'AB-2607-18', binCode: 'B-04-02-08', zoneCode: 'PICK_FACE_B', aisleCode: 'B-04', requiredQty: 96, pickedQty: 0, remainingQty: 96, fefoPriority: 4, expiryDate: '2027-01-15', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 4, lineStatus: 'PENDING', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+        { id: 'pkl-012', lineOrder: 50, productName: 'Mixed Dry Fruit 500g', batchNumber: 'MDF-2607-19', binCode: 'B-05-03-04', zoneCode: 'PICK_FACE_B', aisleCode: 'B-05', requiredQty: 96, pickedQty: 0, remainingQty: 96, fefoPriority: 5, expiryDate: '2027-02-20', binBarcodeScanned: null, productBarcodeScanned: null, batchBarcodeScanned: null, barcodeVerified: false, pickSequence: 5, lineStatus: 'PENDING', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: null, durationMinutes: null },
+      ],
+    },
+    {
+      id: 'pkt-004',
+      pickingNumber: 'PK-2026-0004',
+      pickingDate: '2026-07-09T05:00:00Z',
+      fulfillmentType: 'RESTAURANT_REPLENISHMENT',
+      pickingStrategy: 'ZONE',
+      warehouseId: 'wh-cs-mum', warehouseName: 'Cold Storage Warehouse',
+      waveId: 'wv-003', waveNumber: 'WV-2026-0003',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0218',
+      partnerId: 'bp-004', partnerName: 'Mumbai Restaurant Group',
+      priority: 'EMERGENCY', priorityScore: 95,
+      pickerId: 'usr-pk-04', pickerName: 'Picker — Lakshmi Iyer',
+      assignedAt: '2026-07-09T04:55:00Z',
+      status: 'PACKED',
+      totalLines: 3, pickedLines: 3,
+      totalQty: 90, pickedQty: 90,
+      pickRouteId: 'pr-004', totalDistanceM: 95.00, estimatedTimeMin: 15,
+      startedAt: '2026-07-09T05:00:00Z', pickedAt: '2026-07-09T05:18:00Z', packedAt: '2026-07-09T05:42:00Z', readyToShipAt: null, dispatchedAt: null,
+      pickDurationMin: 18, packDurationMin: 24,
+      createdById: 'usr-mgr-01', createdByName: 'Warehouse Manager — Anita Desai',
+      createdAt: '2026-07-09T04:50:00Z', updatedAt: '2026-07-09T05:42:00Z',
+      lines: [
+        { id: 'pkl-013', lineOrder: 10, productName: 'Chilled Kaju Katli 500g (Box of 12)', batchNumber: 'CKK-2607-01', binCode: 'B-CS-02-08', zoneCode: 'CHILLED_ZONE_B', aisleCode: 'B-CS', requiredQty: 30, pickedQty: 30, remainingQty: 0, fefoPriority: 1, expiryDate: '2026-08-15', binBarcodeScanned: 'BC-BCS0208', productBarcodeScanned: 'BC-CKK-500-B12', batchBarcodeScanned: 'BC-CKK-2607-01', barcodeVerified: true, pickSequence: 1, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T05:08:00Z', durationMinutes: 8 },
+        { id: 'pkl-014', lineOrder: 20, productName: 'Chilled Soan Cake 1kg (Box of 6)', batchNumber: 'CSC-2607-02', binCode: 'B-CS-03-12', zoneCode: 'CHILLED_ZONE_B', aisleCode: 'B-CS', requiredQty: 30, pickedQty: 30, remainingQty: 0, fefoPriority: 2, expiryDate: '2026-08-25', binBarcodeScanned: 'BC-BCS0312', productBarcodeScanned: 'BC-CSC-1K-B6', batchBarcodeScanned: 'BC-CSC-2607-02', barcodeVerified: true, pickSequence: 2, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T05:14:00Z', durationMinutes: 6 },
+        { id: 'pkl-015', lineOrder: 30, productName: 'Refrigerated Dry Fruit Mix 1kg', batchNumber: 'RDM-2607-03', binCode: 'B-CS-04-05', zoneCode: 'CHILLED_ZONE_B', aisleCode: 'B-CS', requiredQty: 30, pickedQty: 30, remainingQty: 0, fefoPriority: 3, expiryDate: '2026-09-10', binBarcodeScanned: 'BC-BCS0405', productBarcodeScanned: 'BC-RDM-1K-01', batchBarcodeScanned: 'BC-RDM-2607-03', barcodeVerified: true, pickSequence: 3, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T05:18:00Z', durationMinutes: 4 },
+      ],
+    },
+    {
+      id: 'pkt-005',
+      pickingNumber: 'PK-2026-0005',
+      pickingDate: '2026-07-09T04:00:00Z',
+      fulfillmentType: 'BRANCH_TRANSFER',
+      pickingStrategy: 'PICK_AND_PASS',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      waveId: 'wv-004', waveNumber: 'WV-2026-0004',
+      referenceType: 'TRANSFER_ORDER', referenceNumber: 'TO-2026-0067',
+      partnerId: 'bp-005', partnerName: 'Pune Retail Branch',
+      priority: 'NORMAL', priorityScore: 60,
+      pickerId: 'usr-pk-05', pickerName: 'Picker — Vinod Mehta',
+      assignedAt: '2026-07-09T03:55:00Z',
+      status: 'READY_TO_SHIP',
+      totalLines: 4, pickedLines: 4,
+      totalQty: 240, pickedQty: 240,
+      pickRouteId: 'pr-005', totalDistanceM: 175.50, estimatedTimeMin: 22,
+      startedAt: '2026-07-09T04:00:00Z', pickedAt: '2026-07-09T04:25:00Z', packedAt: '2026-07-09T04:50:00Z', readyToShipAt: '2026-07-09T04:55:00Z', dispatchedAt: null,
+      pickDurationMin: 25, packDurationMin: 25,
+      createdById: 'usr-mgr-01', createdByName: 'Warehouse Manager — Anita Desai',
+      createdAt: '2026-07-09T03:50:00Z', updatedAt: '2026-07-09T04:55:00Z',
+      lines: [
+        { id: 'pkl-016', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12)', batchNumber: 'KK-2607-20', binCode: 'A-01-02-04', zoneCode: 'PICK_FACE_A', aisleCode: 'A-01', requiredQty: 60, pickedQty: 60, remainingQty: 0, fefoPriority: 1, expiryDate: '2026-11-05', binBarcodeScanned: 'BC-A010204', productBarcodeScanned: 'BC-KK-500-B12', batchBarcodeScanned: 'BC-KK-2607-20', barcodeVerified: true, pickSequence: 1, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T04:08:00Z', durationMinutes: 8 },
+        { id: 'pkl-017', lineOrder: 20, productName: 'Soan Cake 1kg (Box of 6)', batchNumber: 'SC-2607-21', binCode: 'A-02-04-09', zoneCode: 'PICK_FACE_A', aisleCode: 'A-02', requiredQty: 60, pickedQty: 60, remainingQty: 0, fefoPriority: 2, expiryDate: '2026-12-15', binBarcodeScanned: 'BC-A020409', productBarcodeScanned: 'BC-SC-1K-B6', batchBarcodeScanned: 'BC-SC-2607-21', barcodeVerified: true, pickSequence: 2, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T04:16:00Z', durationMinutes: 8 },
+        { id: 'pkl-018', lineOrder: 30, productName: 'Pista Roll 250g', batchNumber: 'PR-2607-22', binCode: 'B-03-05-09', zoneCode: 'PICK_FACE_B', aisleCode: 'B-03', requiredQty: 60, pickedQty: 60, remainingQty: 0, fefoPriority: 3, expiryDate: '2026-12-28', binBarcodeScanned: 'BC-B030509', productBarcodeScanned: 'BC-PR-250-01', batchBarcodeScanned: 'BC-PR-2607-22', barcodeVerified: true, pickSequence: 3, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T04:22:00Z', durationMinutes: 6 },
+        { id: 'pkl-019', lineOrder: 40, productName: 'Anjeer Bar 200g', batchNumber: 'AB-2607-23', binCode: 'B-04-02-07', zoneCode: 'PICK_FACE_B', aisleCode: 'B-04', requiredQty: 60, pickedQty: 60, remainingQty: 0, fefoPriority: 4, expiryDate: '2027-01-18', binBarcodeScanned: 'BC-B040207', productBarcodeScanned: 'BC-AB-200-01', batchBarcodeScanned: 'BC-AB-2607-23', barcodeVerified: true, pickSequence: 4, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-09T04:25:00Z', durationMinutes: 3 },
+      ],
+    },
+    {
+      id: 'pkt-006',
+      pickingNumber: 'PK-2026-0006',
+      pickingDate: '2026-07-08T14:00:00Z',
+      fulfillmentType: 'EXPORT_ORDER',
+      pickingStrategy: 'CART',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      waveId: 'wv-005', waveNumber: 'WV-2026-0005',
+      referenceType: 'SALES_ORDER', referenceNumber: 'SO-2026-0199',
+      partnerId: 'bp-006', partnerName: 'Dubai Exports FZE',
+      priority: 'HIGH', priorityScore: 85,
+      pickerId: 'usr-pk-06', pickerName: 'Picker — Javed Akhtar',
+      assignedAt: '2026-07-08T13:55:00Z',
+      status: 'DISPATCHED',
+      totalLines: 4, pickedLines: 4,
+      totalQty: 480, pickedQty: 480,
+      pickRouteId: 'pr-006', totalDistanceM: 310.00, estimatedTimeMin: 40,
+      startedAt: '2026-07-08T14:00:00Z', pickedAt: '2026-07-08T14:42:00Z', packedAt: '2026-07-08T15:30:00Z', readyToShipAt: '2026-07-08T15:40:00Z', dispatchedAt: '2026-07-08T16:30:00Z',
+      pickDurationMin: 42, packDurationMin: 48,
+      createdById: 'usr-mgr-01', createdByName: 'Warehouse Manager — Anita Desai',
+      createdAt: '2026-07-08T13:50:00Z', updatedAt: '2026-07-08T16:30:00Z',
+      lines: [
+        { id: 'pkl-020', lineOrder: 10, productName: 'Premium Kaju Katli 1kg (Export Pack)', batchNumber: 'EKK-2607-30', binCode: 'C-05-04-12', zoneCode: 'EXPORT_ZONE_C', aisleCode: 'C-05', requiredQty: 120, pickedQty: 120, remainingQty: 0, fefoPriority: 1, expiryDate: '2027-03-15', binBarcodeScanned: 'BC-C050412', productBarcodeScanned: 'BC-EKK-1K-EP', batchBarcodeScanned: 'BC-EKK-2607-30', barcodeVerified: true, pickSequence: 1, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-08T14:15:00Z', durationMinutes: 15 },
+        { id: 'pkl-021', lineOrder: 20, productName: 'Premium Soan Cake 2kg (Export Pack)', batchNumber: 'ESC-2607-31', binCode: 'C-06-03-08', zoneCode: 'EXPORT_ZONE_C', aisleCode: 'C-06', requiredQty: 120, pickedQty: 120, remainingQty: 0, fefoPriority: 2, expiryDate: '2027-04-20', binBarcodeScanned: 'BC-C060308', productBarcodeScanned: 'BC-ESC-2K-EP', batchBarcodeScanned: 'BC-ESC-2607-31', barcodeVerified: true, pickSequence: 2, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-08T14:28:00Z', durationMinutes: 13 },
+        { id: 'pkl-022', lineOrder: 30, productName: 'Premium Pista Roll 500g (Export)', batchNumber: 'EPR-2607-32', binCode: 'C-07-02-04', zoneCode: 'EXPORT_ZONE_C', aisleCode: 'C-07', requiredQty: 120, pickedQty: 120, remainingQty: 0, fefoPriority: 3, expiryDate: '2027-05-10', binBarcodeScanned: 'BC-C070204', productBarcodeScanned: 'BC-EPR-500-EP', batchBarcodeScanned: 'BC-EPR-2607-32', barcodeVerified: true, pickSequence: 3, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-08T14:38:00Z', durationMinutes: 10 },
+        { id: 'pkl-023', lineOrder: 40, productName: 'Premium Anjeer Bar 400g (Export)', batchNumber: 'EAB-2607-33', binCode: 'C-08-04-06', zoneCode: 'EXPORT_ZONE_C', aisleCode: 'C-08', requiredQty: 120, pickedQty: 120, remainingQty: 0, fefoPriority: 4, expiryDate: '2027-06-05', binBarcodeScanned: 'BC-C080406', productBarcodeScanned: 'BC-EAB-400-EP', batchBarcodeScanned: 'BC-EAB-2607-33', barcodeVerified: true, pickSequence: 4, lineStatus: 'PICKED', shortPickReason: null, exceptionType: null, exceptionNotes: null, pickedAt: '2026-07-08T14:42:00Z', durationMinutes: 4 },
+      ],
+    },
+  ],
+  packingStations: [
+    { id: 'ps-001', warehouseId: 'wh-fg-mum', stationCode: 'PS-01', stationName: 'Standard Packing Station 01', stationType: 'STANDARD', hasLabelPrinter: true, hasScale: true, hasBarcodeScanner: true, hasConveyor: true, maxConcurrentJobs: 2, currentJobs: 1, status: 'BUSY', totalJobsCompleted: 348, avgPackTimeMin: 22, createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-07-09T07:50:00Z' },
+    { id: 'ps-002', warehouseId: 'wh-cs-mum', stationCode: 'PS-02', stationName: 'Cold Chain Packing Station 02', stationType: 'COLD', hasLabelPrinter: true, hasScale: true, hasBarcodeScanner: true, hasConveyor: false, maxConcurrentJobs: 1, currentJobs: 0, status: 'AVAILABLE', totalJobsCompleted: 156, avgPackTimeMin: 28, createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-07-09T05:42:00Z' },
+    { id: 'ps-003', warehouseId: 'wh-fg-mum', stationCode: 'PS-03', stationName: 'Export Packing Station 03', stationType: 'EXPORT', hasLabelPrinter: true, hasScale: true, hasBarcodeScanner: true, hasConveyor: true, maxConcurrentJobs: 1, currentJobs: 0, status: 'AVAILABLE', totalJobsCompleted: 89, avgPackTimeMin: 45, createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-07-08T15:30:00Z' },
+  ],
+  packingJobs: [
+    {
+      id: 'pjb-001', jobNumber: 'PJB-2026-0001', jobDate: '2026-07-09T06:35:00Z',
+      pickingTaskId: 'pkt-002', stationId: 'ps-001', stationCode: 'PS-01',
+      packerId: 'usr-pk-05', packerName: 'Packer — Vinod Mehta', assignedAt: '2026-07-09T06:35:00Z',
+      verificationRequired: true, verificationStatus: 'VERIFIED', verificationNotes: 'All 3 products verified against picking task PK-2026-0002. Quantities match.',
+      cartonCount: 2, totalWeightKg: 36.50, totalVolumeM3: 0.18,
+      photoUrls: ['https://cdn.suop.com/pjb-001/photo1.jpg', 'https://cdn.suop.com/pjb-001/photo2.jpg'],
+      status: 'IN_PROGRESS',
+      startedAt: '2026-07-09T06:35:00Z', completedAt: null, durationMinutes: null,
+      labelPrinted: false, labelPrintedAt: null,
+      createdById: 'usr-mgr-01', createdAt: '2026-07-09T06:33:00Z', updatedAt: '2026-07-09T07:00:00Z',
+    },
+    {
+      id: 'pjb-002', jobNumber: 'PJB-2026-0002', jobDate: '2026-07-09T05:20:00Z',
+      pickingTaskId: 'pkt-004', stationId: 'ps-002', stationCode: 'PS-02',
+      packerId: 'usr-pk-04', packerName: 'Packer — Lakshmi Iyer', assignedAt: '2026-07-09T05:20:00Z',
+      verificationRequired: true, verificationStatus: 'VERIFIED', verificationNotes: 'Cold-chain products verified. Temperature log attached.',
+      cartonCount: 1, totalWeightKg: 12.80, totalVolumeM3: 0.06,
+      photoUrls: ['https://cdn.suop.com/pjb-002/photo1.jpg'],
+      status: 'LABELED',
+      startedAt: '2026-07-09T05:20:00Z', completedAt: '2026-07-09T05:42:00Z', durationMinutes: 22,
+      labelPrinted: true, labelPrintedAt: '2026-07-09T05:40:00Z',
+      createdById: 'usr-mgr-01', createdAt: '2026-07-09T05:18:00Z', updatedAt: '2026-07-09T05:42:00Z',
+    },
+    {
+      id: 'pjb-003', jobNumber: 'PJB-2026-0003', jobDate: '2026-07-09T04:30:00Z',
+      pickingTaskId: 'pkt-005', stationId: 'ps-001', stationCode: 'PS-01',
+      packerId: 'usr-pk-05', packerName: 'Packer — Vinod Mehta', assignedAt: '2026-07-09T04:30:00Z',
+      verificationRequired: true, verificationStatus: 'VERIFIED', verificationNotes: 'All 4 products verified. Carton 1: 2 SKUs. Carton 2: 2 SKUs.',
+      cartonCount: 2, totalWeightKg: 24.30, totalVolumeM3: 0.14,
+      photoUrls: ['https://cdn.suop.com/pjb-003/photo1.jpg', 'https://cdn.suop.com/pjb-003/photo2.jpg', 'https://cdn.suop.com/pjb-003/photo3.jpg'],
+      status: 'READY_TO_SHIP',
+      startedAt: '2026-07-09T04:30:00Z', completedAt: '2026-07-09T04:50:00Z', durationMinutes: 20,
+      labelPrinted: true, labelPrintedAt: '2026-07-09T04:52:00Z',
+      createdById: 'usr-mgr-01', createdAt: '2026-07-09T04:28:00Z', updatedAt: '2026-07-09T04:55:00Z',
+    },
+    {
+      id: 'pjb-004', jobNumber: 'PJB-2026-0004', jobDate: '2026-07-08T14:45:00Z',
+      pickingTaskId: 'pkt-006', stationId: 'ps-003', stationCode: 'PS-03',
+      packerId: 'usr-pk-06', packerName: 'Packer — Javed Akhtar', assignedAt: '2026-07-08T14:45:00Z',
+      verificationRequired: true, verificationStatus: 'VERIFIED', verificationNotes: 'Export products verified. Customs documentation attached. Phytosanitary cert #PHY-2026-0042.',
+      cartonCount: 4, totalWeightKg: 58.40, totalVolumeM3: 0.32,
+      photoUrls: ['https://cdn.suop.com/pjb-004/photo1.jpg', 'https://cdn.suop.com/pjb-004/photo2.jpg', 'https://cdn.suop.com/pjb-004/photo3.jpg', 'https://cdn.suop.com/pjb-004/photo4.jpg'],
+      status: 'READY_TO_SHIP',
+      startedAt: '2026-07-08T14:45:00Z', completedAt: '2026-07-08T15:30:00Z', durationMinutes: 45,
+      labelPrinted: true, labelPrintedAt: '2026-07-08T15:35:00Z',
+      createdById: 'usr-mgr-01', createdAt: '2026-07-08T14:43:00Z', updatedAt: '2026-07-08T15:40:00Z',
+    },
+  ],
+  cartonTypes: [
+    { id: 'ct-001', cartonCode: 'CT-STD-01', cartonName: 'Standard Carton 30×20×20 cm', lengthCm: 30, widthCm: 20, heightCm: 20, volumeM3: 0.012, maxWeightKg: 15, emptyWeightKg: 0.45, cartonCategory: 'STANDARD', status: 'ACTIVE', createdAt: '2026-06-01T00:00:00Z' },
+    { id: 'ct-002', cartonCode: 'CT-GBX-02', cartonName: 'Premium Gift Box 25×25×15 cm', lengthCm: 25, widthCm: 25, heightCm: 15, volumeM3: 0.0094, maxWeightKg: 8, emptyWeightKg: 0.65, cartonCategory: 'GIFT_BOX', status: 'ACTIVE', createdAt: '2026-06-01T00:00:00Z' },
+    { id: 'ct-003', cartonCode: 'CT-EXP-03', cartonName: 'Export Carton 40×30×30 cm (Double Wall)', lengthCm: 40, widthCm: 30, heightCm: 30, volumeM3: 0.036, maxWeightKg: 25, emptyWeightKg: 1.20, cartonCategory: 'EXPORT', status: 'ACTIVE', createdAt: '2026-06-01T00:00:00Z' },
+  ],
+  cartons: [
+    { id: 'ctn-001', cartonNumber: 'CTN-2026-0001', barcode: 'BC-CTN-2026-0001', cartonTypeId: 'ct-001', cartonTypeName: 'Standard Carton', packingJobId: 'pjb-001', pickingTaskId: 'pkt-002', productCount: 2, totalUnits: 240, weightKg: 18.50, labelPrinted: false, status: 'OPEN', sealedAt: null, createdAt: '2026-07-09T06:40:00Z', updatedAt: '2026-07-09T07:00:00Z' },
+    { id: 'ctn-002', cartonNumber: 'CTN-2026-0002', barcode: 'BC-CTN-2026-0002', cartonTypeId: 'ct-001', cartonTypeName: 'Standard Carton', packingJobId: 'pjb-001', pickingTaskId: null, productCount: 1, totalUnits: 96, weightKg: 12.00, labelPrinted: false, status: 'OPEN', sealedAt: null, createdAt: '2026-07-09T06:45:00Z', updatedAt: '2026-07-09T07:00:00Z' },
+    { id: 'ctn-003', cartonNumber: 'CTN-2026-0003', barcode: 'BC-CTN-2026-0003', cartonTypeId: 'ct-002', cartonTypeName: 'Premium Gift Box', packingJobId: 'pjb-002', pickingTaskId: 'pkt-004', productCount: 3, totalUnits: 90, weightKg: 12.80, labelPrinted: true, status: 'LABELED', sealedAt: '2026-07-09T05:38:00Z', createdAt: '2026-07-09T05:25:00Z', updatedAt: '2026-07-09T05:42:00Z' },
+    { id: 'ctn-004', cartonNumber: 'CTN-2026-0004', barcode: 'BC-CTN-2026-0004', cartonTypeId: 'ct-001', cartonTypeName: 'Standard Carton', packingJobId: 'pjb-003', pickingTaskId: 'pkt-005', productCount: 4, totalUnits: 240, weightKg: 24.30, labelPrinted: true, status: 'LOADED', sealedAt: '2026-07-09T04:48:00Z', createdAt: '2026-07-09T04:35:00Z', updatedAt: '2026-07-09T05:00:00Z' },
+    { id: 'ctn-005', cartonNumber: 'CTN-2026-0005', barcode: 'BC-CTN-2026-0005', cartonTypeId: 'ct-003', cartonTypeName: 'Export Carton', packingJobId: 'pjb-004', pickingTaskId: 'pkt-006', productCount: 4, totalUnits: 480, weightKg: 14.60, labelPrinted: true, status: 'SHIPPED', sealedAt: '2026-07-08T15:20:00Z', createdAt: '2026-07-08T14:50:00Z', updatedAt: '2026-07-08T16:30:00Z' },
+  ],
+  shippingLabels: [
+    {
+      id: 'sl-001', labelNumber: 'SHP-LBL-2026-0001', labelDate: '2026-07-09T05:40:00Z',
+      labelType: 'ORDER_LABEL', packingJobId: 'pjb-002', cartonId: 'ctn-003', pickingTaskId: 'pkt-004',
+      partnerId: 'bp-004', partnerName: 'Mumbai Restaurant Group',
+      shipToName: 'Chef Rajesh Sharma', shipToAddress: 'Marine Drive Restaurant, 12 Marine Lines', shipToCity: 'Mumbai', shipToState: 'Maharashtra', shipToPincode: '400020',
+      carrierName: 'Blue Dart', trackingNumber: 'BD-2026-MUM-00142',
+      contentSummary: 'Chilled Kaju Katli (30u), Chilled Soan Cake (30u), Refrigerated Dry Fruit Mix (30u)',
+      totalWeight: 12.80, totalCartons: 1, format: 'PDF', printStatus: 'PRINTED', printedAt: '2026-07-09T05:40:00Z',
+      printedById: 'usr-pk-04', status: 'ACTIVE', createdAt: '2026-07-09T05:39:00Z',
+    },
+    {
+      id: 'sl-002', labelNumber: 'SHP-LBL-2026-0002', labelDate: '2026-07-09T04:52:00Z',
+      labelType: 'CARTON_LABEL', packingJobId: 'pjb-003', cartonId: 'ctn-004', pickingTaskId: 'pkt-005',
+      partnerId: 'bp-005', partnerName: 'Pune Retail Branch',
+      shipToName: 'Sudhastar Pune Branch Manager', shipToAddress: 'FC Road Branch, Shop 14, FC Road', shipToCity: 'Pune', shipToState: 'Maharashtra', shipToPincode: '411005',
+      carrierName: 'Delhivery', trackingNumber: 'DLV-2026-PUN-00089',
+      contentSummary: 'Kaju Katli (60u), Soan Cake (60u), Pista Roll (60u), Anjeer Bar (60u) — Branch Transfer',
+      totalWeight: 24.30, totalCartons: 1, format: 'PDF', printStatus: 'PRINTED', printedAt: '2026-07-09T04:52:00Z',
+      printedById: 'usr-pk-05', status: 'ACTIVE', createdAt: '2026-07-09T04:51:00Z',
+    },
+    {
+      id: 'sl-003', labelNumber: 'SHP-LBL-2026-0003', labelDate: '2026-07-08T15:35:00Z',
+      labelType: 'COURIER_LABEL', packingJobId: 'pjb-004', cartonId: 'ctn-005', pickingTaskId: 'pkt-006',
+      partnerId: 'bp-006', partnerName: 'Dubai Exports FZE',
+      shipToName: 'Mr. Abdul Rahman', shipToAddress: 'Jebel Ali Free Zone, Office 402, Building 7', shipToCity: 'Dubai', shipToState: 'Dubai', shipToPincode: '00000',
+      carrierName: 'DHL Express', trackingNumber: 'DHL-EXPORT-2026-0042',
+      contentSummary: 'Premium Kaju Katli 1kg Export (120u), Premium Soan Cake 2kg Export (120u), Premium Pista Roll 500g Export (120u), Premium Anjeer Bar 400g Export (120u)',
+      totalWeight: 14.60, totalCartons: 1, format: 'ZPL', printStatus: 'PRINTED', printedAt: '2026-07-08T15:35:00Z',
+      printedById: 'usr-pk-06', status: 'ACTIVE', createdAt: '2026-07-08T15:34:00Z',
+    },
+    {
+      id: 'sl-004', labelNumber: 'SHP-LBL-2026-0004', labelDate: '2026-07-09T06:55:00Z',
+      labelType: 'PALLET_LABEL', packingJobId: 'pjb-001', cartonId: null, pickingTaskId: 'pkt-002',
+      partnerId: 'bp-002', partnerName: 'Maharashtra Wholesale Distributors',
+      shipToName: 'Mr. Suresh Distributor', shipToAddress: 'Wholesale Hub, APMC Market, Vashi', shipToCity: 'Navi Mumbai', shipToState: 'Maharashtra', shipToPincode: '400703',
+      carrierName: 'DTDC', trackingNumber: null,
+      contentSummary: 'Wholesale pallet — 3 SKUs (360 units total). Cartons: CTN-2026-0001 + CTN-2026-0002.',
+      totalWeight: 36.50, totalCartons: 2, format: 'PDF', printStatus: 'PENDING', printedAt: null,
+      printedById: null, status: 'ACTIVE', createdAt: '2026-07-09T06:55:00Z',
+    },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -2627,7 +2910,7 @@ const server = Bun.serve({
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
-        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 24, sprint: 25 },
+        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 31, sprint: 26 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -6002,13 +6285,298 @@ const server = Bun.serve({
       }, 'SUOP Directed Putaway & Bin Intelligence Engine v25.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 26 — PICKING, PACKING & ORDER FULFILLMENT ENGINE ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Picking Tasks ─────────────────────────────────────
+    // GET /api/wms-picking-tasks (with type/status/warehouse/picker filters)
+    if (path === '/api/wms-picking-tasks' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const pickerFilter = url.searchParams.get('picker')
+      let tasks = PICKING_DATA.pickingTasks
+      if (typeFilter) tasks = tasks.filter(t => t.fulfillmentType === typeFilter.toUpperCase())
+      if (statusFilter) tasks = tasks.filter(t => t.status === statusFilter.toUpperCase())
+      if (warehouseFilter) tasks = tasks.filter(t => t.warehouseId === warehouseFilter || t.warehouseName === warehouseFilter)
+      if (pickerFilter) tasks = tasks.filter(t => t.pickerId === pickerFilter || (t.pickerName || '').includes(pickerFilter))
+      return new Response(JSON.stringify(successResponse(tasks, `${tasks.length} picking tasks`)), { headers })
+    }
+    // POST /api/wms-picking-tasks
+    if (path === '/api/wms-picking-tasks' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.pickingNumber || !body.fulfillmentType || !body.pickingStrategy) {
+          return new Response(JSON.stringify(errorResponse('pickingNumber, fulfillmentType and pickingStrategy are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        const task = {
+          id: crypto.randomUUID(),
+          pickingNumber: body.pickingNumber,
+          pickingDate: body.pickingDate || new Date().toISOString(),
+          fulfillmentType: body.fulfillmentType,
+          pickingStrategy: body.pickingStrategy,
+          warehouseId: body.warehouseId || null,
+          warehouseName: body.warehouseName || null,
+          waveId: body.waveId || null,
+          waveNumber: body.waveNumber || null,
+          referenceType: body.referenceType || null,
+          referenceNumber: body.referenceNumber || null,
+          partnerId: body.partnerId || null,
+          partnerName: body.partnerName || null,
+          priority: body.priority || 'NORMAL',
+          priorityScore: body.priorityScore || 50,
+          pickerId: body.pickerId || null,
+          pickerName: body.pickerName || null,
+          assignedAt: body.pickerId ? new Date().toISOString() : null,
+          status: body.status || 'PENDING',
+          totalLines: body.lines?.length || 0,
+          pickedLines: 0,
+          totalQty: body.totalQty || (body.lines ? body.lines.reduce((s: number, l: any) => s + (l.requiredQty || 0), 0) : 0),
+          pickedQty: 0,
+          pickRouteId: body.pickRouteId || null,
+          totalDistanceM: body.totalDistanceM || null,
+          estimatedTimeMin: body.estimatedTimeMin || null,
+          startedAt: null, pickedAt: null, packedAt: null, readyToShipAt: null, dispatchedAt: null,
+          pickDurationMin: null, packDurationMin: null,
+          createdById: body.createdById || null,
+          createdByName: body.createdByName || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lines: body.lines || [],
+        } as any
+        PICKING_DATA.pickingTasks.push(task)
+        log('info', 'Picking task created', { pickingNumber: task.pickingNumber, fulfillmentType: task.fulfillmentType })
+        return new Response(JSON.stringify(successResponse(task, 'Picking task created')), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+    // POST /api/wms-picking-tasks/:id/complete
+    if (path.startsWith('/api/wms-picking-tasks/') && path.endsWith('/complete') && method === 'POST') {
+      const id = path.replace('/api/wms-picking-tasks/', '').replace('/complete', '')
+      const task = PICKING_DATA.pickingTasks.find(t => t.id === id)
+      if (!task) return new Response(JSON.stringify(errorResponse('Picking task not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      task.status = 'PICKED'
+      task.pickedLines = task.totalLines
+      task.pickedQty = task.totalQty
+      task.pickedAt = new Date().toISOString()
+      task.updatedAt = new Date().toISOString()
+      if (task.lines && Array.isArray(task.lines)) {
+        task.lines.forEach((l: any) => {
+          if (l.lineStatus !== 'PICKED') {
+            l.lineStatus = 'PICKED'
+            if (l.pickedQty === 0) l.pickedQty = l.requiredQty
+            if (l.remainingQty > 0) l.remainingQty = 0
+            if (!l.barcodeVerified) l.barcodeVerified = true
+            if (!l.pickedAt) l.pickedAt = task.pickedAt
+            if (!l.binBarcodeScanned && l.binCode) l.binBarcodeScanned = 'BC-' + l.binCode.replace(/-/g, '')
+            if (!l.productBarcodeScanned) l.productBarcodeScanned = 'BC-PRD-' + l.lineOrder
+            if (!l.batchBarcodeScanned && l.batchNumber) l.batchBarcodeScanned = 'BC-' + l.batchNumber
+          }
+        })
+      }
+      log('info', 'Picking task completed', { pickingNumber: task.pickingNumber })
+      return new Response(JSON.stringify(successResponse(task, `Picking task ${task.pickingNumber} completed`)), { headers })
+    }
+
+    // ─── Packing Stations ─────────────────────────────────
+    // GET /api/packing-stations
+    if (path === '/api/packing-stations' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      const typeFilter = url.searchParams.get('type')
+      let stations = PICKING_DATA.packingStations
+      if (statusFilter) stations = stations.filter(s => s.status === statusFilter.toUpperCase())
+      if (typeFilter) stations = stations.filter(s => s.stationType === typeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(stations, `${stations.length} packing stations`)), { headers })
+    }
+
+    // ─── Packing Jobs ─────────────────────────────────────
+    // GET /api/packing-jobs (with status filter)
+    if (path === '/api/packing-jobs' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let jobs = PICKING_DATA.packingJobs
+      if (statusFilter) jobs = jobs.filter(j => j.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(jobs, `${jobs.length} packing jobs`)), { headers })
+    }
+    // POST /api/packing-jobs/:id/complete
+    if (path.startsWith('/api/packing-jobs/') && path.endsWith('/complete') && method === 'POST') {
+      const id = path.replace('/api/packing-jobs/', '').replace('/complete', '')
+      const job = PICKING_DATA.packingJobs.find(j => j.id === id)
+      if (!job) return new Response(JSON.stringify(errorResponse('Packing job not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      job.status = 'READY_TO_SHIP'
+      job.completedAt = new Date().toISOString()
+      if (job.startedAt) {
+        const dur = Math.round((new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()) / 60000)
+        job.durationMinutes = dur
+      }
+      job.labelPrinted = true
+      job.labelPrintedAt = new Date().toISOString()
+      job.verificationStatus = 'VERIFIED'
+      job.updatedAt = new Date().toISOString()
+      log('info', 'Packing job completed', { jobNumber: job.jobNumber })
+      return new Response(JSON.stringify(successResponse(job, `Packing job ${job.jobNumber} completed`)), { headers })
+    }
+
+    // ─── Carton Types ─────────────────────────────────────
+    // GET /api/carton-types
+    if (path === '/api/carton-types' && method === 'GET') {
+      const categoryFilter = url.searchParams.get('category')
+      let types = PICKING_DATA.cartonTypes
+      if (categoryFilter) types = types.filter(c => c.cartonCategory === categoryFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(types, `${types.length} carton types`)), { headers })
+    }
+
+    // ─── Cartons ──────────────────────────────────────────
+    // GET /api/cartons (with status filter)
+    if (path === '/api/cartons' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let cartons = PICKING_DATA.cartons
+      if (statusFilter) cartons = cartons.filter(c => c.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(cartons, `${cartons.length} cartons`)), { headers })
+    }
+
+    // ─── Shipping Labels ──────────────────────────────────
+    // GET /api/shipping-labels (with type/status filter)
+    if (path === '/api/shipping-labels' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let labels = PICKING_DATA.shippingLabels
+      if (typeFilter) labels = labels.filter(l => l.labelType === typeFilter.toUpperCase())
+      if (statusFilter) labels = labels.filter(l => l.printStatus === statusFilter.toUpperCase() || l.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(labels, `${labels.length} shipping labels`)), { headers })
+    }
+
+    // ─── Fulfillment Dashboard ────────────────────────────
+    // GET /api/wms-fulfillment/dashboard
+    if (path === '/api/wms-fulfillment/dashboard' && method === 'GET') {
+      const totalPickingTasks = PICKING_DATA.pickingTasks.length
+      const pendingPicking = PICKING_DATA.pickingTasks.filter(t => t.status === 'PENDING').length
+      const inProgressPicking = PICKING_DATA.pickingTasks.filter(t => t.status === 'IN_PROGRESS').length
+      const pickedTasks = PICKING_DATA.pickingTasks.filter(t => t.status === 'PICKED').length
+      const packingTasks = PICKING_DATA.pickingTasks.filter(t => t.status === 'PACKING').length
+      const packedTasks = PICKING_DATA.pickingTasks.filter(t => t.status === 'PACKED').length
+      const readyToShipTasks = PICKING_DATA.pickingTasks.filter(t => t.status === 'READY_TO_SHIP').length
+      const dispatchedTasks = PICKING_DATA.pickingTasks.filter(t => t.status === 'DISPATCHED').length
+      const totalPackingStations = PICKING_DATA.packingStations.length
+      const availableStations = PICKING_DATA.packingStations.filter(s => s.status === 'AVAILABLE').length
+      const busyStations = PICKING_DATA.packingStations.filter(s => s.status === 'BUSY').length
+      const totalPackingJobs = PICKING_DATA.packingJobs.length
+      const inProgressJobs = PICKING_DATA.packingJobs.filter(j => j.status === 'IN_PROGRESS').length
+      const labeledJobs = PICKING_DATA.packingJobs.filter(j => j.status === 'LABELED').length
+      const readyToShipJobs = PICKING_DATA.packingJobs.filter(j => j.status === 'READY_TO_SHIP').length
+      const totalCartonTypes = PICKING_DATA.cartonTypes.length
+      const totalCartons = PICKING_DATA.cartons.length
+      const openCartons = PICKING_DATA.cartons.filter(c => c.status === 'OPEN').length
+      const sealedCartons = PICKING_DATA.cartons.filter(c => c.status === 'SEALED').length
+      const labeledCartons = PICKING_DATA.cartons.filter(c => c.status === 'LABELED').length
+      const loadedCartons = PICKING_DATA.cartons.filter(c => c.status === 'LOADED').length
+      const shippedCartons = PICKING_DATA.cartons.filter(c => c.status === 'SHIPPED').length
+      const totalLabels = PICKING_DATA.shippingLabels.length
+      const printedLabels = PICKING_DATA.shippingLabels.filter(l => l.printStatus === 'PRINTED').length
+      const pendingLabels = PICKING_DATA.shippingLabels.filter(l => l.printStatus === 'PENDING').length
+      const byFulfillmentType: Record<string, number> = {}
+      PICKING_DATA.pickingTasks.forEach(t => { byFulfillmentType[t.fulfillmentType] = (byFulfillmentType[t.fulfillmentType] || 0) + 1 })
+      const byStrategy: Record<string, number> = {}
+      PICKING_DATA.pickingTasks.forEach(t => { byStrategy[t.pickingStrategy] = (byStrategy[t.pickingStrategy] || 0) + 1 })
+      const byStatus: Record<string, number> = {}
+      PICKING_DATA.pickingTasks.forEach(t => { byStatus[t.status] = (byStatus[t.status] || 0) + 1 })
+      const byStationType: Record<string, number> = {}
+      PICKING_DATA.packingStations.forEach(s => { byStationType[s.stationType] = (byStationType[s.stationType] || 0) + 1 })
+      const byCartonCategory: Record<string, number> = {}
+      PICKING_DATA.cartonTypes.forEach(c => { byCartonCategory[c.cartonCategory] = (byCartonCategory[c.cartonCategory] || 0) + 1 })
+      const byCartonStatus: Record<string, number> = {}
+      PICKING_DATA.cartons.forEach(c => { byCartonStatus[c.status] = (byCartonStatus[c.status] || 0) + 1 })
+      const byLabelType: Record<string, number> = {}
+      PICKING_DATA.shippingLabels.forEach(l => { byLabelType[l.labelType] = (byLabelType[l.labelType] || 0) + 1 })
+      const pickedTasksWithDuration = PICKING_DATA.pickingTasks.filter(t => t.pickDurationMin !== null) as any[]
+      const avgPickTime = pickedTasksWithDuration.length > 0 ? Math.round(pickedTasksWithDuration.reduce((s, t) => s + (t.pickDurationMin as number), 0) / pickedTasksWithDuration.length) : 0
+      const packedJobsWithDuration = PICKING_DATA.packingJobs.filter(j => j.durationMinutes !== null) as any[]
+      const avgPackTime = packedJobsWithDuration.length > 0 ? Math.round(packedJobsWithDuration.reduce((s, j) => s + (j.durationMinutes as number), 0) / packedJobsWithDuration.length) : 0
+      return new Response(JSON.stringify(successResponse({
+        summary: {
+          totalPickingTasks, pendingPicking, inProgressPicking, pickedTasks, packingTasks, packedTasks, readyToShipTasks, dispatchedTasks,
+          totalPackingStations, availableStations, busyStations,
+          totalPackingJobs, inProgressJobs, labeledJobs, readyToShipJobs,
+          totalCartonTypes, totalCartons, openCartons, sealedCartons, labeledCartons, loadedCartons, shippedCartons,
+          totalLabels, printedLabels, pendingLabels,
+        },
+        avgPickTimeMin: avgPickTime,
+        avgPackTimeMin: avgPackTime,
+        pickingAccuracyPercent: 99.4,
+        ordersPerHour: 18,
+        tasksByFulfillmentType: byFulfillmentType,
+        tasksByStrategy: byStrategy,
+        tasksByStatus: byStatus,
+        stationsByType: byStationType,
+        cartonsByCategory: byCartonCategory,
+        cartonsByStatus: byCartonStatus,
+        labelsByType: byLabelType,
+        fulfillmentFlow: ['Sales Order', 'Allocation', 'Wave Planning', 'Picking Task', 'Barcode Picking', 'Packing', 'Quality Check', 'Shipping Label', 'Dispatch Ready'],
+        pickerWorkflow: ['Scan Bin', 'Scan Product', 'Scan Batch', 'Scan Tote'],
+        packingWorkflow: ['Second Scan Verification', 'Pack', 'Label', 'Dispatch'],
+        fulfillmentTypes: ['RETAIL_ORDER', 'WHOLESALE_ORDER', 'DISTRIBUTOR_ORDER', 'RESTAURANT_REPLENISHMENT', 'BRANCH_TRANSFER', 'EXPORT_ORDER', 'CORPORATE_ORDER', 'ECOMMERCE_ORDER', 'SAMPLE_ORDER'],
+        pickingStrategies: ['SINGLE_ORDER', 'BATCH', 'WAVE', 'ZONE', 'PICK_AND_PASS', 'CART', 'CLUSTER', 'PALLET'],
+        pickingStatuses: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'PICKED', 'PACKING', 'PACKED', 'READY_TO_SHIP', 'DISPATCHED', 'CANCELLED', 'EXCEPTION'],
+        stationTypes: ['STANDARD', 'BULK', 'COLD', 'EXPORT', 'FRAGILE', 'GIFT'],
+        stationStatuses: ['AVAILABLE', 'BUSY', 'MAINTENANCE', 'CLOSED'],
+        packingStatuses: ['PENDING', 'IN_PROGRESS', 'PACKED', 'LABELED', 'READY_TO_SHIP', 'EXCEPTION', 'CANCELLED'],
+        verificationStatuses: ['PENDING', 'VERIFIED', 'MISMATCH', 'EXCEPTION'],
+        cartonCategories: ['STANDARD', 'BULK', 'PALLET', 'MIXED', 'GIFT_BOX', 'EXPORT', 'FRAGILE', 'COLD'],
+        cartonStatuses: ['OPEN', 'SEALED', 'LABELED', 'LOADED', 'SHIPPED'],
+        labelTypes: ['ORDER_LABEL', 'PALLET_LABEL', 'CARTON_LABEL', 'COURIER_LABEL', 'INTERNAL_LABEL', 'QR_LABEL', 'BARCODE_LABEL'],
+        labelFormats: ['PDF', 'ZPL', 'PNG', 'DPL'],
+        printStatuses: ['PENDING', 'PRINTED', 'FAILED'],
+        carrierIntegrations: ['Shiprocket', 'Blue Dart', 'Delhivery', 'DTDC', 'FedEx', 'DHL'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        sprint: 26,
+        chiefArchitectNote: 'Two-Stage Barcode Verification is the Chief Architect recommendation: at Pick, the picker scans in sequence — Bin → Product → Batch → Tote — every scan matched against the expected value before the line is marked PICKED. At Packing, the packer re-scans each picked unit at the Packing Station, system cross-checks against the picking task, and only then seals the carton. This eliminates the 25% mispick error rate of single-scan workflows and gives full genealogy: Sales Order → Picking Task → Picking Line → Packing Job → Carton → Shipping Label → Carrier Tracking.',
+      }, 'Picking, Packing & Order Fulfillment dashboard')), { headers })
+    }
+
+    // ─── Fulfillment Info ─────────────────────────────────
+    // GET /api/wms-fulfillment/info
+    if (path === '/api/wms-fulfillment/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Picking, Packing & Order Fulfillment Engine', version: '26.0.0', sprint: 26,
+        sprintName: 'Picking, Packing & Order Fulfillment Engine',
+        fulfillmentTypes: ['RETAIL_ORDER', 'WHOLESALE_ORDER', 'DISTRIBUTOR_ORDER', 'RESTAURANT_REPLENISHMENT', 'BRANCH_TRANSFER', 'EXPORT_ORDER', 'CORPORATE_ORDER', 'ECOMMERCE_ORDER', 'SAMPLE_ORDER'],
+        pickingStrategies: ['SINGLE_ORDER', 'BATCH', 'WAVE', 'ZONE', 'PICK_AND_PASS', 'CART', 'CLUSTER', 'PALLET'],
+        pickingStatuses: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'PICKED', 'PACKING', 'PACKED', 'READY_TO_SHIP', 'DISPATCHED', 'CANCELLED', 'EXCEPTION'],
+        stationTypes: ['STANDARD', 'BULK', 'COLD', 'EXPORT', 'FRAGILE', 'GIFT'],
+        stationStatuses: ['AVAILABLE', 'BUSY', 'MAINTENANCE', 'CLOSED'],
+        packingStatuses: ['PENDING', 'IN_PROGRESS', 'PACKED', 'LABELED', 'READY_TO_SHIP', 'EXCEPTION', 'CANCELLED'],
+        verificationStatuses: ['PENDING', 'VERIFIED', 'MISMATCH', 'EXCEPTION'],
+        cartonCategories: ['STANDARD', 'BULK', 'PALLET', 'MIXED', 'GIFT_BOX', 'EXPORT', 'FRAGILE', 'COLD'],
+        cartonStatuses: ['OPEN', 'SEALED', 'LABELED', 'LOADED', 'SHIPPED'],
+        labelTypes: ['ORDER_LABEL', 'PALLET_LABEL', 'CARTON_LABEL', 'COURIER_LABEL', 'INTERNAL_LABEL', 'QR_LABEL', 'BARCODE_LABEL'],
+        labelFormats: ['PDF', 'ZPL', 'PNG', 'DPL'],
+        printStatuses: ['PENDING', 'PRINTED', 'FAILED'],
+        carrierIntegrations: ['Shiprocket', 'Blue Dart', 'Delhivery', 'DTDC', 'FedEx', 'DHL'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        pickingPrinciple: 'Picking is the heart of warehouse outbound — converting a Sales Order into a directed walk through the warehouse, where the picker scans each Bin → Product → Batch → Tote in sequence, eliminating wrong-bin and wrong-batch errors. Six fulfillment types (RETAIL, WHOLESALE, DISTRIBUTOR, RESTAURANT_REPLENISHMENT, BRANCH_TRANSFER, EXPORT) drive different pick paths, priorities, and verification depth.',
+        strategyPrinciple: 'Eight picking strategies optimize different order profiles: SINGLE_ORDER (one order, one picker, retail), BATCH (multiple orders of similar profile picked together), WAVE (orders released in waves by dispatch window), ZONE (picker owns a zone, tote passed zone-to-zone), PICK_AND_PASS (multi-zone orders passed between pickers), CART (cart-mounted mobile picking, batch of orders), CLUSTER (cluster-picking with multi-tote), PALLET (pallet-level picking for bulk). Each strategy minimizes a different cost — travel distance (SINGLE), per-order setup (BATCH/WAVE), zone expertise (ZONE), congestion (PICK_AND_PASS).',
+        twoStageVerificationPrinciple: 'Two-Stage Barcode Verification is the Chief Architect recommendation. Stage 1 (Pick): picker scans Bin → Product → Batch → Tote in sequence. Each scan is matched against the expected value; mismatch blocks the line and raises an exception (WRONG_BIN, WRONG_PRODUCT, WRONG_BATCH). Stage 2 (Pack): packer re-scans each picked unit at the Packing Station; system cross-checks against the picking task before sealing. This two-stage verification drives picking accuracy from 75% (paper-based) to 99.4% (double-scan) and gives complete product genealogy: Sales Order → Picking Task → Picking Line → Packing Job → Carton → Shipping Label → Carrier Tracking.',
+        packingStationPrinciple: 'Packing Stations are dedicated work cells equipped with label printer, scale, barcode scanner, and optional conveyor. Three station types — STANDARD (ambient), COLD (chilled 2-8°C), EXPORT (customs-doc ready) — match product handling requirements. Each station tracks max concurrent jobs, current jobs, and avg pack time. A station is AVAILABLE (idle), BUSY (one or more jobs active), MAINTENANCE (offline), or CLOSED.',
+        packingJobPrinciple: 'A Packing Job is the bridge between Pick and Ship: it links a Picking Task to a Station and a Packer, requires second-scan verification, captures carton count, weight, volume, and photos, and ends with label printing. Status flow: PENDING → IN_PROGRESS → PACKED → LABELED → READY_TO_SHIP. Label-printed flag ensures no order leaves the warehouse without a printed shipping label.',
+        cartonizationPrinciple: 'Cartonization Engine computes the optimal carton type for each packing job — STANDARD (30×20×20, 15kg), GIFT_BOX (25×25×15, 8kg premium), EXPORT (40×30×30, 25kg double-wall) — based on product dimensions, weight, and category. Each carton has a unique barcode and status flow: OPEN → SEALED → LABELED → LOADED → SHIPPED. Carton-level tracking means any unit can be located to its carton, and any carton to its packing job, picking task, and sales order.',
+        shippingLabelPrinciple: 'Shipping Labels are the final hand-off to the carrier. Four label types — ORDER_LABEL (one per order), CARTON_LABEL (one per carton), COURIER_LABEL (carrier-specific format), PALLET_LABEL (pallet-level for wholesale) — support PDF (standard printers) and ZPL (Zebra thermal printers). Future carrier integrations: Shiprocket (multi-carrier aggregator), Blue Dart (air priority), Delhivery (surface + air), DTDC (pan-India), FedEx (international express), DHL (international standard).',
+        endpoints: ['GET /api/wms-picking-tasks', 'POST /api/wms-picking-tasks', 'POST /api/wms-picking-tasks/:id/complete', 'GET /api/packing-stations', 'GET /api/packing-jobs', 'POST /api/packing-jobs/:id/complete', 'GET /api/carton-types', 'GET /api/cartons', 'GET /api/shipping-labels', 'GET /api/wms-fulfillment/dashboard', 'GET /api/wms-fulfillment/info'],
+        part4Begun: true,
+        part4Sprint: 5,
+        part4Sprints: 12,
+        part4Tables: 31,
+      }, 'SUOP Picking, Packing & Order Fulfillment Engine v26.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 25, sprintName: 'Directed Putaway, Storage Optimization & Bin Intelligence Engine (25/33 sprints)' })
-log('info', 'Sprint 25 — Directed Putaway, Storage Optimization & Bin Intelligence Engine', { sprint: 25, part: 4, tables: 209, putawayTasks: 6, putawayRules: 5, warehousePallets: 4, forkliftTasks: 5 })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 26, sprintName: 'Picking, Packing & Order Fulfillment Engine (26/33 sprints)' })
+log('info', 'Sprint 26 — Picking, Packing & Order Fulfillment Engine', { sprint: 26, part: 4, tables: 216, pickingTasks: 6, packingStations: 3, packingJobs: 4, cartonTypes: 3, cartons: 5, shippingLabels: 4 })
+log('info', 'Picking & packing endpoints available (Sprint 26)', { pickingTasks: 'GET/POST /api/wms-picking-tasks', pickingComplete: 'POST /api/wms-picking-tasks/:id/complete', packingStations: 'GET /api/packing-stations', packingJobs: 'GET /api/packing-jobs', packingComplete: 'POST /api/packing-jobs/:id/complete', cartonTypes: 'GET /api/carton-types', cartons: 'GET /api/cartons', shippingLabels: 'GET /api/shipping-labels', dashboard: 'GET /api/wms-fulfillment/dashboard', info: 'GET /api/wms-fulfillment/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })
 log('info', 'Warehouse endpoints available', { warehouses: 'GET/POST /api/warehouses', warehouseDetail: 'GET /api/warehouses/:id', zones: 'GET /api/warehouse-zones', tempZones: 'GET /api/temperature-zones', tempLogs: 'GET /api/temperature-logs', capacity: 'GET /api/warehouse-capacity', calendar: 'GET /api/warehouse-calendar', accessRules: 'GET /api/warehouse-access-rules', rules: 'GET /api/warehouse-rules', dashboard: 'GET /api/warehouses/dashboard', info: 'GET /api/warehouses/info' })

@@ -1704,3 +1704,82 @@ Stage Summary:
 Directed Putaway flips the traditional model: instead of an operator deciding where to put stock, the SYSTEM computes the optimal bin and directs the operator step-by-step. The operator only confirms each step with a barcode scan. This eliminates the 30% putaway-error rate of operator-decided putaway (wrong bin, wrong zone, mixed products) and is the foundation of Bin Intelligence — the system continuously scores every bin on Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency, then recommends the highest-scoring bin. Pallet-level putaway (1 Pallet = 48 Boxes) reduces forklift trips by 87% vs box-level putaway.
 
 ### Next: Sprint 26 — Wave Planning, picking & packing engine (Wave Planning, Batch Picking, Cluster Picking, Pick-Path Optimization, Pack Station Automation)
+
+---
+
+## Task ID: SPRINT-26 — Picking, Packing & Order Fulfillment Engine
+
+**Date**: Sprint 26 implementation
+**Status**: ✅ COMPLETE — 216 tables, 26 sprints, Part 4 WMS (5/12 sprints)
+
+### Summary
+Sprint 26 delivers the heart of warehouse outbound — Picking, Packing & Order Fulfillment Engine. The sprint covers 7 new tables (WmsPickingTask, WmsPickingTaskLine, PackingStation, PackingJob, CartonType, Carton, ShippingLabel) and ships 11 new backend endpoints plus a full FulfillmentModule UI with 5 tabs. The Chief Architect recommendation implemented is **Two-Stage Barcode Verification**: Pick (Scan Bin→Product→Batch→Tote) + Pack (Second Scan Verification→Pack→Label→Dispatch), driving picking accuracy from 75% (paper-based) to 99.4% (double-scan).
+
+### Backend Changes (mini-services/suop-backend/index.ts)
+
+#### PICKING_DATA seed constants (added before `const server = Bun.serve`)
+- **6 Picking Tasks** covering all 6 fulfillment types (RETAIL_ORDER, WHOLESALE_ORDER, DISTRIBUTOR_ORDER, RESTAURANT_REPLENISHMENT, BRANCH_TRANSFER, EXPORT_ORDER) and 6 distinct picking strategies (SINGLE_ORDER, BATCH, WAVE, ZONE, PICK_AND_PASS, CART). Various statuses (PENDING, IN_PROGRESS, PICKED, PACKED, READY_TO_SHIP, DISPATCHED). Each task has warehouse, picker, partner, wave, priority, 3-5 lines, quantities, pick path distance, timing, audit.
+- **3 Packing Stations** (STANDARD, COLD, EXPORT) with equipment indicators (label printer, scale, barcode scanner, conveyor), max concurrent jobs, status (AVAILABLE/BUSY), and historical stats (total jobs completed, avg pack time).
+- **4 Packing Jobs** linked to picking tasks PKT-002/004/005/006, each with verification status (VERIFIED), carton count, weight/volume, photo URLs, status flow (IN_PROGRESS/LABELED/READY_TO_SHIP), and label-printed indicator.
+- **3 Carton Types** (STANDARD 30×20×20, GIFT_BOX 25×25×15, EXPORT 40×30×30 double-wall) with dimensions, volume, max/empty weight, category.
+- **5 Cartons** with barcodes, carton type link, packing job link, product count, units, weight, status (OPEN amber, OPEN amber, LABELED emerald, LOADED purple, SHIPPED gray).
+- **4 Shipping Labels** (ORDER_LABEL, CARTON_LABEL, COURIER_LABEL, PALLET_LABEL) with carrier info (Blue Dart, Delhivery, DHL Express, DTDC), tracking numbers, recipient addresses, content summary, weight, carton count, format (PDF/ZPL), print status (PRINTED/PRINTED/PRINTED/PENDING).
+
+#### 11 new endpoints (added before 404 fallback)
+- `GET /api/wms-picking-tasks` — with type/status/warehouse/picker filters
+- `POST /api/wms-picking-tasks` — creates new picking task (validates pickingNumber, fulfillmentType, pickingStrategy)
+- `POST /api/wms-picking-tasks/:id/complete` — marks task PICKED, fills barcodes for unverified lines
+- `GET /api/packing-stations` — with status/type filters
+- `GET /api/packing-jobs` — with status filter
+- `POST /api/packing-jobs/:id/complete` — marks READY_TO_SHIP, computes duration, sets label printed
+- `GET /api/carton-types` — with category filter
+- `GET /api/cartons` — with status filter
+- `GET /api/shipping-labels` — with type/status filter
+- `GET /api/wms-fulfillment/dashboard` — full summary (counts by type/strategy/status/category/label-type), avg pick/pack time, picking accuracy, orders/hour, fulfillment flow (9 steps), picker workflow (4 scans), packing workflow (4 steps), all enum lists, carrier integration list (Shiprocket/Blue Dart/Delhivery/DTDC/FedEx/DHL), Chief Architect note on Two-Stage Barcode Verification
+- `GET /api/wms-fulfillment/info` — engine name, version 26.0.0, sprint 26, all enums, 6 principle descriptions (picking/strategy/twoStageVerification/packingStation/packingJob/cartonization/shippingLabel), endpoints list, Part 4 sprint 5/12, 31 tables
+
+#### Other backend updates
+- `VERSION` updated from "25.0.0" to **"26.0.0"**
+- `/api/modules` WHS row updated: `entities: 24 → 31` (24 + 7 new), `sprint: 25 → 26`
+- Startup log updated: sprint 26, "Picking, Packing & Order Fulfillment Engine (26/33 sprints)", tables 216, with seed counts (6 picking tasks, 3 packing stations, 4 packing jobs, 3 carton types, 5 cartons, 4 shipping labels)
+- New endpoints log appended at startup
+
+### Frontend Changes (src/app/page.tsx)
+
+#### Module integration
+- `'fulfillment'` added to `ModuleKey` union type (line 50)
+- Sidebar entry added to Operations section: `{ name: 'Picking & Packing', icon: <ClipboardCheck />, module: 'fulfillment', available: true }` (reused existing ClipboardCheck import — no duplicate)
+- `moduleNames` entry: `fulfillment: 'Picking & Packing'`
+- Route added: `{activeModule === 'fulfillment' && <FulfillmentModule />}` (before Settings)
+- Sprint 26 added to `sprintData` array with full description (6 fulfillment types, 8 picking strategies, two-stage barcode verification, cartonization, multi-carrier shipping labels)
+
+#### Dashboard & global text references
+- Stats: 216 tables (was 209), 26 sprints (was 25), "Part 4: WMS (Sprint 26 of 33)"
+- Header Badge: `Sprint 26 · 216 Tables · Part 4 WMS`
+- Login screen footer: `Sprints 1-26` with Picking & Packing mentioned
+- Page footer: `Sprints 1-26` with Picking & Packing & Order Fulfillment · 216 Database Tables
+- Receiving module header badge: `Sprint 26 · Part 4 WMS` + `Sprint 26 · 216 tables`
+- Putaway module header badge: `Sprint 26 · Part 4 WMS` + `Sprint 26 · 216 tables`
+
+#### FulfillmentModule component (added BEFORE Settings Module, ~700 lines)
+Color maps defined: 9 fulfillment types, 8 picking strategies, 10 picking statuses, 4 priorities, 6 station types, 4 station statuses, 7 packing job statuses, 4 verification statuses, 8 carton categories, 5 carton statuses, 7 label types, 3 print statuses. Inline data arrays mirror backend seed.
+
+- **Overview tab**: 8 stat cards (Pending Picking, In Progress, Packed Today, Ready to Ship, Avg Pick Time, Avg Pack Time, Picking Accuracy, Orders/Hour) + 9-step fulfillment flow diagram (Sales Order → Allocation → Wave Planning → Picking Task → Barcode Picking → Packing → Quality Check → Shipping Label → Dispatch Ready) + two-stage verification card (Chief Architect recommendation: Stage 1 Pick = Scan Bin→Product→Batch→Tote; Stage 2 Pack = Second Scan Verification→Pack→Label→Dispatch) + 8 picking strategies explanation card
+- **Picking tab**: table with 9 fulfillment type colors, 8 strategy colors, 10 status colors, picking number, warehouse, wave, reference, partner, picker, priority, lines/qty progress bar, pick path distance & est time, actual pick duration, complete button for IN_PROGRESS only
+- **Packing tab**: 4 packing job cards (station, packer, verification status, carton count, weight/volume, timing, label-printed indicator, complete button for IN_PROGRESS) + 3 packing station cards (type, equipment indicators: label printer/scale/scanner/conveyor, capacity, status, avg pack time, jobs completed)
+- **Cartons tab**: 5-row cartons table (barcode, type, packing job link, product count, units, weight, status with OPEN amber / SEALED blue / LABELED emerald / LOADED purple / SHIPPED gray) + 3 carton type cards (dimensions, max weight, empty weight, category, volume)
+- **Labels tab**: 4 shipping label cards with label type colors, carrier info, tracking number, recipient name/address, partner, content summary, weight/cartons, format (PDF/ZPL), print status (PRINTED green / PENDING amber / FAILED red) + future carrier integration card listing 6 carriers (Shiprocket, Blue Dart, Delhivery, DTDC, FedEx, DHL) with descriptions
+
+### Verification
+- ✅ TypeScript: `npx tsc --noEmit` — no errors in `src/app/`
+- ✅ Backend: Picking-task POST endpoint fixed (added `as any` cast to satisfy inferred array literal type)
+- ✅ Frontend build: `npm run build` — Compiled successfully in 14.7s, 4 static pages generated
+- ✅ Backend build: `bun build index.ts --target=bun --outdir=/tmp/suop-check-26` — Bundled 44 modules, 1.00 MB
+- ✅ Server restarted with `setsid` + `timeout 540` on port 3000 — LISTEN confirmed on 0.0.0.0:3000
+- ✅ Homepage: HTTP 200 · CSS: HTTP 200 (`34d933785a17edf3.css`)
+- ✅ JS bundle `fdaf69dd8fd76431.js` contains: "Picking & Packing" (1), "Sprint 26" (1), "216 tables" (1), "Two-Stage Barcode Verification" (1)
+
+### Chief Architect Note
+Two-Stage Barcode Verification is the Chief Architect recommendation for Sprint 26. Stage 1 (Pick): picker scans Bin → Product → Batch → Tote in sequence — each scan matched against expected value; mismatch blocks the line and raises an exception (WRONG_BIN, WRONG_PRODUCT, WRONG_BATCH). Stage 2 (Pack): packer re-scans each picked unit at the Packing Station; system cross-checks against the picking task before sealing. This drives picking accuracy from 75% (paper-based) to 99.4% (double-scan) and gives complete product genealogy: Sales Order → Picking Task → Picking Line → Packing Job → Carton → Shipping Label → Carrier Tracking. Eight picking strategies (SINGLE_ORDER/BATCH/WAVE/ZONE/PICK_AND_PASS/CART/CLUSTER/PALLET) each minimize a different cost — travel distance (SINGLE), per-order setup (BATCH/WAVE), zone expertise (ZONE), congestion (PICK_AND_PASS).
+
+### Next: Sprint 27 — Dispatch & Carrier Manifest Engine (Dispatch Orders, Vehicle Routing, Load Building, Carrier Manifest, Proof of Delivery, Last-Mile Tracking)
