@@ -1964,3 +1964,52 @@ Stage Summary:
 - Total project state: Sprints 1-29 complete, 249 database tables, 31+ frontend modules, Part 4 WMS at 8/12 sprints (67%)
 - Chief Architect recommendation implemented: Automatic Cross-Docking for fresh products (Shwet Idli Batter example)
 - Next sprint (30): Enterprise Warehouse Resource, Equipment & Maintenance Management
+
+---
+Task ID: 30
+Agent: Main Agent (Super Z)
+Task: Sprint 30 — Enterprise Warehouse Resource, Equipment & Maintenance Management Engine
+
+Work Log:
+- Added 12 new Sprint 30 Prisma models (261 total tables):
+  * Epic 1 Equipment Master: `EquipmentType`, `EquipmentMaster`
+  * Epic 2 Forklift Fleet: `Forklift`, `ForkliftAssignment`
+  * Epic 3 Scanners & Mobile: `MobileDevice`, `BarcodeScanner`
+  * Epic 4 Battery: `BatteryStatus`, `ChargingStation`
+  * Epic 5 Maintenance: `MaintenancePlan`, `MaintenanceSchedule`, `MaintenanceTask`
+  * Epic 6 Breakdown: `EquipmentBreakdown`
+  * Epic 7 Certification: `OperatorCertification`
+- Added 8 new Sprint 30 frontend modules (~1,600 lines):
+  1. `EquipmentMasterModule` — 13 equipment categories, QR codes, purchase/warranty/lifecycle, create form
+  2. `ForkliftDashboardModule` — 5 forklift types (Electric/Diesel/Reach/Order Picker/Pallet Stacker), battery/service tracking, assignments table
+  3. `ScannerManagementModule` — 2 views (scanners/mobile), 5 scanner types, IMEI/OS/app sync/battery/connectivity
+  4. `BatteryDashboardModule` — Battery health, cycle count, charging stations, replacement alerts
+  5. `MaintenancePlannerModule` — 3 views (schedule/tasks/plans), 7 frequencies, workflow diagram
+  6. `BreakdownConsoleModule` — 7 problem categories, 6-step workflow, photo evidence, downtime tracking
+  7. `CertificationCenterModule` — 8 cert types, expiry tracking, validation rule, cert type matrix
+  8. `EquipmentAnalyticsModule` — KPIs (MTBF/MTTR/Utilization), equipment util chart, maintenance trend, replacement forecast, AI insights
+- Added 16 new backend API endpoints:
+  * `GET/POST /api/equipment-master`
+  * `GET /api/forklifts`
+  * `GET /api/barcode-scanners`, `GET /api/mobile-devices`
+  * `GET /api/battery-status`, `GET /api/charging-stations`
+  * `GET /api/maintenance-plans`, `GET /api/maintenance-schedule`, `GET /api/maintenance-tasks`, `POST /api/maintenance-tasks/:id/complete`
+  * `GET/POST /api/equipment-breakdowns`, `POST /api/equipment-breakdowns/:id/repair`
+  * `GET /api/operator-certifications`, `POST /api/operator-certifications/validate`
+  * `GET /api/equipment-analytics`, `GET /api/warehouse-resource/info`
+- Added `Smartphone` to lucide-react imports for mobile device icons
+- Added 8 new module keys to `ModuleKey`, `moduleNames`, sidebar `SIDEBAR_SECTIONS`, and main render routing
+- Updated header badge: `Sprint 30 · 261 Tables · Part 4 WMS`
+- Updated footer to include Resource & Equipment Management
+- Updated backend startup logs to Sprint 30 with all endpoint summary
+- Backend `info` endpoint includes 7 epic principles (equipment master, forklift, scanner, battery, maintenance, breakdown, certification) + Chief Architect Recommendation
+- Verified `npm run build` succeeds (Turbopack, 15.5s)
+- Verified backend starts and logs all Sprint 30 endpoints
+- Verified dev server returns HTTP 200 OK
+
+Stage Summary:
+- Sprint 30 implementation COMPLETE: 12 new Prisma models, 8 new frontend modules (~1,600 LOC), 16 new API endpoints
+- Project builds cleanly, dev server runs, backend starts successfully
+- Total project state: Sprints 1-30 complete, 261 database tables, 39+ frontend modules, Part 4 WMS at 9/12 sprints (75%)
+- Chief Architect Recommendation implemented: Treat every scanner/mobile device as managed enterprise asset with full lifecycle
+- Next sprint (31): Enterprise Warehouse Mobile Platform & Barcode Scanning Application — the dedicated operator app

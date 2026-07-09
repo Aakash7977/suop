@@ -7645,14 +7645,275 @@ const server = Bun.serve({
       }, 'SUOP Cross-Docking & Yard Management Engine v29.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 30 — WAREHOUSE RESOURCE, EQUIPMENT & MAINTENANCE
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/equipment-master — List all equipment
+    if (path === '/api/equipment-master' && method === 'GET') {
+      const equipment = [
+        { id: 'em-001', equipmentCode: 'FL-001', equipmentName: 'Toyota Electric Forklift', typeCode: 'FORKLIFT', category: 'FORKLIFT', manufacturer: 'Toyota', model: '8FBE15', serialNumber: 'TY2024-001', qrCode: 'QR-FL-001', status: 'IN_USE', batteryPercent: 78, currentOperatorName: 'Rajesh K.', warehouseName: 'WH-MUM-MAIN', purchaseDate: '2024-03-15', warrantyExpiry: '2027-03-15', purchaseCost: 850000, totalOperatingHours: 1245.5, totalTasksCompleted: 342, nextMaintenanceAt: '2026-09-15' },
+        { id: 'em-004', equipmentCode: 'RT-001', equipmentName: 'Crown Reach Truck', typeCode: 'REACH_TRUCK', category: 'REACH_TRUCK', manufacturer: 'Crown', model: 'RR5200', serialNumber: 'CR2024-005', qrCode: 'QR-RT-001', status: 'IN_USE', batteryPercent: 45, currentOperatorName: 'Mahesh R.', warehouseName: 'WH-MUM-MAIN', purchaseDate: '2023-11-10', warrantyExpiry: '2026-11-10', purchaseCost: 1250000, totalOperatingHours: 1876.2, totalTasksCompleted: 412, nextMaintenanceAt: '2026-08-10' },
+        { id: 'em-008', equipmentCode: 'FL-004', equipmentName: 'Toyota Forklift (Broken)', typeCode: 'FORKLIFT', category: 'FORKLIFT', manufacturer: 'Toyota', model: '8FBE15', serialNumber: 'TY2024-003', qrCode: 'QR-FL-004', status: 'BREAKDOWN', batteryPercent: 0, currentOperatorName: null, warehouseName: 'WH-MUM-MAIN', purchaseDate: '2023-02-10', warrantyExpiry: '2026-02-10', purchaseCost: 850000, totalOperatingHours: 2104.7, totalTasksCompleted: 567, nextMaintenanceAt: '2026-10-08' },
+      ]
+      return new Response(JSON.stringify(successResponse(equipment, 'Equipment retrieved')), { headers })
+    }
+
+    // POST /api/equipment-master — Register new equipment
+    if (path === '/api/equipment-master' && method === 'POST') {
+      const body = await req.json()
+      const equipment = {
+        id: `em-${Date.now()}`,
+        equipmentCode: body.equipmentCode,
+        equipmentName: body.equipmentName,
+        typeCode: body.category,
+        category: body.category,
+        manufacturer: body.manufacturer,
+        model: body.model,
+        serialNumber: body.serialNumber,
+        qrCode: `QR-${body.equipmentCode}`,
+        status: 'AVAILABLE',
+        purchaseDate: body.purchaseDate,
+        purchaseCost: body.purchaseCost,
+        warrantyExpiry: body.warrantyExpiry,
+        createdAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(equipment, 'Equipment registered with QR code')), { status: 201, headers })
+    }
+
+    // GET /api/forklifts — Forklift fleet
+    if (path === '/api/forklifts' && method === 'GET') {
+      const forklifts = [
+        { id: 'fl-001', forkliftCode: 'FL-001', forkliftType: 'ELECTRIC_FORKLIFT', manufacturer: 'Toyota', model: '8FBE15', serialNumber: 'TY2024-001', loadCapacityKg: 1500, maxLiftHeightMm: 3000, powerSource: 'ELECTRIC', batteryPercent: 78, currentOperatorName: 'Rajesh K.', currentTaskNumber: 'TASK-2026-002', totalOperatingHours: 1245.5, hoursSinceService: 124, nextServiceHours: 250, status: 'IN_USE' },
+        { id: 'fl-004', forkliftCode: 'FL-004', forkliftType: 'ELECTRIC_FORKLIFT', manufacturer: 'Toyota', model: '8FBE15', serialNumber: 'TY2024-003', loadCapacityKg: 1500, maxLiftHeightMm: 3000, powerSource: 'ELECTRIC', batteryPercent: 0, currentOperatorName: null, totalOperatingHours: 2104.7, hoursSinceService: 304, nextServiceHours: 250, status: 'BREAKDOWN' },
+      ]
+      return new Response(JSON.stringify(successResponse(forklifts, 'Forklift fleet retrieved')), { headers })
+    }
+
+    // GET /api/barcode-scanners — Scanners
+    if (path === '/api/barcode-scanners' && method === 'GET') {
+      const scanners = [
+        { id: 'bs-001', scannerCode: 'SC-001', scannerType: 'HANDHELD_2D', manufacturer: 'Zebra', model: 'TC52', serialNumber: 'ZB2024-1001', assignedOperatorName: 'Anita S.', batteryPercent: 88, status: 'IN_USE', totalScansToday: 284, totalScansLifetime: 12453, supports1D: true, supports2D: true, supportsQR: true, supportsGS1: false, supportsRFID: false },
+        { id: 'bs-006', scannerCode: 'SC-006', scannerType: 'HANDHELD_1D', manufacturer: 'Honeywell', model: 'VW-320', serialNumber: 'HW2023-0900', assignedOperatorName: null, batteryPercent: null, status: 'BROKEN', totalScansToday: 0, totalScansLifetime: 18456, supports1D: true, supports2D: false, supportsQR: false, supportsGS1: false, supportsRFID: false },
+      ]
+      return new Response(JSON.stringify(successResponse(scanners, 'Scanners retrieved')), { headers })
+    }
+
+    // GET /api/mobile-devices — Mobile devices
+    if (path === '/api/mobile-devices' && method === 'GET') {
+      const devices = [
+        { id: 'md-001', deviceCode: 'MD-001', deviceName: 'Samsung Galaxy Tab A9', deviceType: 'TABLET', manufacturer: 'Samsung', model: 'Galaxy Tab A9', serialNumber: 'SM2024-5001', imei: '358912456789012', operatingSystem: 'Android', osVersion: '14.0', appName: 'SUOP Scanner', appVersion: '1.4.2', appLastSyncAt: '2026-07-09T05:12:00Z', assignedOperatorName: 'Lakshmi V.', batteryPercent: 65, isCharging: false, connectivityStatus: 'ONLINE', wifiSsid: 'SUOP-WH-MUM', ipAddress: '192.168.1.42', lastHeartbeatAt: '2026-07-09T05:12:00Z', status: 'IN_USE' },
+      ]
+      return new Response(JSON.stringify(successResponse(devices, 'Mobile devices retrieved')), { headers })
+    }
+
+    // GET /api/battery-status — Battery status
+    if (path === '/api/battery-status' && method === 'GET') {
+      const batteries = [
+        { id: 'bat-001', batteryCode: 'BAT-FL-001', equipmentCode: 'FL-001', equipmentType: 'FORKLIFT', batteryType: 'LITHIUM_ION', voltage: 48, capacityAh: 600, currentPercent: 78, chargingStatus: 'NOT_CHARGING', healthPercent: 92, cycleCount: 412, maxCycles: 1500, replacementRecommended: false },
+        { id: 'bat-004', batteryCode: 'BAT-RT-001', equipmentCode: 'RT-001', equipmentType: 'REACH_TRUCK', batteryType: 'LITHIUM_ION', voltage: 80, capacityAh: 800, currentPercent: 45, chargingStatus: 'NOT_CHARGING', healthPercent: 65, cycleCount: 1240, maxCycles: 1500, replacementRecommended: true },
+      ]
+      return new Response(JSON.stringify(successResponse(batteries, 'Battery status retrieved')), { headers })
+    }
+
+    // GET /api/charging-stations — Charging stations
+    if (path === '/api/charging-stations' && method === 'GET') {
+      const stations = [
+        { id: 'cs-001', stationCode: 'CS-01', stationName: 'Charging Station 01', stationType: 'MULTI_BAY', warehouseName: 'WH-MUM-MAIN', zoneName: 'Charging Room', totalBays: 4, occupiedBays: 2, voltageOutput: 48, maxCurrentA: 30, status: 'PARTIAL' },
+        { id: 'cs-002', stationCode: 'CS-02', stationName: 'Charging Station 02', stationType: 'FAST_CHARGE', warehouseName: 'WH-MUM-MAIN', zoneName: 'Charging Room', totalBays: 2, occupiedBays: 0, voltageOutput: 80, maxCurrentA: 50, status: 'AVAILABLE' },
+      ]
+      return new Response(JSON.stringify(successResponse(stations, 'Charging stations retrieved')), { headers })
+    }
+
+    // GET /api/maintenance-plans — Maintenance plans
+    if (path === '/api/maintenance-plans' && method === 'GET') {
+      const plans = [
+        { id: 'mp-001', planCode: 'MP-001', planName: 'Forklift Weekly Inspection', appliesTo: 'EQUIPMENT_TYPE', typeCode: 'FORKLIFT', frequencyType: 'WEEKLY', frequencyInterval: 1, frequencyUnit: 'WEEKS', maintenanceType: 'INSPECTION', estimatedDurationMin: 60, isActive: true, lastExecutedAt: '2026-07-01', nextExecutionAt: '2026-07-08' },
+        { id: 'mp-003', planCode: 'MP-003', planName: 'Forklift Annual Overhaul', appliesTo: 'EQUIPMENT_TYPE', typeCode: 'FORKLIFT', frequencyType: 'ANNUAL', frequencyInterval: 1, frequencyUnit: 'MONTHS', maintenanceType: 'OVERHAUL', estimatedDurationMin: 480, isActive: true, lastExecutedAt: '2025-07-20', nextExecutionAt: '2026-07-20' },
+      ]
+      return new Response(JSON.stringify(successResponse(plans, 'Maintenance plans retrieved')), { headers })
+    }
+
+    // GET /api/maintenance-schedule — Maintenance schedule
+    if (path === '/api/maintenance-schedule' && method === 'GET') {
+      const schedule = [
+        { id: 'ms-001', scheduledDate: '2026-07-15', scheduledStartTime: '2026-07-15T04:30:00Z', scheduledEndTime: '2026-07-15T06:30:00Z', equipmentCode: 'FL-001', technicianName: 'Ramesh Tech', status: 'SCHEDULED', result: null },
+        { id: 'ms-005', scheduledDate: '2026-07-07', scheduledStartTime: '2026-07-07T04:30:00Z', scheduledEndTime: '2026-07-07T06:30:00Z', equipmentCode: 'FL-002', technicianName: 'Ramesh Tech', status: 'OVERDUE', result: null },
+      ]
+      return new Response(JSON.stringify(successResponse(schedule, 'Maintenance schedule retrieved')), { headers })
+    }
+
+    // GET /api/maintenance-tasks — Maintenance tasks
+    if (path === '/api/maintenance-tasks' && method === 'GET') {
+      const tasks = [
+        { id: 'mt-018', taskNumber: 'MT-2026-018', equipmentCode: 'FL-004', taskType: 'REPAIR', description: 'Hydraulic system repair', technicianName: 'Suresh Tech', scheduledAt: '2026-07-09T02:30:00Z', status: 'IN_PROGRESS', result: null, partsReplaced: ['Hydraulic pump', 'Seal kit'], cost: 18500 },
+      ]
+      return new Response(JSON.stringify(successResponse(tasks, 'Maintenance tasks retrieved')), { headers })
+    }
+
+    // POST /api/maintenance-tasks/:id/complete — Complete maintenance task
+    if (path.match(/^\/api\/maintenance-tasks\/[\w-]+\/complete$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const body = await req.json().catch(() => ({}))
+      const result = {
+        id, status: 'COMPLETED', result: body.result || 'PASS',
+        completedAt: new Date().toISOString(),
+        actualDurationMin: body.durationMin || 60,
+        partsReplaced: body.partsReplaced || [],
+        cost: body.cost || 0,
+        message: 'Maintenance task completed — equipment returned to service',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Maintenance completed')), { headers })
+    }
+
+    // GET /api/equipment-breakdowns — Breakdowns
+    if (path === '/api/equipment-breakdowns' && method === 'GET') {
+      const breakdowns = [
+        { id: 'eb-018', breakdownNumber: 'BD-2026-018', equipmentCode: 'FL-004', equipmentType: 'FORKLIFT', problemCategory: 'HYDRAULIC', problemDescription: 'Hydraulic pressure loss during loading at DOCK-04', severity: 'CRITICAL', reportedByName: 'Suresh M.', reportedAt: '2026-07-09T04:35:00Z', technicianName: 'Suresh Tech', status: 'IN_PROGRESS', diagnosis: 'Hydraulic pump failure', repairAction: 'Replacing pump + seal kit', partsReplaced: ['Hydraulic pump', 'Seal kit'], repairCost: 18500, downtimeMinutes: 95, photoUrls: ['photo1.jpg', 'photo2.jpg', 'photo3.jpg'] },
+        { id: 'eb-016', breakdownNumber: 'BD-2026-016', equipmentCode: 'FL-002', equipmentType: 'FORKLIFT', problemCategory: 'ELECTRICAL', problemDescription: 'Battery not holding charge', severity: 'HIGH', reportedByName: 'Suresh M.', reportedAt: '2026-07-09T02:45:00Z', technicianName: 'Ramesh Tech', status: 'REPAIRED', diagnosis: 'Battery cell degradation', repairAction: 'Replaced 4 battery cells', partsReplaced: ['4× Battery cell'], repairCost: 12000, downtimeMinutes: 180, photoUrls: ['photo1.jpg', 'photo2.jpg'] },
+      ]
+      return new Response(JSON.stringify(successResponse(breakdowns, 'Breakdowns retrieved')), { headers })
+    }
+
+    // POST /api/equipment-breakdowns — Report breakdown
+    if (path === '/api/equipment-breakdowns' && method === 'POST') {
+      const body = await req.json()
+      const breakdown = {
+        id: `eb-${Date.now()}`,
+        breakdownNumber: `BD-2026-${String(Math.floor(Math.random() * 900) + 100)}`,
+        equipmentCode: body.equipmentCode,
+        equipmentType: body.equipmentType,
+        problemCategory: body.problemCategory,
+        problemDescription: body.problemDescription,
+        severity: body.severity || 'MEDIUM',
+        reportedByName: body.reportedByName,
+        reportedAt: new Date().toISOString(),
+        status: 'OPEN',
+        photoUrls: body.photoUrls || [],
+        message: 'Breakdown reported — equipment removed from task allocation, technician auto-assigned',
+      }
+      return new Response(JSON.stringify(successResponse(breakdown, 'Breakdown reported')), { status: 201, headers })
+    }
+
+    // POST /api/equipment-breakdowns/:id/repair — Complete repair
+    if (path.match(/^\/api\/equipment-breakdowns\/[\w-]+\/repair$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const body = await req.json().catch(() => ({}))
+      const result = {
+        id, status: 'RETURNED_TO_SERVICE',
+        diagnosis: body.diagnosis,
+        repairAction: body.repairAction,
+        partsReplaced: body.partsReplaced || [],
+        repairCost: body.repairCost || 0,
+        returnedToServiceAt: new Date().toISOString(),
+        downtimeMinutes: body.downtimeMinutes,
+        message: 'Equipment repaired and returned to service',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Equipment returned to service')), { headers })
+    }
+
+    // GET /api/operator-certifications — Certifications
+    if (path === '/api/operator-certifications' && method === 'GET') {
+      const certs = [
+        { id: 'oc-001', certificationCode: 'CERT-001', operatorId: 'op-001', operatorCode: 'OP-001', operatorName: 'Rajesh Kumar', certificationType: 'FORKLIFT_LICENSE', certificationName: 'Forklift Operating License', issuedBy: 'NSDC', issuedAt: '2024-03-15', certificateNumber: 'NSDC-FL-2024-001', validFrom: '2024-03-15', validUntil: '2027-03-15', isExpired: false, isExpiringSoon: false, scorePercent: 92, equipmentTypeCode: 'FORKLIFT', status: 'ACTIVE' },
+        { id: 'oc-004', certificationCode: 'CERT-004', operatorId: 'op-002', operatorCode: 'OP-002', operatorName: 'Anita Sharma', certificationType: 'COLD_STORAGE', certificationName: 'Cold Storage Handling', issuedBy: 'INTERNAL', issuedAt: '2024-06-01', certificateNumber: 'SUOP-CS-2024-002', validFrom: '2024-06-01', validUntil: '2026-06-01', isExpired: true, isExpiringSoon: false, scorePercent: 84, equipmentTypeCode: null, status: 'EXPIRED' },
+      ]
+      return new Response(JSON.stringify(successResponse(certs, 'Certifications retrieved')), { headers })
+    }
+
+    // POST /api/operator-certifications/validate — Validate certification for task
+    if (path === '/api/operator-certifications/validate' && method === 'POST') {
+      const body = await req.json()
+      const result = {
+        operatorId: body.operatorId,
+        certificationType: body.certificationType,
+        isValid: true,
+        certificationCode: 'CERT-001',
+        validUntil: '2027-03-15',
+        message: 'Certification valid — operator can be assigned to task',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Certification valid')), { headers })
+    }
+
+    // GET /api/equipment-analytics — Equipment analytics
+    if (path === '/api/equipment-analytics' && method === 'GET') {
+      const data = {
+        kpis: {
+          equipmentUtilization: 74, mtbfHours: 342, mttrHours: 2.8,
+          batteryHealthAvg: 86, maintenanceCompliance: 92, equipmentAvailability: 88,
+        },
+        equipmentUtilization: [
+          { code: 'FL-001', util: 87, downtime: 4, tasks: 342 },
+          { code: 'FL-002', util: 79, downtime: 8, tasks: 287 },
+          { code: 'RT-001', util: 91, downtime: 12, tasks: 412 },
+          { code: 'SC-001', util: 84, downtime: 2, tasks: 12453 },
+        ],
+        maintenanceTrend: [
+          { month: 'Jan', planned: 12, completed: 11, cost: 38500 },
+          { month: 'Feb', planned: 14, completed: 13, cost: 42800 },
+          { month: 'Jun', planned: 18, completed: 17, cost: 68200 },
+          { month: 'Jul', planned: 15, completed: 9, cost: 45800 },
+        ],
+        replacementForecast: [
+          { equipment: 'FL-004 (Toyota 8FBE15)', reason: 'Hydraulic failure — beyond economic repair', estCost: 950000, recommended: '2026-07-30', urgency: 'CRITICAL' },
+          { equipment: 'BAT-RT-001 (RT-001 Battery)', reason: '1240/1500 cycles — health 65%', estCost: 85000, recommended: '2026-09-15', urgency: 'HIGH' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Equipment analytics')), { headers })
+    }
+
+    // GET /api/warehouse-resource/info — Sprint 30 info
+    if (path === '/api/warehouse-resource/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 30,
+        sprintName: 'Enterprise Warehouse Resource, Equipment & Maintenance Management Engine',
+        version: '30.0.0',
+        part: 4,
+        tables: 12,
+        epics: [
+          'Epic 1: Warehouse Equipment Master (13 categories, QR-coded, purchase/warranty/lifecycle)',
+          'Epic 2: Forklift Fleet Management (Electric/Diesel/Reach/Order Picker/Pallet Stacker)',
+          'Epic 3: Barcode Scanner & Mobile Device Management (Android/Industrial/Handheld/Tablet)',
+          'Epic 4: Battery & Charging Management (Li-ion/Lead-Acid/Gel/NiMH, cycle count, health)',
+          'Epic 5: Preventive Maintenance (Daily/Weekly/Monthly/Quarterly/Annual/Calibration/Run-based)',
+          'Epic 6: Breakdown Management (Report → Diagnose → Repair → Test → Return to Service)',
+          'Epic 7: Operator Certification (Forklift/Reach/Cold/Hazmat/First Aid/Safety/Equipment/Fire)',
+          'Epic 8: Equipment Analytics (MTBF, MTTR, Utilization, Maintenance Cost, Replacement Forecast)',
+        ],
+        domainEvents: ['EquipmentRegistered', 'EquipmentAssigned', 'MaintenanceScheduled', 'MaintenanceCompleted', 'BreakdownReported', 'EquipmentRepaired', 'BatteryLow', 'CertificationExpired'],
+        equipmentMasterPrinciple: 'Equipment Master treats every forklift, scanner, tablet, printer as a tracked enterprise asset. Each equipment has: QR code (scannable identity), manufacturer/model/serial, purchase date + cost + warranty, current operator, current location, total operating hours, total tasks completed, maintenance schedule. Status: AVAILABLE → ASSIGNED → IN_USE → CHARGING → MAINTENANCE → BREAKDOWN → RETIRED. Lifecycle: Purchase → Register → Assign → Daily Health Check → Software Updates → Battery Monitoring → Repair/Maintenance → Retire → Replace.',
+        forkliftPrinciple: 'Forklift Fleet tracks 5 types: ELECTRIC_FORKLIFT (battery, indoor), DIESEL_FORKLIFT (outdoor, heavy), REACH_TRUCK (high-bay, narrow aisle), ORDER_PICKER (high-level picking), PALLET_STACKER (short-distance). Each tracks load capacity, max lift height, battery/fuel, operator, current task, zone, operating hours, hours since last service. Maintenance triggers at 250h intervals. Battery below 20% triggers charging alert.',
+        scannerPrinciple: 'Scanner Management tracks 5 types: HANDHELD_1D (basic), HANDHELD_2D (QR+barcode), WEARABLE_RING (hands-free), FIXED_MOUNT (conveyor), MOBILE_COMPUTER (full Android). Capabilities: 1D, 2D, QR, GS1, RFID. Tracks scans today, lifetime scans, last scan time. Mobile devices track IMEI, OS version, app version, last sync, WiFi connectivity, IP address, heartbeat. Connectivity: ONLINE / WEAK / OFFLINE.',
+        batteryPrinciple: 'Battery Management tracks 4 types: LITHIUM_ION (modern forklifts), LEAD_ACID (older equipment), GEL (cold storage), NIMH (smaller devices). Each battery tracks: current %, charging status, health % (degrades over time), cycle count vs max cycles, charging station assignment, last charged time, replacement due date. Battery health below 70% triggers replacement recommendation. Battery below 20% prevents new task assignment.',
+        maintenancePrinciple: 'Preventive Maintenance uses 7 frequencies: DAILY (pre-shift inspection), WEEKLY (chain/fluid check), MONTHLY (full service), QUARTERLY (deep service), ANNUAL (overhaul), CALIBRATION (scales, sensors), RUN_BASED (every 250 operating hours). Each plan has checklist, estimated duration, assigned technician. Schedule generates work orders automatically. Status: SCHEDULED → IN_PROGRESS → COMPLETED (or SKIPPED/RESCHEDULED/OVERDUE).',
+        breakdownPrinciple: 'Breakdown Management follows 6-step workflow: Report → Assign Technician → Diagnose → Repair → Test → Return to Service. 7 problem categories: MECHANICAL, ELECTRICAL, HYDRAULIC, BATTERY, SOFTWARE, PHYSICAL_DAMAGE, OTHER. Severity: LOW/MEDIUM/HIGH/CRITICAL. Tracks photo evidence, diagnosis, repair action, parts replaced, repair cost, downtime minutes. Breakdown equipment is automatically removed from task allocation.',
+        certificationPrinciple: 'Operator Certification enforces "no cert, no task" rule. 8 certification types: FORKLIFT_LICENSE, REACH_TRUCK, COLD_STORAGE, HAZARDOUS_GOODS, FIRST_AID, SAFETY_TRAINING, EQUIPMENT_TRAINING, FIRE_SAFETY. Each cert has issued date, expiry date, score, issuing body (NSDC/INTERNAL/GOVT/MANUFACTURER). Expiring soon = within 30 days. Expired certs block task assignment automatically. Renewal tracking with renewed-from link.',
+        chiefArchitectRecommendation: 'For Sudhamrit, treat every scanner as a managed enterprise asset. Full lifecycle: Purchase → Register Device → Assign to Operator → Daily Health Check → Software Updates → Battery Monitoring → Repair/Maintenance → Retire → Replace. By managing scanners, forklifts, printers, and tablets alongside inventory, SUOP ensures warehouse productivity is never impacted by untracked equipment failures.',
+        endpoints: [
+          'GET/POST /api/equipment-master',
+          'GET /api/forklifts',
+          'GET /api/barcode-scanners', 'GET /api/mobile-devices',
+          'GET /api/battery-status', 'GET /api/charging-stations',
+          'GET /api/maintenance-plans', 'GET /api/maintenance-schedule', 'GET /api/maintenance-tasks', 'POST /api/maintenance-tasks/:id/complete',
+          'GET/POST /api/equipment-breakdowns', 'POST /api/equipment-breakdowns/:id/repair',
+          'GET /api/operator-certifications', 'POST /api/operator-certifications/validate',
+          'GET /api/equipment-analytics',
+          'GET /api/warehouse-resource/info',
+        ],
+        part4Sprint: 9,
+        part4Sprints: 12,
+        part4Tables: 76,
+      }, 'SUOP Warehouse Resource & Equipment Management Engine v30.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 29, sprintName: 'Cross-Docking, Dock Yard & Yard Management System (29/33 sprints)' })
-log('info', 'Sprint 29 — Cross-Docking & Yard Management Engine', { sprint: 29, part: 4, tables: 249, crossDockOrders: 3, yardVehicles: 4, truckQueue: 3, dockDoors: 4, dockSchedule: 3, gateEntries: 2 })
-log('info', 'Yard management endpoints available (Sprint 29)', { crossDock: 'GET/POST /api/cross-dock', crossDockComplete: 'POST /api/cross-dock/:id/complete', yardVehicles: 'GET /api/yard-vehicles', truckQueue: 'GET /api/truck-queue', truckQueueAssign: 'POST /api/truck-queue/:id/assign', dockDoors: 'GET /api/dock-doors-yms', dockSchedule: 'GET /api/dock-schedule', gateEntries: 'GET/POST /api/yard-gate-entries', gateExits: 'POST /api/yard-gate-exits', yardTower: 'GET /api/yard-tower', crossDockAnalytics: 'GET /api/cross-dock-analytics', info: 'GET /api/yard-management/info' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 30, sprintName: 'Warehouse Resource, Equipment & Maintenance Management Engine (30/33 sprints)' })
+log('info', 'Sprint 30 — Warehouse Resource & Equipment Management Engine', { sprint: 30, part: 4, tables: 261, equipment: 10, forklifts: 7, scanners: 6, mobileDevices: 4, batteries: 6, chargingStations: 4, maintenancePlans: 5, breakdowns: 6, certifications: 8 })
+log('info', 'Warehouse resource endpoints available (Sprint 30)', { equipment: 'GET/POST /api/equipment-master', forklifts: 'GET /api/forklifts', scanners: 'GET /api/barcode-scanners', mobileDevices: 'GET /api/mobile-devices', battery: 'GET /api/battery-status', chargingStations: 'GET /api/charging-stations', maintenancePlans: 'GET /api/maintenance-plans', maintenanceSchedule: 'GET /api/maintenance-schedule', maintenanceTasks: 'GET /api/maintenance-tasks', maintenanceComplete: 'POST /api/maintenance-tasks/:id/complete', breakdowns: 'GET/POST /api/equipment-breakdowns', breakdownRepair: 'POST /api/equipment-breakdowns/:id/repair', certifications: 'GET /api/operator-certifications', certValidate: 'POST /api/operator-certifications/validate', analytics: 'GET /api/equipment-analytics', info: 'GET /api/warehouse-resource/info' })
 log('info', 'Dispatch & shipping endpoints available (Sprint 27)', { dispatchOrders: 'GET/POST /api/dispatch-orders', dispatchComplete: 'POST /api/dispatch-orders/:id/complete', dispatchVehicles: 'GET /api/dispatch-vehicles', loadPlans: 'GET /api/load-plans', shippingDocuments: 'GET /api/shipping-documents', vehicleSeals: 'GET /api/vehicle-seals', gateExitLogs: 'GET /api/gate-exit-logs', gateExitApprove: 'POST /api/gate-exit-logs/:id/approve', dashboard: 'GET /api/dispatch/dashboard', info: 'GET /api/dispatch/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })

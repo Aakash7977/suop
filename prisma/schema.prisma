@@ -8679,3 +8679,552 @@ model YardGateExit {
   @@index([exitTime], map: "idx_ygex_time")
   @@index([status], map: "idx_ygex_status")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 30 — WAREHOUSE RESOURCE, EQUIPMENT & MAINTENANCE ENGINE
+// Epic 1: Equipment Master · Epic 2: Forklift Fleet · Epic 3: Scanners
+// Epic 4: Battery · Epic 5: Maintenance · Epic 6: Breakdown · Epic 7: Certification
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Equipment Type Master ──────────────────────
+model EquipmentType {
+  id                  String   @id @default(uuid()) @db.Uuid
+  typeCode            String   @unique @map("type_code")
+  typeName            String   @map("type_name")
+  // ─── Category ───
+  category            String   @map("category") // FORKLIFT, REACH_TRUCK, STACKER, HAND_PALLET_TRUCK, SCANNER, MOBILE_DEVICE, INDUSTRIAL_TABLET, LABEL_PRINTER, WEIGHING_SCALE, TEMPERATURE_SENSOR, RFID_READER, CONVEYOR, ASRS_ROBOT
+  // ─── Specs ───
+  manufacturer        String?  @map("manufacturer")
+  defaultModel        String?  @map("default_model")
+  powerSource         String?  @map("power_source") // ELECTRIC, DIESEL, LPG, BATTERY, MANUAL
+  // ─── Capacity ───
+  loadCapacityKg      Decimal? @db.Decimal(10, 2) @map("load_capacity_kg")
+  maxLiftHeightMm     Int?     @map("max_lift_height_mm")
+  // ─── Lifecycle ───
+  expectedLifespanYears Int?   @map("expected_lifespan_years")
+  depreciationYears  Int?     @map("depreciation_years")
+  // ─── Maintenance ───
+  dailyInspectionReq  Boolean  @default(false) @map("daily_inspection_req")
+  weeklyInspectionReq Boolean  @default(false) @map("weekly_inspection_req")
+  monthlyServiceReq   Boolean  @default(true) @map("monthly_service_req")
+  quarterlyServiceReq Boolean  @default(true) @map("quarterly_service_req")
+  annualOverhaulReq   Boolean  @default(true) @map("annual_overhaul_req")
+  calibrationReq      Boolean  @default(false) @map("calibration_req")
+  // ─── Certification ───
+  certificationReq    Boolean  @default(false) @map("certification_req")
+  requiredCertification String? @map("required_certification")
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  equipment           EquipmentMaster[]
+
+  @@map("equipment_types")
+  @@index([category, isActive], map: "idx_et_cat_active")
+}
+
+// ─── Epic 1: Equipment Master (extends Sprint 28 WarehouseEquipment) ───
+model EquipmentMaster {
+  id                  String   @id @default(uuid()) @db.Uuid
+  equipmentCode       String   @unique @map("equipment_code")
+  equipmentName       String   @map("equipment_name")
+  // ─── Type ───
+  typeId              String?  @db.Uuid @map("type_id")
+  typeCode            String   @map("type_code")
+  category            String   @map("category")
+  // ─── Identity ───
+  manufacturer        String?  @map("manufacturer")
+  model               String?  @map("model")
+  serialNumber        String?  @unique @map("serial_number")
+  assetTagNumber      String?  @unique @map("asset_tag_number")
+  qrCode              String?  @unique @map("qr_code")
+  // ─── Purchase ───
+  purchaseDate        DateTime? @map("purchase_date")
+  purchaseCost        Decimal? @db.Decimal(12, 2) @map("purchase_cost")
+  purchaseCurrency    String?  @default("INR") @map("purchase_currency")
+  supplierName        String?  @map("supplier_name")
+  // ─── Warranty ───
+  warrantyExpiry      DateTime? @map("warranty_expiry")
+  isUnderWarranty     Boolean  @default(false) @map("is_under_warranty")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  homeZoneId          String?  @db.Uuid @map("home_zone_id")
+  homeZoneName        String?  @map("home_zone_name")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, ASSIGNED, IN_USE, CHARGING, MAINTENANCE, BREAKDOWN, RETIRED
+  currentOperatorId   String?  @db.Uuid @map("current_operator_id")
+  currentOperatorName String?  @map("current_operator_name")
+  currentLocationCode String?  @map("current_location_code")
+  currentTaskId       String?  @db.Uuid @map("current_task_id")
+  // ─── Utilization ───
+  totalOperatingHours Decimal? @db.Decimal(10, 2) @map("total_operating_hours")
+  totalTasksCompleted Int      @default(0) @map("total_tasks_completed")
+  lastUsedAt          DateTime? @map("last_used_at")
+  // ─── Power ───
+  powerSource         String?  @map("power_source") // ELECTRIC, DIESEL, LPG, BATTERY, MANUAL
+  batteryPercent      Int?     @map("battery_percent")
+  fuelPercent         Int?     @map("fuel_percent")
+  // ─── Maintenance ───
+  lastMaintenanceAt   DateTime? @map("last_maintenance_at")
+  nextMaintenanceAt   DateTime? @map("next_maintenance_at")
+  maintenanceDueHours Decimal? @db.Decimal(10, 2) @map("maintenance_due_hours")
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  retiredAt           DateTime? @map("retired_at")
+  retirementReason    String?  @map("retirement_reason")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  type                EquipmentType? @relation(fields: [typeId], references: [id])
+  maintenancePlans    MaintenancePlan[]
+  breakdowns          EquipmentBreakdown[]
+
+  @@map("equipment_master")
+  @@index([warehouseId, status], map: "idx_em_wh_status")
+  @@index([category, status], map: "idx_em_cat_status")
+  @@index([status], map: "idx_em_status")
+  @@index([typeCode], map: "idx_em_type")
+}
+
+// ─── Epic 2: Forklift Fleet Management ──────────────────
+model Forklift {
+  id                  String   @id @default(uuid()) @db.Uuid
+  forkliftCode        String   @unique @map("forklift_code")
+  // ─── Equipment Link ───
+  equipmentId         String   @db.Uuid @map("equipment_id")
+  // ─── Type ───
+  forkliftType        String   @map("forklift_type") // ELECTRIC_FORKLIFT, DIESEL_FORKLIFT, REACH_TRUCK, ORDER_PICKER, PALLET_STACKER
+  // ─── Identity ───
+  manufacturer        String   @map("manufacturer")
+  model               String   @map("model")
+  serialNumber        String   @unique @map("serial_number")
+  // ─── Capacity ───
+  loadCapacityKg      Decimal  @db.Decimal(10, 2) @map("load_capacity_kg")
+  maxLiftHeightMm     Int      @map("max_lift_height_mm")
+  // ─── Power ───
+  powerSource         String   @map("power_source") // ELECTRIC, DIESEL, LPG
+  batteryId           String?  @db.Uuid @map("battery_id")
+  batteryPercent      Int?     @map("battery_percent")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  currentZoneName     String?  @map("current_zone_name")
+  // ─── Operator ───
+  currentOperatorId   String?  @db.Uuid @map("current_operator_id")
+  currentOperatorName String?  @map("current_operator_name")
+  currentTaskId       String?  @db.Uuid @map("current_task_id")
+  currentTaskNumber   String?  @map("current_task_number")
+  // ─── Operating Hours ───
+  totalOperatingHours Decimal  @db.Decimal(10, 2) @default(0) @map("total_operating_hours")
+  hoursSinceService   Decimal  @db.Decimal(10, 2) @default(0) @map("hours_since_service")
+  // ─── Maintenance ───
+  lastServiceAt       DateTime? @map("last_service_at")
+  nextServiceAt       DateTime? @map("next_service_at")
+  nextServiceHours    Decimal? @db.Decimal(10, 2) @map("next_service_hours")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, ASSIGNED, IN_USE, CHARGING, MAINTENANCE, BREAKDOWN, RETIRED
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  assignments         ForkliftAssignment[]
+
+  @@map("forklifts")
+  @@index([warehouseId, status], map: "idx_fl_wh_status")
+  @@index([forkliftType, status], map: "idx_fl_type_status")
+  @@index([status], map: "idx_fl_status")
+}
+
+model ForkliftAssignment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  forkliftId          String   @db.Uuid @map("forklift_id")
+  forkliftCode        String   @map("forklift_code")
+  // ─── Assignment ───
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorCode        String?  @map("operator_code")
+  operatorName        String?  @map("operator_name")
+  taskId              String?  @db.Uuid @map("task_id")
+  taskNumber          String?  @map("task_number")
+  zoneName            String?  @map("zone_name")
+  // ─── Schedule ───
+  assignedAt          DateTime @default(now()) @map("assigned_at")
+  releasedAt          DateTime? @map("released_at")
+  durationMinutes     Int?     @map("duration_minutes")
+  operatingHours      Decimal? @db.Decimal(5, 2) @map("operating_hours")
+  // ─── Status ───
+  status              String   @default("ASSIGNED") // ASSIGNED, ACTIVE, RELEASED, RECALLED
+  assignmentReason    String?  @map("assignment_reason") // TASK, SHIFT, BREAKDOWN_REPLACEMENT
+  // ─── Handover ───
+  conditionAtHandover String?  @map("condition_at_handover") // GOOD, MINOR_DAMAGE, MAJOR_DAMAGE
+  handoverNotes       String?  @map("handover_notes")
+  // ─── Audit ───
+  notes               String?
+
+  forklift            Forklift @relation(fields: [forkliftId], references: [id], onDelete: Cascade)
+
+  @@map("forklift_assignments")
+  @@index([forkliftId, status], map: "idx_fa_fl_status")
+  @@index([operatorId, status], map: "idx_fa_op_status")
+}
+
+// ─── Epic 3: Mobile Device Management ───────────────────
+model MobileDevice {
+  id                  String   @id @default(uuid()) @db.Uuid
+  deviceCode          String   @unique @map("device_code")
+  deviceName          String   @map("device_name")
+  // ─── Type ───
+  deviceType          String   @map("device_type") // ANDROID_SCANNER, INDUSTRIAL_SCANNER, HANDHELD_TERMINAL, TABLET, INDUSTRIAL_TABLET
+  // ─── Identity ───
+  manufacturer        String   @map("manufacturer")
+  model               String   @map("model")
+  serialNumber        String   @unique @map("serial_number")
+  imei                String?  @unique @map("imei")
+  macAddress          String?  @map("mac_address")
+  // ─── OS ───
+  operatingSystem     String   @map("operating_system") // ANDROID, WINDOWS, LINUX
+  osVersion           String?  @map("os_version")
+  // ─── App ───
+  appName             String?  @map("app_name")
+  appVersion          String?  @map("app_version")
+  appLastSyncAt       DateTime? @map("app_last_sync_at")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Assignment ───
+  assignedOperatorId  String?  @db.Uuid @map("assigned_operator_id")
+  assignedOperatorName String? @map("assigned_operator_name")
+  assignedAt          DateTime? @map("assigned_at")
+  // ─── Battery ───
+  batteryPercent      Int?     @map("battery_percent")
+  isCharging          Boolean  @default(false) @map("is_charging")
+  // ─── Connectivity ───
+  connectivityStatus  String   @default("OFFLINE") @map("connectivity_status") // ONLINE, OFFLINE, WEAK
+  wifiSsid            String?  @map("wifi_ssid")
+  ipAddress           String?  @map("ip_address")
+  lastHeartbeatAt     DateTime? @map("last_heartbeat_at")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, ASSIGNED, IN_USE, CHARGING, MAINTENANCE, BROKEN, RETIRED
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("mobile_devices")
+  @@index([warehouseId, status], map: "idx_md_wh_status")
+  @@index([deviceType, status], map: "idx_md_type_status")
+  @@index([assignedOperatorId], map: "idx_md_op")
+}
+
+model BarcodeScanner {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scannerCode         String   @unique @map("scanner_code")
+  // ─── Type ───
+  scannerType         String   @map("scanner_type") // HANDHELD_1D, HANDHELD_2D, WEARABLE_RING, FIXED_MOUNT, MOBILE_COMPUTER
+  // ─── Identity ───
+  manufacturer        String   @map("manufacturer")
+  model               String   @map("model")
+  serialNumber        String   @unique @map("serial_number")
+  // ─── Mobile Device Link (if integrated) ───
+  mobileDeviceId      String?  @db.Uuid @map("mobile_device_id")
+  // ─── Capabilities ───
+  supports1D          Boolean  @default(true) @map("supports_1d")
+  supports2D          Boolean  @default(true) @map("supports_2d")
+  supportsQR          Boolean  @default(true) @map("supports_qr")
+  supportsGS1         Boolean  @default(false) @map("supports_gs1")
+  supportsRFID        Boolean  @default(false) @map("supports_rfid")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Assignment ───
+  assignedOperatorId  String?  @db.Uuid @map("assigned_operator_id")
+  assignedOperatorName String? @map("assigned_operator_name")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, ASSIGNED, IN_USE, CHARGING, MAINTENANCE, BROKEN, RETIRED
+  lastScanAt          DateTime? @map("last_scan_at")
+  totalScansToday     Int      @default(0) @map("total_scans_today")
+  totalScansLifetime  Int      @default(0) @map("total_scans_lifetime")
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("barcode_scanners")
+  @@index([warehouseId, status], map: "idx_bs_wh_status")
+  @@index([scannerType, status], map: "idx_bs_type_status")
+  @@index([assignedOperatorId], map: "idx_bs_op")
+}
+
+// ─── Epic 4: Battery & Charging Management ──────────────
+model BatteryStatus {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batteryCode         String   @unique @map("battery_code")
+  // ─── Equipment ───
+  equipmentId         String?  @db.Uuid @map("equipment_id")
+  equipmentCode       String   @map("equipment_code")
+  equipmentType       String   @map("equipment_type")
+  // ─── Battery Specs ───
+  batteryType         String   @map("battery_type") // LITHIUM_ION, LEAD_ACID, GEL, NIMH
+  voltage             Decimal  @db.Decimal(6, 2) @map("voltage")
+  capacityAh          Decimal  @db.Decimal(8, 2) @map("capacity_ah")
+  manufacturer        String?  @map("manufacturer")
+  serialNumber        String?  @map("serial_number")
+  // ─── Status ───
+  currentPercent      Int      @default(100) @map("current_percent")
+  chargingStatus      String   @default("NOT_CHARGING") @map("charging_status") // CHARGING, NOT_CHARGING, FULL, DISCHARGING
+  // ─── Health ───
+  healthPercent       Int      @default(100) @map("health_percent") // 0-100, degrades over time
+  cycleCount          Int      @default(0) @map("cycle_count")
+  maxCycles           Int      @default(1000) @map("max_cycles")
+  // ─── Charging ───
+  chargingStationId   String?  @db.Uuid @map("charging_station_id")
+  chargingStartedAt   DateTime? @map("charging_started_at")
+  estimatedFullAt     DateTime? @map("estimated_full_at")
+  lastChargedAt       DateTime? @map("last_charged_at")
+  // ─── Replacement ───
+  replacementDueAt    DateTime? @map("replacement_due_at")
+  replacementRecommended Boolean @default(false) @map("replacement_recommended")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("battery_status")
+  @@index([equipmentId], map: "idx_bat_equipment")
+  @@index([chargingStatus], map: "idx_bat_charging")
+  @@index([healthPercent], map: "idx_bat_health")
+}
+
+model ChargingStation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  stationCode         String   @unique @map("station_code")
+  stationName         String   @map("station_name")
+  // ─── Type ───
+  stationType         String   @map("station_type") // SINGLE_BAY, MULTI_BAY, FAST_CHARGE, SWAP_STATION
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  zoneName            String?  @map("zone_name")
+  locationCode        String?  @map("location_code")
+  // ─── Capacity ───
+  totalBays           Int      @default(1) @map("total_bays")
+  occupiedBays        Int      @default(0) @map("occupied_bays")
+  // ─── Power ───
+  voltageOutput       Decimal? @db.Decimal(6, 2) @map("voltage_output")
+  maxCurrentA         Decimal? @db.Decimal(6, 2) @map("max_current_a")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, PARTIAL, FULL, OUT_OF_SERVICE
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("charging_stations")
+  @@index([warehouseId, status], map: "idx_cs_wh_status")
+  @@index([status], map: "idx_cs_status")
+}
+
+// ─── Epic 5: Preventive Maintenance ─────────────────────
+model MaintenancePlan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planCode            String   @unique @map("plan_code")
+  planName            String   @map("plan_name")
+  // ─── Equipment Link ───
+  equipmentId         String?  @db.Uuid @map("equipment_id")
+  equipmentCode       String?  @map("equipment_code")
+  typeId              String?  @db.Uuid @map("type_id")
+  typeCode            String?  @map("type_code")
+  // ─── Scope (type-level if equipmentId null) ───
+  appliesTo           String   @map("applies_to") // SPECIFIC_EQUIPMENT, EQUIPMENT_TYPE, ALL_EQUIPMENT
+  // ─── Frequency ───
+  frequencyType       String   @map("frequency_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUAL, CALIBRATION, RUN_BASED
+  frequencyInterval   Int      @default(1) @map("frequency_interval") // e.g. every 30 days for monthly, every 250 hours for run-based
+  frequencyUnit       String   @default("DAYS") @map("frequency_unit") // DAYS, WEEKS, MONTHS, HOURS
+  // ─── Task ───
+  maintenanceType     String   @map("maintenance_type") // INSPECTION, SERVICE, OVERHAUL, CALIBRATION
+  description         String
+  checklist           String[] @default([]) @map("checklist")
+  estimatedDurationMin Int     @default(60) @map("estimated_duration_min")
+  // ─── Technician ───
+  assignedTechnicianId String? @db.Uuid @map("assigned_technician_id")
+  assignedTechnicianName String? @map("assigned_technician_name")
+  // ─── Status ───
+  isActive            Boolean  @default(true) @map("is_active")
+  lastExecutedAt      DateTime? @map("last_executed_at")
+  nextExecutionAt     DateTime? @map("next_execution_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  equipment           EquipmentMaster? @relation(fields: [equipmentId], references: [id])
+  schedule            MaintenanceSchedule[]
+  tasks               MaintenanceTask[]
+
+  @@map("maintenance_plans")
+  @@index([equipmentId], map: "idx_mp_equipment")
+  @@index([nextExecutionAt], map: "idx_mp_next")
+  @@index([isActive], map: "idx_mp_active")
+}
+
+model MaintenanceSchedule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planId              String   @db.Uuid @map("plan_id")
+  // ─── Schedule ───
+  scheduledDate       DateTime @map("scheduled_date")
+  scheduledStartTime  DateTime @map("scheduled_start_time")
+  scheduledEndTime    DateTime @map("scheduled_end_time")
+  // ─── Equipment ───
+  equipmentId         String   @db.Uuid @map("equipment_id")
+  equipmentCode       String   @map("equipment_code")
+  // ─── Technician ───
+  technicianId        String?  @db.Uuid @map("technician_id")
+  technicianName      String?  @map("technician_name")
+  // ─── Status ───
+  status              String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, SKIPPED, RESCHEDULED, OVERDUE
+  actualStartTime     DateTime? @map("actual_start_time")
+  actualEndTime       DateTime? @map("actual_end_time")
+  actualDurationMin   Int?     @map("actual_duration_min")
+  // ─── Result ───
+  result              String?  @map("result") // PASS, FAIL, CONCERN
+  findings            String?  @map("findings")
+  partsReplaced       String[] @default([]) @map("parts_replaced")
+  cost                Decimal? @db.Decimal(10, 2) @map("cost")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plan                MaintenancePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_schedule")
+  @@index([scheduledDate, status], map: "idx_ms_date_status")
+  @@index([equipmentId], map: "idx_ms_equipment")
+  @@index([status], map: "idx_ms_status")
+}
+
+model MaintenanceTask {
+  id                  String   @id @default(uuid()) @db.Uuid
+  taskNumber          String   @unique @map("task_number")
+  planId              String?  @db.Uuid @map("plan_id")
+  // ─── Equipment ───
+  equipmentId         String   @db.Uuid @map("equipment_id")
+  equipmentCode       String   @map("equipment_code")
+  // ─── Type ───
+  taskType            String   @map("task_type") // INSPECTION, SERVICE, OVERHAUL, CALIBRATION, REPAIR
+  // ─── Description ───
+  description         String
+  checklist           String[] @default([]) @map("checklist")
+  completedChecklist  String[] @default([]) @map("completed_checklist")
+  // ─── Assignment ───
+  technicianId        String?  @db.Uuid @map("technician_id")
+  technicianName      String?  @map("technician_name")
+  // ─── Schedule ───
+  scheduledAt         DateTime @map("scheduled_at")
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  durationMin         Int?     @map("duration_min")
+  // ─── Result ───
+  status              String   @default("OPEN") // OPEN, ASSIGNED, IN_PROGRESS, COMPLETED, FAILED, CANCELLED
+  result              String?  @map("result") // PASS, FAIL, CONCERN
+  findings            String?  @map("findings")
+  partsReplaced       String[] @default([]) @map("parts_replaced")
+  cost                Decimal? @db.Decimal(10, 2) @map("cost")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  plan                MaintenancePlan? @relation(fields: [planId], references: [id])
+
+  @@map("maintenance_tasks")
+  @@index([equipmentId, status], map: "idx_mt_equipment_status")
+  @@index([status], map: "idx_mt_status")
+  @@index([scheduledAt], map: "idx_mt_scheduled")
+}
+
+// ─── Epic 6: Breakdown Management ───────────────────────
+model EquipmentBreakdown {
+  id                  String   @id @default(uuid()) @db.Uuid
+  breakdownNumber     String   @unique @map("breakdown_number")
+  // ─── Equipment ───
+  equipmentId         String   @db.Uuid @map("equipment_id")
+  equipmentCode       String   @map("equipment_code")
+  equipmentType       String   @map("equipment_type")
+  // ─── Report ───
+  problemCategory     String   @map("problem_category") // MECHANICAL, ELECTRICAL, HYDRAULIC, BATTERY, SOFTWARE, PHYSICAL_DAMAGE, OTHER
+  problemDescription  String   @map("problem_description")
+  severity            String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Reporter ───
+  reportedById        String?  @db.Uuid @map("reported_by_id")
+  reportedByName      String?  @map("reported_by_name")
+  reportedAt          DateTime @default(now()) @map("reported_at")
+  // ─── Photo Evidence ───
+  photoUrls           String[] @default([]) @map("photo_urls")
+  // ─── Assignment ───
+  technicianId        String?  @db.Uuid @map("technician_id")
+  technicianName      String?  @map("technician_name")
+  assignedAt          DateTime? @map("assigned_at")
+  // ─── Resolution ───
+  status              String   @default("OPEN") // OPEN, ASSIGNED, IN_PROGRESS, REPAIRED, TESTED, RETURNED_TO_SERVICE, BEYOND_REPAIR, CANCELLED
+  diagnosis           String?  @map("diagnosis")
+  repairAction        String?  @map("repair_action")
+  partsReplaced       String[] @default([]) @map("parts_replaced")
+  repairCost          Decimal? @db.Decimal(10, 2) @map("repair_cost")
+  // ─── Downtime ───
+  repairStartedAt     DateTime? @map("repair_started_at")
+  repairCompletedAt   DateTime? @map("repair_completed_at")
+  testedAt            DateTime? @map("tested_at")
+  returnedToServiceAt DateTime? @map("returned_to_service_at")
+  downtimeMinutes     Int?     @map("downtime_minutes")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  equipment           EquipmentMaster @relation(fields: [equipmentId], references: [id])
+
+  @@map("equipment_breakdowns")
+  @@index([equipmentId, status], map: "idx_eb_equipment_status")
+  @@index([status, severity], map: "idx_eb_status_severity")
+  @@index([reportedAt], map: "idx_eb_reported")
+}
+
+// ─── Epic 7: Operator Certification ─────────────────────
+model OperatorCertification {
+  id                  String   @id @default(uuid()) @db.Uuid
+  certificationCode   String   @unique @map("certification_code")
+  // ─── Operator ───
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  // ─── Certification ───
+  certificationType   String   @map("certification_type") // FORKLIFT_LICENSE, REACH_TRUCK, COLD_STORAGE, HAZARDOUS_GOODS, FIRST_AID, SAFETY_TRAINING, EQUIPMENT_TRAINING, FIRE_SAFETY
+  certificationName   String   @map("certification_name")
+  // ─── Issuance ───
+  issuedBy            String   @map("issued_by") // INTERNAL, NSDC, GOVT_BODY, MANUFACTURER
+  issuedAt            DateTime @map("issued_at")
+  certificateNumber   String?  @map("certificate_number")
+  // ─── Validity ───
+  validFrom           DateTime @map("valid_from")
+  validUntil          DateTime @map("valid_until")
+  isExpired           Boolean  @default(false) @map("is_expired")
+  isExpiringSoon      Boolean  @default(false) @map("is_expiring_soon")
+  // ─── Equipment ───
+  equipmentTypeCode   String?  @map("equipment_type_code")
+  equipmentTypeName   String?  @map("equipment_type_name")
+  // ─── Score ───
+  scorePercent        Decimal? @db.Decimal(5, 2) @map("score_percent")
+  maxScorePercent     Decimal  @db.Decimal(5, 2) @default(100) @map("max_score_percent")
+  // ─── Renewal ───
+  renewedFrom         String?  @db.Uuid @map("renewed_from")
+  renewalRequired     Boolean  @default(true) @map("renewal_required")
+  // ─── Status ───
+  status              String   @default("ACTIVE") // ACTIVE, EXPIRED, SUSPENDED, REVOKED, PENDING_RENEWAL
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("operator_certifications")
+  @@unique([operatorId, certificationType], map: "uq_oc_op_cert")
+  @@index([operatorId, status], map: "idx_oc_op_status")
+  @@index([certificationType, status], map: "idx_oc_type_status")
+  @@index([validUntil], map: "idx_oc_valid_until")
+}

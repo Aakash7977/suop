@@ -27,7 +27,7 @@ import {
   Trash2, AlertTriangle as AlertTriangleIcon,
   Thermometer, Snowflake, Droplets, ScanLine as ScanIcon,
   Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon,
-  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer, Radar
+  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer, Radar, Smartphone
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -51,6 +51,7 @@ type ModuleKey =
   | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'dispatch'
   | 'waveplanning' | 'taskqueue' | 'workforce' | 'equipment' | 'controltower' | 'sladashboard' | 'exceptioncenter' | 'workforceanalytics'
   | 'crossdock' | 'truckqueue' | 'dockschedule' | 'yardmap' | 'vehicletracker' | 'gateconsole' | 'yardtower' | 'crossdockanalytics'
+  | 'equipmentmaster' | 'forkliftdashboard' | 'scannermgmt' | 'batterydashboard' | 'maintenanceplanner' | 'breakdownconsole' | 'certificationcenter' | 'equipmentanalytics'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -174,6 +175,14 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Gate Console', icon: <ShieldCheck className="h-4 w-4" />, module: 'gateconsole', available: true },
       { name: 'Yard Control Tower', icon: <Radar className="h-4 w-4" />, module: 'yardtower', available: true },
       { name: 'Cross-Dock Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'crossdockanalytics', available: true },
+      { name: 'Equipment Master', icon: <Truck className="h-4 w-4" />, module: 'equipmentmaster', available: true },
+      { name: 'Forklift Dashboard', icon: <Truck className="h-4 w-4" />, module: 'forkliftdashboard', available: true },
+      { name: 'Scanner Management', icon: <ScanLine className="h-4 w-4" />, module: 'scannermgmt', available: true },
+      { name: 'Battery Dashboard', icon: <BatteryLow className="h-4 w-4" />, module: 'batterydashboard', available: true },
+      { name: 'Maintenance Planner', icon: <Wrench className="h-4 w-4" />, module: 'maintenanceplanner', available: true },
+      { name: 'Breakdown Console', icon: <AlertOctagon className="h-4 w-4" />, module: 'breakdownconsole', available: true },
+      { name: 'Certification Center', icon: <ShieldCheck className="h-4 w-4" />, module: 'certificationcenter', available: true },
+      { name: 'Equipment Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'equipmentanalytics', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -12281,6 +12290,984 @@ function CrossDockAnalyticsModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 30 — WAREHOUSE RESOURCE, EQUIPMENT & MAINTENANCE
+// Epic 1: Equipment Master · Epic 2: Forklift · Epic 3: Scanners
+// Epic 4: Battery · Epic 5: Maintenance · Epic 6: Breakdown · Epic 7: Cert
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Equipment Master Module ────────────────────
+function EquipmentMasterModule() {
+  const [filterCat, setFilterCat] = useState<string>('ALL')
+  const [showCreate, setShowCreate] = useState(false)
+
+  const equipment = [
+    { id: 'E1', code: 'FL-001', name: 'Toyota Electric Forklift', type: 'FORKLIFT', category: 'FORKLIFT', mfr: 'Toyota', model: '8FBE15', serial: 'TY2024-001', status: 'IN_USE', battery: 78, op: 'Rajesh K.', wh: 'WH-MUM-MAIN', purchaseDate: '2024-03-15', warranty: '2027-03-15', cost: 850000, hours: 1245.5, lastMaint: '2026-06-15', nextMaint: '2026-09-15', qr: 'QR-FL-001' },
+    { id: 'E2', code: 'FL-002', name: 'Godrej Forklift', type: 'FORKLIFT', category: 'FORKLIFT', mfr: 'Godrej', model: 'GXE-15T', serial: 'GD2024-118', status: 'IN_USE', battery: 62, op: 'Suresh M.', wh: 'WH-MUM-MAIN', purchaseDate: '2024-04-20', warranty: '2027-04-20', cost: 720000, hours: 982.3, lastMaint: '2026-06-20', nextMaint: '2026-09-20', qr: 'QR-FL-002' },
+    { id: 'E3', code: 'FL-003', name: 'Toyota Forklift Spare', type: 'FORKLIFT', category: 'FORKLIFT', mfr: 'Toyota', model: '8FBE20', serial: 'TY2024-002', status: 'AVAILABLE', battery: 95, op: null, wh: 'WH-MUM-MAIN', purchaseDate: '2024-07-01', warranty: '2027-07-01', cost: 920000, hours: 456.8, lastMaint: '2026-07-01', nextMaint: '2026-10-01', qr: 'QR-FL-003' },
+    { id: 'E4', code: 'RT-001', name: 'Crown Reach Truck', type: 'REACH_TRUCK', category: 'REACH_TRUCK', mfr: 'Crown', model: 'RR5200', serial: 'CR2024-005', status: 'IN_USE', battery: 45, op: 'Mahesh R.', wh: 'WH-MUM-MAIN', purchaseDate: '2023-11-10', warranty: '2026-11-10', cost: 1250000, hours: 1876.2, lastMaint: '2026-05-10', nextMaint: '2026-08-10', qr: 'QR-RT-001' },
+    { id: 'E5', code: 'ST-001', name: 'Godrej Stacker', type: 'STACKER', category: 'STACKER', mfr: 'Godrej', model: 'GSX-10', serial: 'GD2024-201', status: 'CHARGING', battery: 23, op: null, wh: 'WH-MUM-MAIN', purchaseDate: '2024-01-25', warranty: '2027-01-25', cost: 380000, hours: 734.1, lastMaint: '2026-06-25', nextMaint: '2026-09-25', qr: 'QR-ST-001' },
+    { id: 'E6', code: 'SC-001', name: 'Zebra Scanner', type: 'SCANNER', category: 'SCANNER', mfr: 'Zebra', model: 'TC52', serial: 'ZB2024-1001', status: 'IN_USE', battery: 88, op: 'Anita S.', wh: 'WH-MUM-MAIN', purchaseDate: '2024-05-12', warranty: '2026-05-12', cost: 45000, hours: null, lastMaint: '2026-07-05', nextMaint: '2027-07-05', qr: 'QR-SC-001' },
+    { id: 'E7', code: 'SC-002', name: 'Zebra Scanner 2', type: 'SCANNER', category: 'SCANNER', mfr: 'Zebra', model: 'TC52', serial: 'ZB2024-1002', status: 'AVAILABLE', battery: 92, op: null, wh: 'WH-MUM-MAIN', purchaseDate: '2024-05-12', warranty: '2026-05-12', cost: 45000, hours: null, lastMaint: '2026-07-05', nextMaint: '2027-07-05', qr: 'QR-SC-002' },
+    { id: 'E8', code: 'FL-004', name: 'Toyota Forklift Broken', type: 'FORKLIFT', category: 'FORKLIFT', mfr: 'Toyota', model: '8FBE15', serial: 'TY2024-003', status: 'BREAKDOWN', battery: 0, op: null, wh: 'WH-MUM-MAIN', purchaseDate: '2023-02-10', warranty: '2026-02-10', cost: 850000, hours: 2104.7, lastMaint: '2026-07-08', nextMaint: '2026-10-08', qr: 'QR-FL-004' },
+    { id: 'E9', code: 'MD-001', name: 'Samsung Galaxy Tab A9', type: 'TABLET', category: 'MOBILE_DEVICE', mfr: 'Samsung', model: 'Galaxy Tab A9', serial: 'SM2024-5001', status: 'ASSIGNED', battery: 65, op: 'Lakshmi V.', wh: 'WH-MUM-MAIN', purchaseDate: '2024-08-15', warranty: '2026-08-15', cost: 22000, hours: null, lastMaint: '2026-07-10', nextMaint: '2027-07-10', qr: 'QR-MD-001' },
+    { id: 'E10', code: 'PR-001', name: 'Zebra Label Printer', type: 'LABEL_PRINTER', category: 'LABEL_PRINTER', mfr: 'Zebra', model: 'ZT411', serial: 'ZB2024-2001', status: 'AVAILABLE', battery: null, op: null, wh: 'WH-MUM-MAIN', purchaseDate: '2024-02-10', warranty: '2026-02-10', cost: 68000, hours: null, lastMaint: '2026-06-10', nextMaint: '2026-09-10', qr: 'QR-PR-001' },
+  ]
+
+  const filtered = equipment.filter(e => filterCat === 'ALL' || e.category === filterCat)
+
+  const stats = [
+    { label: 'Total Equipment', value: equipment.length, color: 'text-blue-600' },
+    { label: 'Available', value: equipment.filter(e => e.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+    { label: 'In Use', value: equipment.filter(e => e.status === 'IN_USE').length, color: 'text-amber-600' },
+    { label: 'Charging', value: equipment.filter(e => e.status === 'CHARGING').length, color: 'text-blue-600' },
+    { label: 'Breakdown', value: equipment.filter(e => e.status === 'BREAKDOWN').length, color: 'text-rose-600' },
+    { label: 'Total Value (₹)', value: `${(equipment.reduce((a, e) => a + e.cost, 0) / 100000).toFixed(1)}L`, color: 'text-purple-600' },
+  ]
+
+  const typeIcons: Record<string, React.ReactNode> = {
+    FORKLIFT: <Truck className="h-4 w-4" />, REACH_TRUCK: <Truck className="h-4 w-4" />, STACKER: <Truck className="h-4 w-4" />, SCANNER: <ScanLine className="h-4 w-4" />, TABLET: <Smartphone className="h-4 w-4" />, LABEL_PRINTER: <Printer className="h-4 w-4" />,
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Equipment Master</h2><p className="text-sm text-muted-foreground mt-1">Lifecycle management · QR-coded · purchase · warranty · maintenance schedule</p></div>
+        <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />Register Equipment</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {showCreate && (
+        <Card className="p-4 border-blue-300 bg-blue-50/50">
+          <h3 className="font-semibold mb-3">Register New Equipment</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Equipment Code</Label><Input className="mt-1" placeholder="FL-XXX" /></div>
+            <div><Label className="text-xs">Equipment Name</Label><Input className="mt-1" placeholder="Toyota Forklift" /></div>
+            <div><Label className="text-xs">Category</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>FORKLIFT</option><option>REACH_TRUCK</option><option>STACKER</option><option>SCANNER</option><option>MOBILE_DEVICE</option><option>LABEL_PRINTER</option></select></div>
+            <div><Label className="text-xs">Manufacturer</Label><Input className="mt-1" placeholder="Toyota" /></div>
+            <div><Label className="text-xs">Model</Label><Input className="mt-1" placeholder="8FBE15" /></div>
+            <div><Label className="text-xs">Serial Number</Label><Input className="mt-1" placeholder="TY2024-XXX" /></div>
+            <div><Label className="text-xs">Purchase Date</Label><Input type="date" className="mt-1" /></div>
+            <div><Label className="text-xs">Purchase Cost (₹)</Label><Input type="number" className="mt-1" /></div>
+            <div className="md:col-span-4 flex gap-2"><Button size="sm"><QrCode className="mr-1 h-4 w-4" />Generate QR &amp; Register</Button><Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button></div>
+          </div>
+        </Card>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'FORKLIFT', 'REACH_TRUCK', 'STACKER', 'SCANNER', 'MOBILE_DEVICE', 'LABEL_PRINTER'].map(f => <button key={f} onClick={() => setFilterCat(f)} className={`text-xs px-3 py-1 rounded-full border ${filterCat === f ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{f.replace(/_/g, ' ')}</button>)}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map(e => {
+          const b = s28BadgeForStatus(e.status)
+          const batteryColor = e.battery === null ? 'bg-slate-200' : e.battery > 60 ? 'bg-emerald-500' : e.battery > 30 ? 'bg-amber-500' : e.battery > 10 ? 'bg-orange-500' : 'bg-rose-500'
+          const warrantyActive = new Date(e.warranty) > new Date()
+          return (
+            <Card key={e.id} className={`p-4 ${e.status === 'BREAKDOWN' ? 'border-rose-300 bg-rose-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">{typeIcons[e.type] || <Truck className="h-4 w-4" />}</div>
+                  <div>
+                    <div className="font-mono font-semibold text-sm">{e.code}</div>
+                    <div className="text-xs text-muted-foreground">{e.name}</div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+                  <span className="text-[9px] font-mono text-purple-600">{e.qr}</span>
+                </div>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Manufacturer:</span><span>{e.mfr} {e.model}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Serial:</span><span className="font-mono">{e.serial}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Warehouse:</span><span className="font-mono">{e.wh}</span></div>
+                {e.op && <div className="flex justify-between"><span className="text-muted-foreground">Operator:</span><span>{e.op}</span></div>}
+                {e.battery !== null && (
+                  <div className="flex items-center gap-2 mt-2"><span className="text-muted-foreground text-[10px] w-16">Battery:</span><div className="flex-1 h-3 bg-muted rounded-full overflow-hidden"><div className={`h-full ${batteryColor}`} style={{ width: `${e.battery}%` }} /></div><span className="text-[10px] font-mono w-8">{e.battery}%</span></div>
+                )}
+                {e.hours !== null && <div className="flex justify-between"><span className="text-muted-foreground">Op Hours:</span><span className="font-mono">{e.hours}h</span></div>}
+                <div className="flex justify-between"><span className="text-muted-foreground">Purchase:</span><span className="font-mono">{e.purchaseDate} · ₹{(e.cost / 100000).toFixed(1)}L</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Warranty:</span><span className={`font-mono ${warrantyActive ? 'text-emerald-600' : 'text-rose-600'}`}>{e.warranty} {warrantyActive ? '(Active)' : '(Expired)'}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Next Maint:</span><span className="font-mono text-orange-600">{e.nextMaint}</span></div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white"><Award className="h-5 w-5" /></div>
+          <div>
+            <h3 className="font-semibold text-sm">Chief Architect Recommendation — Treat Every Scanner as Enterprise Asset</h3>
+            <p className="text-xs text-muted-foreground mt-1">For Sudhamrit, manage every barcode scanner, Android handheld, forklift, printer, and tablet as a tracked enterprise asset with full lifecycle: Purchase → Register → Assign → Daily Health Check → Software Updates → Battery Monitoring → Repair/Maintenance → Retire → Replace. This ensures warehouse productivity is never impacted by untracked equipment failures.</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 2: Forklift Dashboard Module ──────────────────
+function ForkliftDashboardModule() {
+  const forklifts = [
+    { id: 'F1', code: 'FL-001', type: 'ELECTRIC_FORKLIFT', mfr: 'Toyota', model: '8FBE15', capacity: '1500 kg', lift: '3000 mm', battery: 78, op: 'Rajesh K.', zone: 'C-Picking', task: 'TASK-2026-002', hours: 1245.5, sinceService: 124, status: 'IN_USE', nextService: '250h or 2026-09-15' },
+    { id: 'F2', code: 'FL-002', type: 'ELECTRIC_FORKLIFT', mfr: 'Godrej', model: 'GXE-15T', capacity: '1500 kg', lift: '3000 mm', battery: 62, op: 'Suresh M.', zone: 'E-Dispatch', task: 'TASK-2026-001', hours: 982.3, sinceService: 82, status: 'IN_USE', nextService: '250h or 2026-09-20' },
+    { id: 'F3', code: 'FL-003', type: 'ELECTRIC_FORKLIFT', mfr: 'Toyota', model: '8FBE20', capacity: '2000 kg', lift: '3500 mm', battery: 95, op: null, zone: 'B-Bulk', task: null, hours: 456.8, sinceService: 56, status: 'AVAILABLE', nextService: '250h or 2026-10-01' },
+    { id: 'F4', code: 'RT-001', type: 'REACH_TRUCK', mfr: 'Crown', model: 'RR5200', capacity: '2000 kg', lift: '9000 mm', battery: 45, op: 'Mahesh R.', zone: 'B-Bulk', task: 'TASK-2026-007', hours: 1876.2, sinceService: 245, status: 'IN_USE', nextService: '250h or 2026-08-10' },
+    { id: 'F5', code: 'ST-001', type: 'PALLET_STACKER', mfr: 'Godrej', model: 'GSX-10', capacity: '1000 kg', lift: '2000 mm', battery: 23, op: null, zone: 'Charging Bay', task: null, hours: 734.1, sinceService: 134, status: 'CHARGING', nextService: '250h or 2026-09-25' },
+    { id: 'F6', code: 'FL-004', type: 'ELECTRIC_FORKLIFT', mfr: 'Toyota', model: '8FBE15', capacity: '1500 kg', lift: '3000 mm', battery: 0, op: null, zone: 'Maintenance', task: null, hours: 2104.7, sinceService: 304, status: 'BREAKDOWN', nextService: 'OVERDUE — hydraulic failure' },
+    { id: 'F7', code: 'OP-001', type: 'ORDER_PICKER', mfr: 'Crown', model: 'OP-9000', capacity: '500 kg', lift: '9000 mm', battery: 71, op: 'Priya N.', zone: 'C-Picking', task: 'TASK-2026-015', hours: 312.4, sinceService: 38, status: 'IN_USE', nextService: '250h or 2026-11-01' },
+  ]
+
+  const assignments = [
+    { id: 'A1', forklift: 'FL-001', op: 'Rajesh K.', task: 'TASK-2026-002', zone: 'C-Picking', assigned: '08:30', duration: 95, hours: 1.5, status: 'ACTIVE', condition: 'GOOD' },
+    { id: 'A2', forklift: 'FL-002', op: 'Suresh M.', task: 'TASK-2026-001', zone: 'E-Dispatch', assigned: '08:15', duration: 110, hours: 1.8, status: 'ACTIVE', condition: 'GOOD' },
+    { id: 'A3', forklift: 'RT-001', op: 'Mahesh R.', task: 'TASK-2026-007', zone: 'B-Bulk', assigned: '09:00', duration: 65, hours: 1.1, status: 'ACTIVE', condition: 'GOOD' },
+    { id: 'A4', forklift: 'OP-001', op: 'Priya N.', task: 'TASK-2026-015', zone: 'C-Picking', assigned: '09:15', duration: 48, hours: 0.8, status: 'ACTIVE', condition: 'MINOR_DAMAGE' },
+  ]
+
+  const stats = [
+    { label: 'Total Fleet', value: forklifts.length, color: 'text-blue-600' },
+    { label: 'In Use', value: forklifts.filter(f => f.status === 'IN_USE').length, color: 'text-amber-600' },
+    { label: 'Available', value: forklifts.filter(f => f.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+    { label: 'Charging', value: forklifts.filter(f => f.status === 'CHARGING').length, color: 'text-blue-600' },
+    { label: 'Breakdown', value: forklifts.filter(f => f.status === 'BREAKDOWN').length, color: 'text-rose-600' },
+    { label: 'Avg Battery', value: `${Math.round(forklifts.reduce((a, f) => a + (f.battery || 0), 0) / forklifts.length)}%`, color: 'text-purple-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Forklift Fleet Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Electric / Diesel / Reach Truck / Order Picker / Pallet Stacker — battery · operator · task · maintenance</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {forklifts.map(f => {
+          const b = s28BadgeForStatus(f.status)
+          const batteryColor = f.battery > 60 ? 'bg-emerald-500' : f.battery > 30 ? 'bg-amber-500' : f.battery > 10 ? 'bg-orange-500' : 'bg-rose-500'
+          const typeColors: Record<string, string> = { ELECTRIC_FORKLIFT: 'bg-blue-100 text-blue-700', DIESEL_FORKLIFT: 'bg-amber-100 text-amber-700', REACH_TRUCK: 'bg-purple-100 text-purple-700', ORDER_PICKER: 'bg-emerald-100 text-emerald-700', PALLET_STACKER: 'bg-orange-100 text-orange-700' }
+          const serviceOverdue = f.sinceService > 250
+          return (
+            <Card key={f.id} className={`p-4 ${f.status === 'BREAKDOWN' ? 'border-rose-300 bg-rose-50/30' : serviceOverdue ? 'border-orange-300 bg-orange-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center"><Truck className="h-5 w-5 text-amber-700" /></div>
+                  <div>
+                    <div className="font-mono font-semibold text-sm">{f.code}</div>
+                    <div className="text-[10px] text-muted-foreground">{f.mfr} {f.model}</div>
+                  </div>
+                </div>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${typeColors[f.type]}`}>{f.type.replace(/_/g, ' ')}</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Capacity:</span><span className="font-mono">{f.capacity}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Lift Height:</span><span className="font-mono">{f.lift}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Zone:</span><span className="font-mono">{f.zone}</span></div>
+                {f.op && <div className="flex justify-between"><span className="text-muted-foreground">Operator:</span><span>{f.op}</span></div>}
+                {f.task && <div className="flex justify-between"><span className="text-muted-foreground">Task:</span><span className="font-mono text-blue-600">{f.task}</span></div>}
+                <div className="flex items-center gap-2 mt-2"><span className="text-muted-foreground text-[10px] w-16">Battery:</span><div className="flex-1 h-3 bg-muted rounded-full overflow-hidden"><div className={`h-full ${batteryColor}`} style={{ width: `${f.battery}%` }} /></div><span className="text-[10px] font-mono w-8">{f.battery}%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Op Hours:</span><span className="font-mono">{f.hours}h</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Since Service:</span><span className={`font-mono ${serviceOverdue ? 'text-rose-600 font-bold' : f.sinceService > 200 ? 'text-amber-600' : ''}`}>{f.sinceService}h</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Next Service:</span><span className={`font-mono ${f.status === 'BREAKDOWN' ? 'text-rose-600' : 'text-orange-600'}`}>{f.nextService}</span></div>
+              </div>
+              <div className="mt-2"><span className={`text-xs px-2 py-1 rounded ${b.cls} block text-center`}>{b.label}</span></div>
+            </Card>
+          )
+        })}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Active Forklift Assignments</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-2 font-medium">Forklift</th><th className="text-left px-4 py-2 font-medium">Operator</th>
+              <th className="text-left px-4 py-2 font-medium">Task</th><th className="text-left px-4 py-2 font-medium">Zone</th>
+              <th className="text-left px-4 py-2 font-medium">Assigned</th><th className="text-left px-4 py-2 font-medium">Duration</th>
+              <th className="text-left px-4 py-2 font-medium">Op Hours</th><th className="text-left px-4 py-2 font-medium">Condition</th>
+              <th className="text-left px-4 py-2 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {assignments.map(a => (
+                <tr key={a.id} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-2 font-mono text-xs font-semibold text-blue-700">{a.forklift}</td>
+                  <td className="px-4 py-2 text-xs">{a.op}</td>
+                  <td className="px-4 py-2 font-mono text-xs">{a.task}</td>
+                  <td className="px-4 py-2 font-mono text-xs">{a.zone}</td>
+                  <td className="px-4 py-2 font-mono text-xs">{a.assigned}</td>
+                  <td className="px-4 py-2 font-mono text-xs">{a.duration}m</td>
+                  <td className="px-4 py-2 font-mono text-xs">{a.hours}h</td>
+                  <td className="px-4 py-2"><span className={`text-[10px] px-1.5 py-0.5 rounded ${a.condition === 'GOOD' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{a.condition.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-2"><span className="text-[10px] px-2 py-1 rounded bg-emerald-100 text-emerald-700">{a.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 3: Scanner Management Module ──────────────────
+function ScannerManagementModule() {
+  const [view, setView] = useState<'scanners' | 'mobile'>('scanners')
+
+  const scanners = [
+    { id: 'S1', code: 'SC-001', type: 'HANDHELD_2D', mfr: 'Zebra', model: 'TC52', serial: 'ZB2024-1001', op: 'Anita S.', battery: 88, status: 'IN_USE', scansToday: 284, scansLife: 12453, lastScan: '10:42', supports: ['1D', '2D', 'QR'], wh: 'WH-MUM-MAIN' },
+    { id: 'S2', code: 'SC-002', type: 'HANDHELD_2D', mfr: 'Zebra', model: 'TC52', serial: 'ZB2024-1002', op: null, battery: 92, status: 'AVAILABLE', scansToday: 0, scansLife: 11024, lastScan: null, supports: ['1D', '2D', 'QR'], wh: 'WH-MUM-MAIN' },
+    { id: 'S3', code: 'SC-003', type: 'WEARABLE_RING', mfr: 'ProGlove', model: 'MARK 3', serial: 'PG2024-0501', op: 'Rajesh K.', battery: 76, status: 'IN_USE', scansToday: 312, scansLife: 8920, lastScan: '10:45', supports: ['1D', '2D', 'QR'], wh: 'WH-MUM-MAIN' },
+    { id: 'S4', code: 'SC-004', type: 'HANDHELD_2D', mfr: 'Honeywell', model: 'CT60', serial: 'HW2024-0801', op: 'Suresh M.', battery: 54, status: 'IN_USE', scansToday: 198, scansLife: 9842, lastScan: '10:38', supports: ['1D', '2D', 'QR', 'GS1'], wh: 'WH-MUM-MAIN' },
+    { id: 'S5', code: 'SC-005', type: 'MOBILE_COMPUTER', mfr: 'Zebra', model: 'TC22', serial: 'ZB2024-1100', op: null, battery: 18, status: 'CHARGING', scansToday: 142, scansLife: 4521, lastScan: '09:55', supports: ['1D', '2D', 'QR'], wh: 'WH-MUM-MAIN' },
+    { id: 'S6', code: 'SC-006', type: 'HANDHELD_1D', mfr: 'Honeywell', model: 'VW-320', serial: 'HW2023-0900', op: null, battery: null, status: 'BROKEN', scansToday: 0, scansLife: 18456, lastScan: '2026-06-15', supports: ['1D'], wh: 'WH-MUM-MAIN' },
+  ]
+
+  const mobile = [
+    { id: 'M1', code: 'MD-001', name: 'Samsung Galaxy Tab A9', type: 'TABLET', mfr: 'Samsung', model: 'Galaxy Tab A9', serial: 'SM2024-5001', imei: '358912456789012', os: 'Android 14', osVer: '14.0', app: 'SUOP Scanner', appVer: '1.4.2', op: 'Lakshmi V.', battery: 65, charging: false, connectivity: 'ONLINE', wifi: 'SUOP-WH-MUM', ip: '192.168.1.42', lastSync: '10:42', status: 'IN_USE', wh: 'WH-MUM-MAIN' },
+    { id: 'M2', code: 'MD-002', name: 'Zebra TC52 Handheld', type: 'ANDROID_SCANNER', mfr: 'Zebra', model: 'TC52', serial: 'ZB2024-1001', imei: '358912456789013', os: 'Android 13', osVer: '13.1', app: 'SUOP Scanner', appVer: '1.4.2', op: 'Anita S.', battery: 88, charging: false, connectivity: 'ONLINE', wifi: 'SUOP-WH-MUM', ip: '192.168.1.45', lastSync: '10:42', status: 'IN_USE', wh: 'WH-MUM-MAIN' },
+    { id: 'M3', code: 'MD-003', name: 'Zebra TC22 Handheld', type: 'ANDROID_SCANNER', mfr: 'Zebra', model: 'TC22', serial: 'ZB2024-1100', imei: '358912456789014', os: 'Android 13', osVer: '13.0', app: 'SUOP Scanner', appVer: '1.4.1', op: null, battery: 18, charging: true, connectivity: 'OFFLINE', wifi: null, ip: null, lastSync: '09:55', status: 'CHARGING', wh: 'WH-MUM-MAIN' },
+    { id: 'M4', code: 'MD-004', name: 'Samsung Galaxy A14', type: 'ANDROID_SCANNER', mfr: 'Samsung', model: 'Galaxy A14', serial: 'SM2024-6001', imei: '358912456789015', os: 'Android 14', osVer: '14.0', app: 'SUOP Scanner', appVer: '1.4.2', op: 'Priya N.', battery: 54, charging: false, connectivity: 'WEAK', wifi: 'SUOP-WH-MUM', ip: '192.168.1.52', lastSync: '10:30', status: 'IN_USE', wh: 'WH-MUM-MAIN' },
+  ]
+
+  const scannerStats = [
+    { label: 'Total Scanners', value: scanners.length, color: 'text-blue-600' },
+    { label: 'In Use', value: scanners.filter(s => s.status === 'IN_USE').length, color: 'text-amber-600' },
+    { label: 'Available', value: scanners.filter(s => s.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+    { label: 'Charging', value: scanners.filter(s => s.status === 'CHARGING').length, color: 'text-blue-600' },
+    { label: 'Broken', value: scanners.filter(s => s.status === 'BROKEN').length, color: 'text-rose-600' },
+    { label: 'Scans Today', value: scanners.reduce((a, s) => a + s.scansToday, 0), color: 'text-purple-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Scanner &amp; Mobile Device Management</h2><p className="text-sm text-muted-foreground mt-1">Enterprise asset lifecycle · IMEI · OS version · app sync · battery · connectivity</p></div>
+        <div className="flex rounded-md border overflow-hidden w-fit">
+          {(['scanners', 'mobile'] as const).map(v => <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 text-sm font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v === 'mobile' ? 'Mobile Devices' : 'Scanners'}</button>)}
+        </div>
+      </div>
+
+      {view === 'scanners' && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            {scannerStats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {scanners.map(s => {
+              const b = s28BadgeForStatus(s.status)
+              const batteryColor = s.battery === null ? 'bg-slate-200' : s.battery > 60 ? 'bg-emerald-500' : s.battery > 30 ? 'bg-amber-500' : s.battery > 10 ? 'bg-orange-500' : 'bg-rose-500'
+              const typeColors: Record<string, string> = { HANDHELD_1D: 'bg-slate-100 text-slate-700', HANDHELD_2D: 'bg-blue-100 text-blue-700', WEARABLE_RING: 'bg-purple-100 text-purple-700', FIXED_MOUNT: 'bg-amber-100 text-amber-700', MOBILE_COMPUTER: 'bg-emerald-100 text-emerald-700' }
+              return (
+                <Card key={s.id} className={`p-4 ${s.status === 'BROKEN' ? 'border-rose-300 bg-rose-50/30' : ''}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center"><ScanLine className="h-5 w-5 text-blue-700" /></div>
+                      <div>
+                        <div className="font-mono font-semibold text-sm">{s.code}</div>
+                        <div className="text-[10px] text-muted-foreground">{s.mfr} {s.model}</div>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${typeColors[s.type]}`}>{s.type.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Serial:</span><span className="font-mono">{s.serial}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Operator:</span><span>{s.op || '—'}</span></div>
+                    {s.battery !== null && (
+                      <div className="flex items-center gap-2 mt-2"><span className="text-muted-foreground text-[10px] w-16">Battery:</span><div className="flex-1 h-3 bg-muted rounded-full overflow-hidden"><div className={`h-full ${batteryColor}`} style={{ width: `${s.battery}%` }} /></div><span className="text-[10px] font-mono w-8">{s.battery}%</span></div>
+                    )}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Scans Today:</span><span className="font-mono">{s.scansToday}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Lifetime Scans:</span><span className="font-mono">{s.scansLife.toLocaleString('en-IN')}</span></div>
+                    {s.lastScan && <div className="flex justify-between"><span className="text-muted-foreground">Last Scan:</span><span className="font-mono">{s.lastScan}</span></div>}
+                    <div className="flex gap-1 pt-1">{s.supports.map(cap => <span key={cap} className="text-[9px] px-1 py-0.5 bg-muted rounded font-mono">{cap}</span>)}</div>
+                  </div>
+                  <div className="mt-2"><span className={`text-xs px-2 py-1 rounded ${b.cls} block text-center`}>{b.label}</span></div>
+                </Card>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {view === 'mobile' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {mobile.map(m => {
+            const b = s28BadgeForStatus(m.status)
+            const batteryColor = m.battery > 60 ? 'bg-emerald-500' : m.battery > 30 ? 'bg-amber-500' : m.battery > 10 ? 'bg-orange-500' : 'bg-rose-500'
+            const connColor = m.connectivity === 'ONLINE' ? 'text-emerald-600' : m.connectivity === 'WEAK' ? 'text-amber-600' : 'text-rose-600'
+            return (
+              <Card key={m.id} className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center"><Smartphone className="h-5 w-5 text-purple-700" /></div>
+                    <div>
+                      <div className="font-mono font-semibold text-sm">{m.code}</div>
+                      <div className="text-[10px] text-muted-foreground">{m.name}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+                    <span className={`text-[10px] font-mono ${connColor}`}>{m.connectivity}</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Manufacturer:</span><span>{m.mfr} {m.model}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Serial / IMEI:</span><span className="font-mono">{m.serial} / {m.imei}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">OS:</span><span>{m.os} {m.osVer}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">App:</span><span>{m.app} v{m.appVer}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Operator:</span><span>{m.op || '—'}</span></div>
+                  <div className="flex items-center gap-2 mt-2"><span className="text-muted-foreground text-[10px] w-16">Battery:</span><div className="flex-1 h-3 bg-muted rounded-full overflow-hidden"><div className={`h-full ${batteryColor}`} style={{ width: `${m.battery}%` }} /></div><span className="text-[10px] font-mono w-8">{m.battery}%{m.charging && ' ⚡'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">WiFi:</span><span className="font-mono">{m.wifi || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">IP:</span><span className="font-mono">{m.ip || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Last Sync:</span><span className="font-mono">{m.lastSync}</span></div>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Epic 4: Battery Dashboard Module ───────────────────
+function BatteryDashboardModule() {
+  const batteries = [
+    { id: 'B1', code: 'BAT-FL-001', equipment: 'FL-001', type: 'LITHIUM_ION', voltage: 48, capacity: 600, percent: 78, charging: 'NOT_CHARGING', health: 92, cycles: 412, maxCycles: 1500, station: null, lastCharged: 'Today 06:00', replacement: '2027-06-15', replaceRec: false },
+    { id: 'B2', code: 'BAT-FL-002', equipment: 'FL-002', type: 'LITHIUM_ION', voltage: 48, capacity: 600, percent: 62, charging: 'NOT_CHARGING', health: 88, cycles: 487, maxCycles: 1500, station: null, lastCharged: 'Today 05:30', replacement: '2027-04-20', replaceRec: false },
+    { id: 'B3', code: 'BAT-FL-003', equipment: 'FL-003', type: 'LITHIUM_ION', voltage: 48, capacity: 750, percent: 95, charging: 'NOT_CHARGING', health: 99, cycles: 78, maxCycles: 1500, station: null, lastCharged: 'Today 07:00', replacement: '2028-07-01', replaceRec: false },
+    { id: 'B4', code: 'BAT-RT-001', equipment: 'RT-001', type: 'LITHIUM_ION', voltage: 80, capacity: 800, percent: 45, charging: 'NOT_CHARGING', health: 65, cycles: 1240, maxCycles: 1500, station: null, lastCharged: 'Today 04:00', replacement: '2026-09-10', replaceRec: true },
+    { id: 'B5', code: 'BAT-ST-001', equipment: 'ST-001', type: 'LEAD_ACID', voltage: 24, capacity: 250, percent: 23, charging: 'CHARGING', health: 78, cycles: 320, maxCycles: 500, station: 'CS-01', lastCharged: 'Yesterday 18:00', replacement: '2026-12-25', replaceRec: false },
+    { id: 'B6', code: 'BAT-SC-001', equipment: 'SC-001', type: 'LITHIUM_ION', voltage: 3.7, capacity: 4.5, percent: 88, charging: 'NOT_CHARGING', health: 95, cycles: 142, maxCycles: 1000, station: null, lastCharged: 'Today 06:30', replacement: '2027-05-12', replaceRec: false },
+  ]
+
+  const stations = [
+    { code: 'CS-01', name: 'Charging Station 01', type: 'MULTI_BAY', zone: 'Charging Room', bays: 4, occupied: 2, voltage: 48, current: 30, status: 'PARTIAL' },
+    { code: 'CS-02', name: 'Charging Station 02', type: 'FAST_CHARGE', zone: 'Charging Room', bays: 2, occupied: 0, voltage: 80, current: 50, status: 'AVAILABLE' },
+    { code: 'CS-03', name: 'Charging Station 03', type: 'SINGLE_BAY', zone: 'Zone B', bays: 1, occupied: 1, voltage: 48, current: 30, status: 'FULL' },
+    { code: 'CS-04', name: 'Charging Station 04', type: 'SWAP_STATION', zone: 'Zone E', bays: 6, occupied: 4, voltage: 48, current: 30, status: 'PARTIAL' },
+  ]
+
+  const alerts = [
+    { sev: 'CRITICAL', msg: 'BAT-RT-001 health 65% — replacement recommended (1240/1500 cycles)', battery: 'BAT-RT-001' },
+    { sev: 'WARNING', msg: 'BAT-ST-001 battery at 23% — currently charging at CS-01', battery: 'BAT-ST-001' },
+    { sev: 'WARNING', msg: 'BAT-FL-002 battery at 62% — monitor for recharge', battery: 'BAT-FL-002' },
+    { sev: 'INFO', msg: 'BAT-FL-003 fully charged (95%) — ready for assignment', battery: 'BAT-FL-003' },
+  ]
+
+  const stats = [
+    { label: 'Total Batteries', value: batteries.length, color: 'text-blue-600' },
+    { label: 'Avg Health', value: `${Math.round(batteries.reduce((a, b) => a + b.health, 0) / batteries.length)}%`, color: 'text-emerald-600' },
+    { label: 'Charging Now', value: batteries.filter(b => b.charging === 'CHARGING').length, color: 'text-blue-600' },
+    { label: 'Low Battery', value: batteries.filter(b => b.percent < 30).length, color: 'text-amber-600' },
+    { label: 'Replace Recommended', value: batteries.filter(b => b.replaceRec).length, color: 'text-rose-600' },
+    { label: 'Avg Cycles', value: Math.round(batteries.reduce((a, b) => a + b.cycles, 0) / batteries.length), color: 'text-purple-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Battery &amp; Charging Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Battery health · cycle count · charging stations · replacement forecasting</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-4 lg:col-span-2">
+          <h3 className="font-semibold mb-3">Battery Status — All Equipment</h3>
+          <div className="space-y-2">
+            {batteries.map(bat => {
+              const batteryColor = bat.percent > 60 ? 'bg-emerald-500' : bat.percent > 30 ? 'bg-amber-500' : bat.percent > 10 ? 'bg-orange-500' : 'bg-rose-500'
+              const healthColor = bat.health > 80 ? 'text-emerald-600' : bat.health > 60 ? 'text-amber-600' : 'text-rose-600'
+              return (
+                <div key={bat.id} className={`p-3 border rounded ${bat.replaceRec ? 'border-rose-300 bg-rose-50/30' : bat.percent < 30 ? 'border-amber-300 bg-amber-50/30' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="font-mono text-xs font-semibold text-blue-700 w-28">{bat.code}</div>
+                    <div className="text-xs text-muted-foreground w-20">{bat.equipment}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2"><span className="text-[10px] text-muted-foreground w-10">Charge:</span><div className="flex-1 h-3 bg-muted rounded-full overflow-hidden"><div className={`h-full ${batteryColor}`} style={{ width: `${bat.percent}%` }} /></div><span className="text-[10px] font-mono w-8">{bat.percent}%{bat.charging === 'CHARGING' && ' ⚡'}</span></div>
+                      <div className="flex items-center gap-2 mt-1"><span className="text-[10px] text-muted-foreground w-10">Health:</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${bat.health > 80 ? 'bg-emerald-500' : bat.health > 60 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${bat.health}%` }} /></div><span className={`text-[10px] font-mono w-12 ${healthColor}`}>{bat.health}%</span></div>
+                    </div>
+                    <div className="text-right text-[10px]">
+                      <div className="font-mono">{bat.cycles}/{bat.maxCycles}</div>
+                      <div className="text-muted-foreground">{bat.type.replace(/_/g, ' ')}</div>
+                    </div>
+                    {bat.replaceRec && <Badge variant="destructive" className="text-[9px]">REPLACE</Badge>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 text-sm">Charging Stations</h3>
+            <div className="space-y-2">
+              {stations.map(s => {
+                const b = s28BadgeForStatus(s.status)
+                return (
+                  <div key={s.code} className="p-2 border rounded">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono text-xs font-semibold">{s.code}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${b.cls}`}>{b.label}</span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">{s.name} · {s.type.replace(/_/g, ' ')}</div>
+                    <div className="text-[10px] text-muted-foreground">Zone: {s.zone}</div>
+                    <div className="flex items-center gap-2 mt-1"><span className="text-[10px] text-muted-foreground">Bays:</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${s.occupied === s.bays ? 'bg-rose-500' : s.occupied > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${(s.occupied / s.bays) * 100}%` }} /></div><span className="text-[10px] font-mono">{s.occupied}/{s.bays}</span></div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 text-sm">Battery Alerts</h3>
+            <div className="space-y-2">
+              {alerts.map((a, i) => {
+                const cls = a.sev === 'CRITICAL' ? 'border-rose-300 bg-rose-50' : a.sev === 'WARNING' ? 'border-amber-300 bg-amber-50' : 'border-blue-300 bg-blue-50'
+                const txt = a.sev === 'CRITICAL' ? 'text-rose-700' : a.sev === 'WARNING' ? 'text-amber-700' : 'text-blue-700'
+                return (
+                  <div key={i} className={`p-2 rounded border ${cls}`}>
+                    <span className={`text-[10px] font-bold ${txt}`}>{a.sev}</span>
+                    <p className="text-xs mt-0.5">{a.msg}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 5: Maintenance Planner Module ─────────────────
+function MaintenancePlannerModule() {
+  const [view, setView] = useState<'schedule' | 'tasks' | 'plans'>('schedule')
+
+  const schedule = [
+    { id: 'MS1', date: '2026-07-15', time: '10:00-12:00', equipment: 'FL-001', type: 'WEEKLY', technician: 'Ramesh Tech', status: 'SCHEDULED', result: null, cost: null },
+    { id: 'MS2', date: '2026-07-09', time: '08:00-09:00', equipment: 'FL-004', type: 'DAILY', technician: 'Suresh Tech', status: 'IN_PROGRESS', result: null, cost: null },
+    { id: 'MS3', date: '2026-07-08', time: '14:00-16:00', equipment: 'RT-001', type: 'MONTHLY', technician: 'Ramesh Tech', status: 'COMPLETED', result: 'PASS', cost: 4500 },
+    { id: 'MS4', date: '2026-07-10', time: '09:00-11:00', equipment: 'ST-001', type: 'WEEKLY', technician: 'Anil Tech', status: 'SCHEDULED', result: null, cost: null },
+    { id: 'MS5', date: '2026-07-07', time: '10:00-12:00', equipment: 'FL-002', type: 'CALIBRATION', technician: 'Ramesh Tech', status: 'OVERDUE', result: null, cost: null },
+    { id: 'MS6', date: '2026-07-20', time: '08:00-17:00', equipment: 'FL-001', type: 'ANNUAL', technician: 'Multi-Tech Team', status: 'SCHEDULED', result: null, cost: null },
+  ]
+
+  const tasks = [
+    { id: 'T1', num: 'MT-2026-018', equipment: 'FL-004', type: 'REPAIR', desc: 'Hydraulic system repair', technician: 'Suresh Tech', scheduled: '2026-07-09 08:00', status: 'IN_PROGRESS', result: null, parts: ['Hydraulic pump', 'Seal kit'], cost: 18500 },
+    { id: 'T2', num: 'MT-2026-017', equipment: 'RT-001', type: 'SERVICE', desc: 'Monthly service — mast chain lubrication', technician: 'Ramesh Tech', scheduled: '2026-07-08 14:00', status: 'COMPLETED', result: 'PASS', parts: ['Chain lube'], cost: 4500 },
+    { id: 'T3', num: 'MT-2026-016', equipment: 'FL-001', type: 'INSPECTION', desc: 'Weekly safety inspection', technician: 'Anil Tech', scheduled: '2026-07-15 10:00', status: 'OPEN', result: null, parts: [], cost: null },
+    { id: 'T4', num: 'MT-2026-015', equipment: 'SC-006', type: 'REPAIR', desc: 'Scanner trigger button replacement', technician: 'Suresh Tech', scheduled: '2026-07-10 11:00', status: 'OPEN', result: null, parts: ['Trigger button'], cost: 850 },
+    { id: 'T5', num: 'MT-2026-014', equipment: 'PR-001', type: 'CALIBRATION', desc: 'Print head calibration', technician: 'Ramesh Tech', scheduled: '2026-07-12 09:00', status: 'ASSIGNED', result: null, parts: [], cost: null },
+  ]
+
+  const plans = [
+    { code: 'MP-001', name: 'Forklift Weekly Inspection', applies: 'EQUIPMENT_TYPE', type: 'FORKLIFT', freq: 'WEEKLY', interval: 1, unit: 'WEEKS', maintType: 'INSPECTION', duration: 60, active: true, lastExec: '2026-07-01', nextExec: '2026-07-08' },
+    { code: 'MP-002', name: 'Reach Truck Monthly Service', applies: 'EQUIPMENT_TYPE', type: 'REACH_TRUCK', freq: 'MONTHLY', interval: 1, unit: 'MONTHS', maintType: 'SERVICE', duration: 120, active: true, lastExec: '2026-06-08', nextExec: '2026-07-08' },
+    { code: 'MP-003', name: 'Forklift Annual Overhaul', applies: 'EQUIPMENT_TYPE', type: 'FORKLIFT', freq: 'ANNUAL', interval: 1, unit: 'MONTHS', maintType: 'OVERHAUL', duration: 480, active: true, lastExec: '2025-07-20', nextExec: '2026-07-20' },
+    { code: 'MP-004', name: 'Scanner Print Head Calibration', applies: 'EQUIPMENT_TYPE', type: 'LABEL_PRINTER', freq: 'CALIBRATION', interval: 3, unit: 'MONTHS', maintType: 'CALIBRATION', duration: 30, active: true, lastExec: '2026-04-12', nextExec: '2026-07-12' },
+    { code: 'MP-005', name: 'Forklift Run-Based Service (250h)', applies: 'EQUIPMENT_TYPE', type: 'FORKLIFT', freq: 'RUN_BASED', interval: 250, unit: 'HOURS', maintType: 'SERVICE', duration: 180, active: true, lastExec: '2026-06-15', nextExec: null },
+  ]
+
+  const stats = [
+    { label: 'Scheduled (7d)', value: schedule.filter(s => s.status === 'SCHEDULED').length, color: 'text-blue-600' },
+    { label: 'In Progress', value: schedule.filter(s => s.status === 'IN_PROGRESS').length, color: 'text-amber-600' },
+    { label: 'Completed', value: schedule.filter(s => s.status === 'COMPLETED').length, color: 'text-emerald-600' },
+    { label: 'Overdue', value: schedule.filter(s => s.status === 'OVERDUE').length, color: 'text-rose-600' },
+    { label: 'Active Plans', value: plans.filter(p => p.active).length, color: 'text-purple-600' },
+    { label: 'Open Tasks', value: tasks.filter(t => t.status === 'OPEN' || t.status === 'ASSIGNED').length, color: 'text-orange-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Maintenance Planner</h2><p className="text-sm text-muted-foreground mt-1">Preventive maintenance · daily/weekly/monthly/quarterly/annual · calibration · run-based</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />Schedule Maintenance</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="flex rounded-md border overflow-hidden w-fit">
+        {(['schedule', 'tasks', 'plans'] as const).map(v => <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 text-sm font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v}</button>)}
+      </div>
+
+      {view === 'schedule' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Maintenance Schedule</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr>
+                <th className="text-left px-4 py-3 font-medium">Date / Time</th><th className="text-left px-4 py-3 font-medium">Equipment</th>
+                <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Technician</th>
+                <th className="text-left px-4 py-3 font-medium">Result</th><th className="text-left px-4 py-3 font-medium">Cost</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+              </tr></thead>
+              <tbody>
+                {schedule.map(s => {
+                  const b = s28BadgeForStatus(s.status)
+                  return (
+                    <tr key={s.id} className={`border-b hover:bg-muted/30 ${s.status === 'OVERDUE' ? 'bg-rose-50/50' : ''}`}>
+                      <td className="px-4 py-3 font-mono text-xs"><div>{s.date}</div><div className="text-muted-foreground">{s.time}</div></td>
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{s.equipment}</td>
+                      <td className="px-4 py-3"><span className="text-[10px] px-1.5 py-0.5 bg-muted rounded font-mono">{s.type}</span></td>
+                      <td className="px-4 py-3 text-xs">{s.technician}</td>
+                      <td className="px-4 py-3 text-xs">{s.result ? <span className={s.result === 'PASS' ? 'text-emerald-600' : 'text-rose-600'}>{s.result}</span> : '—'}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{s.cost ? `₹${s.cost.toLocaleString('en-IN')}` : '—'}</td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {view === 'tasks' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Maintenance Tasks</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr>
+                <th className="text-left px-4 py-3 font-medium">Task #</th><th className="text-left px-4 py-3 font-medium">Equipment</th>
+                <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Description</th>
+                <th className="text-left px-4 py-3 font-medium">Technician</th><th className="text-left px-4 py-3 font-medium">Scheduled</th>
+                <th className="text-left px-4 py-3 font-medium">Parts</th><th className="text-left px-4 py-3 font-medium">Cost</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+              </tr></thead>
+              <tbody>
+                {tasks.map(t => {
+                  const b = s28BadgeForStatus(t.status)
+                  return (
+                    <tr key={t.id} className="border-b hover:bg-muted/30">
+                      <td className="px-4 py-3 font-mono text-xs text-blue-700">{t.num}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{t.equipment}</td>
+                      <td className="px-4 py-3"><span className="text-[10px] px-1.5 py-0.5 bg-muted rounded font-mono">{t.type}</span></td>
+                      <td className="px-4 py-3 text-xs">{t.desc}</td>
+                      <td className="px-4 py-3 text-xs">{t.technician}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{t.scheduled}</td>
+                      <td className="px-4 py-3 text-[10px]">{t.parts.length > 0 ? t.parts.join(', ') : '—'}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{t.cost ? `₹${t.cost.toLocaleString('en-IN')}` : '—'}</td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {view === 'plans' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Maintenance Plans</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr>
+                <th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">Plan Name</th>
+                <th className="text-left px-4 py-3 font-medium">Applies To</th><th className="text-left px-4 py-3 font-medium">Frequency</th>
+                <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Duration</th>
+                <th className="text-left px-4 py-3 font-medium">Last Exec</th><th className="text-left px-4 py-3 font-medium">Next Exec</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+              </tr></thead>
+              <tbody>
+                {plans.map(p => (
+                  <tr key={p.code} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{p.code}</td>
+                    <td className="px-4 py-3 text-xs">{p.name}</td>
+                    <td className="px-4 py-3 text-[10px] font-mono">{p.type}</td>
+                    <td className="px-4 py-3 text-[10px]"><span className="font-mono">{p.freq}</span> · {p.interval} {p.unit}</td>
+                    <td className="px-4 py-3 text-[10px] font-mono">{p.maintType}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{p.duration}m</td>
+                    <td className="px-4 py-3 font-mono text-xs">{p.lastExec}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{p.nextExec || '—'}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${p.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>{p.active ? 'Active' : 'Inactive'}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <h3 className="font-semibold mb-3 text-sm">Maintenance Workflow</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Equipment', 'Maintenance Due', 'Work Order', 'Technician', 'Service', 'Available'].map((step, i, arr) => (
+            <div key={step} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-blue-600" />}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 6: Breakdown Console Module ───────────────────
+function BreakdownConsoleModule() {
+  const breakdowns = [
+    { id: 'BD1', num: 'BD-2026-018', equipment: 'FL-004', type: 'FORKLIFT', category: 'HYDRAULIC', severity: 'CRITICAL', desc: 'Hydraulic pressure loss during loading at DOCK-04', reportedBy: 'Suresh M.', reportedAt: '10:05', technician: 'Suresh Tech', status: 'IN_PROGRESS', diagnosis: 'Hydraulic pump failure', repair: 'Replacing pump + seal kit', parts: ['Hydraulic pump', 'Seal kit'], cost: 18500, downtime: 95, photos: 3 },
+    { id: 'BD2', num: 'BD-2026-017', equipment: 'SC-006', type: 'SCANNER', category: 'PHYSICAL_DAMAGE', severity: 'MEDIUM', desc: 'Scanner trigger button broken — dropped on concrete floor', reportedBy: 'Mahesh R.', reportedAt: '09:30', technician: 'Suresh Tech', status: 'ASSIGNED', diagnosis: null, repair: null, parts: [], cost: null, downtime: 45, photos: 2 },
+    { id: 'BD3', num: 'BD-2026-016', equipment: 'FL-002', type: 'FORKLIFT', category: 'ELECTRICAL', severity: 'HIGH', desc: 'Battery not holding charge — drops from 100% to 20% in 2 hours', reportedBy: 'Suresh M.', reportedAt: '08:15', technician: 'Ramesh Tech', status: 'REPAIRED', diagnosis: 'Battery cell degradation', repair: 'Replaced 4 battery cells', parts: ['4× Battery cell'], cost: 12000, downtime: 180, photos: 4 },
+    { id: 'BD4', num: 'BD-2026-015', equipment: 'RT-001', type: 'REACH_TRUCK', category: 'MECHANICAL', severity: 'LOW', desc: 'Mast chain making noise during lift', reportedBy: 'Mahesh R.', reportedAt: '2026-07-07 14:30', technician: 'Ramesh Tech', status: 'RETURNED_TO_SERVICE', diagnosis: 'Chain lubrication needed', repair: 'Lubricated mast chain', parts: ['Chain lube'], cost: 500, downtime: 60, photos: 1 },
+    { id: 'BD5', num: 'BD-2026-014', equipment: 'PR-001', type: 'LABEL_PRINTER', category: 'SOFTWARE', severity: 'MEDIUM', desc: 'Print labels smudged — calibration off', reportedBy: 'Lakshmi V.', reportedAt: '2026-07-06 11:00', technician: 'Anil Tech', status: 'TESTED', diagnosis: 'Print head alignment', repair: 'Calibrated print head', parts: [], cost: 0, downtime: 30, photos: 0 },
+    { id: 'BD6', num: 'BD-2026-013', equipment: 'ST-001', type: 'STACKER', category: 'BATTERY', severity: 'HIGH', desc: 'Battery not charging — charger port loose', reportedBy: 'Anita S.', reportedAt: '2026-07-05 09:00', technician: 'Ramesh Tech', status: 'RETURNED_TO_SERVICE', diagnosis: 'Loose charging port', repair: 'Re-soldered charging port', parts: ['Charging port'], cost: 800, downtime: 240, photos: 2 },
+  ]
+
+  const stats = [
+    { label: 'Open Breakdowns', value: breakdowns.filter(b => b.status === 'OPEN' || b.status === 'ASSIGNED' || b.status === 'IN_PROGRESS').length, color: 'text-rose-600' },
+    { label: 'In Progress', value: breakdowns.filter(b => b.status === 'IN_PROGRESS').length, color: 'text-amber-600' },
+    { label: 'Repaired', value: breakdowns.filter(b => b.status === 'REPAIRED' || b.status === 'TESTED' || b.status === 'RETURNED_TO_SERVICE').length, color: 'text-emerald-600' },
+    { label: 'Critical', value: breakdowns.filter(b => b.severity === 'CRITICAL').length, color: 'text-red-600' },
+    { label: 'Total Downtime (h)', value: (breakdowns.reduce((a, b) => a + b.downtime, 0) / 60).toFixed(1), color: 'text-orange-600' },
+    { label: 'Repair Cost (₹)', value: breakdowns.reduce((a, b) => a + (b.cost || 0), 0).toLocaleString('en-IN'), color: 'text-purple-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Breakdown Console</h2><p className="text-sm text-muted-foreground mt-1">Report · diagnose · repair · test · return to service · downtime tracking</p></div>
+        <Button size="sm" variant="destructive"><AlertOctagon className="mr-2 h-4 w-4" />Report Breakdown</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-rose-50 to-orange-50 border-rose-300">
+        <h3 className="font-semibold mb-3 text-sm">Breakdown Resolution Workflow</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Breakdown', 'Report', 'Assign Technician', 'Repair', 'Test', 'Return To Service'].map((step, i, arr) => (
+            <div key={step} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-rose-600" />}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="space-y-2">
+        {breakdowns.map(b => {
+          const sb = s28BadgeForStatus(b.status)
+          const sevColor = b.severity === 'CRITICAL' ? 'border-rose-400 bg-rose-50/50' : b.severity === 'HIGH' ? 'border-orange-300 bg-orange-50/30' : b.severity === 'MEDIUM' ? 'border-amber-200 bg-amber-50/20' : 'border-slate-200'
+          const sevBadge = b.severity === 'CRITICAL' ? 'bg-rose-100 text-rose-700' : b.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' : b.severity === 'MEDIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+          const catColors: Record<string, string> = { MECHANICAL: 'bg-amber-100 text-amber-700', ELECTRICAL: 'bg-yellow-100 text-yellow-700', HYDRAULIC: 'bg-blue-100 text-blue-700', BATTERY: 'bg-purple-100 text-purple-700', SOFTWARE: 'bg-cyan-100 text-cyan-700', PHYSICAL_DAMAGE: 'bg-rose-100 text-rose-700' }
+          return (
+            <Card key={b.id} className={`p-4 ${sevColor}`}>
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-lg bg-white border flex items-center justify-center flex-shrink-0"><AlertTriangle className="h-4 w-4 text-rose-600" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-mono text-xs font-semibold text-blue-700">{b.num}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${catColors[b.category] || 'bg-slate-100'}`}>{b.category.replace(/_/g, ' ')}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${sevBadge}`}>{b.severity}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">Equipment: {b.equipment} ({b.type})</span>
+                  </div>
+                  <p className="text-sm font-medium">{b.desc}</p>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                    <span>Reported: {b.reportedAt} by {b.reportedBy}</span>
+                    <span>·</span>
+                    <span>Technician: {b.technician || '—'}</span>
+                    {b.diagnosis && <><span>·</span><span>Diagnosis: {b.diagnosis}</span></>}
+                    {b.repair && <><span>·</span><span>Repair: {b.repair}</span></>}
+                    {b.parts.length > 0 && <><span>·</span><span>Parts: {b.parts.join(', ')}</span></>}
+                    {b.cost !== null && <><span>·</span><span>Cost: ₹{b.cost.toLocaleString('en-IN')}</span></>}
+                    <span>·</span>
+                    <span className={b.downtime > 120 ? 'text-rose-600 font-bold' : b.downtime > 60 ? 'text-amber-600' : ''}>Downtime: {b.downtime}m</span>
+                    {b.photos > 0 && <><span>·</span><span>📷 {b.photos} photos</span></>}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`text-xs px-2 py-1 rounded ${sb.cls}`}>{sb.label}</span>
+                  {(b.status === 'OPEN' || b.status === 'ASSIGNED' || b.status === 'IN_PROGRESS') && (
+                    <Button size="sm" variant="default" className="h-7 text-xs">Update Status</Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 7: Certification Center Module ────────────────
+function CertificationCenterModule() {
+  const certifications = [
+    { id: 'C1', code: 'CERT-001', op: 'OP-001 Rajesh Kumar', type: 'FORKLIFT_LICENSE', name: 'Forklift Operating License', issuedBy: 'NSDC', issuedAt: '2024-03-15', certNum: 'NSDC-FL-2024-001', validFrom: '2024-03-15', validUntil: '2027-03-15', expired: false, expiringSoon: false, score: 92, equipmentType: 'FORKLIFT', status: 'ACTIVE' },
+    { id: 'C2', code: 'CERT-002', op: 'OP-001 Rajesh Kumar', type: 'REACH_TRUCK', name: 'Reach Truck Certification', issuedBy: 'MANUFACTURER', issuedAt: '2024-04-20', certNum: 'CROWN-RT-2024-005', validFrom: '2024-04-20', validUntil: '2026-04-20', expired: false, expiringSoon: true, score: 88, equipmentType: 'REACH_TRUCK', status: 'ACTIVE' },
+    { id: 'C3', code: 'CERT-003', op: 'OP-003 Suresh Mehta', type: 'FORKLIFT_LICENSE', name: 'Forklift Operating License', issuedBy: 'NSDC', issuedAt: '2023-11-10', certNum: 'NSDC-FL-2023-118', validFrom: '2023-11-10', validUntil: '2026-11-10', expired: false, expiringSoon: false, score: 95, equipmentType: 'FORKLIFT', status: 'ACTIVE' },
+    { id: 'C4', code: 'CERT-004', op: 'OP-002 Anita Sharma', type: 'COLD_STORAGE', name: 'Cold Storage Handling', issuedBy: 'INTERNAL', issuedAt: '2024-06-01', certNum: 'SUOP-CS-2024-002', validFrom: '2024-06-01', validUntil: '2026-06-01', expired: true, expiringSoon: false, score: 84, equipmentType: null, status: 'EXPIRED' },
+    { id: 'C5', code: 'CERT-005', op: 'OP-005 Ramesh Patel', type: 'FORKLIFT_LICENSE', name: 'Forklift Operating License', issuedBy: 'NSDC', issuedAt: '2023-08-15', certNum: 'NSDC-FL-2023-082', validFrom: '2023-08-15', validUntil: '2026-08-15', expired: false, expiringSoon: true, score: 81, equipmentType: 'FORKLIFT', status: 'PENDING_RENEWAL' },
+    { id: 'C6', code: 'CERT-006', op: 'OP-006 Mahesh Reddy', type: 'HAZARDOUS_GOODS', name: 'Hazardous Goods Handling', issuedBy: 'GOVT_BODY', issuedAt: '2024-02-10', certNum: 'GOVT-HG-2024-018', validFrom: '2024-02-10', validUntil: '2027-02-10', expired: false, expiringSoon: false, score: 89, equipmentType: null, status: 'ACTIVE' },
+    { id: 'C7', code: 'CERT-007', op: 'OP-001 Rajesh Kumar', type: 'FIRST_AID', name: 'First Aid Certification', issuedBy: 'INTERNAL', issuedAt: '2024-01-05', certNum: 'SUOP-FA-2024-001', validFrom: '2024-01-05', validUntil: '2026-01-05', expired: true, expiringSoon: false, score: 96, equipmentType: null, status: 'EXPIRED' },
+    { id: 'C8', code: 'CERT-008', op: 'OP-003 Suresh Mehta', type: 'SAFETY_TRAINING', name: 'Warehouse Safety Training', issuedBy: 'INTERNAL', issuedAt: '2024-05-20', certNum: 'SUOP-ST-2024-003', validFrom: '2024-05-20', validUntil: '2026-05-20', expired: false, expiringSoon: false, score: 94, equipmentType: null, status: 'ACTIVE' },
+  ]
+
+  const stats = [
+    { label: 'Total Certifications', value: certifications.length, color: 'text-blue-600' },
+    { label: 'Active', value: certifications.filter(c => c.status === 'ACTIVE').length, color: 'text-emerald-600' },
+    { label: 'Expiring Soon', value: certifications.filter(c => c.expiringSoon).length, color: 'text-amber-600' },
+    { label: 'Expired', value: certifications.filter(c => c.expired).length, color: 'text-rose-600' },
+    { label: 'Pending Renewal', value: certifications.filter(c => c.status === 'PENDING_RENEWAL').length, color: 'text-orange-600' },
+    { label: 'Avg Score', value: `${Math.round(certifications.reduce((a, c) => a + c.score, 0) / certifications.length)}%`, color: 'text-purple-600' },
+  ]
+
+  const certTypes = ['FORKLIFT_LICENSE', 'REACH_TRUCK', 'COLD_STORAGE', 'HAZARDOUS_GOODS', 'FIRST_AID', 'SAFETY_TRAINING', 'EQUIPMENT_TRAINING', 'FIRE_SAFETY']
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Certification Center</h2><p className="text-sm text-muted-foreground mt-1">Operator licenses · safety training · equipment certifications · expiry tracking</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />Issue Certification</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-amber-600 flex items-center justify-center text-white"><ShieldCheck className="h-5 w-5" /></div>
+          <div><p className="font-semibold text-sm">Certification Validation Rule</p><p className="text-xs text-muted-foreground">Tasks requiring certification will only be assigned to operators with valid (non-expired) certifications. Expired certifications block task assignment automatically.</p></div>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 text-sm">Certification Type Matrix</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          {certTypes.map(t => {
+            const count = certifications.filter(c => c.type === t).length
+            const active = certifications.filter(c => c.type === t && c.status === 'ACTIVE').length
+            const expired = certifications.filter(c => c.type === t && c.expired).length
+            return (
+              <div key={t} className="p-2 border rounded">
+                <div className="font-mono text-[10px] font-semibold text-blue-700">{t.replace(/_/g, ' ')}</div>
+                <div className="flex items-center gap-2 mt-1 text-[10px]"><span className="text-emerald-600">{active} active</span><span className="text-rose-600">{expired} expired</span><span className="text-muted-foreground">/ {count} total</span></div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">All Certifications</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Cert #</th><th className="text-left px-4 py-3 font-medium">Operator</th>
+              <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Issued By</th>
+              <th className="text-left px-4 py-3 font-medium">Cert Number</th><th className="text-left px-4 py-3 font-medium">Valid Until</th>
+              <th className="text-left px-4 py-3 font-medium">Score</th><th className="text-left px-4 py-3 font-medium">Equipment</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {certifications.map(c => {
+                const b = s28BadgeForStatus(c.status)
+                return (
+                  <tr key={c.id} className={`border-b hover:bg-muted/30 ${c.expired ? 'bg-rose-50/30' : c.expiringSoon ? 'bg-amber-50/30' : ''}`}>
+                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{c.code}</td>
+                    <td className="px-4 py-3 text-xs">{c.op}</td>
+                    <td className="px-4 py-3"><span className="text-[10px] px-1.5 py-0.5 bg-muted rounded font-mono">{c.type.replace(/_/g, ' ')}</span></td>
+                    <td className="px-4 py-3 text-[10px]">{c.issuedBy}</td>
+                    <td className="px-4 py-3 font-mono text-[10px]">{c.certNum}</td>
+                    <td className="px-4 py-3 font-mono text-xs"><span className={c.expired ? 'text-rose-600 font-bold' : c.expiringSoon ? 'text-amber-600 font-bold' : ''}>{c.validUntil}</span>{c.expiringSoon && !c.expired && <span className="text-[9px] text-amber-600 ml-1">⚠ soon</span>}</td>
+                    <td className="px-4 py-3 font-mono text-xs"><span className={c.score > 90 ? 'text-emerald-600' : c.score > 80 ? 'text-amber-600' : 'text-rose-600'}>{c.score}%</span></td>
+                    <td className="px-4 py-3 text-[10px] font-mono">{c.equipmentType || '—'}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 8: Equipment Analytics Module ─────────────────
+function EquipmentAnalyticsModule() {
+  const kpis = [
+    { label: 'Equipment Utilization', value: '74%', target: '80%', trend: '+3%', color: 'text-emerald-600' },
+    { label: 'MTBF (hours)', value: '342h', target: '400h', trend: '+12h', color: 'text-emerald-600' },
+    { label: 'MTTR (hours)', value: '2.8h', target: '2.0h', trend: '+0.3h', color: 'text-amber-600' },
+    { label: 'Battery Health Avg', value: '86%', target: '90%', trend: '+1%', color: 'text-emerald-600' },
+    { label: 'Maintenance Compliance', value: '92%', target: '95%', trend: '+2%', color: 'text-emerald-600' },
+    { label: 'Equipment Availability', value: '88%', target: '92%', trend: '+1%', color: 'text-emerald-600' },
+  ]
+
+  const equipmentUtil = [
+    { code: 'FL-001', util: 87, downtime: 4, tasks: 342 },
+    { code: 'FL-002', util: 79, downtime: 8, tasks: 287 },
+    { code: 'FL-003', util: 32, downtime: 0, tasks: 124 },
+    { code: 'RT-001', util: 91, downtime: 12, tasks: 412 },
+    { code: 'ST-001', util: 68, downtime: 6, tasks: 198 },
+    { code: 'SC-001', util: 84, downtime: 2, tasks: 12453 },
+    { code: 'SC-002', util: 22, downtime: 0, tasks: 5421 },
+    { code: 'OP-001', util: 71, downtime: 4, tasks: 218 },
+  ]
+
+  const maintenanceTrend = [
+    { month: 'Jan', planned: 12, completed: 11, cost: 38500 },
+    { month: 'Feb', planned: 14, completed: 13, cost: 42800 },
+    { month: 'Mar', planned: 11, completed: 11, cost: 31200 },
+    { month: 'Apr', planned: 16, completed: 14, cost: 52400 },
+    { month: 'May', planned: 13, completed: 12, cost: 41500 },
+    { month: 'Jun', planned: 18, completed: 17, cost: 68200 },
+    { month: 'Jul', planned: 15, completed: 9, cost: 45800 },
+  ]
+  const maxPlanned = Math.max(...maintenanceTrend.map(m => m.planned))
+
+  const operatorUsage = [
+    { op: 'Rajesh K. (OP-001)', equipUsed: 4, hoursToday: 6.5, hoursWeek: 38, tasksToday: 14, certifications: 5 },
+    { op: 'Suresh M. (OP-003)', equipUsed: 3, hoursToday: 7.2, hoursWeek: 42, tasksToday: 18, certifications: 4 },
+    { op: 'Anita S. (OP-002)', equipUsed: 3, hoursToday: 5.8, hoursWeek: 35, tasksToday: 11, certifications: 3 },
+    { op: 'Mahesh R. (OP-006)', equipUsed: 2, hoursToday: 4.5, hoursWeek: 28, tasksToday: 6, certifications: 2 },
+    { op: 'Ramesh P. (OP-005)', equipUsed: 0, hoursToday: 0, hoursWeek: 32, tasksToday: 0, certifications: 3 },
+  ]
+
+  const replacementForecast = [
+    { equipment: 'FL-004 (Toyota 8FBE15)', reason: 'Hydraulic failure — beyond economic repair', estCost: 950000, recommended: '2026-07-30', urgency: 'CRITICAL' },
+    { equipment: 'BAT-RT-001 (RT-001 Battery)', reason: '1240/1500 cycles — health 65%', estCost: 85000, recommended: '2026-09-15', urgency: 'HIGH' },
+    { equipment: 'SC-006 (Honeywell VW-320)', reason: 'Trigger broken — obsolete model', estCost: 28000, recommended: '2026-08-01', urgency: 'MEDIUM' },
+    { equipment: 'ST-001 (Godrej GSX-10)', reason: '734 hours — nearing end of life', estCost: 380000, recommended: '2026-12-15', urgency: 'LOW' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Equipment Analytics</h2><p className="text-sm text-muted-foreground mt-1">Utilization · MTBF · MTTR · maintenance cost · operator usage · replacement forecast</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpis.map(k => (
+          <Card key={k.label} className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{k.label}</p>
+            <p className="text-xl font-bold mt-1">{k.value}</p>
+            <div className="flex items-center justify-between mt-1"><span className={`text-[10px] ${k.color}`}>{k.trend}</span><span className="text-[10px] text-muted-foreground">Target: {k.target}</span></div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Equipment Utilization (Today)</h3>
+          <div className="space-y-2">
+            {equipmentUtil.map(e => (
+              <div key={e.code} className="flex items-center gap-3">
+                <div className="w-16 font-mono text-xs font-semibold">{e.code}</div>
+                <div className="flex-1 h-5 bg-muted rounded overflow-hidden relative"><div className={`h-full ${e.util > 80 ? 'bg-emerald-500' : e.util > 60 ? 'bg-amber-500' : e.util > 30 ? 'bg-orange-500' : 'bg-slate-400'}`} style={{ width: `${e.util}%` }} /></div>
+                <div className="w-10 text-xs font-mono text-right">{e.util}%</div>
+                <div className="w-20 text-[10px] text-muted-foreground text-right">{e.downtime}h down</div>
+                <div className="w-16 text-[10px] text-muted-foreground text-right">{e.tasks} tasks</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Maintenance Trend (6 months)</h3>
+          <div className="flex items-end justify-between gap-2 h-48">
+            {maintenanceTrend.map(m => (
+              <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-[10px] font-mono text-muted-foreground">₹{(m.cost / 1000).toFixed(0)}k</div>
+                <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end relative">
+                  <div className="w-full bg-gradient-to-t from-blue-600 to-blue-400 absolute bottom-0" style={{ height: `${(m.planned / maxPlanned) * 100}%` }} />
+                  <div className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 absolute bottom-0" style={{ height: `${(m.completed / maxPlanned) * 100}%` }} />
+                </div>
+                <div className="text-xs">{m.month}</div>
+                <div className="text-[10px] text-muted-foreground">{m.completed}/{m.planned}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-blue-500 rounded" />Planned</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-emerald-500 rounded" />Completed</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-amber-600 rounded" />Cost (₹k)</span>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Operator Equipment Usage</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr>
+                <th className="text-left px-4 py-2 font-medium">Operator</th><th className="text-left px-4 py-2 font-medium">Equip Used</th>
+                <th className="text-left px-4 py-2 font-medium">Today</th><th className="text-left px-4 py-2 font-medium">Week</th>
+                <th className="text-left px-4 py-2 font-medium">Tasks</th><th className="text-left px-4 py-2 font-medium">Certs</th>
+              </tr></thead>
+              <tbody>
+                {operatorUsage.map(o => (
+                  <tr key={o.op} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-2 text-xs font-medium">{o.op}</td>
+                    <td className="px-4 py-2 font-mono text-xs">{o.equipUsed}</td>
+                    <td className="px-4 py-2 font-mono text-xs">{o.hoursToday}h</td>
+                    <td className="px-4 py-2 font-mono text-xs">{o.hoursWeek}h</td>
+                    <td className="px-4 py-2 font-mono text-xs">{o.tasksToday}</td>
+                    <td className="px-4 py-2"><Badge variant="outline" className="text-[10px]">{o.certifications}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Replacement Forecast</h3></div>
+          <div className="p-3 space-y-2">
+            {replacementForecast.map((r, i) => {
+              const urgencyColors: Record<string, string> = { CRITICAL: 'border-rose-400 bg-rose-50', HIGH: 'border-orange-300 bg-orange-50', MEDIUM: 'border-amber-200 bg-amber-50', LOW: 'border-slate-200 bg-slate-50' }
+              const urgencyBadge: Record<string, string> = { CRITICAL: 'bg-rose-100 text-rose-700', HIGH: 'bg-orange-100 text-orange-700', MEDIUM: 'bg-amber-100 text-amber-700', LOW: 'bg-slate-100 text-slate-700' }
+              return (
+                <div key={i} className={`p-3 rounded border ${urgencyColors[r.urgency]}`}>
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="font-mono text-xs font-semibold">{r.equipment}</div>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${urgencyBadge[r.urgency]}`}>{r.urgency}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{r.reason}</p>
+                  <div className="flex items-center justify-between mt-1 text-[10px]">
+                    <span>Est. Cost: <span className="font-mono font-bold text-purple-700">₹{r.estCost.toLocaleString('en-IN')}</span></span>
+                    <span>Recommended: <span className="font-mono">{r.recommended}</span></span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm">AI-Ready Equipment Optimization Insights</h3>
+            <div className="mt-2 space-y-1.5 text-xs">
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>FL-003</strong> has 32% utilization — consider reassigning to higher-traffic zone or renting out.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>MTTR 2.8h</strong> exceeds 2.0h target — recommend stocking critical parts (hydraulic pumps, battery cells) on-site.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>July maintenance completion</strong> at 60% (9/15) — backlog building. Add 1 technician for 2 weeks.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Battery replacement</strong> for BAT-RT-001 should be scheduled before Sept 10 to prevent mid-shift failure.</span></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -12337,6 +13324,7 @@ export default function Home() {
     warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', dispatch: 'Dispatch & Shipping',
     waveplanning: 'Wave Planning', taskqueue: 'Task Queue', workforce: 'Workforce Management', equipment: 'Equipment Management', controltower: 'Warehouse Control Tower', sladashboard: 'SLA Dashboard', exceptioncenter: 'Exception Center', workforceanalytics: 'Workforce Analytics',
     crossdock: 'Cross-Dock Console', truckqueue: 'Truck Queue', dockschedule: 'Dock Schedule', yardmap: 'Yard Map', vehicletracker: 'Vehicle Tracker', gateconsole: 'Gate Console', yardtower: 'Yard Control Tower', crossdockanalytics: 'Cross-Dock Analytics',
+    equipmentmaster: 'Equipment Master', forkliftdashboard: 'Forklift Dashboard', scannermgmt: 'Scanner Management', batterydashboard: 'Battery Dashboard', maintenanceplanner: 'Maintenance Planner', breakdownconsole: 'Breakdown Console', certificationcenter: 'Certification Center', equipmentanalytics: 'Equipment Analytics',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -12402,7 +13390,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 29 · 249 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 30 · 261 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
@@ -12459,11 +13447,19 @@ export default function Home() {
             {activeModule === 'gateconsole' && <GateConsoleModule />}
             {activeModule === 'yardtower' && <YardControlTowerModule />}
             {activeModule === 'crossdockanalytics' && <CrossDockAnalyticsModule />}
+            {activeModule === 'equipmentmaster' && <EquipmentMasterModule />}
+            {activeModule === 'forkliftdashboard' && <ForkliftDashboardModule />}
+            {activeModule === 'scannermgmt' && <ScannerManagementModule />}
+            {activeModule === 'batterydashboard' && <BatteryDashboardModule />}
+            {activeModule === 'maintenanceplanner' && <MaintenancePlannerModule />}
+            {activeModule === 'breakdownconsole' && <BreakdownConsoleModule />}
+            {activeModule === 'certificationcenter' && <CertificationCenterModule />}
+            {activeModule === 'equipmentanalytics' && <EquipmentAnalyticsModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-29 · Part 4 WMS (Warehouse Foundation, Locations, Receiving, Putaway, Picking & Packing, Dispatch, Wave Planning, Cross-Docking & Yard Management) · 249 Database Tables</p>
+              <p className="mt-1">Sprints 1-30 · Part 4 WMS (Warehouse Foundation, Locations, Receiving, Putaway, Picking & Packing, Dispatch, Wave Planning, Cross-Docking & Yard, Resource & Equipment Management) · 261 Database Tables</p>
             </div>
           </main>
         </div>
