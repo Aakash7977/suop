@@ -8169,3 +8169,513 @@ model WarehouseException {
   @@index([warehouseId, status], map: "idx_wex_wh_status")
   @@index([reportedAt], map: "idx_wex_reported")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 29 — CROSS-DOCKING, DOCK YARD & YARD MANAGEMENT (YMS)
+// Epic 1: Cross-Dock · Epic 2: Yard · Epic 3: Truck Queue
+// Epic 4: Dock Scheduling · Epic 5: Trailers · Epic 6: Gate In/Out
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Cross Docking Engine ───────────────────────
+model CrossDockOrder {
+  id                  String   @id @default(uuid()) @db.Uuid
+  crossDockNumber     String   @unique @map("cross_dock_number")
+  // ─── Type ───
+  crossDockType       String   @map("cross_dock_type") // PRE_DISTRIBUTIVE (supplier → outbound), POST_DISTRIBUTIVE (consolidation), OPPORTUNISTIC (auto-detected)
+  // ─── Inbound ───
+  inboundShipmentId   String?  @db.Uuid @map("inbound_shipment_id")
+  inboundShipmentNumber String? @map("inbound_shipment_number")
+  asnId               String?  @db.Uuid @map("asn_id")
+  asnNumber           String?  @map("asn_number")
+  supplierId          String?  @db.Uuid @map("supplier_id")
+  supplierName        String?  @map("supplier_name")
+  // ─── Outbound ───
+  outboundOrderType   String   @map("outbound_order_type") // SALES_ORDER, TRANSFER_ORDER, RETAIL_REPLENISHMENT, RESTAURANT_REPLENISHMENT, DISTRIBUTOR_ORDER
+  outboundOrderNumber String   @map("outbound_order_number")
+  outboundOrderId     String?  @db.Uuid @map("outbound_order_id")
+  partnerId           String?  @db.Uuid @map("partner_id")
+  partnerName         String?  @map("partner_name")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  inboundDockId       String?  @db.Uuid @map("inbound_dock_id")
+  inboundDockCode     String?  @map("inbound_dock_code")
+  outboundDockId      String?  @db.Uuid @map("outbound_dock_id")
+  outboundDockCode    String?  @map("outbound_dock_code")
+  // ─── Rule Matched ───
+  ruleId              String?  @db.Uuid @map("rule_id")
+  ruleCode            String?  @map("rule_code")
+  ruleName            String?  @map("rule_name")
+  // ─── Priority ───
+  priority            String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Schedule ───
+  expectedInboundAt   DateTime? @map("expected_inbound_at")
+  actualInboundAt     DateTime? @map("actual_inbound_at")
+  expectedOutboundAt  DateTime? @map("expected_outbound_at")
+  actualOutboundAt    DateTime? @map("actual_outbound_at")
+  completedAt         DateTime? @map("completed_at")
+  // ─── Status ───
+  status              String   @default("PLANNED") // PLANNED, INBOUND_ARRIVED, CROSS_DOCK_IN_PROGRESS, OUTBOUND_LOADED, DISPATCHED, COMPLETED, CANCELLED, EXCEPTION
+  // ─── Metrics ───
+  totalLines          Int      @default(0) @map("total_lines")
+  totalQty            Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  totalWeightKg       Decimal  @db.Decimal(12, 2) @default(0) @map("total_weight_kg")
+  // ─── Storage Avoidance ───
+  storageAvoided      Boolean  @default(true) @map("storage_avoided")
+  handlingCostSaved   Decimal? @db.Decimal(10, 2) @map("handling_cost_saved")
+  timeSavedMinutes    Int?     @map("time_saved_minutes")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  tasks               CrossDockTask[]
+
+  @@map("cross_dock_orders")
+  @@index([warehouseId, status], map: "idx_cdo_wh_status")
+  @@index([crossDockType, status], map: "idx_cdo_type_status")
+  @@index([outboundOrderNumber], map: "idx_cdo_outbound")
+  @@index([status, priority], map: "idx_cdo_status_priority")
+}
+
+model CrossDockTask {
+  id                  String   @id @default(uuid()) @db.Uuid
+  taskNumber          String   @unique @map("task_number")
+  crossDockOrderId    String   @db.Uuid @map("cross_dock_order_id")
+  crossDockNumber     String   @map("cross_dock_number")
+  // ─── Product ───
+  productId           String   @db.Uuid @map("product_id")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  batchId             String?  @db.Uuid @map("batch_id")
+  batchNumber         String?  @map("batch_number")
+  // ─── Qty ───
+  plannedQty          Decimal  @db.Decimal(18, 4) @default(0) @map("planned_qty")
+  actualQty           Decimal  @db.Decimal(18, 4) @default(0) @map("actual_qty")
+  uom                 String   @map("uom")
+  // ─── Movement ───
+  fromDockCode        String   @map("from_dock_code")
+  toDockCode          String   @map("to_dock_code")
+  fromPalletId        String?  @db.Uuid @map("from_pallet_id")
+  toPalletId          String?  @db.Uuid @map("to_pallet_id")
+  // ─── Assignment ───
+  assignedOperatorId  String?  @db.Uuid @map("assigned_operator_id")
+  assignedOperatorName String? @map("assigned_operator_name")
+  assignedEquipmentId String?  @db.Uuid @map("assigned_equipment_id")
+  assignedEquipmentCode String? @map("assigned_equipment_code")
+  // ─── Scan Verification ───
+  inboundScanVerified Boolean  @default(false) @map("inbound_scan_verified")
+  outboundScanVerified Boolean @default(false) @map("outbound_scan_verified")
+  // ─── Status ───
+  status              String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, SHORT, CANCELLED
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  durationSeconds     Int?     @map("duration_seconds")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  crossDockOrder      CrossDockOrder @relation(fields: [crossDockOrderId], references: [id], onDelete: Cascade)
+
+  @@map("cross_dock_tasks")
+  @@index([crossDockOrderId], map: "idx_cdt_cdo")
+  @@index([status], map: "idx_cdt_status")
+  @@index([assignedOperatorId, status], map: "idx_cdt_op_status")
+}
+
+// ─── Epic 2: Yard Management ────────────────────────────
+model YardLocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  yardCode            String   @unique @map("yard_code")
+  yardName            String   @map("yard_name")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Slot ───
+  zone                String   @map("zone") // GATE_ZONE, HOLDING, WAITING, STAGING, MAINTENANCE
+  slotNumber          String?  @map("slot_number")
+  row                 String?
+  column              String?
+  // ─── Capacity ───
+  capacityVehicles    Int      @default(1) @map("capacity_vehicles")
+  occupiedVehicles    Int      @default(0) @map("occupied_vehicles")
+  // ─── Type ───
+  slotType            String   @default("STANDARD") @map("slot_type") // STANDARD, COLD, BULK, HAZMAT, OVERSIZED
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED, MAINTENANCE, CLOSED
+  // ─── GPS ───
+  latitude            Decimal? @db.Decimal(10, 7) @map("latitude")
+  longitude           Decimal? @db.Decimal(10, 7) @map("longitude")
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  vehicles            YardVehicle[]
+
+  @@map("yard_locations")
+  @@index([warehouseId, status], map: "idx_yl_wh_status")
+  @@index([zone, status], map: "idx_yl_zone_status")
+}
+
+model YardVehicle {
+  id                  String   @id @default(uuid()) @db.Uuid
+  vehicleNumber       String   @map("vehicle_number")
+  // ─── Identity ───
+  vehicleType         String   @map("vehicle_type") // SMALL_VAN, MINI_TRUCK, CONTAINER, TRAILER, COLD_TRUCK, MILK_TANKER, BULK_TRUCK, COURIER_VEHICLE, OWN_FLEET, THIRD_PARTY
+  ownership           String   @default("THIRD_PARTY") // OWN_FLEET, THIRD_PARTY, COURIER, RENTAL
+  carrierName         String?  @map("carrier_name")
+  carrierId           String?  @db.Uuid @map("carrier_id")
+  // ─── Driver ───
+  driverName          String   @map("driver_name")
+  driverPhone         String?  @map("driver_phone")
+  driverLicense       String?  @map("driver_license")
+  helperName          String?  @map("helper_name")
+  // ─── Yard ───
+  yardLocationId      String?  @db.Uuid @map("yard_location_id")
+  yardLocationCode    String?  @map("yard_location_code")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Purpose ───
+  visitPurpose        String   @map("visit_purpose") // INBOUND_DELIVERY, OUTBOUND_DISPATCH, PICKUP, RETURN, TRANSFER, SERVICE
+  // ─── Shipment Reference ───
+  asnId               String?  @db.Uuid @map("asn_id")
+  asnNumber           String?  @map("asn_number")
+  dispatchOrderId     String?  @db.Uuid @map("dispatch_order_id")
+  dispatchNumber      String?  @map("dispatch_number")
+  // ─── Timing ───
+  arrivalTime         DateTime? @map("arrival_time")
+  expectedDeparture   DateTime? @map("expected_departure")
+  actualDeparture     DateTime? @map("actual_departure")
+  waitingMinutes      Int      @default(0) @map("waiting_minutes")
+  yardMinutes         Int?     @map("yard_minutes")
+  // ─── Status ───
+  status              String   @default("WAITING") // WAITING, AT_GATE, IN_YARD, DOCK_ASSIGNED, LOADING, UNLOADING, READY, EXITED
+  // ─── Dock ───
+  assignedDockId      String?  @db.Uuid @map("assigned_dock_id")
+  assignedDockCode    String?  @map("assigned_dock_code")
+  assignedAt          DateTime? @map("assigned_at")
+  // ─── Capacity ───
+  capacityWeightKg    Decimal? @db.Decimal(10, 2) @map("capacity_weight_kg")
+  capacityVolumeM3    Decimal? @db.Decimal(10, 2) @map("capacity_volume_m3")
+  capacityPallets     Int?     @map("capacity_pallets")
+  // ─── Temperature ───
+  isRefrigerated      Boolean  @default(false) @map("is_refrigerated")
+  tempSetpointC       Decimal? @db.Decimal(5, 2) @map("temp_setpoint_c")
+  // ─── Notes ───
+  notes               String?
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  yardLocation        YardLocation? @relation(fields: [yardLocationId], references: [id])
+
+  @@map("yard_vehicles")
+  @@index([warehouseId, status], map: "idx_yv_wh_status")
+  @@index([status], map: "idx_yv_status")
+  @@index([vehicleNumber], map: "idx_yv_vehicle")
+  @@index([asnId], map: "idx_yv_asn")
+  @@index([dispatchOrderId], map: "idx_yv_dispatch")
+}
+
+// ─── Epic 3: Truck Queue Management ─────────────────────
+model TruckQueueEntry {
+  id                  String   @id @default(uuid()) @db.Uuid
+  queueNumber         String   @unique @map("queue_number")
+  // ─── Vehicle ───
+  yardVehicleId       String   @db.Uuid @map("yard_vehicle_id")
+  vehicleNumber       String   @map("vehicle_number")
+  vehicleType         String   @map("vehicle_type")
+  driverName          String   @map("driver_name")
+  // ─── Queue ───
+  queuePosition       Int      @map("queue_position")
+  queueType           String   @default("FIFO") @map("queue_type") // FIFO, PRIORITY, COLD_CHAIN, EMERGENCY, VIP_SUPPLIER, MANUAL_OVERRIDE
+  priorityScore       Int      @default(50) @map("priority_score") // 0-100
+  priorityReason      String?  @map("priority_reason")
+  // ─── Purpose ───
+  visitPurpose        String   @map("visit_purpose")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Timing ───
+  enqueuedAt          DateTime @default(now()) @map("enqueued_at")
+  dequeuedAt          DateTime? @map("dequeued_at")
+  waitingMinutes      Int      @default(0) @map("waiting_minutes")
+  estimatedDockTime   DateTime? @map("estimated_dock_time")
+  // ─── Dock Assignment ───
+  assignedDockId      String?  @db.Uuid @map("assigned_dock_id")
+  assignedDockCode    String?  @map("assigned_dock_code")
+  // ─── Status ───
+  status              String   @default("WAITING") // WAITING, PRIORITY_BOOSTED, ASSIGNED, DEQUEUED, SKIPPED, CANCELLED
+  delayReason         String?  @map("delay_reason")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("truck_queue")
+  @@index([warehouseId, status], map: "idx_tq_wh_status")
+  @@index([queuePosition], map: "idx_tq_position")
+  @@index([status, queueType], map: "idx_tq_status_type")
+}
+
+model TruckQueueHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  yardVehicleId       String   @db.Uuid @map("yard_vehicle_id")
+  vehicleNumber       String   @map("vehicle_number")
+  // ─── Event ───
+  eventType           String   @map("event_type") // ENQUEUED, PRIORITY_CHANGED, ASSIGNED, DEQUEUED, SKIPPED, REQUEUED
+  fromPosition        Int?     @map("from_position")
+  toPosition          Int?     @map("to_position")
+  fromPriority        String?  @map("from_priority")
+  toPriority          String?  @map("to_priority")
+  changeReason        String?  @map("change_reason")
+  changedBy           String?  @map("changed_by")
+  // ─── Timing ───
+  eventTime           DateTime @default(now()) @map("event_time")
+  waitingMinutes      Int?     @map("waiting_minutes")
+
+  @@map("truck_queue_history")
+  @@index([yardVehicleId, eventTime], map: "idx_tqh_vehicle_time")
+}
+
+// ─── Epic 4: Dock Door Scheduling ───────────────────────
+model DockDoor {
+  id                  String   @id @default(uuid()) @db.Uuid
+  dockCode            String   @unique @map("dock_code")
+  dockName            String   @map("dock_name")
+  // ─── Type ───
+  dockType            String   @map("dock_type") // RECEIVING, DISPATCH, SHARED, COLD, BULK, EXPRESS
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  zone                String?  @map("zone")
+  // ─── Capacity ───
+  maxVehicleWeightKg  Decimal? @db.Decimal(10, 2) @map("max_vehicle_weight_kg")
+  supportsColdChain   Boolean  @default(false) @map("supports_cold_chain")
+  supportsBulk        Boolean  @default(false) @map("supports_bulk")
+  hasDockLeveler      Boolean  @default(true) @map("has_dock_leveler")
+  hasDockSeal         Boolean  @default(false) @map("has_dock_seal")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED, MAINTENANCE, CLOSED
+  currentVehicleId    String?  @db.Uuid @map("current_vehicle_id")
+  currentVehicleNumber String? @map("current_vehicle_number")
+  // ─── Utilization ───
+  utilizationToday    Decimal  @db.Decimal(5, 2) @default(0) @map("utilization_today")
+  operationsToday     Int      @default(0) @map("operations_today")
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  schedule            DockSchedule[]
+
+  @@map("dock_doors")
+  @@index([warehouseId, status], map: "idx_dd_wh_status")
+  @@index([dockType, status], map: "idx_dd_type_status")
+}
+
+model DockSchedule {
+  id                  String   @id @default(uuid()) @db.Uuid
+  dockDoorId          String   @db.Uuid @map("dock_door_id")
+  dockCode            String   @map("dock_code")
+  // ─── Slot ───
+  scheduleDate        DateTime @map("schedule_date")
+  startTime           DateTime @map("start_time")
+  endTime             DateTime @map("end_time")
+  // ─── Booking ───
+  bookingType         String   @map("booking_type") // APPOINTMENT, WALK_IN, CROSS_DOCK, PRIORITY
+  bookingReference    String?  @map("booking_reference")
+  // ─── Vehicle ───
+  vehicleNumber       String?  @map("vehicle_number")
+  vehicleType         String?  @map("vehicle_type")
+  carrierName         String?  @map("carrier_name")
+  driverName          String?  @map("driver_name")
+  // ─── Partner ───
+  partnerId           String?  @db.Uuid @map("partner_id")
+  partnerName         String?  @map("partner_name")
+  // ─── Status ───
+  status              String   @default("SCHEDULED") // SCHEDULED, CONFIRMED, ARRIVED, IN_PROGRESS, COMPLETED, NO_SHOW, CANCELLED
+  actualStartTime     DateTime? @map("actual_start_time")
+  actualEndTime       DateTime? @map("actual_end_time")
+  durationMinutes     Int?     @map("duration_minutes")
+  // ─── Audit ───
+  createdById         String?  @db.Uuid @map("created_by_id")
+  createdByName       String?  @map("created_by_name")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  dockDoor            DockDoor @relation(fields: [dockDoorId], references: [id], onDelete: Cascade)
+
+  @@map("dock_schedule")
+  @@unique([dockDoorId, startTime, endTime], map: "uq_ds_dock_time")
+  @@index([scheduleDate, dockDoorId], map: "idx_ds_date_dock")
+  @@index([status], map: "idx_ds_status")
+}
+
+// ─── Epic 5: Trailer Management ─────────────────────────
+model Trailer {
+  id                  String   @id @default(uuid()) @db.Uuid
+  trailerNumber       String   @unique @map("trailer_number")
+  // ─── Container ───
+  containerNumber     String?  @unique @map("container_number")
+  sealNumber          String?  @map("seal_number")
+  // ─── Type ───
+  trailerType         String   @map("trailer_type") // STANDARD, REFRIGERATED, TANKER, FLATBED, CONTAINER, BULK
+  // ─── Owner ───
+  ownership           String   @default("OWN_FLEET") // OWN_FLEET, THIRD_PARTY, LEASED
+  carrierId           String?  @db.Uuid @map("carrier_id")
+  carrierName         String?  @map("carrier_name")
+  // ─── Capacity ───
+  capacityWeightKg    Decimal  @db.Decimal(10, 2) @map("capacity_weight_kg")
+  capacityVolumeM3    Decimal  @db.Decimal(10, 2) @map("capacity_volume_m3")
+  capacityPallets     Int      @default(0) @map("capacity_pallets")
+  // ─── Location ───
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  currentLocationCode String?  @map("current_location_code")
+  assignedDockId      String?  @db.Uuid @map("assigned_dock_id")
+  assignedDockCode    String?  @map("assigned_dock_code")
+  // ─── Status ───
+  status              String   @default("AVAILABLE") // ATTACHED, DETACHED, LOADED, EMPTY, MAINTENANCE, IN_TRANSIT, AVAILABLE
+  // ─── Driver ───
+  assignedDriverName  String?  @map("assigned_driver_name")
+  assignedDriverPhone String?  @map("assigned_driver_phone")
+  // ─── Inspection ───
+  lastInspectionAt    DateTime? @map("last_inspection_at")
+  lastInspectionBy    String?  @map("last_inspection_by")
+  inspectionResult    String?  @map("inspection_result") // PASS, FAIL, CONCERN
+  inspectionNotes     String?  @map("inspection_notes")
+  // ─── Maintenance ───
+  lastMaintenanceAt   DateTime? @map("last_maintenance_at")
+  nextMaintenanceAt   DateTime? @map("next_maintenance_at")
+  // ─── Audit ───
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  movements           TrailerMovement[]
+
+  @@map("trailers")
+  @@index([status], map: "idx_tr_status")
+  @@index([trailerType, status], map: "idx_tr_type_status")
+  @@index([warehouseId, status], map: "idx_tr_wh_status")
+}
+
+model TrailerMovement {
+  id                  String   @id @default(uuid()) @db.Uuid
+  trailerId           String   @db.Uuid @map("trailer_id")
+  trailerNumber       String   @map("trailer_number")
+  // ─── Movement ───
+  movementType        String   @map("movement_type") // ATTACH, DETACH, LOAD, UNLOAD, MOVE_TO_DOCK, MOVE_TO_YARD, DISPATCH, ARRIVE
+  // ─── Location ───
+  fromLocationCode    String?  @map("from_location_code")
+  toLocationCode      String?  @map("to_location_code")
+  fromDockCode        String?  @map("from_dock_code")
+  toDockCode          String?  @map("to_dock_code")
+  // ─── Vehicle ───
+  vehicleNumber       String?  @map("vehicle_number")
+  driverName          String?  @map("driver_name")
+  // ─── Operator ───
+  performedBy         String?  @map("performed_by")
+  performedAt         DateTime @default(now()) @map("performed_at")
+  // ─── Notes ───
+  notes               String?
+
+  trailer             Trailer @relation(fields: [trailerId], references: [id], onDelete: Cascade)
+
+  @@map("trailer_movements")
+  @@index([trailerId, performedAt], map: "idx_tm_trailer_time")
+  @@index([movementType], map: "idx_tm_type")
+}
+
+// ─── Epic 6: Gate Check-In & Check-Out ──────────────────
+model YardGateEntry {
+  id                  String   @id @default(uuid()) @db.Uuid
+  entryNumber         String   @unique @map("entry_number")
+  // ─── Vehicle ───
+  yardVehicleId       String?  @db.Uuid @map("yard_vehicle_id")
+  vehicleNumber       String   @map("vehicle_number")
+  vehicleType         String   @map("vehicle_type")
+  driverName          String   @map("driver_name")
+  driverPhone         String?  @map("driver_phone")
+  driverLicense       String?  @map("driver_license")
+  // ─── Visit ───
+  visitPurpose        String   @map("visit_purpose") // INBOUND_DELIVERY, OUTBOUND_DISPATCH, PICKUP, RETURN, TRANSFER, SERVICE
+  // ─── Reference ───
+  asnNumber           String?  @map("asn_number")
+  dispatchNumber      String?  @map("dispatch_number")
+  partnerName         String?  @map("partner_name")
+  carrierName         String?  @map("carrier_name")
+  // ─── Gate ───
+  gateNumber          String   @map("gate_number")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Security ───
+  securityOfficerId   String?  @db.Uuid @map("security_officer_id")
+  securityOfficerName String?  @map("security_officer_name")
+  // ─── Pass ───
+  gatePassNumber      String   @unique @map("gate_pass_number")
+  passType            String   @default("QR") @map("pass_type") // QR, BARCODE, RFID, ANPR
+  passQRCode          String?  @map("pass_qr_code")
+  // ─── Verification ───
+  documentsVerified   Boolean  @default(false) @map("documents_verified")
+  vehicleInspected    Boolean  @default(false) @map("vehicle_inspected")
+  sealVerified        Boolean  @default(false) @map("seal_verified")
+  // ─── Photo Evidence ───
+  photoFrontUrl       String?  @map("photo_front_url")
+  photoBackUrl        String?  @map("photo_back_url")
+  photoSideUrl        String?  @map("photo_side_url")
+  photoSealUrl        String?  @map("photo_seal_url")
+  // ─── Timing ───
+  entryTime           DateTime @default(now()) @map("entry_time")
+  expectedExitTime    DateTime? @map("expected_exit_time")
+  // ─── Status ───
+  status              String   @default("ENTERED") // ENTERED, IN_YARD, AT_DOCK, READY_TO_EXIT, EXITED, DENIED
+  remarks             String?
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  gateExit            YardGateExit?
+
+  @@map("yard_gate_entries")
+  @@index([warehouseId, entryTime], map: "idx_yge_wh_time")
+  @@index([vehicleNumber], map: "idx_yge_vehicle")
+  @@index([status], map: "idx_yge_status")
+}
+
+model YardGateExit {
+  id                  String   @id @default(uuid()) @db.Uuid
+  exitNumber          String   @unique @map("exit_number")
+  // ─── Link ───
+  gateEntryId         String   @unique @db.Uuid @map("gate_entry_id")
+  entryNumber         String   @map("entry_number")
+  gatePassNumber      String   @map("gate_pass_number")
+  // ─── Vehicle ───
+  vehicleNumber       String   @map("vehicle_number")
+  driverName          String   @map("driver_name")
+  // ─── Security ───
+  securityOfficerId   String?  @db.Uuid @map("security_officer_id")
+  securityOfficerName String?  @map("security_officer_name")
+  // ─── Verification ───
+  sealVerified        Boolean  @default(false) @map("seal_verified")
+  documentsVerified   Boolean  @default(false) @map("documents_verified")
+  vehicleInspected    Boolean  @default(false) @map("vehicle_inspected")
+  cargoVerified       Boolean  @default(false) @map("cargo_verified")
+  // ─── Photo Evidence ───
+  photoExitUrl        String?  @map("photo_exit_url")
+  photoSealUrl        String?  @map("photo_seal_url")
+  // ─── Timing ───
+  exitTime            DateTime @default(now()) @map("exit_time")
+  yardDurationMinutes Int?     @map("yard_duration_minutes")
+  // ─── Status ───
+  status              String   @default("EXITED") // APPROVED, EXITED, DENIED
+  remarks             String?
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  gateEntry           YardGateEntry @relation(fields: [gateEntryId], references: [id], onDelete: Cascade)
+
+  @@map("yard_gate_exits")
+  @@index([exitTime], map: "idx_ygex_time")
+  @@index([status], map: "idx_ygex_status")
+}

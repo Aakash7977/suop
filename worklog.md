@@ -1914,3 +1914,53 @@ Stage Summary:
 - Project builds cleanly, dev server runs, backend starts successfully
 - Total project state: Sprints 1-28 complete, 239 database tables, 23+ frontend modules, Part 4 WMS at 7/12 sprints (58%)
 - Next sprint (29): Enterprise Cross-Docking, Dock Yard & Yard Management System (YMS)
+
+---
+Task ID: 29
+Agent: Main Agent (Super Z)
+Task: Sprint 29 — Enterprise Cross-Docking, Dock Yard & Yard Management System (YMS) + Sidebar scrollbar
+
+Work Log:
+- User reported sidebar needs scrollbar — replaced Radix `<ScrollArea>` with native overflow div + custom CSS scrollbar styling
+- Added `.suop-sidebar-scroll` and `.suop-main-scroll` CSS classes to `src/app/globals.css` with theme-aware styling (light/dark mode), 8px sidebar / 10px main scrollbar width, rounded thumbs, hover states
+- Both webkit (`::-webkit-scrollbar`) and Firefox (`scrollbar-width: thin`) supported
+- Added 10 new Sprint 29 Prisma models (249 total tables):
+  * Epic 1 Cross-Dock: `CrossDockOrder`, `CrossDockTask`
+  * Epic 2 Yard: `YardLocation`, `YardVehicle`
+  * Epic 3 Truck Queue: `TruckQueueEntry`, `TruckQueueHistory`
+  * Epic 4 Dock Schedule: `DockDoor`, `DockSchedule`
+  * Epic 5 Trailer: `Trailer`, `TrailerMovement`
+  * Epic 6 Gate: `YardGateEntry`, `YardGateExit`
+- Added 8 new Sprint 29 frontend modules (~1,500 lines):
+  1. `CrossDockConsoleModule` — 3 cross-dock types (PRE_DISTRIBUTIVE, POST_DISTRIBUTIVE, OPPORTUNISTIC), 8 eligibility rules, workflow diagram, create form
+  2. `TruckQueueModule` — 6 queue types (FIFO, PRIORITY, COLD_CHAIN, EMERGENCY, VIP_SUPPLIER, MANUAL_OVERRIDE), priority scores, live queue table
+  3. `DockScheduleModule` — 6 dock types (RECEIVING, DISPATCH, SHARED, COLD, BULK, EXPRESS), dock cards with utilization, today's schedule
+  4. `YardMapModule` — 6 yard zones (GATE_ZONE, WAITING, HOLDING, STAGING, COLD_HOLD, MAINTENANCE), visual slot grid showing occupancy
+  5. `VehicleTrackerModule` — 8 vehicles with driver info, capacity, refrigeration status, dock assignment
+  6. `GateConsoleModule` — Check-in/out console with QR gate passes, seal verification, photo evidence icons
+  7. `YardControlTowerModule` — Live KPIs, dock activity grid, alerts, cross-dock ops tracker
+  8. `CrossDockAnalyticsModule` — Daily trend chart, top cross-docked products, supplier/carrier performance, AI predictions, Chief Architect recommendation banner
+- Added 14 new backend API endpoints to `mini-services/suop-backend/index.ts`:
+  * `GET/POST /api/cross-dock`, `POST /api/cross-dock/:id/complete`
+  * `GET /api/yard-vehicles`
+  * `GET /api/truck-queue`, `POST /api/truck-queue/:id/assign`
+  * `GET /api/dock-doors-yms`, `GET /api/dock-schedule`
+  * `GET/POST /api/yard-gate-entries`, `POST /api/yard-gate-exits`
+  * `GET /api/yard-tower`, `GET /api/cross-dock-analytics`, `GET /api/yard-management/info`
+- Updated backend startup logs to reflect Sprint 29 (sprint: 29, tables: 249)
+- Updated header badge: `Sprint 29 · 249 Tables · Part 4 WMS`
+- Updated footer text to include Cross-Docking & Yard Management
+- Added `Radar` to lucide-react imports for Yard Control Tower sidebar icon
+- Added 8 new module keys to `ModuleKey` type, `moduleNames` map, and sidebar `SIDEBAR_SECTIONS`
+- Added 8 new module routing entries in main render
+- Verified `npm run build` succeeds (Turbopack, 17.2s)
+- Verified dev server returns HTTP 200 OK on `http://localhost:3000`
+- Verified backend (`bun run`) starts and logs all Sprint 29 endpoints
+
+Stage Summary:
+- Sprint 29 implementation COMPLETE: 10 new Prisma models, 8 new frontend modules (~1,500 LOC), 14 new API endpoints
+- Sidebar scrollbar RESOLVED: replaced Radix ScrollArea with native overflow + custom CSS scrollbar (theme-aware, both WebKit & Firefox)
+- Project builds cleanly, dev server runs, backend starts successfully
+- Total project state: Sprints 1-29 complete, 249 database tables, 31+ frontend modules, Part 4 WMS at 8/12 sprints (67%)
+- Chief Architect recommendation implemented: Automatic Cross-Docking for fresh products (Shwet Idli Batter example)
+- Next sprint (30): Enterprise Warehouse Resource, Equipment & Maintenance Management

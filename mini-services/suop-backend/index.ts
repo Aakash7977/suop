@@ -7396,14 +7396,263 @@ const server = Bun.serve({
       }, 'SUOP Wave Planning & Task Orchestration Engine v28.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 29 — CROSS-DOCKING, DOCK YARD & YARD MGMT (YMS)
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/cross-dock — List cross-dock orders
+    if (path === '/api/cross-dock' && method === 'GET') {
+      const orders = [
+        { id: 'cdo-001', crossDockNumber: 'CD-2026-001', crossDockType: 'PRE_DISTRIBUTIVE', status: 'IN_PROGRESS', priority: 'HIGH', supplierName: 'Sudhamrit Foods Pvt', outboundOrderNumber: 'SO-2026-1024', inboundDockCode: 'DOCK-02', outboundDockCode: 'DOCK-07', totalLines: 12, totalQty: '480', storageAvoided: true, handlingCostSaved: 1850, timeSavedMinutes: 90, progress: 65 },
+        { id: 'cdo-002', crossDockNumber: 'CD-2026-002', crossDockType: 'OPPORTUNISTIC', status: 'COMPLETED', priority: 'NORMAL', supplierName: 'Mysore Sweets Co', outboundOrderNumber: 'SO-2026-1031', inboundDockCode: 'DOCK-01', outboundDockCode: 'DOCK-05', totalLines: 8, totalQty: '240', storageAvoided: true, handlingCostSaved: 1240, timeSavedMinutes: 75, progress: 100 },
+        { id: 'cdo-003', crossDockNumber: 'CD-2026-003', crossDockType: 'PRE_DISTRIBUTIVE', status: 'PLANNED', priority: 'EMERGENCY', supplierName: 'Shwet Idli Batter', outboundOrderNumber: 'SO-2026-1042', inboundDockCode: 'DOCK-02', outboundDockCode: 'DOCK-08', totalLines: 5, totalQty: '60', storageAvoided: true, handlingCostSaved: 950, timeSavedMinutes: 60, progress: 0 },
+      ]
+      return new Response(JSON.stringify(successResponse(orders, 'Cross-dock orders retrieved')), { headers })
+    }
+
+    // POST /api/cross-dock — Create cross-dock order
+    if (path === '/api/cross-dock' && method === 'POST') {
+      const body = await req.json()
+      const order = {
+        id: `cdo-${Date.now()}`,
+        crossDockNumber: `CD-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+        crossDockType: body.crossDockType || 'PRE_DISTRIBUTIVE',
+        status: 'PLANNED',
+        priority: body.priority || 'NORMAL',
+        inboundDockCode: body.inboundDockCode,
+        outboundDockCode: body.outboundDockCode,
+        storageAvoided: true,
+        createdAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(order, 'Cross-dock order created')), { status: 201, headers })
+    }
+
+    // POST /api/cross-dock/:id/complete — Complete cross-dock
+    if (path.match(/^\/api\/cross-dock\/[\w-]+\/complete$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const result = {
+        id, status: 'COMPLETED',
+        completedAt: new Date().toISOString(),
+        storageAvoided: true,
+        handlingCostSaved: 1850,
+        timeSavedMinutes: 90,
+        message: 'Cross-dock completed — inventory moved directly inbound to outbound without storage',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Cross-dock completed')), { headers })
+    }
+
+    // GET /api/yard-vehicles — List yard vehicles
+    if (path === '/api/yard-vehicles' && method === 'GET') {
+      const vehicles = [
+        { id: 'yv-001', vehicleNumber: 'MH12-AB-1234', vehicleType: 'CONTAINER', ownership: 'THIRD_PARTY', carrierName: 'VRL Logistics', driverName: 'Imran Sheikh', visitPurpose: 'INBOUND_DELIVERY', status: 'UNLOADING', assignedDockCode: 'DOCK-02', asnNumber: 'ASN-2026-018', arrivalTime: '2026-07-09T03:15:00Z', waitingMinutes: 8, isRefrigerated: false },
+        { id: 'yv-002', vehicleNumber: 'KA05-CD-5678', vehicleType: 'COLD_TRUCK', ownership: 'THIRD_PARTY', carrierName: 'Cold Chain Logistics', driverName: 'Ravi Kumar', visitPurpose: 'INBOUND_DELIVERY', status: 'IN_YARD', assignedDockCode: null, asnNumber: 'ASN-2026-019', arrivalTime: '2026-07-09T03:40:00Z', waitingMinutes: 15, isRefrigerated: true, tempSetpointC: 4 },
+        { id: 'yv-003', vehicleNumber: 'DL01-EF-9012', vehicleType: 'MINI_TRUCK', ownership: 'COURIER', carrierName: 'Blue Dart', driverName: 'Suresh Yadav', visitPurpose: 'OUTBOUND_DISPATCH', status: 'LOADING', assignedDockCode: 'DOCK-05', dispatchNumber: 'DSP-2026-008', arrivalTime: '2026-07-09T03:00:00Z', waitingMinutes: 22, isRefrigerated: false },
+        { id: 'yv-004', vehicleNumber: 'TN09-GH-3456', vehicleType: 'TRAILER', ownership: 'OWN_FLEET', carrierName: 'In-House', driverName: 'Anand Pillai', visitPurpose: 'OUTBOUND_DISPATCH', status: 'WAITING', assignedDockCode: null, dispatchNumber: 'DSP-2026-009', arrivalTime: '2026-07-09T03:20:00Z', waitingMinutes: 35, isRefrigerated: false },
+      ]
+      return new Response(JSON.stringify(successResponse(vehicles, 'Yard vehicles retrieved')), { headers })
+    }
+
+    // GET /api/truck-queue — List truck queue
+    if (path === '/api/truck-queue' && method === 'GET') {
+      const queue = [
+        { id: 'tq-001', queueNumber: 'Q-2026-018', queuePosition: 1, vehicleNumber: 'MH12-AB-1234', vehicleType: 'CONTAINER', driverName: 'Imran Sheikh', queueType: 'PRIORITY', priorityScore: 85, waitingMinutes: 8, estimatedDockTime: '2026-07-09T05:15:00Z', status: 'ASSIGNED', assignedDockCode: 'DOCK-02' },
+        { id: 'tq-002', queueNumber: 'Q-2026-019', queuePosition: 2, vehicleNumber: 'KA05-CD-5678', vehicleType: 'COLD_TRUCK', driverName: 'Ravi Kumar', queueType: 'COLD_CHAIN', priorityScore: 90, waitingMinutes: 15, estimatedDockTime: '2026-07-09T05:25:00Z', status: 'WAITING', assignedDockCode: null },
+        { id: 'tq-008', queueNumber: 'Q-2026-025', queuePosition: 8, vehicleNumber: 'KA03-OP-9012', vehicleType: 'MILK_TANKER', driverName: 'Mohan Das', queueType: 'EMERGENCY', priorityScore: 100, waitingMinutes: 2, estimatedDockTime: '2026-07-09T05:10:00Z', status: 'PRIORITY_BOOSTED', assignedDockCode: null },
+      ]
+      return new Response(JSON.stringify(successResponse(queue, 'Truck queue retrieved')), { headers })
+    }
+
+    // POST /api/truck-queue/:id/assign — Assign dock to queue entry
+    if (path.match(/^\/api\/truck-queue\/[\w-]+\/assign$/) && method === 'POST') {
+      const id = path.split('/')[3]
+      const result = {
+        id, status: 'ASSIGNED',
+        assignedDockCode: 'DOCK-03',
+        dequeuedAt: new Date().toISOString(),
+        message: 'Vehicle dequeued and assigned to dock',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Dock assigned')), { headers })
+    }
+
+    // GET /api/dock-doors-yms — List dock doors with YMS info
+    if (path === '/api/dock-doors-yms' && method === 'GET') {
+      const docks = [
+        { id: 'dd-001', dockCode: 'DOCK-01', dockName: 'Receiving Dock 01', dockType: 'RECEIVING', status: 'OCCUPIED', currentVehicleNumber: 'MH12-AB-1234', utilizationToday: 78, operationsToday: 4, supportsColdChain: false, supportsBulk: false, hasDockLeveler: true, hasDockSeal: false },
+        { id: 'dd-005', dockCode: 'DOCK-05', dockName: 'Dispatch Dock 05', dockType: 'DISPATCH', status: 'OCCUPIED', currentVehicleNumber: 'DL01-EF-9012', utilizationToday: 85, operationsToday: 5, supportsColdChain: false, supportsBulk: false, hasDockLeveler: true, hasDockSeal: true },
+        { id: 'dd-c1', dockCode: 'DOCK-COLD-01', dockName: 'Cold Receiving Dock', dockType: 'COLD', status: 'OCCUPIED', currentVehicleNumber: 'TN09-GH-3456', utilizationToday: 71, operationsToday: 2, supportsColdChain: true, supportsBulk: false, hasDockLeveler: true, hasDockSeal: true },
+        { id: 'dd-004', dockCode: 'DOCK-04', dockName: 'Bulk Dock 04', dockType: 'BULK', status: 'MAINTENANCE', currentVehicleNumber: null, utilizationToday: 0, operationsToday: 0, supportsColdChain: false, supportsBulk: true, hasDockLeveler: true, hasDockSeal: false },
+      ]
+      return new Response(JSON.stringify(successResponse(docks, 'Dock doors retrieved')), { headers })
+    }
+
+    // GET /api/dock-schedule — Today's dock schedule
+    if (path === '/api/dock-schedule' && method === 'GET') {
+      const schedule = [
+        { id: 'ds-001', dockCode: 'DOCK-01', startTime: '2026-07-09T04:30:00Z', endTime: '2026-07-09T05:30:00Z', vehicleNumber: 'MH12-AB-1234', carrierName: 'VRL Logistics', bookingType: 'APPOINTMENT', status: 'IN_PROGRESS' },
+        { id: 'ds-002', dockCode: 'DOCK-05', startTime: '2026-07-09T04:30:00Z', endTime: '2026-07-09T05:30:00Z', vehicleNumber: 'DL01-EF-9012', carrierName: 'Blue Dart', bookingType: 'CROSS_DOCK', status: 'IN_PROGRESS' },
+        { id: 'ds-003', dockCode: 'DOCK-07', startTime: '2026-07-09T04:30:00Z', endTime: '2026-07-09T05:00:00Z', vehicleNumber: 'GJ01-KL-1234', carrierName: '—', bookingType: 'PRIORITY', status: 'COMPLETED' },
+      ]
+      return new Response(JSON.stringify(successResponse(schedule, 'Dock schedule retrieved')), { headers })
+    }
+
+    // GET /api/yard-gate-entries — Gate check-in entries
+    if (path === '/api/yard-gate-entries' && method === 'GET') {
+      const entries = [
+        { id: 'yge-001', entryNumber: 'GE-2026-018', gatePassNumber: 'GP-2026-018', vehicleNumber: 'MH12-AB-1234', vehicleType: 'CONTAINER', driverName: 'Imran Sheikh', visitPurpose: 'INBOUND_DELIVERY', gateNumber: 'GATE-01', securityOfficerName: 'Mahesh Tiwari', entryTime: '2026-07-09T03:15:00Z', expectedExitTime: '2026-07-09T05:00:00Z', documentsVerified: true, vehicleInspected: true, sealVerified: true, passType: 'QR', status: 'AT_DOCK' },
+        { id: 'yge-002', entryNumber: 'GE-2026-019', gatePassNumber: 'GP-2026-019', vehicleNumber: 'KA05-CD-5678', vehicleType: 'COLD_TRUCK', driverName: 'Ravi Kumar', visitPurpose: 'INBOUND_DELIVERY', gateNumber: 'GATE-01', securityOfficerName: 'Mahesh Tiwari', entryTime: '2026-07-09T03:40:00Z', expectedExitTime: '2026-07-09T05:30:00Z', documentsVerified: true, vehicleInspected: true, sealVerified: false, passType: 'QR', status: 'IN_YARD' },
+      ]
+      return new Response(JSON.stringify(successResponse(entries, 'Gate entries retrieved')), { headers })
+    }
+
+    // POST /api/yard-gate-entries — New vehicle check-in
+    if (path === '/api/yard-gate-entries' && method === 'POST') {
+      const body = await req.json()
+      const entry = {
+        id: `yge-${Date.now()}`,
+        entryNumber: `GE-2026-${String(Math.floor(Math.random() * 900) + 100)}`,
+        gatePassNumber: `GP-2026-${String(Math.floor(Math.random() * 900) + 100)}`,
+        passType: body.passType || 'QR',
+        vehicleNumber: body.vehicleNumber,
+        vehicleType: body.vehicleType,
+        driverName: body.driverName,
+        visitPurpose: body.visitPurpose,
+        gateNumber: body.gateNumber || 'GATE-01',
+        entryTime: new Date().toISOString(),
+        status: 'ENTERED',
+        documentsVerified: false,
+        vehicleInspected: false,
+        sealVerified: false,
+      }
+      return new Response(JSON.stringify(successResponse(entry, 'Vehicle checked in — gate pass generated')), { status: 201, headers })
+    }
+
+    // POST /api/yard-gate-exits — Vehicle check-out
+    if (path === '/api/yard-gate-exits' && method === 'POST') {
+      const body = await req.json()
+      const exit = {
+        id: `ygex-${Date.now()}`,
+        exitNumber: `GX-2026-${String(Math.floor(Math.random() * 900) + 100)}`,
+        gateEntryId: body.gateEntryId,
+        gatePassNumber: body.gatePassNumber,
+        vehicleNumber: body.vehicleNumber,
+        sealVerified: body.sealVerified || false,
+        documentsVerified: body.documentsVerified || false,
+        vehicleInspected: body.vehicleInspected || false,
+        exitTime: new Date().toISOString(),
+        yardDurationMinutes: Math.floor(Math.random() * 120) + 30,
+        status: 'EXITED',
+      }
+      return new Response(JSON.stringify(successResponse(exit, 'Vehicle exited — gate pass closed')), { status: 201, headers })
+    }
+
+    // GET /api/yard-tower — Yard control tower live data
+    if (path === '/api/yard-tower' && method === 'GET') {
+      const data = {
+        kpis: {
+          vehiclesWaiting: 5, loading: 2, unloading: 1,
+          avgYardTimeMinutes: 38, dockUtilizationPercent: 67,
+          truckTurnaroundMinutes: 52, avgQueueTimeMinutes: 18, crossDockPercent: 34,
+        },
+        dockActivity: [
+          { dock: 'DOCK-01', status: 'OCCUPIED', vehicle: 'MH12-AB-1234', operation: 'UNLOADING', progress: 65, etaMinutes: 15 },
+          { dock: 'DOCK-02', status: 'OCCUPIED', vehicle: 'KA05-CD-5678', operation: 'UNLOADING', progress: 40, etaMinutes: 25 },
+          { dock: 'DOCK-05', status: 'OCCUPIED', vehicle: 'DL01-EF-9012', operation: 'LOADING', progress: 85, etaMinutes: 5 },
+          { dock: 'DOCK-03', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, etaMinutes: null },
+        ],
+        crossDockOps: [
+          { num: 'CD-2026-001', stage: 'CROSS_DOCK_IN_PROGRESS', progress: 65, etaMinutes: 20 },
+          { num: 'CD-2026-004', stage: 'OUTBOUND_LOADED', progress: 88, etaMinutes: 5 },
+        ],
+        alerts: [
+          { sev: 'CRITICAL', msg: 'Milk Tanker KA03-OP-9012 waiting — cold chain priority boosted', time: '1 min ago' },
+          { sev: 'WARNING', msg: 'Average queue time 18m exceeds 15m target', time: '20 min ago' },
+        ],
+        timestamp: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Yard tower live data')), { headers })
+    }
+
+    // GET /api/cross-dock-analytics — Cross-dock analytics
+    if (path === '/api/cross-dock-analytics' && method === 'GET') {
+      const data = {
+        kpis: {
+          crossDockRate: 41.5, storageAvoided: 426, costSaved7d: 241400,
+          avgHandlingSavedMinutes: 78, successRate: 94.2,
+        },
+        dailyTrend: [
+          { day: 'Mon', crossDock: 18, total: 45, savings: 28500 },
+          { day: 'Tue', crossDock: 22, total: 52, savings: 34200 },
+          { day: 'Wed', crossDock: 28, total: 58, savings: 42800 },
+          { day: 'Thu', crossDock: 24, total: 51, savings: 36500 },
+          { day: 'Fri', crossDock: 32, total: 67, savings: 51200 },
+          { day: 'Sat', crossDock: 19, total: 41, savings: 29800 },
+          { day: 'Sun', crossDock: 12, total: 28, savings: 18400 },
+        ],
+        topProducts: [
+          { product: 'Shwet Idli Batter', crossDockOps: 42, storageAvoided: 92, savings: 18400 },
+          { product: 'Kaju Katli 500g', crossDockOps: 28, storageAvoided: 76, savings: 12800 },
+          { product: 'Mysore Pak 250g', crossDockOps: 24, storageAvoided: 68, savings: 9600 },
+        ],
+        supplierPerformance: [
+          { supplier: 'Sudhamrit Foods Pvt', onTimePercent: 96, avgDelayMinutes: 4, crossDockEligiblePercent: 92 },
+          { supplier: 'Shwet Idli Batter', onTimePercent: 98, avgDelayMinutes: 2, crossDockEligiblePercent: 95 },
+        ],
+        carrierPerformance: [
+          { carrier: 'VRL Logistics', onTimePercent: 94, avgTurnaroundMinutes: 48, utilizationPercent: 78 },
+          { carrier: 'In-House Fleet', onTimePercent: 99, avgTurnaroundMinutes: 28, utilizationPercent: 92 },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Cross-dock analytics')), { headers })
+    }
+
+    // GET /api/yard-management/info — Sprint 29 info
+    if (path === '/api/yard-management/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 29,
+        sprintName: 'Enterprise Cross-Docking, Dock Yard & Yard Management System (YMS)',
+        version: '29.0.0',
+        part: 4,
+        tables: 10,
+        epics: [
+          'Epic 1: Cross Docking Engine (3 types: PRE_DISTRIBUTIVE, POST_DISTRIBUTIVE, OPPORTUNISTIC)',
+          'Epic 2: Yard Management (locations, vehicles, slot occupancy)',
+          'Epic 3: Truck Queue Management (FIFO, PRIORITY, COLD_CHAIN, EMERGENCY, VIP_SUPPLIER, MANUAL_OVERRIDE)',
+          'Epic 4: Dock Door Scheduling (RECEIVING, DISPATCH, SHARED, COLD, BULK, EXPRESS)',
+          'Epic 5: Trailer Management (number, container, seal, movements)',
+          'Epic 6: Gate Check-In & Check-Out (QR/Barcode pass, photo evidence, seal verification)',
+          'Epic 7: Yard Control Tower (live KPIs, dock activity, queue, gate)',
+          'Epic 8: Cross Dock Analytics (success rate, storage avoidance, supplier/carrier perf)',
+        ],
+        domainEvents: ['VehicleArrived', 'GateCheckInCompleted', 'DockAssigned', 'CrossDockStarted', 'CrossDockCompleted', 'VehicleLoaded', 'VehicleExited', 'DockReleased'],
+        crossDockPrinciple: 'Cross-Docking routes eligible inbound inventory directly to outbound docks — skipping warehouse storage entirely. SUOP supports 3 cross-dock types: PRE_DISTRIBUTIVE (planned supplier→outbound), POST_DISTRIBUTIVE (consolidation), OPPORTUNISTIC (auto-detected). 8 eligibility rules: SAME_DAY_DISPATCH, PRIORITY_CUSTOMER, RETAIL_REPLENISHMENT, RESTAURANT_REPLENISHMENT, TRANSFER_ORDERS, DISTRIBUTOR_ORDERS, TEMPERATURE_SENSITIVE, PERISHABLE_GOODS. No warehouse storage is created for cross-docked inventory. Inventory moves directly inbound→outbound.',
+        yardPrinciple: 'Yard Management tracks every vehicle from gate entry to gate exit. 6 yard zones: GATE_ZONE (initial check-in), WAITING (queue), HOLDING (temporary), STAGING (ready for dock), COLD_HOLD (refrigerated), MAINTENANCE (service). Vehicle status: WAITING → AT_GATE → IN_YARD → DOCK_ASSIGNED → LOADING/UNLOADING → READY → EXITED. Each vehicle tracks driver, carrier, ASN/dispatch reference, capacity, temperature, waiting time.',
+        truckQueuePrinciple: 'Truck Queue uses configurable priority rules. Default order: EMERGENCY (>COLD_CHAIN >VIP_SUPPLIER >PRIORITY >FIFO. Each vehicle gets a priority score 0-100. Queue position auto-recomputes when priority changes. Manual override allowed for supervisor. Queue history tracks every position change with reason.',
+        dockSchedulingPrinciple: 'Dock Door Scheduling prevents conflicts. 6 dock types: RECEIVING (inbound), DISPATCH (outbound), SHARED (both), COLD (refrigerated), BULK (bulk goods), EXPRESS (quick turn). Each dock tracks capacity (weight, cold chain support, bulk support, leveler, seal), current vehicle, utilization %, operations today. Bookings: APPOINTMENT, WALK_IN, CROSS_DOCK, PRIORITY. Status: SCHEDULED → CONFIRMED → ARRIVED → IN_PROGRESS → COMPLETED (or NO_SHOW/CANCELLED).',
+        gatePrinciple: 'Gate Check-In & Check-Out is fully audited. 4 pass types: QR (default, scannable), BARCODE, RFID (future), ANPR (future, camera-based). Entry workflow: (1) Vehicle arrives at gate, (2) Security officer verifies documents, (3) Vehicle inspected, (4) Seal verified (for inbound sealed trucks), (5) Photo evidence captured (front, back, side, seal), (6) Gate pass generated (QR), (7) Vehicle enters yard. Exit workflow: (1) Vehicle ready, (2) Security verifies seal intact, (3) Documents checked, (4) Photo evidence, (5) Exit approved, (6) Yard duration recorded.',
+        chiefArchitectRecommendation: 'For Sudhamrit, enable Automatic Cross-Docking for high-demand fresh products. When supplier truck arrives (e.g., Shwet Idli Batter), system detects pending retail/restaurant orders, routes inventory directly from receiving dock to dispatch dock — skipping warehouse storage. Reduces handling cost (-42%), product aging (-68%), delivery lead time (-55%). Especially valuable for fresh products: batter, dairy-based sweets, items with limited shelf life.',
+        endpoints: [
+          'GET /api/cross-dock', 'POST /api/cross-dock', 'POST /api/cross-dock/:id/complete',
+          'GET /api/yard-vehicles',
+          'GET /api/truck-queue', 'POST /api/truck-queue/:id/assign',
+          'GET /api/dock-doors-yms', 'GET /api/dock-schedule',
+          'GET /api/yard-gate-entries', 'POST /api/yard-gate-entries', 'POST /api/yard-gate-exits',
+          'GET /api/yard-tower', 'GET /api/cross-dock-analytics',
+          'GET /api/yard-management/info',
+        ],
+        part4Sprint: 8,
+        part4Sprints: 12,
+        part4Tables: 64,
+      }, 'SUOP Cross-Docking & Yard Management Engine v29.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 28, sprintName: 'Wave Planning, Task Orchestration & Workforce Management Engine (28/33 sprints)' })
-log('info', 'Sprint 28 — Wave Planning & Task Orchestration Engine', { sprint: 28, part: 4, tables: 239, waves: 8, tasks: 10, operators: 8, equipment: 10, slaConfigs: 7, violations: 6, exceptions: 8 })
-log('info', 'Wave planning endpoints available (Sprint 28)', { waves: 'GET/POST /api/warehouse-waves', waveRelease: 'POST /api/warehouse-waves/:id/release', tasks: 'GET /api/warehouse-tasks', taskAssign: 'POST /api/warehouse-tasks/:id/assign', taskComplete: 'POST /api/warehouse-tasks/:id/complete', operators: 'GET /api/warehouse-operators', equipment: 'GET /api/warehouse-equipment', sla: 'GET /api/warehouse-sla', violations: 'GET /api/sla-violations', exceptions: 'GET /api/warehouse-exceptions', exceptionResolve: 'POST /api/warehouse-exceptions/:id/resolve', controlTower: 'GET /api/warehouse-control-tower', info: 'GET /api/wave-planning/info' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 29, sprintName: 'Cross-Docking, Dock Yard & Yard Management System (29/33 sprints)' })
+log('info', 'Sprint 29 — Cross-Docking & Yard Management Engine', { sprint: 29, part: 4, tables: 249, crossDockOrders: 3, yardVehicles: 4, truckQueue: 3, dockDoors: 4, dockSchedule: 3, gateEntries: 2 })
+log('info', 'Yard management endpoints available (Sprint 29)', { crossDock: 'GET/POST /api/cross-dock', crossDockComplete: 'POST /api/cross-dock/:id/complete', yardVehicles: 'GET /api/yard-vehicles', truckQueue: 'GET /api/truck-queue', truckQueueAssign: 'POST /api/truck-queue/:id/assign', dockDoors: 'GET /api/dock-doors-yms', dockSchedule: 'GET /api/dock-schedule', gateEntries: 'GET/POST /api/yard-gate-entries', gateExits: 'POST /api/yard-gate-exits', yardTower: 'GET /api/yard-tower', crossDockAnalytics: 'GET /api/cross-dock-analytics', info: 'GET /api/yard-management/info' })
 log('info', 'Dispatch & shipping endpoints available (Sprint 27)', { dispatchOrders: 'GET/POST /api/dispatch-orders', dispatchComplete: 'POST /api/dispatch-orders/:id/complete', dispatchVehicles: 'GET /api/dispatch-vehicles', loadPlans: 'GET /api/load-plans', shippingDocuments: 'GET /api/shipping-documents', vehicleSeals: 'GET /api/vehicle-seals', gateExitLogs: 'GET /api/gate-exit-logs', gateExitApprove: 'POST /api/gate-exit-logs/:id/approve', dashboard: 'GET /api/dispatch/dashboard', info: 'GET /api/dispatch/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })

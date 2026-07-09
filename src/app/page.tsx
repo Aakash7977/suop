@@ -27,7 +27,7 @@ import {
   Trash2, AlertTriangle as AlertTriangleIcon,
   Thermometer, Snowflake, Droplets, ScanLine as ScanIcon,
   Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon,
-  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer
+  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer, Radar
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -50,6 +50,7 @@ type ModuleKey =
   | 'dashboard' | 'organization' | 'rbac' | 'products' | 'pim' | 'commercial' | 'partners' | 'identification' | 'governance' | 'inventory' | 'goodsreceipt' | 'stockissue' | 'transfer' | 'adjustment' | 'reservation' | 'cyclecount' | 'batchmgmt' | 'costing'
   | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'dispatch'
   | 'waveplanning' | 'taskqueue' | 'workforce' | 'equipment' | 'controltower' | 'sladashboard' | 'exceptioncenter' | 'workforceanalytics'
+  | 'crossdock' | 'truckqueue' | 'dockschedule' | 'yardmap' | 'vehicletracker' | 'gateconsole' | 'yardtower' | 'crossdockanalytics'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -165,6 +166,14 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'SLA Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'sladashboard', available: true },
       { name: 'Exception Center', icon: <AlertOctagon className="h-4 w-4" />, module: 'exceptioncenter', available: true },
       { name: 'Workforce Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'workforceanalytics', available: true },
+      { name: 'Cross-Dock Console', icon: <ArrowLeftRight className="h-4 w-4" />, module: 'crossdock', available: true },
+      { name: 'Truck Queue', icon: <ListChecks className="h-4 w-4" />, module: 'truckqueue', available: true },
+      { name: 'Dock Schedule', icon: <Calendar className="h-4 w-4" />, module: 'dockschedule', available: true },
+      { name: 'Yard Map', icon: <Grid3x3 className="h-4 w-4" />, module: 'yardmap', available: true },
+      { name: 'Vehicle Tracker', icon: <Truck className="h-4 w-4" />, module: 'vehicletracker', available: true },
+      { name: 'Gate Console', icon: <ShieldCheck className="h-4 w-4" />, module: 'gateconsole', available: true },
+      { name: 'Yard Control Tower', icon: <Radar className="h-4 w-4" />, module: 'yardtower', available: true },
+      { name: 'Cross-Dock Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'crossdockanalytics', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -11349,6 +11358,929 @@ function WorkforceAnalyticsModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 29 — CROSS-DOCKING, DOCK YARD & YARD MANAGEMENT
+// Epic 1: Cross-Dock · Epic 2: Yard · Epic 3: Truck Queue
+// Epic 4: Dock Scheduling · Epic 5: Trailers · Epic 6: Gate
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Cross-Dock Console Module ──────────────────
+function CrossDockConsoleModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+  const [showCreate, setShowCreate] = useState(false)
+
+  const crossDockOrders = [
+    { id: 'CD1', num: 'CD-2026-001', type: 'PRE_DISTRIBUTIVE', status: 'IN_PROGRESS', priority: 'HIGH', supplier: 'Sudhamrit Foods Pvt', outbound: 'SO-2026-1024 (Retail Replen)', partner: 'Sudhamrit Retail Bandra', inDock: 'DOCK-02', outDock: 'DOCK-07', lines: 12, qty: '480 PCS', weight: 142.5, expectedIn: '10:30', actualIn: '10:32', expectedOut: '11:30', storageAvoided: true, costSaved: 1850, timeSaved: 90, progress: 65 },
+    { id: 'CD2', num: 'CD-2026-002', type: 'OPPORTUNISTIC', status: 'COMPLETED', priority: 'NORMAL', supplier: 'Mysore Sweets Co', outbound: 'SO-2026-1031 (Distributor)', partner: 'Mumbai Distributors', inDock: 'DOCK-01', outDock: 'DOCK-05', lines: 8, qty: '240 PCS', weight: 78.2, expectedIn: '08:00', actualIn: '07:58', expectedOut: '09:00', storageAvoided: true, costSaved: 1240, timeSaved: 75, progress: 100 },
+    { id: 'CD3', num: 'CD-2026-003', type: 'PRE_DISTRIBUTIVE', status: 'PLANNED', priority: 'EMERGENCY', supplier: 'Shwet Idli Batter', outbound: 'SO-2026-1042 (Restaurant Replen)', partner: 'Sudhamrit Restaurant Hub', inDock: 'DOCK-02', outDock: 'DOCK-08', lines: 5, qty: '60 BOX', weight: 36.0, expectedIn: '14:00', actualIn: null, expectedOut: '15:00', storageAvoided: true, costSaved: 950, timeSaved: 60, progress: 0 },
+    { id: 'CD4', num: 'CD-2026-004', type: 'POST_DISTRIBUTIVE', status: 'OUTBOUND_LOADED', priority: 'NORMAL', supplier: 'Multiple', outbound: 'SO-2026-1038 (Multi-Partner)', partner: 'Multi-partner consolidation', inDock: 'DOCK-03', outDock: 'DOCK-06', lines: 18, qty: '720 PCS', weight: 215.8, expectedIn: '09:00', actualIn: '08:55', expectedOut: '12:00', storageAvoided: true, costSaved: 2680, timeSaved: 120, progress: 88 },
+    { id: 'CD5', num: 'CD-2026-005', type: 'PRE_DISTRIBUTIVE', status: 'INBOUND_ARRIVED', priority: 'HIGH', supplier: 'Cold Chain Logistics', outbound: 'SO-2026-1045 (Cold Chain)', partner: 'Sudhamrit Cold Hub', inDock: 'DOCK-COLD-01', outDock: 'DOCK-COLD-02', lines: 6, qty: '120 BOX', weight: 84.0, expectedIn: '11:00', actualIn: '11:05', expectedOut: '12:30', storageAvoided: true, costSaved: 1620, timeSaved: 90, progress: 25 },
+    { id: 'CD6', num: 'CD-2026-006', type: 'OPPORTUNISTIC', status: 'EXCEPTION', priority: 'HIGH', supplier: 'Banu Sweets Supplier', outbound: 'SO-2026-1029 (Retail)', partner: 'Sudhamrit Retail Andheri', inDock: 'DOCK-04', outDock: 'DOCK-06', lines: 4, qty: '48 PCS', weight: 28.5, expectedIn: '13:00', actualIn: '13:10', expectedOut: '14:00', storageAvoided: false, costSaved: 0, timeSaved: 0, progress: 30 },
+  ]
+
+  const filtered = crossDockOrders.filter(o => filter === 'ALL' || o.status === filter || o.type === filter)
+
+  const stats = [
+    { label: 'Cross-Dock Orders', value: crossDockOrders.length, color: 'text-blue-600' },
+    { label: 'In Progress', value: crossDockOrders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'INBOUND_ARRIVED' || o.status === 'OUTBOUND_LOADED').length, color: 'text-amber-600' },
+    { label: 'Completed', value: crossDockOrders.filter(o => o.status === 'COMPLETED').length, color: 'text-emerald-600' },
+    { label: 'Exceptions', value: crossDockOrders.filter(o => o.status === 'EXCEPTION').length, color: 'text-rose-600' },
+    { label: 'Storage Avoided', value: `${crossDockOrders.filter(o => o.storageAvoided).length}/${crossDockOrders.length}`, color: 'text-purple-600' },
+    { label: 'Cost Saved (₹)', value: crossDockOrders.reduce((a, o) => a + o.costSaved, 0).toLocaleString('en-IN'), color: 'text-emerald-700' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Cross-Dock Console</h2><p className="text-sm text-muted-foreground mt-1">Direct inbound-to-outbound routing · zero warehouse storage · cost &amp; time savings</p></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button><Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Cross-Dock</Button></div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {/* Workflow Diagram */}
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <h3 className="font-semibold mb-3 text-sm">Cross-Dock Workflow</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Inbound Shipment', 'Order Matching', 'Cross-Dock Eligible?', 'Outbound Dock', 'Load Vehicle', 'Dispatch'].map((step, i, arr) => (
+            <div key={step} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-blue-600" />}
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">No warehouse storage is created for cross-docked inventory. Inventory moves directly from inbound to outbound dock.</p>
+      </Card>
+
+      {showCreate && (
+        <Card className="p-4 border-blue-300 bg-blue-50/50">
+          <h3 className="font-semibold mb-3">Create Cross-Dock Order</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Cross-Dock Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>PRE_DISTRIBUTIVE</option><option>POST_DISTRIBUTIVE</option><option>OPPORTUNISTIC</option></select></div>
+            <div><Label className="text-xs">Inbound ASN</Label><Input className="mt-1" placeholder="ASN-2026-XXX" /></div>
+            <div><Label className="text-xs">Outbound Order</Label><Input className="mt-1" placeholder="SO-2026-XXX" /></div>
+            <div><Label className="text-xs">Priority</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>EMERGENCY</option><option>HIGH</option><option>NORMAL</option><option>LOW</option></select></div>
+            <div><Label className="text-xs">Inbound Dock</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>DOCK-01</option><option>DOCK-02</option><option>DOCK-03</option><option>DOCK-COLD-01</option></select></div>
+            <div><Label className="text-xs">Outbound Dock</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>DOCK-05</option><option>DOCK-06</option><option>DOCK-07</option><option>DOCK-COLD-02</option></select></div>
+            <div className="md:col-span-2 flex items-end gap-2"><Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Create Cross-Dock</Button><Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button></div>
+          </div>
+        </Card>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'PLANNED', 'INBOUND_ARRIVED', 'IN_PROGRESS', 'OUTBOUND_LOADED', 'COMPLETED', 'EXCEPTION'].map(f => <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full border ${filter === f ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{f.replace(/_/g, ' ')}</button>)}
+      </div>
+
+      <div className="space-y-2">
+        {filtered.map(o => {
+          const b = s28BadgeForStatus(o.status)
+          const typeColors: Record<string, string> = { PRE_DISTRIBUTIVE: 'bg-blue-100 text-blue-700', POST_DISTRIBUTIVE: 'bg-purple-100 text-purple-700', OPPORTUNISTIC: 'bg-emerald-100 text-emerald-700' }
+          return (
+            <Card key={o.id} className={`p-4 ${o.status === 'EXCEPTION' ? 'border-rose-300 bg-rose-50/30' : ''}`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-1 self-stretch rounded-full ${o.priority === 'EMERGENCY' ? 'bg-red-500' : o.priority === 'HIGH' ? 'bg-orange-500' : 'bg-blue-500'}`} />
+                <div className="w-40">
+                  <div className="font-mono text-xs font-semibold text-blue-700">{o.num}</div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[o.type]}`}>{o.type.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{o.outbound}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Supplier: {o.supplier} · Partner: {o.partner}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 font-mono"><span className="text-emerald-600">{o.inDock}</span><ArrowRight className="h-3 w-3" /><span className="text-amber-600">{o.outDock}</span></div>
+                </div>
+                <div className="w-32 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Lines:</span><span className="font-mono">{o.lines}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Qty:</span><span className="font-mono">{o.qty}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Weight:</span><span className="font-mono">{o.weight}kg</span></div>
+                </div>
+                <div className="w-32 text-xs">
+                  <div>In: <span className="font-mono">{o.expectedIn}</span>{o.actualIn && <span className="text-emerald-600 ml-1">({o.actualIn})</span>}</div>
+                  <div>Out: <span className="font-mono">{o.expectedOut}</span></div>
+                  {o.progress > 0 && <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${o.progress}%` }} /></div>}
+                </div>
+                <div className="w-32 text-xs">
+                  {o.storageAvoided ? (<div className="text-emerald-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Storage Avoided</div>) : <div className="text-rose-600 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Storage Used</div>}
+                  {o.costSaved > 0 && <div className="text-muted-foreground mt-0.5">Saved: ₹{o.costSaved}</div>}
+                  {o.timeSaved > 0 && <div className="text-muted-foreground">Time: +{o.timeSaved}m</div>}
+                </div>
+                <div className="w-24"><span className={`text-xs px-2 py-1 rounded ${b.cls} block text-center`}>{b.label}</span></div>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Cross-Dock Rules Legend */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 text-sm">Cross-Dock Eligibility Rules</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          {[
+            { rule: 'SAME_DAY_DISPATCH', desc: 'Outbound order scheduled for same day as inbound arrival', icon: <Calendar className="h-4 w-4" /> },
+            { rule: 'PRIORITY_CUSTOMER', desc: 'VIP customer orders get cross-dock priority', icon: <Star className="h-4 w-4" /> },
+            { rule: 'RETAIL_REPLENISHMENT', desc: 'Fast-moving retail SKUs bypass storage', icon: <Store className="h-4 w-4" /> },
+            { rule: 'RESTAURANT_REPLENISHMENT', desc: 'Fresh ingredients for restaurant hubs', icon: <UtensilsCrossed className="h-4 w-4" /> },
+            { rule: 'TRANSFER_ORDERS', desc: 'Inter-warehouse transfers via cross-dock', icon: <ArrowLeftRight className="h-4 w-4" /> },
+            { rule: 'DISTRIBUTOR_ORDERS', desc: 'Large distributor dispatches consolidated', icon: <Truck className="h-4 w-4" /> },
+            { rule: 'TEMPERATURE_SENSITIVE', desc: 'Cold-chain goods minimize time in yard', icon: <Thermometer className="h-4 w-4" /> },
+            { rule: 'PERISHABLE_GOODS', desc: 'Short shelf-life items (batter, dairy sweets)', icon: <Snowflake className="h-4 w-4" /> },
+          ].map(r => (
+            <div key={r.rule} className="p-3 border rounded-md">
+              <div className="flex items-center gap-2 mb-1 text-blue-700">{r.icon}<span className="font-mono font-semibold text-[10px]">{r.rule}</span></div>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 3: Truck Queue Module ─────────────────────────
+function TruckQueueModule() {
+  const queue = [
+    { id: 'Q1', num: 'Q-2026-018', pos: 1, vehicle: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', purpose: 'INBOUND_DELIVERY', queueType: 'PRIORITY', priority: 85, waitMin: 8, estDock: '10:45', status: 'ASSIGNED', dock: 'DOCK-02', delay: null },
+    { id: 'Q2', num: 'Q-2026-019', pos: 2, vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', purpose: 'INBOUND_DELIVERY', queueType: 'COLD_CHAIN', priority: 90, waitMin: 15, estDock: '10:55', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q3', num: 'Q-2026-020', pos: 3, vehicle: 'DL01-EF-9012', type: 'MINI_TRUCK', driver: 'Suresh Yadav', purpose: 'OUTBOUND_DISPATCH', queueType: 'FIFO', priority: 50, waitMin: 22, estDock: '11:10', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q4', num: 'Q-2026-021', pos: 4, vehicle: 'TN09-GH-3456', type: 'TRAILER', driver: 'Anand Pillai', purpose: 'OUTBOUND_DISPATCH', queueType: 'FIFO', priority: 50, waitMin: 35, estDock: '11:25', status: 'WAITING', dock: null, delay: 'Dock occupied' },
+    { id: 'Q5', num: 'Q-2026-022', pos: 5, vehicle: 'MH04-IJ-7890', type: 'BULK_TRUCK', driver: 'Vijay More', purpose: 'INBOUND_DELIVERY', queueType: 'FIFO', priority: 50, waitMin: 42, estDock: '11:40', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q6', num: 'Q-2026-023', pos: 6, vehicle: 'GJ01-KL-1234', type: 'SMALL_VAN', driver: 'Prakash Patel', purpose: 'PICKUP', queueType: 'PRIORITY', priority: 75, waitMin: 5, estDock: '10:50', status: 'PRIORITY_BOOSTED', dock: null, delay: null },
+    { id: 'Q7', num: 'Q-2026-024', pos: 7, vehicle: 'MH12-MN-5678', type: 'COURIER_VEHICLE', driver: 'Deepak Jha', purpose: 'OUTBOUND_DISPATCH', queueType: 'FIFO', priority: 50, waitMin: 18, estDock: '11:05', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q8', num: 'Q-2026-025', pos: 8, vehicle: 'KA03-OP-9012', type: 'MILK_TANKER', driver: 'Mohan Das', purpose: 'INBOUND_DELIVERY', queueType: 'EMERGENCY', priority: 100, waitMin: 2, estDock: '10:40', status: 'PRIORITY_BOOSTED', dock: null, delay: null },
+  ]
+
+  const queueTypeColors: Record<string, string> = { FIFO: 'bg-slate-100 text-slate-700', PRIORITY: 'bg-orange-100 text-orange-700', COLD_CHAIN: 'bg-blue-100 text-blue-700', EMERGENCY: 'bg-red-100 text-red-700', VIP_SUPPLIER: 'bg-purple-100 text-purple-700', MANUAL_OVERRIDE: 'bg-amber-100 text-amber-700' }
+
+  const stats = [
+    { label: 'In Queue', value: queue.length, color: 'text-blue-600' },
+    { label: 'Avg Wait', value: `${Math.round(queue.reduce((a, q) => a + q.waitMin, 0) / queue.length)}m`, color: 'text-amber-600' },
+    { label: 'Priority Boosted', value: queue.filter(q => q.status === 'PRIORITY_BOOSTED').length, color: 'text-orange-600' },
+    { label: 'Delayed', value: queue.filter(q => q.delay).length, color: 'text-rose-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Truck Queue Management</h2><p className="text-sm text-muted-foreground mt-1">FIFO · Priority · Cold Chain · Emergency · VIP Supplier · Manual Override</p></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm"><Filter className="mr-1 h-4 w-4" />Filter</Button><Button size="sm"><Plus className="mr-2 h-4 w-4" />Add to Queue</Button></div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-600 flex items-center justify-center text-white"><Workflow className="h-5 w-5" /></div>
+            <div><p className="font-semibold text-sm">Queue Engine Active</p><p className="text-xs text-muted-foreground">Priority rules: Emergency &gt; Cold Chain &gt; VIP &gt; Priority &gt; FIFO</p></div>
+          </div>
+          <Button size="sm" variant="outline">Configure Rules</Button>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Live Queue</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Pos</th><th className="text-left px-4 py-3 font-medium">Queue #</th>
+              <th className="text-left px-4 py-3 font-medium">Vehicle</th><th className="text-left px-4 py-3 font-medium">Driver</th>
+              <th className="text-left px-4 py-3 font-medium">Purpose</th><th className="text-left px-4 py-3 font-medium">Queue Type</th>
+              <th className="text-left px-4 py-3 font-medium">Priority</th><th className="text-left px-4 py-3 font-medium">Wait</th>
+              <th className="text-left px-4 py-3 font-medium">Est. Dock</th><th className="text-left px-4 py-3 font-medium">Assigned Dock</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th><th className="text-right px-4 py-3 font-medium">Actions</th>
+            </tr></thead>
+            <tbody>
+              {queue.map(q => {
+                const b = s28BadgeForStatus(q.status)
+                return (
+                  <tr key={q.id} className={`border-b hover:bg-muted/30 ${q.status === 'PRIORITY_BOOSTED' ? 'bg-orange-50/50' : ''} ${q.delay ? 'bg-rose-50/30' : ''}`}>
+                    <td className="px-4 py-3"><span className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-xs ${q.pos <= 3 ? 'bg-amber-500 text-white' : 'bg-muted'}`}>{q.pos}</span></td>
+                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{q.num}</td>
+                    <td className="px-4 py-3"><div className="font-mono text-xs font-medium">{q.vehicle}</div><div className="text-[10px] text-muted-foreground">{q.type.replace(/_/g, ' ')}</div></td>
+                    <td className="px-4 py-3 text-xs">{q.driver}</td>
+                    <td className="px-4 py-3 text-[10px] font-mono">{q.purpose.replace(/_/g, ' ')}</td>
+                    <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${queueTypeColors[q.queueType]}`}>{q.queueType.replace(/_/g, ' ')}</span></td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${q.priority === 100 ? 'bg-red-500' : q.priority >= 75 ? 'bg-orange-500' : q.priority >= 50 ? 'bg-blue-500' : 'bg-slate-300'}`} style={{ width: `${q.priority}%` }} /></div><span className="text-[10px] font-mono">{q.priority}</span></div></td>
+                    <td className="px-4 py-3 font-mono text-xs"><span className={q.waitMin > 30 ? 'text-rose-600 font-bold' : q.waitMin > 15 ? 'text-amber-600' : 'text-emerald-600'}>{q.waitMin}m</span></td>
+                    <td className="px-4 py-3 font-mono text-xs">{q.estDock}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{q.dock || '—'}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                    <td className="px-4 py-3 text-right"><div className="flex justify-end gap-1">{q.status === 'WAITING' && <Button size="sm" variant="outline" className="h-7 text-xs">Assign</Button>}{q.delay && <Button size="sm" variant="destructive" className="h-7 text-xs">Resolve</Button>}<Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button></div></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { title: 'FIFO Queue', desc: 'First-in, first-out — default for normal vehicles', count: queue.filter(q => q.queueType === 'FIFO').length, color: 'border-slate-300 bg-slate-50' },
+          { title: 'Priority Queue', desc: 'Boosted priority for VIP customers & urgent orders', count: queue.filter(q => q.queueType === 'PRIORITY' || q.queueType === 'VIP_SUPPLIER').length, color: 'border-orange-300 bg-orange-50' },
+          { title: 'Cold Chain Priority', desc: 'Refrigerated vehicles get priority to preserve cold chain', count: queue.filter(q => q.queueType === 'COLD_CHAIN').length, color: 'border-blue-300 bg-blue-50' },
+        ].map(qt => (
+          <Card key={qt.title} className={`p-4 ${qt.color}`}>
+            <div className="flex items-center justify-between mb-1"><h4 className="font-semibold text-sm">{qt.title}</h4><Badge variant="secondary">{qt.count}</Badge></div>
+            <p className="text-xs text-muted-foreground">{qt.desc}</p>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 4: Dock Schedule Module ───────────────────────
+function DockScheduleModule() {
+  const docks = [
+    { code: 'DOCK-01', name: 'Receiving Dock 01', type: 'RECEIVING', status: 'OCCUPIED', vehicle: 'MH12-AB-1234', util: 78, ops: 4, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-02', name: 'Receiving Dock 02', type: 'RECEIVING', status: 'OCCUPIED', vehicle: 'KA05-CD-5678', util: 92, ops: 6, cold: false, bulk: false, leveler: true, seal: true },
+    { code: 'DOCK-03', name: 'Shared Dock 03', type: 'SHARED', status: 'AVAILABLE', vehicle: null, util: 45, ops: 3, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-04', name: 'Bulk Dock 04', type: 'BULK', status: 'MAINTENANCE', vehicle: null, util: 0, ops: 0, cold: false, bulk: true, leveler: true, seal: false },
+    { code: 'DOCK-05', name: 'Dispatch Dock 05', type: 'DISPATCH', status: 'OCCUPIED', vehicle: 'DL01-EF-9012', util: 85, ops: 5, cold: false, bulk: false, leveler: true, seal: true },
+    { code: 'DOCK-06', name: 'Dispatch Dock 06', type: 'DISPATCH', status: 'AVAILABLE', vehicle: null, util: 62, ops: 4, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-07', name: 'Express Dock 07', type: 'EXPRESS', status: 'AVAILABLE', vehicle: null, util: 38, ops: 8, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-COLD-01', name: 'Cold Receiving Dock', type: 'COLD', status: 'OCCUPIED', vehicle: 'TN09-GH-3456', util: 71, ops: 2, cold: true, bulk: false, leveler: true, seal: true },
+    { code: 'DOCK-COLD-02', name: 'Cold Dispatch Dock', type: 'COLD', status: 'AVAILABLE', vehicle: null, util: 55, ops: 3, cold: true, bulk: false, leveler: true, seal: false },
+  ]
+
+  const schedule = [
+    { dock: 'DOCK-01', time: '10:00-11:00', vehicle: 'MH12-AB-1234', carrier: 'VRL Logistics', type: 'APPOINTMENT', status: 'IN_PROGRESS' },
+    { dock: 'DOCK-01', time: '11:30-12:30', vehicle: 'MH04-XY-1111', carrier: 'In-House', type: 'APPOINTMENT', status: 'CONFIRMED' },
+    { dock: 'DOCK-02', time: '10:00-11:00', vehicle: 'KA05-CD-5678', carrier: 'In-House', type: 'APPOINTMENT', status: 'IN_PROGRESS' },
+    { dock: 'DOCK-02', time: '11:30-12:30', vehicle: '—', carrier: '—', type: 'WALK_IN', status: 'SCHEDULED' },
+    { dock: 'DOCK-05', time: '10:00-11:00', vehicle: 'DL01-EF-9012', carrier: 'Blue Dart', type: 'CROSS_DOCK', status: 'IN_PROGRESS' },
+    { dock: 'DOCK-05', time: '11:30-13:00', vehicle: 'TN09-BB-4444', carrier: 'In-House', type: 'PRIORITY', status: 'CONFIRMED' },
+    { dock: 'DOCK-07', time: '10:00-10:30', vehicle: 'GJ01-KL-1234', carrier: '—', type: 'PRIORITY', status: 'COMPLETED' },
+    { dock: 'DOCK-COLD-01', time: '11:00-12:30', vehicle: 'TN09-GH-3456', carrier: 'Cold Chain Logistics', type: 'APPOINTMENT', status: 'IN_PROGRESS' },
+  ]
+
+  const typeIcons: Record<string, React.ReactNode> = { RECEIVING: <ArrowDownToLine className="h-4 w-4" />, DISPATCH: <ArrowUpFromLine className="h-4 w-4" />, SHARED: <ArrowLeftRight className="h-4 w-4" />, COLD: <Snowflake className="h-4 w-4" />, BULK: <Package className="h-4 w-4" />, EXPRESS: <Zap className="h-4 w-4" /> }
+  const typeColors: Record<string, string> = { RECEIVING: 'bg-emerald-100 text-emerald-700', DISPATCH: 'bg-amber-100 text-amber-700', SHARED: 'bg-blue-100 text-blue-700', COLD: 'bg-cyan-100 text-cyan-700', BULK: 'bg-purple-100 text-purple-700', EXPRESS: 'bg-orange-100 text-orange-700' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Dock Door Scheduling</h2><p className="text-sm text-muted-foreground mt-1">Receiving · Dispatch · Shared · Cold · Bulk · Express docks with capacity planning</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Appointment</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Docks', value: docks.length, color: 'text-blue-600' },
+          { label: 'Available', value: docks.filter(d => d.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+          { label: 'Occupied', value: docks.filter(d => d.status === 'OCCUPIED').length, color: 'text-amber-600' },
+          { label: 'Maintenance', value: docks.filter(d => d.status === 'MAINTENANCE').length, color: 'text-orange-600' },
+          { label: 'Avg Utilization', value: `${Math.round(docks.reduce((a, d) => a + d.util, 0) / docks.length)}%`, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Dock Cards */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {docks.map(d => {
+            const b = s28BadgeForStatus(d.status)
+            return (
+              <Card key={d.code} className={`p-3 ${d.status === 'MAINTENANCE' ? 'border-orange-300 bg-orange-50/30' : ''}`}>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2"><div className={`h-9 w-9 rounded-lg flex items-center justify-center ${typeColors[d.type]}`}>{typeIcons[d.type]}</div><div><div className="font-mono font-semibold text-xs">{d.code}</div><div className="text-[10px] text-muted-foreground">{d.name}</div></div></div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${b.cls}`}>{b.label}</span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Current Vehicle:</span><span className="font-mono">{d.vehicle || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Ops Today:</span><span className="font-mono">{d.ops}</span></div>
+                  <div><div className="flex justify-between text-[10px] text-muted-foreground"><span>Utilization</span><span>{d.util}%</span></div><div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${d.util > 80 ? 'bg-rose-500' : d.util > 60 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${d.util}%` }} /></div></div>
+                  <div className="flex gap-1 pt-1">
+                    {d.cold && <span className="text-[9px] px-1 py-0.5 bg-cyan-100 text-cyan-700 rounded">COLD</span>}
+                    {d.bulk && <span className="text-[9px] px-1 py-0.5 bg-purple-100 text-purple-700 rounded">BULK</span>}
+                    {d.leveler && <span className="text-[9px] px-1 py-0.5 bg-slate-100 text-slate-700 rounded">LEVELER</span>}
+                    {d.seal && <span className="text-[9px] px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded">SEAL</span>}
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Today's Schedule */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Today&apos;s Schedule</h3>
+          <div className="space-y-2 max-h-[500px] overflow-y-auto suop-main-scroll">
+            {schedule.map((s, i) => {
+              const b = s28BadgeForStatus(s.status)
+              const bookingColors: Record<string, string> = { APPOINTMENT: 'bg-blue-50', WALK_IN: 'bg-amber-50', CROSS_DOCK: 'bg-purple-50', PRIORITY: 'bg-orange-50' }
+              return (
+                <div key={i} className={`p-2 rounded border ${bookingColors[s.type] || 'bg-muted'}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-mono text-xs font-semibold">{s.dock}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${b.cls}`}>{b.label}</span>
+                  </div>
+                  <div className="text-xs font-medium">{s.time}</div>
+                  <div className="text-[11px] text-muted-foreground">{s.vehicle} · {s.carrier}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">{s.type.replace(/_/g, ' ')}</div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 2: Yard Map Module ────────────────────────────
+function YardMapModule() {
+  const yardZones = [
+    { zone: 'GATE_ZONE', label: 'Gate Zone', slots: ['G-01', 'G-02', 'G-03'], occupied: 2, capacity: 3, color: 'border-blue-400 bg-blue-50' },
+    { zone: 'WAITING', label: 'Waiting Area', slots: ['W-01', 'W-02', 'W-03', 'W-04', 'W-05'], occupied: 4, capacity: 5, color: 'border-amber-400 bg-amber-50' },
+    { zone: 'HOLDING', label: 'Holding Area', slots: ['H-01', 'H-02', 'H-03'], occupied: 1, capacity: 3, color: 'border-purple-400 bg-purple-50' },
+    { zone: 'STAGING', label: 'Staging Area', slots: ['S-01', 'S-02', 'S-03', 'S-04'], occupied: 3, capacity: 4, color: 'border-emerald-400 bg-emerald-50' },
+    { zone: 'COLD_HOLD', label: 'Cold Holding', slots: ['C-01', 'C-02'], occupied: 2, capacity: 2, color: 'border-cyan-400 bg-cyan-50' },
+    { zone: 'MAINTENANCE', label: 'Maintenance Bay', slots: ['M-01', 'M-02'], occupied: 1, capacity: 2, color: 'border-orange-400 bg-orange-50' },
+  ]
+
+  const vehicles = [
+    { slot: 'G-01', vehicle: 'MH12-AB-1234', type: 'CONTAINER', purpose: 'INBOUND', since: '08:45', status: 'AT_GATE' },
+    { slot: 'G-02', vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', purpose: 'INBOUND', since: '09:10', status: 'AT_GATE' },
+    { slot: 'W-01', vehicle: 'DL01-EF-9012', type: 'MINI_TRUCK', purpose: 'OUTBOUND', since: '08:30', status: 'WAITING' },
+    { slot: 'W-02', vehicle: 'TN09-GH-3456', type: 'TRAILER', purpose: 'OUTBOUND', since: '08:50', status: 'WAITING' },
+    { slot: 'W-03', vehicle: 'MH04-IJ-7890', type: 'BULK_TRUCK', purpose: 'INBOUND', since: '09:00', status: 'WAITING' },
+    { slot: 'W-04', vehicle: 'GJ01-KL-1234', type: 'SMALL_VAN', purpose: 'PICKUP', since: '09:15', status: 'WAITING' },
+    { slot: 'H-01', vehicle: 'MH12-MN-5678', type: 'COURIER_VEHICLE', purpose: 'OUTBOUND', since: '08:40', status: 'IN_YARD' },
+    { slot: 'S-01', vehicle: 'KA03-OP-9012', type: 'MILK_TANKER', purpose: 'INBOUND', since: '09:05', status: 'READY' },
+    { slot: 'S-02', vehicle: 'DL01-ST-9012', type: 'CONTAINER', purpose: 'OUTBOUND', since: '08:55', status: 'READY' },
+    { slot: 'S-03', vehicle: 'MH12-XY-2222', type: 'TRAILER', purpose: 'OUTBOUND', since: '09:00', status: 'READY' },
+    { slot: 'C-01', vehicle: 'TN09-COLD-01', type: 'COLD_TRUCK', purpose: 'INBOUND', since: '08:50', status: 'IN_YARD' },
+    { slot: 'C-02', vehicle: 'KA05-COLD-02', type: 'COLD_TRUCK', purpose: 'OUTBOUND', since: '09:00', status: 'READY' },
+    { slot: 'M-01', vehicle: 'MH04-REP-01', type: 'OWN_FLEET', purpose: 'SERVICE', since: '08:00', status: 'IN_YARD' },
+  ]
+
+  const getVehicleForSlot = (slot: string) => vehicles.find(v => v.slot === slot)
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Yard Map</h2><p className="text-sm text-muted-foreground mt-1">Visual layout of yard zones · slot occupancy · vehicle positions</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Total Slots', value: yardZones.reduce((a, z) => a + z.capacity, 0), color: 'text-blue-600' },
+          { label: 'Occupied', value: yardZones.reduce((a, z) => a + z.occupied, 0), color: 'text-amber-600' },
+          { label: 'Available', value: yardZones.reduce((a, z) => a + z.capacity - z.occupied, 0), color: 'text-emerald-600' },
+          { label: 'Vehicles in Yard', value: vehicles.length, color: 'text-purple-600' },
+          { label: 'Ready to Exit', value: vehicles.filter(v => v.status === 'READY').length, color: 'text-emerald-700' },
+          { label: 'At Gate', value: vehicles.filter(v => v.status === 'AT_GATE').length, color: 'text-blue-700' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-4">Yard Layout — WH-MUM-MAIN</h3>
+        <div className="space-y-4">
+          {yardZones.map(zone => (
+            <div key={zone.zone} className={`p-4 rounded-lg border-2 ${zone.color}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div><span className="font-semibold text-sm">{zone.label}</span><span className="ml-2 text-xs text-muted-foreground font-mono">{zone.zone}</span></div>
+                <Badge variant="outline">{zone.occupied}/{zone.capacity} occupied</Badge>
+              </div>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                {zone.slots.map(slot => {
+                  const v = getVehicleForSlot(slot)
+                  return (
+                    <div key={slot} className={`p-2 rounded border-2 ${v ? 'border-amber-400 bg-amber-100' : 'border-dashed border-slate-300 bg-white'}`}>
+                      <div className="text-xs font-mono font-semibold">{slot}</div>
+                      {v ? (<>
+                        <div className="text-[10px] font-mono mt-1 truncate">{v.vehicle}</div>
+                        <div className="text-[9px] text-muted-foreground mt-0.5">{v.type.replace(/_/g, ' ')}</div>
+                        <div className="text-[9px] text-blue-600 mt-0.5">Since {v.since}</div>
+                      </>) : <div className="text-[10px] text-muted-foreground text-center mt-1">Empty</div>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Yard Vehicle List</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-2 font-medium">Slot</th><th className="text-left px-4 py-2 font-medium">Vehicle</th>
+              <th className="text-left px-4 py-2 font-medium">Type</th><th className="text-left px-4 py-2 font-medium">Purpose</th>
+              <th className="text-left px-4 py-2 font-medium">Since</th><th className="text-left px-4 py-2 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {vehicles.map((v, i) => {
+                const b = s28BadgeForStatus(v.status)
+                return (
+                  <tr key={i} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-2 font-mono text-xs">{v.slot}</td>
+                    <td className="px-4 py-2 font-mono text-xs font-medium">{v.vehicle}</td>
+                    <td className="px-4 py-2 text-[10px]">{v.type.replace(/_/g, ' ')}</td>
+                    <td className="px-4 py-2 text-[10px] font-mono">{v.purpose}</td>
+                    <td className="px-4 py-2 font-mono text-xs">{v.since}</td>
+                    <td className="px-4 py-2"><span className={`text-[10px] px-2 py-0.5 rounded ${b.cls}`}>{b.label}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 2: Vehicle Tracker Module ─────────────────────
+function VehicleTrackerModule() {
+  const vehicles = [
+    { id: 'V1', num: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', phone: '+91 98765 43210', purpose: 'INBOUND_DELIVERY', location: 'DOCK-02', status: 'UNLOADING', arrival: '08:45', expectedDep: '10:30', waitMin: 8, dock: 'DOCK-02', asn: 'ASN-2026-018', carrier: 'VRL Logistics', ownership: 'THIRD_PARTY', capacity: '24 T', pallets: 18, refrigerated: false },
+    { id: 'V2', num: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', phone: '+91 98765 43211', purpose: 'INBOUND_DELIVERY', location: 'C-01 (Cold Hold)', status: 'IN_YARD', arrival: '09:10', expectedDep: '11:00', waitMin: 15, dock: null, asn: 'ASN-2026-019', carrier: 'Cold Chain Logistics', ownership: 'THIRD_PARTY', capacity: '8 T', pallets: 10, refrigerated: true, temp: '4°C' },
+    { id: 'V3', num: 'DL01-EF-9012', type: 'MINI_TRUCK', driver: 'Suresh Yadav', phone: '+91 98765 43212', purpose: 'OUTBOUND_DISPATCH', location: 'DOCK-05', status: 'LOADING', arrival: '08:30', expectedDep: '10:45', waitMin: 22, dock: 'DOCK-05', asn: null, dispatch: 'DSP-2026-008', carrier: 'Blue Dart', ownership: 'COURIER', capacity: '3 T', pallets: 6, refrigerated: false },
+    { id: 'V4', num: 'TN09-GH-3456', type: 'TRAILER', driver: 'Anand Pillai', phone: '+91 98765 43213', purpose: 'OUTBOUND_DISPATCH', location: 'W-02 (Waiting)', status: 'WAITING', arrival: '08:50', expectedDep: '11:30', waitMin: 35, dock: null, asn: null, dispatch: 'DSP-2026-009', carrier: 'In-House', ownership: 'OWN_FLEET', capacity: '20 T', pallets: 24, refrigerated: false },
+    { id: 'V5', num: 'MH04-IJ-7890', type: 'BULK_TRUCK', driver: 'Vijay More', phone: '+91 98765 43214', purpose: 'INBOUND_DELIVERY', location: 'W-03 (Waiting)', status: 'WAITING', arrival: '09:00', expectedDep: '11:45', waitMin: 42, dock: null, asn: 'ASN-2026-020', carrier: 'In-House', ownership: 'OWN_FLEET', capacity: '15 T', pallets: 0, refrigerated: false },
+    { id: 'V6', num: 'GJ01-KL-1234', type: 'SMALL_VAN', driver: 'Prakash Patel', phone: '+91 98765 43215', purpose: 'PICKUP', location: 'W-04 (Waiting)', status: 'WAITING', arrival: '09:15', expectedDep: '10:30', waitMin: 5, dock: null, asn: null, dispatch: null, carrier: '—', ownership: 'THIRD_PARTY', capacity: '1 T', pallets: 2, refrigerated: false },
+    { id: 'V7', num: 'MH12-MN-5678', type: 'COURIER_VEHICLE', driver: 'Deepak Jha', phone: '+91 98765 43216', purpose: 'OUTBOUND_DISPATCH', location: 'H-01 (Holding)', status: 'IN_YARD', arrival: '08:40', expectedDep: '10:15', waitMin: 18, dock: null, asn: null, dispatch: 'DSP-2026-010', carrier: 'Delhivery', ownership: 'COURIER', capacity: '2 T', pallets: 4, refrigerated: false },
+    { id: 'V8', num: 'KA03-OP-9012', type: 'MILK_TANKER', driver: 'Mohan Das', phone: '+91 98765 43217', purpose: 'INBOUND_DELIVERY', location: 'S-01 (Staging)', status: 'READY', arrival: '09:05', expectedDep: '10:30', waitMin: 2, dock: null, asn: 'ASN-2026-021', carrier: 'In-House', ownership: 'OWN_FLEET', capacity: '12 T', pallets: 0, refrigerated: true, temp: '2°C' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Vehicle Tracker</h2><p className="text-sm text-muted-foreground mt-1">Real-time vehicle location · driver info · capacity · temperature · dock status</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Total Vehicles', value: vehicles.length, color: 'text-blue-600' },
+          { label: 'Loading', value: vehicles.filter(v => v.status === 'LOADING').length, color: 'text-amber-600' },
+          { label: 'Unloading', value: vehicles.filter(v => v.status === 'UNLOADING').length, color: 'text-purple-600' },
+          { label: 'Waiting', value: vehicles.filter(v => v.status === 'WAITING').length, color: 'text-orange-600' },
+          { label: 'Ready', value: vehicles.filter(v => v.status === 'READY').length, color: 'text-emerald-600' },
+          { label: 'Cold Chain', value: vehicles.filter(v => v.refrigerated).length, color: 'text-cyan-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {vehicles.map(v => {
+          const b = s28BadgeForStatus(v.status)
+          const purposeColors: Record<string, string> = { INBOUND_DELIVERY: 'bg-emerald-100 text-emerald-700', OUTBOUND_DISPATCH: 'bg-amber-100 text-amber-700', PICKUP: 'bg-blue-100 text-blue-700', RETURN: 'bg-rose-100 text-rose-700', TRANSFER: 'bg-purple-100 text-purple-700', SERVICE: 'bg-slate-100 text-slate-700' }
+          return (
+            <Card key={v.id} className={`p-4 ${v.refrigerated ? 'border-cyan-300 bg-cyan-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${v.refrigerated ? 'bg-cyan-100' : 'bg-muted'}`}><Truck className={`h-5 w-5 ${v.refrigerated ? 'text-cyan-700' : 'text-slate-700'}`} /></div>
+                  <div>
+                    <div className="font-mono font-semibold text-sm">{v.num}</div>
+                    <div className="text-[10px] text-muted-foreground">{v.type.replace(/_/g, ' ')}</div>
+                  </div>
+                </div>
+                <span className={`text-[10px] px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Driver:</span><span>{v.driver}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Phone:</span><span className="font-mono">{v.phone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Purpose:</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${purposeColors[v.purpose]}`}>{v.purpose.replace(/_/g, ' ')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Location:</span><span className="font-mono text-blue-700">{v.location}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Arrival:</span><span className="font-mono">{v.arrival}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Exp. Departure:</span><span className="font-mono">{v.expectedDep}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Waiting:</span><span className={`font-mono ${v.waitMin > 30 ? 'text-rose-600 font-bold' : v.waitMin > 15 ? 'text-amber-600' : 'text-emerald-600'}`}>{v.waitMin}m</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Capacity:</span><span className="font-mono">{v.capacity} · {v.pallets} pallets</span></div>
+                {v.refrigerated && v.temp && <div className="flex justify-between"><span className="text-muted-foreground">Temp:</span><span className="font-mono text-cyan-700">{v.temp}</span></div>}
+                {v.carrier && <div className="flex justify-between"><span className="text-muted-foreground">Carrier:</span><span>{v.carrier}</span></div>}
+                <div className="flex justify-between"><span className="text-muted-foreground">Ownership:</span><span className="text-[10px]">{v.ownership.replace(/_/g, ' ')}</span></div>
+                {v.asn && <div className="flex justify-between"><span className="text-muted-foreground">ASN:</span><span className="font-mono text-blue-700">{v.asn}</span></div>}
+                {v.dispatch && <div className="flex justify-between"><span className="text-muted-foreground">Dispatch:</span><span className="font-mono text-blue-700">{v.dispatch}</span></div>}
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 6: Gate Console Module ────────────────────────
+function GateConsoleModule() {
+  const [showCheckIn, setShowCheckIn] = useState(false)
+  const entries = [
+    { id: 'GE1', num: 'GE-2026-018', pass: 'GP-2026-018', vehicle: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '08:45', expectedExit: '10:30', docs: true, inspect: true, seal: true, status: 'AT_DOCK', photoFront: true, photoSeal: true },
+    { id: 'GE2', num: 'GE-2026-019', pass: 'GP-2026-019', vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '09:10', expectedExit: '11:00', docs: true, inspect: true, seal: false, status: 'IN_YARD', photoFront: true, photoSeal: false },
+    { id: 'GE3', num: 'GE-2026-020', pass: 'GP-2026-020', vehicle: 'DL01-EF-9012', type: 'MINI_TRUCK', driver: 'Suresh Yadav', purpose: 'OUTBOUND_DISPATCH', gate: 'GATE-02', officer: 'Suresh Pillai', entryTime: '08:30', expectedExit: '10:45', docs: true, inspect: false, seal: true, status: 'AT_DOCK', photoFront: true, photoSeal: true },
+    { id: 'GE4', num: 'GE-2026-021', pass: 'GP-2026-021', vehicle: 'TN09-GH-3456', type: 'TRAILER', driver: 'Anand Pillai', purpose: 'OUTBOUND_DISPATCH', gate: 'GATE-02', officer: 'Suresh Pillai', entryTime: '08:50', expectedExit: '11:30', docs: true, inspect: true, seal: true, status: 'IN_YARD', photoFront: true, photoSeal: true },
+    { id: 'GE5', num: 'GE-2026-022', pass: 'GP-2026-022', vehicle: 'MH04-IJ-7890', type: 'BULK_TRUCK', driver: 'Vijay More', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '09:00', expectedExit: '11:45', docs: true, inspect: false, seal: false, status: 'IN_YARD', photoFront: true, photoSeal: false },
+    { id: 'GE6', num: 'GE-2026-023', pass: 'GP-2026-023', vehicle: 'GJ01-KL-1234', type: 'SMALL_VAN', driver: 'Prakash Patel', purpose: 'PICKUP', gate: 'GATE-02', officer: 'Suresh Pillai', entryTime: '09:15', expectedExit: '10:30', docs: true, inspect: true, seal: false, status: 'IN_YARD', photoFront: true, photoSeal: false },
+  ]
+
+  const exits = [
+    { id: 'GX1', num: 'GX-2026-008', entry: 'GE-2026-015', pass: 'GP-2026-015', vehicle: 'MH12-EXIT-01', driver: 'Imran Khan', gate: 'GATE-01', officer: 'Mahesh Tiwari', exitTime: '08:30', yardMin: 95, docs: true, seal: true, inspect: true, status: 'EXITED' },
+    { id: 'GX2', num: 'GX-2026-007', entry: 'GE-2026-014', pass: 'GP-2026-014', vehicle: 'KA05-EXIT-02', driver: 'Vijay Kumar', gate: 'GATE-02', officer: 'Suresh Pillai', exitTime: '07:45', yardMin: 68, docs: true, seal: true, inspect: false, status: 'EXITED' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Gate Console</h2><p className="text-sm text-muted-foreground mt-1">Vehicle check-in / check-out · gate pass · seal verification · photo evidence</p></div>
+        <Button size="sm" onClick={() => setShowCheckIn(!showCheckIn)}><Plus className="mr-2 h-4 w-4" />New Check-In</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Entered Today', value: entries.length, color: 'text-emerald-600' },
+          { label: 'In Yard', value: entries.filter(e => e.status === 'IN_YARD').length, color: 'text-amber-600' },
+          { label: 'At Dock', value: entries.filter(e => e.status === 'AT_DOCK').length, color: 'text-blue-600' },
+          { label: 'Exited Today', value: exits.length, color: 'text-slate-600' },
+          { label: 'Seal Verified', value: entries.filter(e => e.seal).length, color: 'text-purple-600' },
+          { label: 'Photo Evidence', value: entries.filter(e => e.photoFront).length, color: 'text-cyan-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {showCheckIn && (
+        <Card className="p-4 border-emerald-300 bg-emerald-50/50">
+          <h3 className="font-semibold mb-3">New Vehicle Check-In</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Vehicle Number</Label><Input className="mt-1" placeholder="MH12-AB-XXXX" /></div>
+            <div><Label className="text-xs">Vehicle Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>SMALL_VAN</option><option>MINI_TRUCK</option><option>CONTAINER</option><option>TRAILER</option><option>COLD_TRUCK</option><option>BULK_TRUCK</option></select></div>
+            <div><Label className="text-xs">Driver Name</Label><Input className="mt-1" placeholder="Full name" /></div>
+            <div><Label className="text-xs">Driver Phone</Label><Input className="mt-1" placeholder="+91 XXXXX XXXXX" /></div>
+            <div><Label className="text-xs">Purpose</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>INBOUND_DELIVERY</option><option>OUTBOUND_DISPATCH</option><option>PICKUP</option><option>RETURN</option><option>TRANSFER</option><option>SERVICE</option></select></div>
+            <div><Label className="text-xs">ASN / Dispatch #</Label><Input className="mt-1" placeholder="ASN-2026-XXX" /></div>
+            <div><Label className="text-xs">Gate</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>GATE-01</option><option>GATE-02</option></select></div>
+            <div><Label className="text-xs">Pass Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>QR</option><option>BARCODE</option><option>RFID</option></select></div>
+            <div className="md:col-span-4 flex gap-2"><Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Generate Pass &amp; Check-In</Button><Button size="sm" variant="outline" onClick={() => setShowCheckIn(false)}>Cancel</Button></div>
+          </div>
+        </Card>
+      )}
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Active Gate Entries (Check-In)</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Entry #</th><th className="text-left px-4 py-3 font-medium">Gate Pass</th>
+              <th className="text-left px-4 py-3 font-medium">Vehicle</th><th className="text-left px-4 py-3 font-medium">Driver</th>
+              <th className="text-left px-4 py-3 font-medium">Purpose</th><th className="text-left px-4 py-3 font-medium">Gate</th>
+              <th className="text-left px-4 py-3 font-medium">Officer</th><th className="text-left px-4 py-3 font-medium">Entry</th>
+              <th className="text-left px-4 py-3 font-medium">Exp. Exit</th><th className="text-left px-4 py-3 font-medium">Verifications</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {entries.map(e => {
+                const b = s28BadgeForStatus(e.status)
+                return (
+                  <tr key={e.id} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{e.num}</td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-1"><QrCode className="h-3 w-3 text-purple-600" /><span className="font-mono text-xs">{e.pass}</span></div></td>
+                    <td className="px-4 py-3"><div className="font-mono text-xs font-medium">{e.vehicle}</div><div className="text-[10px] text-muted-foreground">{e.type.replace(/_/g, ' ')}</div></td>
+                    <td className="px-4 py-3 text-xs">{e.driver}</td>
+                    <td className="px-4 py-3 text-[10px] font-mono">{e.purpose.replace(/_/g, ' ')}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{e.gate}</td>
+                    <td className="px-4 py-3 text-xs">{e.officer}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{e.entryTime}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{e.expectedExit}</td>
+                    <td className="px-4 py-3"><div className="flex gap-1">
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${e.docs ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Documents">D</span>
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${e.inspect ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Inspected">I</span>
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${e.seal ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Seal">S</span>
+                      <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${e.photoFront ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Photo">P</span>
+                    </div></td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Recent Exits (Check-Out)</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Exit #</th><th className="text-left px-4 py-3 font-medium">Vehicle</th>
+              <th className="text-left px-4 py-3 font-medium">Driver</th><th className="text-left px-4 py-3 font-medium">Gate</th>
+              <th className="text-left px-4 py-3 font-medium">Officer</th><th className="text-left px-4 py-3 font-medium">Exit Time</th>
+              <th className="text-left px-4 py-3 font-medium">Yard Time</th><th className="text-left px-4 py-3 font-medium">Verifications</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {exits.map(x => (
+                <tr key={x.id} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs text-blue-700">{x.num}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{x.vehicle}</td>
+                  <td className="px-4 py-3 text-xs">{x.driver}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{x.gate}</td>
+                  <td className="px-4 py-3 text-xs">{x.officer}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{x.exitTime}</td>
+                  <td className="px-4 py-3 font-mono text-xs"><span className={x.yardMin > 90 ? 'text-amber-600 font-bold' : 'text-emerald-600'}>{x.yardMin}m</span></td>
+                  <td className="px-4 py-3"><div className="flex gap-1">
+                    <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${x.docs ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Documents">D</span>
+                    <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${x.inspect ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Inspected">I</span>
+                    <span className={`h-4 w-4 rounded-full flex items-center justify-center text-[8px] ${x.seal ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`} title="Seal">S</span>
+                  </div></td>
+                  <td className="px-4 py-3"><span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">Exited</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 7: Yard Control Tower Module ──────────────────
+function YardControlTowerModule() {
+  const [liveMode, setLiveMode] = useState(true)
+
+  const kpis = [
+    { label: 'Vehicles Waiting', value: 5, target: 3, trend: '+2', color: 'text-amber-600' },
+    { label: 'Loading', value: 2, target: 4, trend: '-1', color: 'text-blue-600' },
+    { label: 'Unloading', value: 1, target: 2, trend: '0', color: 'text-purple-600' },
+    { label: 'Avg Yard Time', value: '38m', target: '30m', trend: '+8m', color: 'text-amber-600' },
+    { label: 'Dock Util %', value: '67%', target: '80%', trend: '+5%', color: 'text-emerald-600' },
+    { label: 'Truck Turnaround', value: '52m', target: '45m', trend: '+7m', color: 'text-rose-600' },
+    { label: 'Avg Queue Time', value: '18m', target: '15m', trend: '+3m', color: 'text-amber-600' },
+    { label: 'Cross-Dock %', value: '34%', target: '40%', trend: '+2%', color: 'text-emerald-600' },
+  ]
+
+  const dockActivity = [
+    { dock: 'DOCK-01', status: 'OCCUPIED', vehicle: 'MH12-AB-1234', operation: 'UNLOADING', progress: 65, eta: '15 min' },
+    { dock: 'DOCK-02', status: 'OCCUPIED', vehicle: 'KA05-CD-5678', operation: 'UNLOADING', progress: 40, eta: '25 min' },
+    { dock: 'DOCK-03', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+    { dock: 'DOCK-05', status: 'OCCUPIED', vehicle: 'DL01-EF-9012', operation: 'LOADING', progress: 85, eta: '5 min' },
+    { dock: 'DOCK-06', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+    { dock: 'DOCK-07', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+    { dock: 'DOCK-COLD-01', status: 'OCCUPIED', vehicle: 'TN09-GH-3456', operation: 'UNLOADING', progress: 71, eta: '10 min' },
+    { dock: 'DOCK-COLD-02', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+  ]
+
+  const alerts = [
+    { sev: 'CRITICAL', msg: 'Milk Tanker KA03-OP-9012 waiting 2m — cold chain priority boosted', time: '1 min ago' },
+    { sev: 'HIGH', msg: 'Truck turnaround exceeded target by 7 minutes (52m vs 45m)', time: '5 min ago' },
+    { sev: 'WARNING', msg: 'DOCK-04 still under maintenance — 1 hour delayed', time: '15 min ago' },
+    { sev: 'WARNING', msg: 'Average queue time 18m — exceeds 15m target', time: '20 min ago' },
+    { sev: 'INFO', msg: 'Cross-dock CD-2026-002 completed — 75 minutes saved', time: '30 min ago' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Yard Control Tower</h2><p className="text-sm text-muted-foreground mt-1">Real-time yard operations · dock activity · queue · gate · cross-dock</p></div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2"><Switch checked={liveMode} onCheckedChange={setLiveMode} />{liveMode ? <span className="text-xs text-emerald-600 flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />LIVE</span> : <span className="text-xs text-muted-foreground">PAUSED</span>}</div>
+          <Badge variant="outline"><Activity className="mr-1 h-3 w-3" />Updated: just now</Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        {kpis.map(k => (
+          <Card key={k.label} className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{k.label}</p>
+            <p className="text-xl font-bold mt-1">{k.value}</p>
+            <div className="flex items-center justify-between mt-1"><span className={`text-[10px] ${k.color}`}>{k.trend}</span><span className="text-[10px] text-muted-foreground">Target: {k.target}</span></div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-4 lg:col-span-2">
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold">Dock Activity — Live</h3><Badge variant="outline">{liveMode && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse mr-1" />}8 docks</Badge></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {dockActivity.map(d => {
+              const b = s28BadgeForStatus(d.status)
+              return (
+                <div key={d.dock} className={`p-3 rounded-lg border ${d.status === 'OCCUPIED' ? 'border-amber-300 bg-amber-50' : 'border-emerald-300 bg-emerald-50'}`}>
+                  <div className="flex items-center justify-between mb-2"><span className="font-mono text-xs font-semibold">{d.dock}</span><span className={`text-[9px] px-1.5 py-0.5 rounded ${b.cls}`}>{b.label}</span></div>
+                  {d.vehicle ? (<>
+                    <div className="text-xs font-mono">{d.vehicle}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">{d.operation}</div>
+                    {d.progress > 0 && <div className="mt-2 h-1.5 bg-white/60 rounded-full overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${d.progress}%` }} /></div>}
+                    <div className="text-[10px] text-blue-600 mt-1">ETA: {d.eta}</div>
+                  </>) : <div className="text-xs text-muted-foreground">Ready for assignment</div>}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold">Live Alerts</h3><Badge variant="destructive" className="text-[10px]">{alerts.filter(a => a.sev === 'CRITICAL').length} CRITICAL</Badge></div>
+          <div className="space-y-2 max-h-80 overflow-y-auto suop-main-scroll">
+            {alerts.map((a, i) => {
+              const cls = a.sev === 'CRITICAL' ? 'border-rose-300 bg-rose-50' : a.sev === 'HIGH' ? 'border-orange-300 bg-orange-50' : a.sev === 'WARNING' ? 'border-amber-300 bg-amber-50' : 'border-blue-300 bg-blue-50'
+              const txt = a.sev === 'CRITICAL' ? 'text-rose-700' : a.sev === 'HIGH' ? 'text-orange-700' : a.sev === 'WARNING' ? 'text-amber-700' : 'text-blue-700'
+              return (
+                <div key={i} className={`p-2 rounded border ${cls}`}>
+                  <div className="flex items-start justify-between"><span className={`text-[10px] font-bold ${txt}`}>{a.sev}</span><span className="text-[10px] text-muted-foreground">{a.time}</span></div>
+                  <p className="text-xs mt-0.5">{a.msg}</p>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Cross-Dock Operations — Live</h3>
+        <div className="space-y-2">
+          {[
+            { num: 'CD-2026-001', stage: 'CROSS_DOCK_IN_PROGRESS', from: 'DOCK-02', to: 'DOCK-07', progress: 65, eta: '20 min' },
+            { num: 'CD-2026-004', stage: 'OUTBOUND_LOADED', from: 'DOCK-03', to: 'DOCK-06', progress: 88, eta: '5 min' },
+            { num: 'CD-2026-005', stage: 'INBOUND_ARRIVED', from: 'DOCK-COLD-01', to: 'DOCK-COLD-02', progress: 25, eta: '45 min' },
+          ].map(cd => (
+            <div key={cd.num} className="flex items-center gap-3 p-2 border rounded">
+              <span className="font-mono text-xs font-semibold text-blue-700 w-32">{cd.num}</span>
+              <span className="text-[10px] px-2 py-0.5 bg-purple-100 text-purple-700 rounded">{cd.stage.replace(/_/g, ' ')}</span>
+              <div className="flex items-center gap-2 text-xs font-mono"><span className="text-emerald-600">{cd.from}</span><ArrowRight className="h-3 w-3" /><span className="text-amber-600">{cd.to}</span></div>
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[200px]"><div className="h-full bg-purple-500" style={{ width: `${cd.progress}%` }} /></div>
+              <span className="text-xs font-mono w-10">{cd.progress}%</span>
+              <span className="text-xs text-blue-600">ETA: {cd.eta}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 8: Cross-Dock Analytics Module ────────────────
+function CrossDockAnalyticsModule() {
+  const dailyTrend = [
+    { day: 'Mon', crossDock: 18, total: 45, savings: 28500 },
+    { day: 'Tue', crossDock: 22, total: 52, savings: 34200 },
+    { day: 'Wed', crossDock: 28, total: 58, savings: 42800 },
+    { day: 'Thu', crossDock: 24, total: 51, savings: 36500 },
+    { day: 'Fri', crossDock: 32, total: 67, savings: 51200 },
+    { day: 'Sat', crossDock: 19, total: 41, savings: 29800 },
+    { day: 'Sun', crossDock: 12, total: 28, savings: 18400 },
+  ]
+  const maxTotal = Math.max(...dailyTrend.map(d => d.total))
+
+  const topProducts = [
+    { product: 'Shwet Idli Batter', crossDockOps: 42, storageAvoided: 92, savings: 18400 },
+    { product: 'Kaju Katli 500g', crossDockOps: 28, storageAvoided: 76, savings: 12800 },
+    { product: 'Mysore Pak 250g', crossDockOps: 24, storageAvoided: 68, savings: 9600 },
+    { product: 'Gulab Jamun 1kg', crossDockOps: 18, storageAvoided: 52, savings: 7200 },
+    { product: 'Dry Fruit Mix', crossDockOps: 15, storageAvoided: 45, savings: 6800 },
+  ]
+
+  const supplierPerf = [
+    { supplier: 'Sudhamrit Foods Pvt', onTime: 96, avgDelay: 4, crossDockEligible: 92 },
+    { supplier: 'Mysore Sweets Co', onTime: 91, avgDelay: 8, crossDockEligible: 85 },
+    { supplier: 'Shwet Idli Batter', onTime: 98, avgDelay: 2, crossDockEligible: 95 },
+    { supplier: 'Cold Chain Logistics', onTime: 88, avgDelay: 12, crossDockEligible: 78 },
+    { supplier: 'Banu Sweets Supplier', onTime: 82, avgDelay: 18, crossDockEligible: 68 },
+  ]
+
+  const carrierPerf = [
+    { carrier: 'VRL Logistics', onTime: 94, avgTurnaround: 48, util: 78 },
+    { carrier: 'Blue Dart', onTime: 97, avgTurnaround: 32, util: 85 },
+    { carrier: 'In-House Fleet', onTime: 99, avgTurnaround: 28, util: 92 },
+    { carrier: 'Delhivery', onTime: 92, avgTurnaround: 38, util: 71 },
+    { carrier: 'Cold Chain Logistics', onTime: 88, avgTurnaround: 52, util: 64 },
+  ]
+
+  const totalCrossDock = dailyTrend.reduce((a, d) => a + d.crossDock, 0)
+  const totalOps = dailyTrend.reduce((a, d) => a + d.total, 0)
+  const totalSavings = dailyTrend.reduce((a, d) => a + d.savings, 0)
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Cross-Dock Analytics</h2><p className="text-sm text-muted-foreground mt-1">Success rate · storage avoidance · cost savings · supplier &amp; carrier performance</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: 'Cross-Dock Rate', value: `${((totalCrossDock / totalOps) * 100).toFixed(1)}%`, icon: <ArrowLeftRight className="h-5 w-5 text-purple-600" />, change: '+3%' },
+          { label: 'Storage Avoided', value: '426 ops', icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />, change: '+12%' },
+          { label: 'Cost Saved (7d)', value: `₹${totalSavings.toLocaleString('en-IN')}`, icon: <IndianRupee className="h-5 w-5 text-emerald-700" />, change: '+18%' },
+          { label: 'Avg Handling Saved', value: '78m / op', icon: <Clock className="h-5 w-5 text-blue-600" />, change: '+5m' },
+          { label: 'Success Rate', value: '94.2%', icon: <Target className="h-5 w-5 text-orange-600" />, change: '+1.2%' },
+        ].map(s => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center justify-between"><div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">{s.icon}</div><span className="text-xs text-emerald-600">{s.change}</span></div>
+            <p className="text-xs text-muted-foreground mt-2">{s.label}</p><p className="text-xl font-bold">{s.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Daily Cross-Dock vs Total Operations — Last 7 Days</h3>
+        <div className="flex items-end justify-between gap-3 h-56">
+          {dailyTrend.map(d => (
+            <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+              <div className="text-xs font-mono text-emerald-700">₹{(d.savings / 1000).toFixed(1)}k</div>
+              <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end relative">
+                <div className="w-full bg-gradient-to-t from-amber-600 to-amber-400 absolute bottom-0" style={{ height: `${(d.total / maxTotal) * 100}%` }} />
+                <div className="w-full bg-gradient-to-t from-purple-700 to-purple-500 absolute bottom-0" style={{ height: `${(d.crossDock / maxTotal) * 100}%` }} />
+              </div>
+              <div className="text-xs">{d.day}</div>
+              <div className="text-[10px] text-muted-foreground">{d.crossDock}/{d.total}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-2 w-2 bg-purple-500 rounded" />Cross-Dock Ops</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 bg-amber-500 rounded" />Total Ops</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 bg-emerald-600 rounded" />Cost Saved (₹k)</span>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top Cross-Docked Products */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Top Cross-Docked Products</h3>
+          <div className="space-y-2">
+            {topProducts.map((p, i) => (
+              <div key={p.product} className="flex items-center gap-3 p-2 border rounded">
+                <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-slate-400 text-white' : i === 2 ? 'bg-orange-600 text-white' : 'bg-muted'}`}>{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{p.product}</div>
+                  <div className="text-[10px] text-muted-foreground">{p.crossDockOps} ops · {p.storageAvoided}% storage avoided</div>
+                </div>
+                <div className="text-right"><div className="text-sm font-bold text-emerald-700">₹{p.savings.toLocaleString('en-IN')}</div><div className="text-[10px] text-muted-foreground">saved</div></div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* AI Predictions */}
+        <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+            <div><h3 className="font-semibold text-sm">AI Predictions — Future Roadmap</h3><p className="text-xs text-muted-foreground">Predictive analytics for cross-dock optimization</p></div>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-start gap-2 p-2 bg-white/50 rounded"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><div><strong>Dock Prediction:</strong> ML model forecasts dock availability 2 hours ahead — recommend reallocating DOCK-04 maintenance to off-peak (15:00-16:00).</div></div>
+            <div className="flex items-start gap-2 p-2 bg-white/50 rounded"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><div><strong>Vehicle Arrival Prediction:</strong> Suppliers with &gt;15 min avg delay (Banu Sweets) — auto-pad appointment slots by 20 min buffer.</div></div>
+            <div className="flex items-start gap-2 p-2 bg-white/50 rounded"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><div><strong>Congestion Prediction:</strong> Friday 14:00-17:00 is peak yard congestion — pre-stage outbound vehicles 30 min earlier.</div></div>
+            <div className="flex items-start gap-2 p-2 bg-white/50 rounded"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><div><strong>Auto Cross-Dock Suggestion:</strong> Shwet Idli Batter has 95% cross-dock eligibility — enable auto-cross-dock rule for all future inbound.</div></div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Supplier Performance</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr><th className="text-left px-4 py-2 font-medium">Supplier</th><th className="text-left px-4 py-2 font-medium">On-Time %</th><th className="text-left px-4 py-2 font-medium">Avg Delay</th><th className="text-left px-4 py-2 font-medium">CD Eligible</th></tr></thead>
+              <tbody>
+                {supplierPerf.map(s => (
+                  <tr key={s.supplier} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-2 text-xs font-medium">{s.supplier}</td>
+                    <td className="px-4 py-2"><div className="flex items-center gap-2"><span className="font-mono text-xs w-10">{s.onTime}%</span><div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${s.onTime > 95 ? 'bg-emerald-500' : s.onTime > 88 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${s.onTime}%` }} /></div></div></td>
+                    <td className="px-4 py-2 font-mono text-xs"><span className={s.avgDelay > 15 ? 'text-rose-600 font-bold' : s.avgDelay > 8 ? 'text-amber-600' : 'text-emerald-600'}>{s.avgDelay}m</span></td>
+                    <td className="px-4 py-2 font-mono text-xs">{s.crossDockEligible}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Carrier Performance</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr><th className="text-left px-4 py-2 font-medium">Carrier</th><th className="text-left px-4 py-2 font-medium">On-Time %</th><th className="text-left px-4 py-2 font-medium">Turnaround</th><th className="text-left px-4 py-2 font-medium">Utilization</th></tr></thead>
+              <tbody>
+                {carrierPerf.map(c => (
+                  <tr key={c.carrier} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-2 text-xs font-medium">{c.carrier}</td>
+                    <td className="px-4 py-2 font-mono text-xs"><span className={c.onTime > 95 ? 'text-emerald-600 font-bold' : c.onTime > 90 ? 'text-amber-600' : 'text-rose-600'}>{c.onTime}%</span></td>
+                    <td className="px-4 py-2 font-mono text-xs">{c.avgTurnaround}m</td>
+                    <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${c.util > 80 ? 'bg-emerald-500' : c.util > 65 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${c.util}%` }} /></div><span className="font-mono text-xs">{c.util}%</span></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white"><Award className="h-5 w-5" /></div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm">Chief Architect Recommendation — Auto Cross-Docking for Sudhamrit</h3>
+            <p className="text-xs text-muted-foreground mt-1">For high-demand fresh products like Shwet Idli Batter, dairy-based sweets, and other short-shelf-life items, enable Automatic Cross-Docking. When the supplier truck arrives, the system detects pending retail/restaurant orders and routes inventory directly from receiving dock to dispatch dock — skipping warehouse storage entirely. This reduces handling cost, storage space usage, product aging, and delivery lead time — critical for fresh products.</p>
+            <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+              <div className="p-2 bg-white/60 rounded"><div className="text-lg font-bold text-emerald-700">−42%</div><div className="text-[10px] text-muted-foreground">Handling Cost</div></div>
+              <div className="p-2 bg-white/60 rounded"><div className="text-lg font-bold text-blue-700">−68%</div><div className="text-[10px] text-muted-foreground">Product Aging</div></div>
+              <div className="p-2 bg-white/60 rounded"><div className="text-lg font-bold text-purple-700">−55%</div><div className="text-[10px] text-muted-foreground">Delivery Lead Time</div></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -11404,6 +12336,7 @@ export default function Home() {
     goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
     warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', dispatch: 'Dispatch & Shipping',
     waveplanning: 'Wave Planning', taskqueue: 'Task Queue', workforce: 'Workforce Management', equipment: 'Equipment Management', controltower: 'Warehouse Control Tower', sladashboard: 'SLA Dashboard', exceptioncenter: 'Exception Center', workforceanalytics: 'Workforce Analytics',
+    crossdock: 'Cross-Dock Console', truckqueue: 'Truck Queue', dockschedule: 'Dock Schedule', yardmap: 'Yard Map', vehicletracker: 'Vehicle Tracker', gateconsole: 'Gate Console', yardtower: 'Yard Control Tower', crossdockanalytics: 'Cross-Dock Analytics',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -11420,7 +12353,7 @@ export default function Home() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">S</div>
               <div><p className="font-bold text-sm leading-tight">SUOP</p><p className="text-xs text-muted-foreground leading-tight">Sudhastar Unified OS</p></div>
             </div>
-            <ScrollArea className="flex-1 px-3 py-4">
+            <div className="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden suop-sidebar-scroll">
               <nav className="space-y-6">
                 {SIDEBAR_SECTIONS.map(section => (
                   <div key={section.section}>
@@ -11441,7 +12374,7 @@ export default function Home() {
                   </div>
                 ))}
               </nav>
-            </ScrollArea>
+            </div>
             <div className="border-t p-4"><Button variant="ghost" size="sm" onClick={logout} className="w-full">Sign Out</Button></div>
           </>
         )}
@@ -11469,11 +12402,11 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 28 · 239 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 29 · 249 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollBehavior: 'smooth' }}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden suop-main-scroll" style={{ scrollBehavior: 'smooth' }}>
           <main
             className="p-6 mx-auto origin-top"
             style={{
@@ -11518,11 +12451,19 @@ export default function Home() {
             {activeModule === 'sladashboard' && <SLADashboardModule />}
             {activeModule === 'exceptioncenter' && <ExceptionCenterModule />}
             {activeModule === 'workforceanalytics' && <WorkforceAnalyticsModule />}
+            {activeModule === 'crossdock' && <CrossDockConsoleModule />}
+            {activeModule === 'truckqueue' && <TruckQueueModule />}
+            {activeModule === 'dockschedule' && <DockScheduleModule />}
+            {activeModule === 'yardmap' && <YardMapModule />}
+            {activeModule === 'vehicletracker' && <VehicleTrackerModule />}
+            {activeModule === 'gateconsole' && <GateConsoleModule />}
+            {activeModule === 'yardtower' && <YardControlTowerModule />}
+            {activeModule === 'crossdockanalytics' && <CrossDockAnalyticsModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-28 · Part 4 WMS (Warehouse Foundation, Locations, Receiving, Putaway, Picking & Packing, Dispatch, Wave Planning & Task Orchestration) · 239 Database Tables</p>
+              <p className="mt-1">Sprints 1-29 · Part 4 WMS (Warehouse Foundation, Locations, Receiving, Putaway, Picking & Packing, Dispatch, Wave Planning, Cross-Docking & Yard Management) · 249 Database Tables</p>
             </div>
           </main>
         </div>
