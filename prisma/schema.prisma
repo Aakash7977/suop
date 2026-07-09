@@ -6729,3 +6729,225 @@ model ReceivingException {
   @@index([resolutionStatus], map: "idx_re_resolution")
   @@index([status], map: "idx_re_status")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 25 — DIRECTED PUTAWAY, STORAGE OPTIMIZATION & BIN INTELLIGENCE
+// System tells operators WHERE to store inventory — no manual decisions
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Putaway Task Engine ───────────────────────
+model WmsPutawayTask {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskNumber      String   @unique @map("task_number")
+  taskDate        DateTime @default(now()) @map("task_date")
+  // ─── Type ───
+  putawayType     String   @map("putaway_type") // STANDARD, DIRECTED, CROSS_DOCK, PALLET, BULK, COLD_STORAGE, HAZARDOUS, OVERFLOW, RETURNS
+  // ─── Scope ───
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseName   String   @map("warehouse_name")
+  sourceZoneId    String?  @db.Uuid @map("source_zone_id")
+  sourceZoneName  String?  @map("source_zone_name")
+  destZoneId      String?  @db.Uuid @map("dest_zone_id")
+  destZoneName    String?  @map("dest_zone_name")
+  // ─── Reference ───
+  referenceType   String?  @map("reference_type") // GRN, RECEIVING_TASK, TRANSFER, RETURN
+  referenceNumber String?  @map("reference_number")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  priorityScore   Int      @default(50) @map("priority_score")
+  // ─── Assignment ───
+  assignedToId    String?  @db.Uuid @map("assigned_to_id")
+  assignedToName  String?  @map("assigned_to_name")
+  assignedAt      DateTime? @map("assigned_at")
+  // ─── Status ───
+  status          String   @default("PENDING") // PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, PARTIALLY_COMPLETED, CANCELLED, EXCEPTION
+  // ─── Summary ───
+  totalLines      Int      @default(0) @map("total_lines")
+  completedLines  Int      @default(0) @map("completed_lines")
+  totalPallets    Int?     @map("total_pallets")
+  totalCartons    Int?     @map("total_cartons")
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  completedQty    Decimal  @db.Decimal(18, 4) @default(0) @map("completed_qty")
+  // ─── Timing ───
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Multi-step ───
+  currentStep     String   @default("RECEIVING_AREA") @map("current_step") // RECEIVING_AREA, QUALITY_AREA, BUFFER_AREA, FINAL_BIN
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  lines           WmsPutawayTaskLine[]
+
+  @@map("wms_putaway_tasks")
+  @@index([putawayType, status], map: "idx_wpt_type_status")
+  @@index([warehouseId, status], map: "idx_wpt_wh_status")
+  @@index([assignedToId, status], map: "idx_wpt_assignee_status")
+  @@index([status, priority], map: "idx_wpt_status_priority")
+}
+
+model WmsPutawayTaskLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  putawayTaskId   String   @db.Uuid @map("putaway_task_id")
+  lineOrder       Int      @map("line_order")
+  // ─── Item ───
+  productId       String   @db.Uuid @map("product_id")
+  productName     String   @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  lotId           String?  @db.Uuid @map("lot_id")
+  serialNumberId  String?  @db.Uuid @map("serial_number_id")
+  uomId           String?  @db.Uuid @map("uom_id")
+  uomName         String?  @map("uom_name")
+  // ─── Quantity ───
+  quantity        Decimal  @db.Decimal(18, 4)
+  palletCount     Int?     @map("pallet_count")
+  cartonCount     Int?     @map("carton_count")
+  // ─── Bin recommendation ───
+  recommendedBinId String? @db.Uuid @map("recommended_bin_id")
+  recommendedBinCode String? @map("recommended_bin_code")
+  recommendationScore Decimal? @db.Decimal(5, 2) @map("recommendation_score")
+  recommendationReason String? @map("recommendation_reason")
+  // ─── Actual ───
+  actualBinId     String?  @db.Uuid @map("actual_bin_id")
+  actualBinCode   String?  @map("actual_bin_code")
+  isManualOverride Boolean @default(false) @map("is_manual_override")
+  overrideReason  String?  @map("override_reason")
+  overrideApprovedById String? @db.Uuid @map("override_approved_by_id")
+  // ─── Barcode ───
+  barcodeScanned  String?  @map("barcode_scanned")
+  binBarcodeScanned String? @map("bin_barcode_scanned")
+  // ─── Status ───
+  lineStatus      String   @default("PENDING") @map("line_status") // PENDING, IN_PROGRESS, COMPLETED, SKIPPED, EXCEPTION
+  // ─── Exception ───
+  exceptionType   String?  @map("exception_type") // BIN_FULL, BIN_BLOCKED, BIN_DAMAGED, WRONG_SCAN, WRONG_PRODUCT, TEMP_MISMATCH, CAPACITY_EXCEEDED, MANUAL_OVERRIDE
+  exceptionNotes  String?  @map("exception_notes")
+  // ─── Timing ───
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  putawayTask     WmsPutawayTask @relation(fields: [putawayTaskId], references: [id], onDelete: Cascade)
+
+  @@map("wms_putaway_task_lines")
+  @@index([putawayTaskId, lineOrder], map: "idx_wptl_task_order")
+  @@index([productId, batchId], map: "idx_wptl_product_batch")
+  @@index([lineStatus], map: "idx_wptl_status")
+}
+
+// ─── Epic 2: Putaway Rules & Bin Recommendation ─────────
+model WmsPutawayRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  ruleCode        String   @unique @map("rule_code")
+  ruleName        String   @map("rule_name")
+  description     String?
+  // ─── Strategy ───
+  strategy        String   // FIFO, FEFO, ABC, DEDICATED, RANDOM, FIXED_BIN, CLOSEST_EMPTY, FAST_MOVING_ZONE, SLOW_MOVING_ZONE
+  priority        Int      @default(100)
+  // ─── Conditions ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  productCategoryId String? @db.Uuid @map("product_category_id")
+  productType     String?  @map("product_type") // RAW_MATERIAL, FINISHED_GOODS, PACKAGING
+  temperatureZone String?  @map("temperature_zone") // AMBIENT, CHILLED, FROZEN
+  // ─── Factors (weights for scoring) ───
+  capacityWeight  Int      @default(30) @map("capacity_weight")
+  distanceWeight  Int      @default(25) @map("distance_weight")
+  compatibilityWeight Int  @default(20) @map("compatibility_weight")
+  temperatureWeight Int   @default(15) @map("temperature_weight")
+  pickingEfficiencyWeight Int @default(10) @map("picking_efficiency_weight")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("wms_putaway_rules")
+  @@index([strategy, status], map: "idx_wpr_strategy_status")
+  @@index([warehouseId], map: "idx_wpr_warehouse")
+}
+
+// ─── Epic 6: Pallet & Forklift Operations ──────────────
+model WarehousePallet {
+  id              String   @id @default(uuid()) @db.Uuid
+  palletCode      String   @unique @map("pallet_code")
+  barcode         String?  @unique
+  qrCode          String?  @unique @map("qr_code")
+  // ─── Type ───
+  palletType      String   @default("STANDARD") @map("pallet_type") // STANDARD, EURO, CHEP, CUSTOM
+  // ─── Physical ───
+  maxWeightKg     Decimal  @db.Decimal(12, 2) @default(1000) @map("max_weight_kg")
+  currentWeightKg Decimal  @db.Decimal(12, 2) @default(0) @map("current_weight_kg")
+  lengthCm        Decimal? @db.Decimal(8, 2) @map("length_cm")
+  widthCm         Decimal? @db.Decimal(8, 2) @map("width_cm")
+  heightCm        Decimal? @db.Decimal(8, 2) @map("height_cm")
+  // ─── Contents ───
+  productCount    Int      @default(0) @map("product_count")
+  totalCartons    Int      @default(0) @map("total_cartons")
+  totalUnits      Decimal  @db.Decimal(18, 4) @default(0) @map("total_units")
+  // ─── Location ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  currentBinId    String?  @db.Uuid @map("current_bin_id")
+  currentBinCode  String?  @map("current_bin_code")
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, LOADED, IN_TRANSIT, STORED, EMPTY, DAMAGED
+  // ─── Reference ───
+  putawayTaskId   String?  @db.Uuid @map("putaway_task_id")
+  receivingTaskId String?  @db.Uuid @map("receiving_task_id")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouse_pallets")
+  @@index([status], map: "idx_wp_status")
+  @@index([warehouseId, status], map: "idx_wp_wh_status")
+  @@index([putawayTaskId], map: "idx_wp_task")
+}
+
+model ForkliftTask {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskNumber      String   @unique @map("task_number")
+  taskDate        DateTime @default(now()) @map("task_date")
+  // ─── Type ───
+  taskType        String   @map("task_type") // PUTAWAY, PICKING, TRANSFER, LOADING, UNLOADING
+  // ─── Reference ───
+  putawayTaskId   String?  @db.Uuid @map("putaway_task_id")
+  referenceType   String?  @map("reference_type")
+  referenceNumber String?  @map("reference_number")
+  // ─── Pallet ───
+  palletId        String?  @db.Uuid @map("pallet_id")
+  palletCode      String?  @map("pallet_code")
+  // ─── Route ───
+  fromLocation    String?  @map("from_location")
+  fromBinCode     String?  @map("from_bin_code")
+  toLocation      String?  @map("to_location")
+  toBinCode       String?  @map("to_bin_code")
+  // ─── Assignment ───
+  operatorId      String?  @db.Uuid @map("operator_id")
+  operatorName    String?  @map("operator_name")
+  forkliftId      String?  @db.Uuid @map("forklift_id")
+  forkliftCode    String?  @map("forklift_code")
+  assignedAt      DateTime? @map("assigned_at")
+  // ─── Status ───
+  status          String   @default("QUEUED") // QUEUED, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED
+  // ─── Timing ───
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationMinutes Int?     @map("duration_minutes")
+  travelDistanceM Decimal? @db.Decimal(8, 2) @map("travel_distance_m")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("forklift_tasks")
+  @@index([taskType, status], map: "idx_ft_type_status")
+  @@index([operatorId, status], map: "idx_ft_operator_status")
+  @@index([status, priority], map: "idx_ft_status_priority")
+  @@index([putawayTaskId], map: "idx_ft_putaway")
+}

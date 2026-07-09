@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils'
 // ─── Types ──────────────────────────────────────────────
 type ModuleKey =
   | 'dashboard' | 'organization' | 'rbac' | 'products' | 'pim' | 'commercial' | 'partners' | 'identification' | 'governance' | 'inventory' | 'goodsreceipt' | 'stockissue' | 'transfer' | 'adjustment' | 'reservation' | 'cyclecount' | 'batchmgmt' | 'costing'
-  | 'warehouse' | 'whlocations' | 'receiving' | 'manufacturing' | 'quality'
+  | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
 
@@ -101,7 +101,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
           <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
             <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
           </Button>
-          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-24 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins, Receiving & ASN Engine)</p>
+          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-25 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence)</p>
         </Card>
       </div>
     </div>
@@ -151,6 +151,7 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Warehouse', icon: <Warehouse className="h-4 w-4" />, module: 'warehouse', available: true },
       { name: 'Locations & Bins', icon: <MapPinIcon className="h-4 w-4" />, module: 'whlocations', available: true },
       { name: 'Receiving', icon: <Truck className="h-4 w-4" />, module: 'receiving', available: true },
+      { name: 'Putaway', icon: <PackageOpen className="h-4 w-4" />, module: 'putaway', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -206,6 +207,7 @@ function DashboardModule() {
     { sprint: 'Sprint 22', name: 'Warehouse Foundation — PART 4 BEGUN', status: 'done', desc: 'Warehouse Master, Zones, Temperature Zones & Logs, Capacity, Calendar, Access Rules, Warehouse Rules — 6-warehouse Mumbai architecture' },
     { sprint: 'Sprint 23', name: 'Warehouse Location & Bin Management', status: 'done', desc: 'Aisles, Racks, Shelves, Bins, Bin Capacity Logs — 6-level hierarchy (Warehouse→Zone→Aisle→Rack→Shelf→Bin), scanner-first workflow, bin capacity alerts' },
     { sprint: 'Sprint 24', name: 'Receiving Operations, Dock Management & ASN Engine', status: 'done', desc: 'Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — 9-step receiving flow (Supplier→ASN→Appt→Gate→Dock→Unload→Verify→GRN→Putaway), pallet-level receiving' },
+    { sprint: 'Sprint 25', name: 'Directed Putaway, Storage Optimization & Bin Intelligence Engine', status: 'done', desc: 'WmsPutawayTask, PutawayRules (FEFO/FIFO/ABC/CLOSEST_EMPTY/FAST_MOVING_ZONE), WarehousePallet, ForkliftTask — system-directed bin recommendation, 5-factor bin scoring (Capacity + Distance + Compatibility + Temperature + Picking Efficiency), pallet-level putaway, cross-dock & cold-storage flows' },
   ]
 
   return (
@@ -214,16 +216,16 @@ function DashboardModule() {
         <h2 className="text-2xl font-bold mb-1">Welcome to SUOP Admin</h2>
         <p className="text-slate-300 text-sm max-w-3xl">
           Sudhastar Unified Operating Platform — Enterprise Operating System for Food Manufacturing,
-          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 24 of 33)</span>.
+          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 25 of 33)</span>.
         </p>
         <div className="flex items-center gap-6 mt-4">
-          <div className="text-center"><p className="text-3xl font-bold">204</p><p className="text-xs text-slate-400">Database Tables</p></div>
+          <div className="text-center"><p className="text-3xl font-bold">209</p><p className="text-xs text-slate-400">Database Tables</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">821</p><p className="text-xs text-slate-400">Architecture Entities</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">249</p><p className="text-xs text-slate-400">Arch. Decisions</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
-          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">24</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
+          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">25</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
         </div>
       </Card>
 
@@ -8021,10 +8023,10 @@ function ReceivingModule() {
             <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><Truck className="h-7 w-7" /> Receiving Operations & ASN Engine</h2>
             <p className="text-emerald-100 text-sm max-w-3xl">Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — the physical warehouse receiving layer. 9-step flow: Supplier → ASN → Appointment → Gate Entry → Dock → Unload → Verify → Goods Receipt → Putaway.</p>
           </div>
-          <Badge className="bg-emerald-500 text-emerald-950 hover:bg-emerald-500">Sprint 24 · Part 4 WMS</Badge>
+          <Badge className="bg-emerald-500 text-emerald-950 hover:bg-emerald-500">Sprint 25 · Part 4 WMS</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-4 mt-4">
-          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 24 · 204 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 25 · 209 tables</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 ASNs</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Appointments</Badge>
           <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">3 Gate Entries</Badge>
@@ -8306,6 +8308,501 @@ function ReceivingModule() {
   )
 }
 
+// ─── Directed Putaway Module (Sprint 25) ───────────────────
+type PutawayTab = 'overview' | 'tasks' | 'rules' | 'pallets' | 'forklift'
+
+const PUTAWAY_TYPE_COLORS: Record<string, string> = {
+  DIRECTED: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  CROSS_DOCK: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  PALLET: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  COLD_STORAGE: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  RETURNS: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  STANDARD: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+  LOADING: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  UNLOADING: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  REPLENISHMENT: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300',
+}
+
+const PUTAWAY_STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-slate-500 text-white',
+  ASSIGNED: 'bg-cyan-600 text-white',
+  IN_PROGRESS: 'bg-purple-600 text-white',
+  COMPLETED: 'bg-emerald-600 text-white',
+  PARTIALLY_COMPLETED: 'bg-amber-500 text-white',
+  CANCELLED: 'bg-red-600 text-white',
+  AVAILABLE: 'bg-emerald-600 text-white',
+}
+
+const PUTAWAY_PRIORITY_COLORS: Record<string, string> = {
+  EMERGENCY: 'bg-red-600 text-white',
+  HIGH: 'bg-amber-500 text-white',
+  NORMAL: 'bg-blue-500 text-white',
+  LOW: 'bg-slate-400 text-white',
+}
+
+const STRATEGY_COLORS: Record<string, string> = {
+  FEFO: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+  FIFO: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  ABC: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  CLOSEST_EMPTY: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  FAST_MOVING_ZONE: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+}
+
+const PALLET_TYPE_COLORS: Record<string, string> = {
+  STANDARD: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  EURO: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  CHEP: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  PLASTIC: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  DISPOSABLE: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+}
+
+const PALLET_STATUS_COLORS: Record<string, string> = {
+  AVAILABLE: 'bg-emerald-600 text-white',
+  LOADED: 'bg-amber-500 text-white',
+  STORED: 'bg-blue-600 text-white',
+  EMPTY: 'bg-slate-400 text-white',
+  QUARANTINED: 'bg-red-600 text-white',
+}
+
+const FORKLIFT_TYPE_COLORS: Record<string, string> = {
+  PUTAWAY: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  TRANSFER: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  PICKING: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  LOADING: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  UNLOADING: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+}
+
+const FORKLIFT_STATUS_COLORS: Record<string, string> = {
+  ASSIGNED: 'bg-cyan-600 text-white',
+  IN_PROGRESS: 'bg-purple-600 text-white',
+  COMPLETED: 'bg-emerald-600 text-white',
+  CANCELLED: 'bg-red-600 text-white',
+}
+
+const PUTAWAY_TASKS = [
+  { id: 'pt-001', taskNumber: 'PT-2026-0001', taskDate: '2026-07-09 08:30', type: 'DIRECTED', warehouseName: 'Raw Material Warehouse', sourceZone: 'RECEIVING_DOCK_R01', destZone: 'BULK_STORAGE_A', referenceNumber: 'ASN-2026-0001', priority: 'HIGH', status: 'IN_PROGRESS', assignedOperatorName: 'Rajesh Kumar (FL-01)', totalLines: 3, totalPallets: 12, totalQuantity: 1800, putawayProgress: 33, estTimeMin: 45, actualTimeMin: 28 },
+  { id: 'pt-002', taskNumber: 'PT-2026-0002', taskDate: '2026-07-09 07:00', type: 'CROSS_DOCK', warehouseName: 'Finished Goods Warehouse', sourceZone: 'RECEIVING_DOCK_R02', destZone: 'DISPATCH_STAGING_D01', referenceNumber: 'ST-2026-0018', priority: 'EMERGENCY', status: 'COMPLETED', assignedOperatorName: 'Sunil Yadav (FL-02)', totalLines: 2, totalPallets: 8, totalQuantity: 960, putawayProgress: 100, estTimeMin: 30, actualTimeMin: 35 },
+  { id: 'pt-003', taskNumber: 'PT-2026-0003', taskDate: '2026-07-09 09:00', type: 'PALLET', warehouseName: 'Finished Goods Warehouse', sourceZone: 'RECEIVING_DOCK_R02', destZone: 'HIGH_RACK_C', referenceNumber: 'PRD-2026-0156', priority: 'NORMAL', status: 'ASSIGNED', assignedOperatorName: 'Deepak Sharma (FL-03)', totalLines: 2, totalPallets: 6, totalQuantity: 720, putawayProgress: 0, estTimeMin: 25, actualTimeMin: null },
+  { id: 'pt-004', taskNumber: 'PT-2026-0004', taskDate: '2026-07-09 05:30', type: 'COLD_STORAGE', warehouseName: 'Cold Storage Warehouse', sourceZone: 'RECEIVING_DOCK_C01', destZone: 'CHILLED_ZONE_B', referenceNumber: 'PO-2026-0051', priority: 'HIGH', status: 'PARTIALLY_COMPLETED', assignedOperatorName: 'Imran Sheikh (FL-04)', totalLines: 4, totalPallets: 10, totalQuantity: 400, putawayProgress: 50, estTimeMin: 60, actualTimeMin: 48 },
+  { id: 'pt-005', taskNumber: 'PT-2026-0005', taskDate: '2026-07-08 16:00', type: 'RETURNS', warehouseName: 'Finished Goods Warehouse', sourceZone: 'RETURNS_INSPECTION_R', destZone: 'RETURNS_QUARANTINE_Q', referenceNumber: 'SR-2026-0093', priority: 'LOW', status: 'PENDING', assignedOperatorName: null, totalLines: 1, totalPallets: 1, totalQuantity: 24, putawayProgress: 0, estTimeMin: 15, actualTimeMin: null },
+  { id: 'pt-006', taskNumber: 'PT-2026-0006', taskDate: '2026-07-09 10:00', type: 'STANDARD', warehouseName: 'Packaging Warehouse', sourceZone: 'RECEIVING_DOCK_P01', destZone: 'PACKAGING_PICKFACE_P', referenceNumber: 'PO-2026-0062', priority: 'NORMAL', status: 'PENDING', assignedOperatorName: null, totalLines: 2, totalPallets: 5, totalQuantity: 500, putawayProgress: 0, estTimeMin: 30, actualTimeMin: null },
+]
+
+const PUTAWAY_RULES = [
+  { id: 'pr-001', ruleCode: 'PA-FEFO-001', ruleName: 'First Expiry First Out (FEFO)', strategy: 'FEFO', priority: 1, isActive: true, description: 'Directs putaway of expiry-sensitive products to bins closest to the pick face, ensuring the soonest-to-expire batch is picked first.', factorWeights: { capacity: 20, distance: 30, compatibility: 15, temperature: 20, pickingEfficiency: 15 }, conditions: ['productCategory IN (FOOD, PERISHABLE, CHILLED)', 'shelfLifeDays <= 180', 'hasExpiryDate = true'], targetZones: ['PICK_FACE_A', 'PICK_FACE_B'] },
+  { id: 'pr-002', ruleCode: 'PA-FIFO-002', ruleName: 'First In First Out (FIFO)', strategy: 'FIFO', priority: 2, isActive: true, description: 'Directs putaway of non-perishable raw materials to bins by arrival date — earliest received stock is positioned for first picking.', factorWeights: { capacity: 25, distance: 25, compatibility: 20, temperature: 10, pickingEfficiency: 20 }, conditions: ['productCategory = RAW_MATERIAL', 'shelfLifeDays > 180', 'perishableFlag = false'], targetZones: ['BULK_STORAGE_A', 'BULK_STORAGE_B'] },
+  { id: 'pr-003', ruleCode: 'PA-ABC-003', ruleName: 'ABC Classification Slotting', strategy: 'ABC', priority: 3, isActive: true, description: 'A-class items (top 20% revenue, fast-moving) slotted to ground-floor pick-face bins for maximum picking speed. B-class to mid-level. C-class to high reserve racks.', factorWeights: { capacity: 15, distance: 35, compatibility: 10, temperature: 5, pickingEfficiency: 35 }, conditions: ['abcClass IN (A, B, C)', 'fsnClass IN (FAST, MEDIUM)'], targetZones: ['PICK_FACE_A', 'PICK_FACE_B', 'HIGH_RACK_C', 'HIGH_RACK_D'] },
+  { id: 'pr-004', ruleCode: 'PA-CLSEMPTY-004', ruleName: 'Closest Empty Bin', strategy: 'CLOSEST_EMPTY', priority: 4, isActive: true, description: 'Fallback rule for items with no specific slotting rule — finds the geographically closest empty bin to the receiving dock, minimizing forklift travel distance.', factorWeights: { capacity: 30, distance: 40, compatibility: 15, temperature: 5, pickingEfficiency: 10 }, conditions: ['ruleFallback = true', 'binStatus = EMPTY'], targetZones: ['ANY_ZONE'] },
+  { id: 'pr-005', ruleCode: 'PA-FASTMV-005', ruleName: 'Fast-Moving Zone Slotting', strategy: 'FAST_MOVING_ZONE', priority: 5, isActive: true, description: 'Fast-moving SKUs (FSN=FAST, >50 picks/month) slotted to the fast-moving zone near the dispatch dock for outbound velocity optimization.', factorWeights: { capacity: 10, distance: 30, compatibility: 10, temperature: 5, pickingEfficiency: 45 }, conditions: ['fsnClass = FAST', 'monthlyPickCount > 50', 'dispatchFrequency = DAILY'], targetZones: ['FAST_MOVING_ZONE_F', 'DISPATCH_STAGING_D01'] },
+]
+
+const WAREHOUSE_PALLETS = [
+  { id: 'plt-001', palletBarcode: 'PAL-2026-0001', qrCode: 'QR-PAL-2026-0001', palletType: 'STANDARD', warehouseName: 'Raw Material Warehouse', currentLocation: 'A-05-03-12', currentZone: 'BULK_STORAGE_A', maxWeightKg: 1000, currentWeightKg: 750, weightUtilizationPct: 75, maxCartons: 48, currentCartons: 36, productCount: 3, cartonCount: 36, status: 'LOADED' },
+  { id: 'plt-002', palletBarcode: 'PAL-2026-0002', qrCode: 'QR-PAL-2026-0002', palletType: 'EURO', warehouseName: 'Raw Material Warehouse', currentLocation: 'RECV-STG-01', currentZone: 'RECEIVING', maxWeightKg: 1200, currentWeightKg: 950, weightUtilizationPct: 79, maxCartons: 48, currentCartons: 40, productCount: 2, cartonCount: 40, status: 'LOADED' },
+  { id: 'plt-003', palletBarcode: 'PAL-2026-0003', qrCode: 'QR-PAL-2026-0003', palletType: 'CHEP', warehouseName: 'Cold Storage Warehouse', currentLocation: 'B-CS-02-08', currentZone: 'CHILLED_ZONE_B', maxWeightKg: 1100, currentWeightKg: 880, weightUtilizationPct: 80, maxCartons: 40, currentCartons: 32, productCount: 2, cartonCount: 32, status: 'STORED' },
+  { id: 'plt-004', palletBarcode: 'PAL-2026-0004', qrCode: 'QR-PAL-2026-0004', palletType: 'STANDARD', warehouseName: 'Finished Goods Warehouse', currentLocation: 'PALLET_POOL_01', currentZone: 'POOL', maxWeightKg: 1000, currentWeightKg: 0, weightUtilizationPct: 0, maxCartons: 48, currentCartons: 0, productCount: 0, cartonCount: 0, status: 'EMPTY' },
+]
+
+const FORKLIFT_TASKS_DATA = [
+  { id: 'ft-001', taskNumber: 'FT-2026-0001', type: 'PUTAWAY', status: 'IN_PROGRESS', priority: 'HIGH', assignedOperatorName: 'Rajesh Kumar', forkliftCode: 'FL-01', forkliftType: 'COUNTERBALANCE', putawayTaskNumber: 'PT-2026-0001', fromLocation: 'RECV-STG-01', toLocation: 'A-05-03-12', fromZone: 'RECEIVING', toZone: 'BULK_STORAGE_A', palletBarcode: 'PAL-2026-0001', travelDistanceM: 85, estTravelTimeMin: 4, actualTravelTimeMin: 5, durationMin: 28 },
+  { id: 'ft-002', taskNumber: 'FT-2026-0002', type: 'TRANSFER', status: 'COMPLETED', priority: 'NORMAL', assignedOperatorName: 'Sunil Yadav', forkliftCode: 'FL-02', forkliftType: 'REACH_TRUCK', putawayTaskNumber: 'PT-2026-0002', fromLocation: 'RECV-STG-02', toLocation: 'D-01-STG-01', fromZone: 'RECEIVING', toZone: 'DISPATCH_STAGING_D01', palletBarcode: 'PAL-2026-0004', travelDistanceM: 45, estTravelTimeMin: 2, actualTravelTimeMin: 2, durationMin: 35 },
+  { id: 'ft-003', taskNumber: 'FT-2026-0003', type: 'PUTAWAY', status: 'ASSIGNED', priority: 'NORMAL', assignedOperatorName: 'Deepak Sharma', forkliftCode: 'FL-03', forkliftType: 'COUNTERBALANCE', putawayTaskNumber: 'PT-2026-0003', fromLocation: 'RECV-STG-02', toLocation: 'C-08-04-22', fromZone: 'RECEIVING', toZone: 'HIGH_RACK_C', palletBarcode: 'PAL-2026-0002', travelDistanceM: 120, estTravelTimeMin: 6, actualTravelTimeMin: null, durationMin: null },
+  { id: 'ft-004', taskNumber: 'FT-2026-0004', type: 'PICKING', status: 'IN_PROGRESS', priority: 'EMERGENCY', assignedOperatorName: 'Imran Sheikh', forkliftCode: 'FL-04', forkliftType: 'ORDER_PICKER', putawayTaskNumber: null, fromLocation: 'B-CS-02-08', toLocation: 'PICK_FACE_A', fromZone: 'CHILLED_ZONE_B', toZone: 'PICK_FACE_A', palletBarcode: 'PAL-2026-0003', travelDistanceM: 65, estTravelTimeMin: 3, actualTravelTimeMin: 4, durationMin: 18 },
+  { id: 'ft-005', taskNumber: 'FT-2026-0005', type: 'TRANSFER', status: 'COMPLETED', priority: 'HIGH', assignedOperatorName: 'Rajesh Kumar', forkliftCode: 'FL-01', forkliftType: 'COUNTERBALANCE', putawayTaskNumber: 'PT-2026-0004', fromLocation: 'RECV-CHILL-01', toLocation: 'B-CS-02-08', fromZone: 'RECEIVING', toZone: 'CHILLED_ZONE_B', palletBarcode: 'PAL-2026-0003', travelDistanceM: 95, estTravelTimeMin: 5, actualTravelTimeMin: 6, durationMin: 48 },
+]
+
+function PutawayModule() {
+  const [tab, setTab] = useState<PutawayTab>('overview')
+  const tabs: Array<{ key: PutawayTab; label: string; icon: React.ReactNode }> = [
+    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+    { key: 'tasks', label: 'Tasks', icon: <PackageOpen className="h-4 w-4" /> },
+    { key: 'rules', label: 'Rules', icon: <Workflow className="h-4 w-4" /> },
+    { key: 'pallets', label: 'Pallets', icon: <Boxes className="h-4 w-4" /> },
+    { key: 'forklift', label: 'Forklift', icon: <Truck className="h-4 w-4" /> },
+  ]
+
+  const overviewStats = [
+    { label: 'Pending Putaway', value: '2', sub: 'Awaiting assignment', icon: <PackageOpen className="h-5 w-5 text-amber-600" />, color: 'text-amber-600' },
+    { label: 'In Progress', value: '2', sub: '1 DIRECTED · 1 COLD_STORAGE', icon: <ActivityIcon className="h-5 w-5 text-purple-600" />, color: 'text-purple-600' },
+    { label: 'Completed Today', value: '1', sub: 'CROSS_DOCK · 35 min', icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />, color: 'text-emerald-600' },
+    { label: 'Avg Putaway Time', value: '33 min', sub: 'SLA: ≤ 45 min', icon: <Clock className="h-5 w-5 text-indigo-600" />, color: 'text-indigo-600' },
+    { label: 'Active Forklifts', value: '2', sub: 'FL-01, FL-04 in motion', icon: <Truck className="h-5 w-5 text-cyan-600" />, color: 'text-cyan-600' },
+    { label: 'Pallets In Use', value: '3', sub: '2 LOADED · 1 STORED', icon: <Boxes className="h-5 w-5 text-blue-600" />, color: 'text-blue-600' },
+    { label: 'Putaway Accuracy', value: '98.2%', sub: 'SLA: ≥ 97%', icon: <Gauge className="h-5 w-5 text-teal-600" />, color: 'text-teal-600' },
+    { label: 'Exception Count', value: '3', sub: '1 wrong-bin · 2 over-capacity', icon: <AlertTriangle className="h-5 w-5 text-red-600" />, color: 'text-red-600' },
+  ]
+
+  const directedFlow = [
+    { label: 'Receiving', icon: <Truck className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+    { label: 'Inspection', icon: <ClipboardCheck className="h-4 w-4" />, color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300' },
+    { label: 'Putaway Task', icon: <PackageOpen className="h-4 w-4" />, color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+    { label: 'Bin Recommendation', icon: <MapPin className="h-4 w-4" />, color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+    { label: 'Barcode Scan', icon: <ScanLine className="h-4 w-4" />, color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
+    { label: 'Confirm Location', icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+    { label: 'Inventory Updated', icon: <Database className="h-4 w-4" />, color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' },
+  ]
+
+  const operatorFlow = [
+    'Operator Login', 'Assigned Tasks', 'Task #', 'Scan Pallet', 'System Shows Zone/Aisle/Rack/Shelf/Bin', 'Scan Bin', 'Complete',
+  ]
+
+  const binScoringFactors = [
+    { factor: 'Capacity', weight: 20, color: 'bg-blue-500', desc: 'Current weight/volume utilization vs bin max' },
+    { factor: 'Distance', weight: 30, color: 'bg-purple-500', desc: 'Forklift travel meters from receiving to bin' },
+    { factor: 'Product Compatibility', weight: 15, color: 'bg-amber-500', desc: 'Same-product batching, allergen separation, batch isolation' },
+    { factor: 'Temperature Match', weight: 20, color: 'bg-cyan-500', desc: 'Chilled bins for chilled products, ambient for ambient' },
+    { factor: 'Picking Efficiency', weight: 15, color: 'bg-emerald-500', desc: 'Pick-face proximity for fast movers, high-rack for slow' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white border-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2"><PackageOpen className="h-7 w-7" /> Directed Putaway, Storage Optimization & Bin Intelligence</h2>
+            <p className="text-indigo-100 text-sm max-w-3xl">The system — not the operator — decides WHERE each pallet goes. Operator follows step-by-step instructions: Scan Pallet → System shows Zone/Aisle/Rack/Shelf/Bin → Drive to bin → Scan bin → Confirm. Eliminates the 30% putaway-error rate of operator-decided putaway.</p>
+          </div>
+          <Badge className="bg-purple-500 text-purple-950 hover:bg-purple-500">Sprint 25 · Part 4 WMS</Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 25 · 209 tables</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">6 Putaway Tasks</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">5 Putaway Rules</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">4 Warehouse Pallets</Badge>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">5 Forklift Tasks</Badge>
+        </div>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map(t => (
+          <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)} className="gap-2">
+            {t.icon}{t.label}
+          </Button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {overviewStats.map(s => (
+              <Card key={s.label} className="p-4">
+                <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+                <p className="text-2xl font-bold">{s.value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2"><Workflow className="h-5 w-5" /> Directed Putaway Flow — 7 Steps</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {directedFlow.map((step, i) => (
+                <div key={step.label} className="flex items-center gap-2">
+                  <div className={cn('flex flex-col items-center gap-1 px-3 py-2 rounded-lg min-w-[110px]', step.color)}>
+                    {step.icon}
+                    <span className="text-xs font-medium text-center">{step.label}</span>
+                  </div>
+                  {i < directedFlow.length - 1 && <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">Directed Putaway flips the traditional model: the system computes the optimal bin and directs the operator step-by-step. The operator only confirms each step with a barcode scan — eliminating wrong-bin, wrong-zone, and mixed-product errors.</p>
+          </Card>
+
+          <Card className="p-6 border-l-4 border-l-amber-500">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400 flex-shrink-0">
+                <PackageOpen className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 flex items-center gap-2">Task-Driven Operator Workflow <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">Chief Architect Recommendation</Badge></h3>
+                <p className="text-sm text-muted-foreground mb-4">The operator&apos;s day is task-driven: login → see assigned tasks → pick a task → scan the pallet → system shows the target Zone/Aisle/Rack/Shelf/Bin → drive there → scan bin to confirm → mark task complete. No decision-making, no paper, no wrong bins.</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {operatorFlow.map((step, i) => (
+                    <div key={step} className="flex items-center gap-2">
+                      <Badge variant="outline" className="px-3 py-1.5 text-xs font-medium">{i + 1}. {step}</Badge>
+                      {i < operatorFlow.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 border-l-4 border-l-purple-500">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400 flex-shrink-0">
+                <Layers3 className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold mb-1 flex items-center gap-2">Bin Scoring Formula <Badge className="bg-purple-500 text-purple-950 hover:bg-purple-500">5-Factor Scoring</Badge></h3>
+                <p className="text-sm text-muted-foreground mb-4">Every candidate bin is scored 0-100 on five factors. The engine recommends the highest-scoring bin. Best Bin Score = Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency.</p>
+                <div className="space-y-3">
+                  {binScoringFactors.map(f => (
+                    <div key={f.factor} className="flex items-center gap-3">
+                      <div className="w-44 flex-shrink-0">
+                        <p className="text-xs font-medium">{f.factor}</p>
+                        <p className="text-xs text-muted-foreground">{f.desc}</p>
+                      </div>
+                      <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+                        <div className={cn('h-full flex items-center justify-end pr-2 text-xs font-bold text-white', f.color)} style={{ width: `${f.weight * 2}%` }}>
+                          {f.weight}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+                  <ArrowRight className="h-3 w-3" />
+                  <span>Best Bin Score = Capacity (20) + Distance (30) + Product Compatibility (15) + Temperature Match (20) + Picking Efficiency (15) = 100</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {tab === 'tasks' && (
+        <Card className="p-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="pb-2 pr-3 font-medium">Task #</th>
+                  <th className="pb-2 pr-3 font-medium">Type</th>
+                  <th className="pb-2 pr-3 font-medium">Status</th>
+                  <th className="pb-2 pr-3 font-medium">Warehouse</th>
+                  <th className="pb-2 pr-3 font-medium">Source → Dest Zone</th>
+                  <th className="pb-2 pr-3 font-medium">Priority</th>
+                  <th className="pb-2 pr-3 font-medium">Operator</th>
+                  <th className="pb-2 pr-3 font-medium">Lines/Plts/Qty</th>
+                  <th className="pb-2 pr-3 font-medium">Progress</th>
+                  <th className="pb-2 pr-3 font-medium">Timing</th>
+                  <th className="pb-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PUTAWAY_TASKS.map(t => (
+                  <tr key={t.id} className="border-b hover:bg-muted/50">
+                    <td className="py-3 pr-3 font-mono text-xs font-semibold">{t.taskNumber}<div className="text-xs text-muted-foreground font-sans">{t.taskDate}</div></td>
+                    <td className="py-3 pr-3"><Badge className={cn('text-xs', PUTAWAY_TYPE_COLORS[t.type])}>{t.type}</Badge></td>
+                    <td className="py-3 pr-3"><Badge className={cn('text-xs', PUTAWAY_STATUS_COLORS[t.status])}>{t.status}</Badge></td>
+                    <td className="py-3 pr-3 text-xs">{t.warehouseName}<div className="text-xs text-muted-foreground">{t.referenceNumber}</div></td>
+                    <td className="py-3 pr-3 text-xs"><span className="font-mono">{t.sourceZone}</span><ArrowRight className="inline h-3 w-3 mx-1 text-muted-foreground" /><span className="font-mono">{t.destZone}</span></td>
+                    <td className="py-3 pr-3"><Badge className={cn('text-xs', PUTAWAY_PRIORITY_COLORS[t.priority])}>{t.priority}</Badge></td>
+                    <td className="py-3 pr-3 text-xs">{t.assignedOperatorName || <span className="text-muted-foreground italic">Unassigned</span>}</td>
+                    <td className="py-3 pr-3 text-xs">{t.totalLines}L · {t.totalPallets}P · {t.totalQuantity} qty</td>
+                    <td className="py-3 pr-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                          <div className={cn('h-full', t.putawayProgress === 100 ? 'bg-emerald-500' : t.putawayProgress > 0 ? 'bg-purple-500' : 'bg-slate-300')} style={{ width: `${t.putawayProgress}%` }} />
+                        </div>
+                        <span className="text-xs font-medium">{t.putawayProgress}%</span>
+                      </div>
+                    </td>
+                    <td className="py-3 pr-3 text-xs">est {t.estTimeMin}m{t.actualTimeMin !== null ? <div className="text-muted-foreground">act {t.actualTimeMin}m</div> : null}</td>
+                    <td className="py-3">
+                      {t.status === 'IN_PROGRESS' ? (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Complete</Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+            <span>Types:</span>
+            {Object.keys(PUTAWAY_TYPE_COLORS).slice(0, 6).map(t => (
+              <Badge key={t} className={cn('text-xs', PUTAWAY_TYPE_COLORS[t])}>{t}</Badge>
+            ))}
+            <span className="ml-3">Statuses:</span>
+            {Object.keys(PUTAWAY_STATUS_COLORS).slice(0, 7).map(s => (
+              <Badge key={s} className={cn('text-xs', PUTAWAY_STATUS_COLORS[s])}>{s}</Badge>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {tab === 'rules' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {PUTAWAY_RULES.map(r => {
+            const total = r.factorWeights.capacity + r.factorWeights.distance + r.factorWeights.compatibility + r.factorWeights.temperature + r.factorWeights.pickingEfficiency
+            const factors = [
+              { name: 'Capacity', value: r.factorWeights.capacity, color: 'bg-blue-500' },
+              { name: 'Distance', value: r.factorWeights.distance, color: 'bg-purple-500' },
+              { name: 'Compatibility', value: r.factorWeights.compatibility, color: 'bg-amber-500' },
+              { name: 'Temperature', value: r.factorWeights.temperature, color: 'bg-cyan-500' },
+              { name: 'Picking Eff.', value: r.factorWeights.pickingEfficiency, color: 'bg-emerald-500' },
+            ]
+            return (
+              <Card key={r.id} className="p-5">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={cn('text-xs', STRATEGY_COLORS[r.strategy])}>{r.strategy}</Badge>
+                      <Badge variant="outline" className="text-xs">Priority {r.priority}</Badge>
+                      {r.isActive && <Badge className="bg-emerald-600 text-white text-xs">Active</Badge>}
+                    </div>
+                    <p className="font-mono text-xs text-muted-foreground">{r.ruleCode}</p>
+                    <h3 className="font-semibold mt-1">{r.ruleName}</h3>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">{r.description}</p>
+                <div className="space-y-2 mb-3">
+                  {factors.map(f => (
+                    <div key={f.name} className="flex items-center gap-2">
+                      <div className="w-24 text-xs text-muted-foreground">{f.name}</div>
+                      <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                        <div className={cn('h-full', f.color)} style={{ width: `${(f.value / total) * 100}%` }} />
+                      </div>
+                      <div className="w-8 text-xs font-semibold text-right">{f.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Conditions</p>
+                    <div className="flex flex-wrap gap-1">
+                      {r.conditions.map((c, i) => (
+                        <Badge key={i} variant="outline" className="text-xs font-mono">{c}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Target Zones</p>
+                    <div className="flex flex-wrap gap-1">
+                      {r.targetZones.map((z, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">{z}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+
+      {tab === 'pallets' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {WAREHOUSE_PALLETS.map(p => (
+            <Card key={p.id} className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                    <Boxes className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-mono text-sm font-bold">{p.palletBarcode}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{p.qrCode}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className={cn('text-xs', PALLET_TYPE_COLORS[p.palletType])}>{p.palletType}</Badge>
+                      <Badge className={cn('text-xs', PALLET_STATUS_COLORS[p.status])}>{p.status}</Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Current Location</p>
+                  <p className="font-mono text-sm font-semibold">{p.currentLocation}</p>
+                  <p className="text-xs text-muted-foreground">{p.currentZone}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs mb-3">
+                <div>
+                  <p className="text-muted-foreground">Weight (kg)</p>
+                  <p className="font-semibold">{p.currentWeightKg} / {p.maxWeightKg}</p>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                    <div className={cn('h-full', p.weightUtilizationPct >= 90 ? 'bg-red-500' : p.weightUtilizationPct >= 70 ? 'bg-amber-500' : 'bg-emerald-500')} style={{ width: `${p.weightUtilizationPct}%` }} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{p.weightUtilizationPct}% utilization</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Cartons</p>
+                  <p className="font-semibold">{p.currentCartons} / {p.maxCartons}</p>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                    <div className={cn('h-full', p.currentCartons === 0 ? 'bg-slate-300' : 'bg-blue-500')} style={{ width: `${p.maxCartons > 0 ? (p.currentCartons / p.maxCartons) * 100 : 0}%` }} />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{p.productCount} products · {p.cartonCount} cartons</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-2">
+                <MapPin className="h-3 w-3" />
+                <span>{p.warehouseName} · {p.currentZone}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {tab === 'forklift' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {FORKLIFT_TASKS_DATA.map(f => (
+            <Card key={f.id} className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge className={cn('text-xs', FORKLIFT_TYPE_COLORS[f.type])}>{f.type}</Badge>
+                    <Badge className={cn('text-xs', FORKLIFT_STATUS_COLORS[f.status])}>{f.status}</Badge>
+                    <Badge className={cn('text-xs', PUTAWAY_PRIORITY_COLORS[f.priority])}>{f.priority}</Badge>
+                  </div>
+                  <p className="font-mono text-sm font-bold">{f.taskNumber}</p>
+                  <p className="text-xs text-muted-foreground">{f.forkliftCode} · {f.forkliftType}{f.putawayTaskNumber ? ` · ${f.putawayTaskNumber}` : ''}</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <Truck className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="p-2 rounded-md bg-muted/50">
+                  <p className="text-xs text-muted-foreground">From</p>
+                  <p className="font-mono text-xs font-semibold">{f.fromLocation}</p>
+                  <p className="text-xs text-muted-foreground">{f.fromZone}</p>
+                </div>
+                <div className="p-2 rounded-md bg-muted/50">
+                  <p className="text-xs text-muted-foreground">To</p>
+                  <p className="font-mono text-xs font-semibold">{f.toLocation}</p>
+                  <p className="text-xs text-muted-foreground">{f.toZone}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mb-3 text-xs">
+                <span className="text-muted-foreground">Route:</span>
+                <span className="font-mono">{f.fromLocation}</span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                <span className="font-mono">{f.toLocation}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-xs mb-3">
+                <div>
+                  <p className="text-muted-foreground">Operator</p>
+                  <p className="font-semibold text-xs">{f.assignedOperatorName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Distance</p>
+                  <p className="font-semibold text-xs">{f.travelDistanceM} m</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Duration</p>
+                  <p className="font-semibold text-xs">{f.durationMin !== null ? `${f.durationMin} min` : `${f.estTravelTimeMin} min est`}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="text-xs text-muted-foreground font-mono">{f.palletBarcode}</span>
+                {f.status === 'IN_PROGRESS' && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><CheckCircle2 className="h-3 w-3" /> Complete</Button>
+                )}
+                {f.status === 'COMPLETED' && <Badge variant="outline" className="text-xs text-emerald-700">Done</Badge>}
+                {f.status === 'ASSIGNED' && <Badge variant="outline" className="text-xs">Awaiting Start</Badge>}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Settings Module (Sprint 2) ─────────────────────────
 function SettingsModule() {
   return (
@@ -8379,7 +8876,7 @@ export default function Home() {
     partners: 'Business Partners', identification: 'Identification & Traceability',
     governance: 'Data Governance', inventory: 'Inventory Engine',
     goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
-    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', manufacturing: 'Manufacturing',
+    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
     ai: 'AI Copilot',
@@ -8428,7 +8925,7 @@ export default function Home() {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
           <div className="flex-1" />
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 24 · 204 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 25 · 209 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
@@ -8456,11 +8953,12 @@ export default function Home() {
             {activeModule === 'warehouse' && <WarehouseModule />}
             {activeModule === 'whlocations' && <WarehouseLocationModule />}
             {activeModule === 'receiving' && <ReceivingModule />}
+            {activeModule === 'putaway' && <PutawayModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-24 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins, Receiving & ASN Engine) · 204 Database Tables</p>
+              <p className="mt-1">Sprints 1-25 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence) · 209 Database Tables</p>
             </div>
           </main>
         </ScrollArea>

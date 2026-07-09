@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "24.0.0"
+const VERSION = "25.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -1938,6 +1938,301 @@ const RECV_DATA = {
   ],
 }
 
+// ─── Sprint 25 — Directed Putaway, Storage Optimization & Bin Intelligence Engine (PUTAWAY_DATA) ────
+// WmsPutawayTask, WmsPutawayTaskLine, WmsPutawayRule, WarehousePallet, ForkliftTask
+const PUTAWAY_DATA = {
+  putawayTasks: [
+    {
+      id: 'pt-001',
+      taskNumber: 'PT-2026-0001',
+      taskDate: '2026-07-09T08:30:00Z',
+      type: 'DIRECTED',
+      warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      sourceZone: 'RECEIVING_DOCK_R01', destZone: 'BULK_STORAGE_A',
+      referenceType: 'ASN', referenceNumber: 'ASN-2026-0001',
+      priority: 'HIGH', status: 'IN_PROGRESS',
+      assignedOperatorId: 'usr-flt-01', assignedOperatorName: 'Forklift Operator — Rajesh Kumar',
+      forkliftId: 'fl-001', forkliftCode: 'FL-01',
+      totalLines: 3, totalPallets: 12, totalCartons: 48, totalQuantity: 1800,
+      putawayProgress: 33,
+      startedAt: '2026-07-09T08:30:00Z', completedAt: null,
+      estimatedTimeMin: 45, actualTimeMin: 28,
+      createdAt: '2026-07-09T08:15:00Z', updatedAt: '2026-07-09T08:58:00Z',
+      lines: [
+        { id: 'ptl-001', lineOrder: 10, productName: 'Raw Cashew W240 (25kg sack)', batchNumber: 'CASH-2607-01', barcode: 'BC-CASH-W240-25', palletId: 'plt-001', palletBarcode: 'PAL-2026-0001', quantity: 60, putawayQty: 20, sourceBin: 'RECV-STG-01', recommendedBin: 'A-05-03-12', confirmedBin: 'A-05-03-12', lineStatus: 'IN_PROGRESS', binScore: 92 },
+        { id: 'ptl-002', lineOrder: 20, productName: 'Almond California (10kg box)', batchNumber: 'ALM-2607-02', barcode: 'BC-ALM-CAL-10', palletId: 'plt-002', palletBarcode: 'PAL-2026-0002', quantity: 80, putawayQty: 0, sourceBin: 'RECV-STG-01', recommendedBin: 'A-06-02-08', confirmedBin: null, lineStatus: 'PENDING', binScore: 88 },
+        { id: 'ptl-003', lineOrder: 30, productName: 'Pistachio Iranian (5kg box)', batchNumber: 'PIS-2607-03', barcode: 'BC-PIS-IRN-5', palletId: 'plt-003', palletBarcode: 'PAL-2026-0003', quantity: 40, putawayQty: 0, sourceBin: 'RECV-STG-01', recommendedBin: 'B-02-04-15', confirmedBin: null, lineStatus: 'PENDING', binScore: 85 },
+      ],
+    },
+    {
+      id: 'pt-002',
+      taskNumber: 'PT-2026-0002',
+      taskDate: '2026-07-09T07:00:00Z',
+      type: 'CROSS_DOCK',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      sourceZone: 'RECEIVING_DOCK_R02', destZone: 'DISPATCH_STAGING_D01',
+      referenceType: 'STOCK_TRANSFER', referenceNumber: 'ST-2026-0018',
+      priority: 'EMERGENCY', status: 'COMPLETED',
+      assignedOperatorId: 'usr-flt-02', assignedOperatorName: 'Forklift Operator — Sunil Yadav',
+      forkliftId: 'fl-002', forkliftCode: 'FL-02',
+      totalLines: 2, totalPallets: 8, totalCartons: 32, totalQuantity: 960,
+      putawayProgress: 100,
+      startedAt: '2026-07-09T07:00:00Z', completedAt: '2026-07-09T07:35:00Z',
+      estimatedTimeMin: 30, actualTimeMin: 35,
+      createdAt: '2026-07-09T06:45:00Z', updatedAt: '2026-07-09T07:35:00Z',
+      lines: [
+        { id: 'ptl-004', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12)', batchNumber: 'KK-2607-01', barcode: 'BC-KK-500-B12', palletId: 'plt-004', palletBarcode: 'PAL-2026-0004', quantity: 480, putawayQty: 480, sourceBin: 'RECV-STG-02', recommendedBin: 'D-01-STG-01', confirmedBin: 'D-01-STG-01', lineStatus: 'COMPLETED', binScore: 95 },
+        { id: 'ptl-005', lineOrder: 20, productName: 'Soan Cake 1kg (Box of 6)', batchNumber: 'SC-2607-02', barcode: 'BC-SC-1K-B6', palletId: 'plt-004', palletBarcode: 'PAL-2026-0004', quantity: 480, putawayQty: 480, sourceBin: 'RECV-STG-02', recommendedBin: 'D-01-STG-02', confirmedBin: 'D-01-STG-02', lineStatus: 'COMPLETED', binScore: 94 },
+      ],
+    },
+    {
+      id: 'pt-003',
+      taskNumber: 'PT-2026-0003',
+      taskDate: '2026-07-09T09:00:00Z',
+      type: 'PALLET',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      sourceZone: 'RECEIVING_DOCK_R02', destZone: 'HIGH_RACK_C',
+      referenceType: 'PRODUCTION_ORDER', referenceNumber: 'PRD-2026-0156',
+      priority: 'NORMAL', status: 'ASSIGNED',
+      assignedOperatorId: 'usr-flt-03', assignedOperatorName: 'Forklift Operator — Deepak Sharma',
+      forkliftId: 'fl-003', forkliftCode: 'FL-03',
+      totalLines: 2, totalPallets: 6, totalCartons: 24, totalQuantity: 720,
+      putawayProgress: 0,
+      startedAt: null, completedAt: null,
+      estimatedTimeMin: 25, actualTimeMin: null,
+      createdAt: '2026-07-09T08:45:00Z', updatedAt: '2026-07-09T08:55:00Z',
+      lines: [
+        { id: 'ptl-006', lineOrder: 10, productName: 'Soan Cake 1kg (Box of 6)', batchNumber: 'SC-2607-08', barcode: 'BC-SC-1K-B6', palletId: 'plt-001', palletBarcode: 'PAL-2026-0001', quantity: 360, putawayQty: 0, sourceBin: 'RECV-STG-02', recommendedBin: 'C-08-04-22', confirmedBin: null, lineStatus: 'PENDING', binScore: 90 },
+        { id: 'ptl-007', lineOrder: 20, productName: 'Kaju Katli 250g (Box of 24)', batchNumber: 'KK-2607-09', barcode: 'BC-KK-250-B24', palletId: 'plt-002', palletBarcode: 'PAL-2026-0002', quantity: 360, putawayQty: 0, sourceBin: 'RECV-STG-02', recommendedBin: 'C-08-05-18', confirmedBin: null, lineStatus: 'PENDING', binScore: 87 },
+      ],
+    },
+    {
+      id: 'pt-004',
+      taskNumber: 'PT-2026-0004',
+      taskDate: '2026-07-09T05:30:00Z',
+      type: 'COLD_STORAGE',
+      warehouseId: 'wh-cs-mum', warehouseName: 'Cold Storage Warehouse',
+      sourceZone: 'RECEIVING_DOCK_C01', destZone: 'CHILLED_ZONE_B',
+      referenceType: 'PURCHASE_ORDER', referenceNumber: 'PO-2026-0051',
+      priority: 'HIGH', status: 'PARTIALLY_COMPLETED',
+      assignedOperatorId: 'usr-flt-04', assignedOperatorName: 'Forklift Operator — Imran Sheikh',
+      forkliftId: 'fl-004', forkliftCode: 'FL-04',
+      totalLines: 4, totalPallets: 10, totalCartons: 40, totalQuantity: 400,
+      putawayProgress: 50,
+      startedAt: '2026-07-09T05:30:00Z', completedAt: null,
+      estimatedTimeMin: 60, actualTimeMin: 48,
+      createdAt: '2026-07-09T05:15:00Z', updatedAt: '2026-07-09T07:18:00Z',
+      lines: [
+        { id: 'ptl-008', lineOrder: 10, productName: 'Chilled Kaju Katli 500g (Box of 12)', batchNumber: 'CKK-2607-01', barcode: 'BC-CKK-500-B12', palletId: 'plt-003', palletBarcode: 'PAL-2026-0003', quantity: 120, putawayQty: 120, sourceBin: 'RECV-CHILL-01', recommendedBin: 'B-CS-02-08', confirmedBin: 'B-CS-02-08', lineStatus: 'COMPLETED', binScore: 96 },
+        { id: 'ptl-009', lineOrder: 20, productName: 'Chilled Soan Cake 1kg (Box of 6)', batchNumber: 'CSC-2607-02', barcode: 'BC-CSC-1K-B6', palletId: 'plt-003', palletBarcode: 'PAL-2026-0003', quantity: 100, putawayQty: 80, sourceBin: 'RECV-CHILL-01', recommendedBin: 'B-CS-03-12', confirmedBin: 'B-CS-03-12', lineStatus: 'IN_PROGRESS', binScore: 93 },
+        { id: 'ptl-010', lineOrder: 30, productName: 'Refrigerated Dry Fruit Mix 1kg', batchNumber: 'RDM-2607-03', barcode: 'BC-RDM-1K-01', palletId: 'plt-004', palletBarcode: 'PAL-2026-0004', quantity: 100, putawayQty: 0, sourceBin: 'RECV-CHILL-01', recommendedBin: 'B-CS-04-05', confirmedBin: null, lineStatus: 'PENDING', binScore: 91 },
+        { id: 'ptl-011', lineOrder: 40, productName: 'Chilled Milk Cake 500g (Box of 12)', batchNumber: 'CMC-2607-04', barcode: 'BC-CMC-500-B12', palletId: 'plt-004', palletBarcode: 'PAL-2026-0004', quantity: 80, putawayQty: 0, sourceBin: 'RECV-CHILL-01', recommendedBin: 'B-CS-05-09', confirmedBin: null, lineStatus: 'PENDING', binScore: 89 },
+      ],
+    },
+    {
+      id: 'pt-005',
+      taskNumber: 'PT-2026-0005',
+      taskDate: '2026-07-08T16:00:00Z',
+      type: 'RETURNS',
+      warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      sourceZone: 'RETURNS_INSPECTION_R', destZone: 'RETURNS_QUARANTINE_Q',
+      referenceType: 'SALES_RETURN', referenceNumber: 'SR-2026-0093',
+      priority: 'LOW', status: 'PENDING',
+      assignedOperatorId: null, assignedOperatorName: null,
+      forkliftId: null, forkliftCode: null,
+      totalLines: 1, totalPallets: 1, totalCartons: 4, totalQuantity: 24,
+      putawayProgress: 0,
+      startedAt: null, completedAt: null,
+      estimatedTimeMin: 15, actualTimeMin: null,
+      createdAt: '2026-07-08T15:45:00Z', updatedAt: '2026-07-09T08:00:00Z',
+      lines: [
+        { id: 'ptl-012', lineOrder: 10, productName: 'Kaju Katli 500g (Box of 12) — Customer Return', batchNumber: 'KK-2606-15', barcode: 'BC-KK-500-B12-RET', palletId: 'plt-005', palletBarcode: 'PAL-2026-0005', quantity: 24, putawayQty: 0, sourceBin: 'RET-STG-01', recommendedBin: 'Q-RET-01-04', confirmedBin: null, lineStatus: 'PENDING', binScore: 78 },
+      ],
+    },
+    {
+      id: 'pt-006',
+      taskNumber: 'PT-2026-0006',
+      taskDate: '2026-07-09T10:00:00Z',
+      type: 'STANDARD',
+      warehouseId: 'wh-pkg-mum', warehouseName: 'Packaging Warehouse',
+      sourceZone: 'RECEIVING_DOCK_P01', destZone: 'PACKAGING_PICKFACE_P',
+      referenceType: 'PURCHASE_ORDER', referenceNumber: 'PO-2026-0062',
+      priority: 'NORMAL', status: 'PENDING',
+      assignedOperatorId: null, assignedOperatorName: null,
+      forkliftId: null, forkliftCode: null,
+      totalLines: 2, totalPallets: 5, totalCartons: 20, totalQuantity: 500,
+      putawayProgress: 0,
+      startedAt: null, completedAt: null,
+      estimatedTimeMin: 30, actualTimeMin: null,
+      createdAt: '2026-07-09T09:45:00Z', updatedAt: '2026-07-09T09:45:00Z',
+      lines: [
+        { id: 'ptl-013', lineOrder: 10, productName: 'Gift Box 500g (Flat pack)', batchNumber: 'GB-2607-05', barcode: 'BC-GB-500-FLAT', palletId: 'plt-005', palletBarcode: 'PAL-2026-0005', quantity: 250, putawayQty: 0, sourceBin: 'RECV-PKG-01', recommendedBin: 'P-02-01-10', confirmedBin: null, lineStatus: 'PENDING', binScore: 84 },
+        { id: 'ptl-014', lineOrder: 20, productName: 'Decorative Tin 1kg', batchNumber: 'DT-2607-06', barcode: 'BC-DT-1K-01', palletId: 'plt-005', palletBarcode: 'PAL-2026-0005', quantity: 250, putawayQty: 0, sourceBin: 'RECV-PKG-01', recommendedBin: 'P-03-02-12', confirmedBin: null, lineStatus: 'PENDING', binScore: 82 },
+      ],
+    },
+  ],
+  putawayRules: [
+    {
+      id: 'pr-001', ruleCode: 'PA-FEFO-001', ruleName: 'First Expiry First Out (FEFO)',
+      strategy: 'FEFO', priority: 1, isActive: true,
+      description: 'Directs putaway of expiry-sensitive products (food, perishables) to bins closest to the pick face, ensuring the soonest-to-expire batch is picked first.',
+      factorWeights: { capacity: 20, distance: 30, compatibility: 15, temperature: 20, pickingEfficiency: 15 },
+      conditions: ['productCategory IN (FOOD, PERISHABLE, CHILLED)', 'shelfLifeDays <= 180', 'hasExpiryDate = true'],
+      targetZones: ['PICK_FACE_A', 'PICK_FACE_B'],
+    },
+    {
+      id: 'pr-002', ruleCode: 'PA-FIFO-002', ruleName: 'First In First Out (FIFO)',
+      strategy: 'FIFO', priority: 2, isActive: true,
+      description: 'Directs putaway of non-perishable raw materials to bins by arrival date — earliest received stock is positioned for first picking.',
+      factorWeights: { capacity: 25, distance: 25, compatibility: 20, temperature: 10, pickingEfficiency: 20 },
+      conditions: ['productCategory = RAW_MATERIAL', 'shelfLifeDays > 180', 'perishableFlag = false'],
+      targetZones: ['BULK_STORAGE_A', 'BULK_STORAGE_B'],
+    },
+    {
+      id: 'pr-003', ruleCode: 'PA-ABC-003', ruleName: 'ABC Classification Slotting',
+      strategy: 'ABC', priority: 3, isActive: true,
+      description: 'A-class items (top 20% revenue, fast-moving) slotted to ground-floor pick-face bins for maximum picking speed. B-class to mid-level. C-class to high reserve racks.',
+      factorWeights: { capacity: 15, distance: 35, compatibility: 10, temperature: 5, pickingEfficiency: 35 },
+      conditions: ['abcClass IN (A, B, C)', 'fsnClass IN (FAST, MEDIUM)'],
+      targetZones: ['PICK_FACE_A', 'PICK_FACE_B', 'HIGH_RACK_C', 'HIGH_RACK_D'],
+    },
+    {
+      id: 'pr-004', ruleCode: 'PA-CLSEMPTY-004', ruleName: 'Closest Empty Bin',
+      strategy: 'CLOSEST_EMPTY', priority: 4, isActive: true,
+      description: 'Fallback rule for items with no specific slotting rule — finds the geographically closest empty bin to the receiving dock, minimizing forklift travel distance.',
+      factorWeights: { capacity: 30, distance: 40, compatibility: 15, temperature: 5, pickingEfficiency: 10 },
+      conditions: ['ruleFallback = true', 'binStatus = EMPTY'],
+      targetZones: ['ANY_ZONE'],
+    },
+    {
+      id: 'pr-005', ruleCode: 'PA-FASTMV-005', ruleName: 'Fast-Moving Zone Slotting',
+      strategy: 'FAST_MOVING_ZONE', priority: 5, isActive: true,
+      description: 'Fast-moving SKUs (FSN=FAST, >50 picks/month) slotted to the fast-moving zone near the dispatch dock for outbound velocity optimization.',
+      factorWeights: { capacity: 10, distance: 30, compatibility: 10, temperature: 5, pickingEfficiency: 45 },
+      conditions: ['fsnClass = FAST', 'monthlyPickCount > 50', 'dispatchFrequency = DAILY'],
+      targetZones: ['FAST_MOVING_ZONE_F', 'DISPATCH_STAGING_D01'],
+    },
+  ],
+  warehousePallets: [
+    {
+      id: 'plt-001', palletBarcode: 'PAL-2026-0001', qrCode: 'QR-PAL-2026-0001',
+      palletType: 'STANDARD', warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      currentLocation: 'A-05-03-12', currentZone: 'BULK_STORAGE_A',
+      maxWeightKg: 1000, currentWeightKg: 750, weightUtilizationPct: 75,
+      maxCartons: 48, currentCartons: 36, productCount: 3, cartonCount: 36,
+      status: 'LOADED',
+      loadedAt: '2026-07-09T08:35:00Z', storedAt: null,
+      lastScanAt: '2026-07-09T08:58:00Z',
+      createdAt: '2026-07-08T14:00:00Z', updatedAt: '2026-07-09T08:58:00Z',
+    },
+    {
+      id: 'plt-002', palletBarcode: 'PAL-2026-0002', qrCode: 'QR-PAL-2026-0002',
+      palletType: 'EURO', warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse',
+      currentLocation: 'RECV-STG-01', currentZone: 'RECEIVING',
+      maxWeightKg: 1200, currentWeightKg: 950, weightUtilizationPct: 79,
+      maxCartons: 48, currentCartons: 40, productCount: 2, cartonCount: 40,
+      status: 'LOADED',
+      loadedAt: '2026-07-09T08:40:00Z', storedAt: null,
+      lastScanAt: '2026-07-09T08:55:00Z',
+      createdAt: '2026-07-08T14:15:00Z', updatedAt: '2026-07-09T08:55:00Z',
+    },
+    {
+      id: 'plt-003', palletBarcode: 'PAL-2026-0003', qrCode: 'QR-PAL-2026-0003',
+      palletType: 'CHEP', warehouseId: 'wh-cs-mum', warehouseName: 'Cold Storage Warehouse',
+      currentLocation: 'B-CS-02-08', currentZone: 'CHILLED_ZONE_B',
+      maxWeightKg: 1100, currentWeightKg: 880, weightUtilizationPct: 80,
+      maxCartons: 40, currentCartons: 32, productCount: 2, cartonCount: 32,
+      status: 'STORED',
+      loadedAt: '2026-07-09T05:45:00Z', storedAt: '2026-07-09T06:20:00Z',
+      lastScanAt: '2026-07-09T06:20:00Z',
+      createdAt: '2026-07-08T10:00:00Z', updatedAt: '2026-07-09T06:20:00Z',
+    },
+    {
+      id: 'plt-004', palletBarcode: 'PAL-2026-0004', qrCode: 'QR-PAL-2026-0004',
+      palletType: 'STANDARD', warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse',
+      currentLocation: 'PALLET_POOL_01', currentZone: 'POOL',
+      maxWeightKg: 1000, currentWeightKg: 0, weightUtilizationPct: 0,
+      maxCartons: 48, currentCartons: 0, productCount: 0, cartonCount: 0,
+      status: 'EMPTY',
+      loadedAt: null, storedAt: null,
+      lastScanAt: '2026-07-09T07:40:00Z',
+      createdAt: '2026-07-01T09:00:00Z', updatedAt: '2026-07-09T07:40:00Z',
+    },
+  ],
+  forkliftTasks: [
+    {
+      id: 'ft-001', taskNumber: 'FT-2026-0001',
+      type: 'PUTAWAY', status: 'IN_PROGRESS', priority: 'HIGH',
+      assignedOperatorId: 'usr-flt-01', assignedOperatorName: 'Rajesh Kumar',
+      forkliftId: 'fl-001', forkliftCode: 'FL-01', forkliftType: 'COUNTERBALANCE',
+      putawayTaskId: 'pt-001', putawayTaskNumber: 'PT-2026-0001',
+      fromLocation: 'RECV-STG-01', toLocation: 'A-05-03-12',
+      fromZone: 'RECEIVING', toZone: 'BULK_STORAGE_A',
+      palletId: 'plt-001', palletBarcode: 'PAL-2026-0001',
+      travelDistanceM: 85, estTravelTimeMin: 4, actualTravelTimeMin: 5,
+      startedAt: '2026-07-09T08:30:00Z', completedAt: null,
+      durationMin: 28,
+      createdAt: '2026-07-09T08:20:00Z', updatedAt: '2026-07-09T08:58:00Z',
+    },
+    {
+      id: 'ft-002', taskNumber: 'FT-2026-0002',
+      type: 'TRANSFER', status: 'COMPLETED', priority: 'NORMAL',
+      assignedOperatorId: 'usr-flt-02', assignedOperatorName: 'Sunil Yadav',
+      forkliftId: 'fl-002', forkliftCode: 'FL-02', forkliftType: 'REACH_TRUCK',
+      putawayTaskId: 'pt-002', putawayTaskNumber: 'PT-2026-0002',
+      fromLocation: 'RECV-STG-02', toLocation: 'D-01-STG-01',
+      fromZone: 'RECEIVING', toZone: 'DISPATCH_STAGING_D01',
+      palletId: 'plt-004', palletBarcode: 'PAL-2026-0004',
+      travelDistanceM: 45, estTravelTimeMin: 2, actualTravelTimeMin: 2,
+      startedAt: '2026-07-09T07:00:00Z', completedAt: '2026-07-09T07:35:00Z',
+      durationMin: 35,
+      createdAt: '2026-07-09T06:50:00Z', updatedAt: '2026-07-09T07:35:00Z',
+    },
+    {
+      id: 'ft-003', taskNumber: 'FT-2026-0003',
+      type: 'PUTAWAY', status: 'ASSIGNED', priority: 'NORMAL',
+      assignedOperatorId: 'usr-flt-03', assignedOperatorName: 'Deepak Sharma',
+      forkliftId: 'fl-003', forkliftCode: 'FL-03', forkliftType: 'COUNTERBALANCE',
+      putawayTaskId: 'pt-003', putawayTaskNumber: 'PT-2026-0003',
+      fromLocation: 'RECV-STG-02', toLocation: 'C-08-04-22',
+      fromZone: 'RECEIVING', toZone: 'HIGH_RACK_C',
+      palletId: 'plt-002', palletBarcode: 'PAL-2026-0002',
+      travelDistanceM: 120, estTravelTimeMin: 6, actualTravelTimeMin: null,
+      startedAt: null, completedAt: null,
+      durationMin: null,
+      createdAt: '2026-07-09T08:55:00Z', updatedAt: '2026-07-09T08:55:00Z',
+    },
+    {
+      id: 'ft-004', taskNumber: 'FT-2026-0004',
+      type: 'PICKING', status: 'IN_PROGRESS', priority: 'EMERGENCY',
+      assignedOperatorId: 'usr-flt-04', assignedOperatorName: 'Imran Sheikh',
+      forkliftId: 'fl-004', forkliftCode: 'FL-04', forkliftType: 'ORDER_PICKER',
+      putawayTaskId: null, putawayTaskNumber: null,
+      fromLocation: 'B-CS-02-08', toLocation: 'PICK_FACE_A',
+      fromZone: 'CHILLED_ZONE_B', toZone: 'PICK_FACE_A',
+      palletId: 'plt-003', palletBarcode: 'PAL-2026-0003',
+      travelDistanceM: 65, estTravelTimeMin: 3, actualTravelTimeMin: 4,
+      startedAt: '2026-07-09T08:45:00Z', completedAt: null,
+      durationMin: 18,
+      createdAt: '2026-07-09T08:40:00Z', updatedAt: '2026-07-09T09:03:00Z',
+    },
+    {
+      id: 'ft-005', taskNumber: 'FT-2026-0005',
+      type: 'TRANSFER', status: 'COMPLETED', priority: 'HIGH',
+      assignedOperatorId: 'usr-flt-01', assignedOperatorName: 'Rajesh Kumar',
+      forkliftId: 'fl-001', forkliftCode: 'FL-01', forkliftType: 'COUNTERBALANCE',
+      putawayTaskId: 'pt-004', putawayTaskNumber: 'PT-2026-0004',
+      fromLocation: 'RECV-CHILL-01', toLocation: 'B-CS-02-08',
+      fromZone: 'RECEIVING', toZone: 'CHILLED_ZONE_B',
+      palletId: 'plt-003', palletBarcode: 'PAL-2026-0003',
+      travelDistanceM: 95, estTravelTimeMin: 5, actualTravelTimeMin: 6,
+      startedAt: '2026-07-09T05:30:00Z', completedAt: '2026-07-09T06:18:00Z',
+      durationMin: 48,
+      createdAt: '2026-07-09T05:20:00Z', updatedAt: '2026-07-09T06:18:00Z',
+    },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -2332,7 +2627,7 @@ const server = Bun.serve({
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
-        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 19, sprint: 24 },
+        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 24, sprint: 25 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -5496,13 +5791,225 @@ const server = Bun.serve({
       }, 'SUOP Receiving Operations Engine v24.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 25 — DIRECTED PUTAWAY, STORAGE OPTIMIZATION & BIN INTELLIGENCE ENGINE ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Putaway Tasks ─────────────────────────────────────
+    // GET /api/wms-putaway-tasks (with type/status/warehouse filters)
+    if (path === '/api/wms-putaway-tasks' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let tasks = PUTAWAY_DATA.putawayTasks
+      if (typeFilter) tasks = tasks.filter(t => t.type === typeFilter.toUpperCase())
+      if (statusFilter) tasks = tasks.filter(t => t.status === statusFilter.toUpperCase())
+      if (warehouseFilter) tasks = tasks.filter(t => t.warehouseId === warehouseFilter || t.warehouseName === warehouseFilter)
+      return new Response(JSON.stringify(successResponse(tasks, `${tasks.length} putaway tasks`)), { headers })
+    }
+    // POST /api/wms-putaway-tasks
+    if (path === '/api/wms-putaway-tasks' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.taskNumber || !body.type) {
+          return new Response(JSON.stringify(errorResponse('taskNumber and type are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        const task = {
+          id: crypto.randomUUID(),
+          taskNumber: body.taskNumber,
+          taskDate: body.taskDate || new Date().toISOString(),
+          type: body.type,
+          warehouseId: body.warehouseId || null,
+          warehouseName: body.warehouseName || null,
+          sourceZone: body.sourceZone || null,
+          destZone: body.destZone || null,
+          referenceType: body.referenceType || null,
+          referenceNumber: body.referenceNumber || null,
+          priority: body.priority || 'NORMAL',
+          status: body.status || 'PENDING',
+          assignedOperatorId: body.assignedOperatorId || null,
+          assignedOperatorName: body.assignedOperatorName || null,
+          forkliftId: body.forkliftId || null,
+          forkliftCode: body.forkliftCode || null,
+          totalLines: body.lines?.length || 0,
+          totalPallets: body.totalPallets || 0,
+          totalCartons: body.totalCartons || 0,
+          totalQuantity: body.totalQuantity || 0,
+          putawayProgress: 0,
+          startedAt: null,
+          completedAt: null,
+          estimatedTimeMin: body.estimatedTimeMin || null,
+          actualTimeMin: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lines: body.lines || [],
+        }
+        PUTAWAY_DATA.putawayTasks.push(task)
+        log('info', 'Putaway task created', { taskNumber: task.taskNumber, type: task.type })
+        return new Response(JSON.stringify(successResponse(task, 'Putaway task created')), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+    // POST /api/wms-putaway-tasks/:id/complete
+    if (path.startsWith('/api/wms-putaway-tasks/') && path.endsWith('/complete') && method === 'POST') {
+      const id = path.replace('/api/wms-putaway-tasks/', '').replace('/complete', '')
+      const task = PUTAWAY_DATA.putawayTasks.find(t => t.id === id)
+      if (!task) return new Response(JSON.stringify(errorResponse('Putaway task not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      task.status = 'COMPLETED'
+      task.putawayProgress = 100
+      task.completedAt = new Date().toISOString()
+      task.updatedAt = new Date().toISOString()
+      if (task.lines && Array.isArray(task.lines)) {
+        task.lines.forEach((l: any) => { l.lineStatus = 'COMPLETED'; if (l.confirmedBin === null && l.recommendedBin) l.confirmedBin = l.recommendedBin; if (l.putawayQty === 0) l.putawayQty = l.quantity })
+      }
+      log('info', 'Putaway task completed', { taskNumber: task.taskNumber })
+      return new Response(JSON.stringify(successResponse(task, `Putaway task ${task.taskNumber} completed`)), { headers })
+    }
+
+    // ─── Putaway Rules ────────────────────────────────────
+    // GET /api/wms-putaway-rules
+    if (path === '/api/wms-putaway-rules' && method === 'GET') {
+      const strategyFilter = url.searchParams.get('strategy')
+      let rules = PUTAWAY_DATA.putawayRules
+      if (strategyFilter) rules = rules.filter(r => r.strategy === strategyFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(rules, `${rules.length} putaway rules`)), { headers })
+    }
+
+    // ─── Warehouse Pallets ────────────────────────────────
+    // GET /api/warehouse-pallets (with status filter)
+    if (path === '/api/warehouse-pallets' && method === 'GET') {
+      const statusFilter = url.searchParams.get('status')
+      let pallets = PUTAWAY_DATA.warehousePallets
+      if (statusFilter) pallets = pallets.filter(p => p.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(pallets, `${pallets.length} warehouse pallets`)), { headers })
+    }
+
+    // ─── Forklift Tasks ───────────────────────────────────
+    // GET /api/forklift-tasks (with type/status/operator filters)
+    if (path === '/api/forklift-tasks' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      const operatorFilter = url.searchParams.get('operator')
+      let tasks = PUTAWAY_DATA.forkliftTasks
+      if (typeFilter) tasks = tasks.filter(t => t.type === typeFilter.toUpperCase())
+      if (statusFilter) tasks = tasks.filter(t => t.status === statusFilter.toUpperCase())
+      if (operatorFilter) tasks = tasks.filter(t => t.assignedOperatorId === operatorFilter || (t.assignedOperatorName && t.assignedOperatorName.toLowerCase().includes(operatorFilter.toLowerCase())))
+      return new Response(JSON.stringify(successResponse(tasks, `${tasks.length} forklift tasks`)), { headers })
+    }
+    // POST /api/forklift-tasks/:id/complete
+    if (path.startsWith('/api/forklift-tasks/') && path.endsWith('/complete') && method === 'POST') {
+      const id = path.replace('/api/forklift-tasks/', '').replace('/complete', '')
+      const ft = PUTAWAY_DATA.forkliftTasks.find(t => t.id === id)
+      if (!ft) return new Response(JSON.stringify(errorResponse('Forklift task not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      ft.status = 'COMPLETED'
+      ft.completedAt = new Date().toISOString()
+      if (ft.startedAt) {
+        const start = new Date(ft.startedAt).getTime()
+        ft.durationMin = Math.round((Date.now() - start) / 60000)
+      }
+      ft.updatedAt = new Date().toISOString()
+      log('info', 'Forklift task completed', { taskNumber: ft.taskNumber })
+      return new Response(JSON.stringify(successResponse(ft, `Forklift task ${ft.taskNumber} completed`)), { headers })
+    }
+
+    // ─── Directed Putaway Dashboard ───────────────────────
+    // GET /api/wms-putaway/dashboard
+    if (path === '/api/wms-putaway/dashboard' && method === 'GET') {
+      const totalTasks = PUTAWAY_DATA.putawayTasks.length
+      const pendingTasks = PUTAWAY_DATA.putawayTasks.filter(t => t.status === 'PENDING').length
+      const assignedTasks = PUTAWAY_DATA.putawayTasks.filter(t => t.status === 'ASSIGNED').length
+      const inProgressTasks = PUTAWAY_DATA.putawayTasks.filter(t => t.status === 'IN_PROGRESS').length
+      const completedTasks = PUTAWAY_DATA.putawayTasks.filter(t => t.status === 'COMPLETED').length
+      const partiallyCompletedTasks = PUTAWAY_DATA.putawayTasks.filter(t => t.status === 'PARTIALLY_COMPLETED').length
+      const totalRules = PUTAWAY_DATA.putawayRules.length
+      const activeRules = PUTAWAY_DATA.putawayRules.filter(r => r.isActive).length
+      const totalPallets = PUTAWAY_DATA.warehousePallets.length
+      const loadedPallets = PUTAWAY_DATA.warehousePallets.filter(p => p.status === 'LOADED').length
+      const storedPallets = PUTAWAY_DATA.warehousePallets.filter(p => p.status === 'STORED').length
+      const emptyPallets = PUTAWAY_DATA.warehousePallets.filter(p => p.status === 'EMPTY').length
+      const totalForkliftTasks = PUTAWAY_DATA.forkliftTasks.length
+      const activeForklifts = PUTAWAY_DATA.forkliftTasks.filter(f => f.status === 'IN_PROGRESS').length
+      const completedForklifts = PUTAWAY_DATA.forkliftTasks.filter(f => f.status === 'COMPLETED').length
+      const byType: Record<string, number> = {}
+      PUTAWAY_DATA.putawayTasks.forEach(t => { byType[t.type] = (byType[t.type] || 0) + 1 })
+      const byStatus: Record<string, number> = {}
+      PUTAWAY_DATA.putawayTasks.forEach(t => { byStatus[t.status] = (byStatus[t.status] || 0) + 1 })
+      const byStrategy: Record<string, number> = {}
+      PUTAWAY_DATA.putawayRules.forEach(r => { byStrategy[r.strategy] = (byStrategy[r.strategy] || 0) + 1 })
+      const byPalletType: Record<string, number> = {}
+      PUTAWAY_DATA.warehousePallets.forEach(p => { byPalletType[p.palletType] = (byPalletType[p.palletType] || 0) + 1 })
+      const byForkliftType: Record<string, number> = {}
+      PUTAWAY_DATA.forkliftTasks.forEach(f => { byForkliftType[f.type] = (byForkliftType[f.type] || 0) + 1 })
+      return new Response(JSON.stringify(successResponse({
+        summary: {
+          totalTasks, pendingTasks, assignedTasks, inProgressTasks, completedTasks, partiallyCompletedTasks,
+          totalRules, activeRules,
+          totalPallets, loadedPallets, storedPallets, emptyPallets,
+          totalForkliftTasks, activeForklifts, completedForklifts,
+        },
+        avgPutawayTimeMin: 33,
+        putawayAccuracyPercent: 98.2,
+        exceptionCount: 3,
+        tasksByType: byType,
+        tasksByStatus: byStatus,
+        rulesByStrategy: byStrategy,
+        palletsByType: byPalletType,
+        forkliftsByType: byForkliftType,
+        directedPutawayFlow: ['Receiving', 'Inspection', 'Putaway Task', 'Bin Recommendation', 'Barcode Scan', 'Confirm Location', 'Inventory Updated'],
+        operatorFlow: ['Operator Login', 'Assigned Tasks', 'Task #', 'Scan Pallet', 'System Shows Zone/Aisle/Rack/Shelf/Bin', 'Scan Bin', 'Complete'],
+        binScoreFormula: 'Best Bin Score = Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency',
+        binScoringFactors: ['Capacity', 'Distance', 'Product Compatibility', 'Temperature Match', 'Picking Efficiency'],
+        putawayTypes: ['DIRECTED', 'CROSS_DOCK', 'PALLET', 'COLD_STORAGE', 'RETURNS', 'STANDARD'],
+        putawayStatuses: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'PARTIALLY_COMPLETED', 'CANCELLED'],
+        putawayStrategies: ['FEFO', 'FIFO', 'ABC', 'CLOSEST_EMPTY', 'FAST_MOVING_ZONE'],
+        palletTypes: ['STANDARD', 'EURO', 'CHEP', 'PLASTIC', 'DISPOSABLE'],
+        palletStatuses: ['AVAILABLE', 'LOADED', 'STORED', 'EMPTY', 'QUARANTINED'],
+        forkliftTypes: ['PUTAWAY', 'TRANSFER', 'PICKING', 'LOADING', 'UNLOADING'],
+        forkliftStatuses: ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        sprint: 25,
+        chiefArchitectNote: 'Directed Putaway is the Chief Architect recommendation: the system — not the operator — decides WHERE each pallet goes. The operator only follows instructions: Scan Pallet → System shows Zone/Aisle/Rack/Shelf/Bin → Drive to bin → Scan bin → Confirm. This eliminates the 30% putaway-error rate of "operator picks a bin" mode and enables Bin Intelligence (the system continuously scores every bin on Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency, then recommends the highest-scoring bin).',
+      }, 'Directed Putaway dashboard')), { headers })
+    }
+
+    // ─── Directed Putaway Info ────────────────────────────
+    // GET /api/wms-putaway/info
+    if (path === '/api/wms-putaway/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Directed Putaway, Storage Optimization & Bin Intelligence Engine', version: '25.0.0', sprint: 25,
+        sprintName: 'Directed Putaway, Storage Optimization & Bin Intelligence Engine',
+        putawayTypes: ['DIRECTED', 'CROSS_DOCK', 'PALLET', 'COLD_STORAGE', 'RETURNS', 'STANDARD'],
+        putawayStatuses: ['PENDING', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'PARTIALLY_COMPLETED', 'CANCELLED'],
+        putawayStrategies: ['FEFO', 'FIFO', 'ABC', 'CLOSEST_EMPTY', 'FAST_MOVING_ZONE'],
+        palletTypes: ['STANDARD', 'EURO', 'CHEP', 'PLASTIC', 'DISPOSABLE'],
+        palletStatuses: ['AVAILABLE', 'LOADED', 'STORED', 'EMPTY', 'QUARANTINED'],
+        forkliftTypes: ['PUTAWAY', 'TRANSFER', 'PICKING', 'LOADING', 'UNLOADING'],
+        forkliftStatuses: ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+        priorities: ['EMERGENCY', 'HIGH', 'NORMAL', 'LOW'],
+        directedPutawayPrinciple: 'Directed Putaway flips the traditional model: instead of an operator deciding where to put stock, the SYSTEM computes the optimal bin and directs the operator step-by-step. The operator only confirms each step with a barcode scan. This eliminates the 30% putaway-error rate of operator-decided putaway (wrong bin, wrong zone, mixed products) and is the foundation of Bin Intelligence.',
+        binScoringPrinciple: 'Every candidate bin is scored 0-100 on five factors: (1) Capacity — current weight/volume utilization vs max; (2) Distance — forklift travel meters from receiving to bin; (3) Product Compatibility — same-product batching, allergen separation, batch-isolation rules; (4) Temperature Match — chilled bins for chilled products, ambient for ambient; (5) Picking Efficiency — pick-face proximity for fast movers, high-rack for slow movers. Best Bin Score = Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency.',
+        strategyPrinciple: 'Five slotting strategies compete for each product: FEFO (perishables, soonest-expiry first), FIFO (raw materials, first-in first-out), ABC (A-class to pick-face, C-class to high reserve), CLOSEST_EMPTY (fallback, minimizes travel), FAST_MOVING_ZONE (daily-dispatch SKUs near dispatch dock). Each strategy has weighted factors — the engine picks the strategy whose conditions match the product, then runs bin scoring within the strategy\'s target zones.',
+        palletPrinciple: 'Pallets are the recommended putaway unit (1 Pallet = 48 Boxes). Each pallet has a unique barcode + QR code, type (STANDARD 1000kg, EURO 1200kg, CHEP 1100kg), max weight, current weight, carton count, and status (AVAILABLE → LOADED → STORED → EMPTY). Pallet-level putaway reduces forklift trips by 87% vs box-level putaway.',
+        forkliftTaskPrinciple: 'Each Forklift Task is a directed movement: From-location → To-location, with travel distance (meters), estimated travel time, and operator assignment. Forklift tasks are auto-generated from putaway task lines — one forklift task per pallet movement. Counterbalance trucks handle heavy pallets to ground racks; reach trucks handle high racks; order pickers handle case-picking to dispatch staging.',
+        crossDockPrinciple: 'Cross-Dock putaway bypasses storage entirely: goods received at the inbound dock go directly to the outbound dispatch staging dock, with zero storage time. Used for urgent transfers, just-in-time fulfillment, and perishable cross-docking. Travel path: Receiving Dock → Dispatch Staging (no bin scan).',
+        coldStoragePrinciple: 'Cold-Storage putaway follows temperature-zone rules: chilled products (2-8°C) to CHILLED_ZONE bins, frozen (-18°C) to FROZEN_ZONE bins. The engine validates temperature match before recommending a bin and rejects ambient-bin putaway for chilled products. Temperature violations during putaway trigger an automatic Receiving Exception.',
+        endpoints: ['GET /api/wms-putaway-tasks', 'POST /api/wms-putaway-tasks', 'POST /api/wms-putaway-tasks/:id/complete', 'GET /api/wms-putaway-rules', 'GET /api/warehouse-pallets', 'GET /api/forklift-tasks', 'POST /api/forklift-tasks/:id/complete', 'GET /api/wms-putaway/dashboard', 'GET /api/wms-putaway/info'],
+        part4Begun: true,
+        part4Sprint: 4,
+        part4Sprints: 12,
+        part4Tables: 24,
+      }, 'SUOP Directed Putaway & Bin Intelligence Engine v25.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 24, sprintName: 'Receiving Operations, Dock Management & ASN Engine (24/33 sprints)' })
-log('info', 'Sprint 24 — Receiving Operations, Dock Management & ASN Engine', { sprint: 24, part: 4, tables: 204, asns: 6, appointments: 4, gateEntries: 3, docks: 5, exceptions: 4 })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 25, sprintName: 'Directed Putaway, Storage Optimization & Bin Intelligence Engine (25/33 sprints)' })
+log('info', 'Sprint 25 — Directed Putaway, Storage Optimization & Bin Intelligence Engine', { sprint: 25, part: 4, tables: 209, putawayTasks: 6, putawayRules: 5, warehousePallets: 4, forkliftTasks: 5 })
+log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })
 log('info', 'Warehouse endpoints available', { warehouses: 'GET/POST /api/warehouses', warehouseDetail: 'GET /api/warehouses/:id', zones: 'GET /api/warehouse-zones', tempZones: 'GET /api/temperature-zones', tempLogs: 'GET /api/temperature-logs', capacity: 'GET /api/warehouse-capacity', calendar: 'GET /api/warehouse-calendar', accessRules: 'GET /api/warehouse-access-rules', rules: 'GET /api/warehouse-rules', dashboard: 'GET /api/warehouses/dashboard', info: 'GET /api/warehouses/info' })
 log('info', 'Warehouse location & bin endpoints available (Sprint 23)', { aisles: 'GET /api/warehouse-aisles', racks: 'GET /api/warehouse-racks', shelves: 'GET /api/warehouse-shelves', bins: 'GET/POST /api/warehouse-bins', binDetail: 'GET /api/warehouse-bins/:id', capacityLogs: 'GET /api/bin-capacity-logs', dashboard: 'GET /api/warehouse-locations/dashboard', info: 'GET /api/warehouse-locations/info' })

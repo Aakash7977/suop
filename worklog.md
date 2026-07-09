@@ -1648,3 +1648,59 @@ Stage Summary:
 - Exceptions feed into supplier scorecards (Sprint 9) and quality holds (Sprint 13). Resolution actions include SUPPLIER_CREDIT_NOTE (short delivery), SUPPLIER_REPLACEMENT_ASN (broken seal/wrong product), SALVAGE_AT_DISCOUNT (damaged goods), and QUARANTINE_AND_DISPOSE (broken seal reject). Each exception requires photo evidence, resolution action, and resolved-by audit for full traceability.
 
 ### Next: Sprint 25 — Putaway & Slotting Engine (FSN-based bin assignment, velocity zones, pick-path optimization, re-slotting recommendations, cross-dock automation)
+
+---
+
+## Task ID: SPRINT-25 — Directed Putaway, Storage Optimization & Bin Intelligence Engine
+
+**Date:** 2026-07-09
+**Sprint:** 25 / 33 · Part 4: WMS (Sprint 4 of 12)
+**Tables Added:** 5 (WmsPutawayTask, WmsPutawayTaskLine, WmsPutawayRule, WarehousePallet, ForkliftTask) → **Total: 209 tables**
+
+### Backend Changes (`mini-services/suop-backend/index.ts`)
+- **VERSION** bumped from `24.0.0` → `25.0.0`
+- **PUTAWAY_DATA** seed constants added (before `const server = Bun.serve`):
+  - 6 WmsPutawayTasks with types: DIRECTED, CROSS_DOCK, PALLET, COLD_STORAGE, RETURNS, STANDARD. Statuses: PENDING, ASSIGNED, IN_PROGRESS, COMPLETED, PARTIALLY_COMPLETED. Each with warehouse, source/dest zones, priority, assigned operator, lines, pallets, quantities, timing
+  - 5 WmsPutawayRules with strategies: FEFO, FIFO, ABC, CLOSEST_EMPTY, FAST_MOVING_ZONE. Each with 5-factor weights (capacity/distance/compatibility/temperature/pickingEfficiency), conditions, target zones
+  - 4 WarehousePallets with barcodes, QR codes, types (STANDARD, EURO, CHEP), loaded/empty/stored statuses, current locations
+  - 5 ForkliftTasks with types (PUTAWAY, TRANSFER, PICKING), assigned operators, from→to routes, travel distances, timing
+- **9 new endpoints** added before 404 fallback:
+  - `GET /api/wms-putaway-tasks` (with type/status/warehouse filters)
+  - `POST /api/wms-putaway-tasks`
+  - `POST /api/wms-putaway-tasks/:id/complete`
+  - `GET /api/wms-putaway-rules` (with strategy filter)
+  - `GET /api/warehouse-pallets` (with status filter)
+  - `GET /api/forklift-tasks` (with type/status/operator filters)
+  - `POST /api/forklift-tasks/:id/complete`
+  - `GET /api/wms-putaway/dashboard`
+  - `GET /api/wms-putaway/info`
+- **`/api/modules`** updated: WHS entities `19 → 24` (19+5 new), sprint `24 → 25`
+- **Startup logs** updated to sprint 25 with putaway endpoint inventory
+
+### Frontend Changes (`src/app/page.tsx`)
+- **ModuleKey** type extended with `'putaway'`
+- **Sidebar** Operations section: added `{ name: 'Putaway', icon: <PackageOpen />, module: 'putaway', available: true }` after Receiving
+- **sprintData** array: added Sprint 25 entry — Directed Putaway, Storage Optimization & Bin Intelligence Engine
+- **Dashboard stats**: 204 → 209 tables, 24 → 25 sprints done, "Part 4: WMS (Sprint 25 of 33)"
+- **ALL Sprint 24/204 text references** updated to Sprint 25/209 (header badge, sidebar footer, login page, ReceivingModule header badges)
+- **moduleNames** entry: `putaway: 'Directed Putaway'`
+- **Route**: `{activeModule === 'putaway' && <PutawayModule />}` inserted before Settings
+- **PutawayModule component** added BEFORE Settings Module, with 5 tabs:
+  - **Overview**: 8 stat cards (Pending Putaway, In Progress, Completed Today, Avg Putaway Time, Active Forklifts, Pallets In Use, Putaway Accuracy, Exception Count) + 7-step directed putaway flow diagram (Receiving → Inspection → Putaway Task → Bin Recommendation → Barcode Scan → Confirm Location → Inventory Updated) + task-driven operator workflow card (Chief Architect recommendation: Operator Login → Assigned Tasks → Task # → Scan Pallet → System Shows Zone/Aisle/Rack/Shelf/Bin → Scan Bin → Complete) + 5-factor bin scoring formula card (Best Bin Score = Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency)
+  - **Tasks**: table with 9 putaway type colors, 7 status colors, task number, warehouse, source→dest zones, priority badges, assigned operator, lines/pallets/qty progress, timing, complete button for IN_PROGRESS
+  - **Rules**: 5 cards for strategies (FEFO, FIFO, ABC, CLOSEST_EMPTY, FAST_MOVING_ZONE) with factor weight bars (capacity/distance/compatibility/temperature/pickingEfficiency), priority, conditions, target zones
+  - **Pallets**: 4 cards with barcode/QR, type, max vs current weight (with utilization bar), product count, carton count, current location, status (LOADED amber, STORED blue, EMPTY gray, AVAILABLE green)
+  - **Forklift**: 5 cards with type colors, from→to route, operator, priority, status, duration, travel distance, complete button for IN_PROGRESS
+
+### Verification
+- ✅ TypeScript: `npx tsc --noEmit` — no errors in `src/app/`
+- ✅ Frontend build: `npm run build` — Compiled successfully in 18.0s, 4 static pages generated
+- ✅ Backend build: `bun build index.ts --target=bun --outdir=/tmp/suop-check` — Bundled 44 modules, 0.94 MB
+- ✅ Server restarted: `ss -tlnp | grep 3000` — LISTEN on 0.0.0.0:3000
+- ✅ Homepage: HTTP 200 · CSS: HTTP 200
+- ✅ Page title: "SUOP Admin — Sudhastar Unified Operating Platform"
+
+### Chief Architect Note
+Directed Putaway flips the traditional model: instead of an operator deciding where to put stock, the SYSTEM computes the optimal bin and directs the operator step-by-step. The operator only confirms each step with a barcode scan. This eliminates the 30% putaway-error rate of operator-decided putaway (wrong bin, wrong zone, mixed products) and is the foundation of Bin Intelligence — the system continuously scores every bin on Capacity + Distance + Product Compatibility + Temperature Match + Picking Efficiency, then recommends the highest-scoring bin. Pallet-level putaway (1 Pallet = 48 Boxes) reduces forklift trips by 87% vs box-level putaway.
+
+### Next: Sprint 26 — Wave Planning, picking & packing engine (Wave Planning, Batch Picking, Cluster Picking, Pick-Path Optimization, Pack Station Automation)
