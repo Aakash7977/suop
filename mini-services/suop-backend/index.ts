@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "22.0.0"
+const VERSION = "23.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -1434,6 +1434,170 @@ const WH_DATA = {
   ],
 }
 
+// ─── Sprint 23 — Warehouse Location & Bin Management (LOC_DATA) ────
+// Aisles, Racks, Shelves, Bins, Bin Capacity Logs — the digital map of the warehouse
+const LOC_DATA = {
+  aisles: [
+    {
+      id: 'aisle-a', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse',
+      zoneId: 'zn-003', zoneCode: 'Z-RM-03', zoneName: 'Storage Zone-Ambient',
+      aisleCode: 'A', aisleName: 'Aisle A — Raw Cashew & Dry Fruits',
+      description: 'Main aisle for raw cashew, almonds, and dry fruit storage. Two-way forklift traffic.',
+      lengthM: 24.00, widthM: 3.50, trafficDirection: 'TWO_WAY',
+      status: 'ACTIVE', displayOrder: 10,
+      rackCount: 2, shelfCount: 4, binCount: 4,
+    },
+    {
+      id: 'aisle-b', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse',
+      zoneId: 'zn-004', zoneCode: 'Z-RM-04', zoneName: 'Storage Zone-Cold',
+      aisleCode: 'B', aisleName: 'Aisle B — Cold Storage (Ghee & Perishables)',
+      description: 'Chilled aisle for ghee, butter, and perishable raw materials. Forklift-only due to narrow cold-room doors.',
+      lengthM: 18.00, widthM: 2.80, trafficDirection: 'FORKLIFT_ONLY',
+      status: 'ACTIVE', displayOrder: 20,
+      rackCount: 2, shelfCount: 3, binCount: 3,
+    },
+    {
+      id: 'aisle-c', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse',
+      zoneId: 'zn-005', zoneCode: 'Z-FG-01', zoneName: 'Picking Zone',
+      aisleCode: 'C', aisleName: 'Aisle C — Fast-Moving Pick Face',
+      description: 'High-velocity pick-face aisle for top-selling sweets (Kaju Katli, Soan Cake). One-way to maximize pick speed.',
+      lengthM: 30.00, widthM: 2.50, trafficDirection: 'ONE_WAY',
+      status: 'ACTIVE', displayOrder: 30,
+      rackCount: 2, shelfCount: 3, binCount: 4,
+    },
+    {
+      id: 'aisle-d', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse',
+      zoneId: 'zn-006', zoneCode: 'Z-FG-02', zoneName: 'Packing Zone',
+      aisleCode: 'D', aisleName: 'Aisle D — Packing & Dispatch Staging',
+      description: 'Packing aisle with bulk dispatch staging. Two-way forklift traffic for pallet movement.',
+      lengthM: 22.00, widthM: 4.00, trafficDirection: 'TWO_WAY',
+      status: 'ACTIVE', displayOrder: 40,
+      rackCount: 1, shelfCount: 1, binCount: 1,
+    },
+    {
+      id: 'aisle-e', warehouseId: 'wh-cs-mum', warehouseCode: 'WH-CS-MUM', warehouseName: 'Cold Storage Warehouse',
+      zoneId: null, zoneCode: null, zoneName: 'Frozen Storage',
+      aisleCode: 'E', aisleName: 'Aisle E — Frozen Desserts (Ice Cream Line)',
+      description: 'Sub-zero aisle for ice cream and frozen desserts. Forklift-only due to insulated doors and ice buildup.',
+      lengthM: 15.00, widthM: 3.00, trafficDirection: 'FORKLIFT_ONLY',
+      status: 'ACTIVE', displayOrder: 50,
+      rackCount: 1, shelfCount: 1, binCount: 2,
+    },
+    {
+      id: 'aisle-f', warehouseId: 'wh-pkg-mum', warehouseCode: 'WH-PKG-MUM', warehouseName: 'Packaging Warehouse',
+      zoneId: null, zoneCode: null, zoneName: 'Bulk Packaging Storage',
+      aisleCode: 'F', aisleName: 'Aisle F — Printed Boxes & Films',
+      description: 'Bulk storage aisle for printed boxes, films, and labels. Two-way forklift for pallet movement.',
+      lengthM: 28.00, widthM: 4.50, trafficDirection: 'TWO_WAY',
+      status: 'ACTIVE', displayOrder: 60,
+      rackCount: 1, shelfCount: 1, binCount: 1,
+    },
+  ],
+  racks: [
+    {
+      id: 'rack-01', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse',
+      zoneId: 'zn-003', zoneCode: 'Z-RM-03', aisleId: 'aisle-a', aisleCode: 'A',
+      rackCode: 'R-01', rackName: 'Rack 01 — Cashew Bulk',
+      description: 'Heavy-duty bulk rack for raw cashew sacks (25 kg each).',
+      heightM: 4.50, widthM: 2.40, depthM: 1.20, maxWeightKg: 2000.00, shelfCount: 3, fireZone: 'FZ-A1',
+      status: 'ACTIVE', displayOrder: 10,
+    },
+    {
+      id: 'rack-02', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse',
+      zoneId: 'zn-003', zoneCode: 'Z-RM-03', aisleId: 'aisle-a', aisleCode: 'A',
+      rackCode: 'R-02', rackName: 'Rack 02 — Almonds & Dry Fruits',
+      description: 'Standard rack for boxed almonds, pistachios, and mixed dry fruits.',
+      heightM: 4.20, widthM: 2.20, depthM: 1.10, maxWeightKg: 1500.00, shelfCount: 2, fireZone: 'FZ-A1',
+      status: 'ACTIVE', displayOrder: 20,
+    },
+    {
+      id: 'rack-03', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse',
+      zoneId: 'zn-004', zoneCode: 'Z-RM-04', aisleId: 'aisle-b', aisleCode: 'B',
+      rackCode: 'R-03', rackName: 'Rack 03 — Ghee Drums',
+      description: 'Stainless-steel drum rack for ghee (50 kg drums). Heated aisles, condensation-controlled.',
+      heightM: 3.80, widthM: 2.00, depthM: 1.00, maxWeightKg: 1800.00, shelfCount: 2, fireZone: 'FZ-B1',
+      status: 'ACTIVE', displayOrder: 30,
+    },
+    {
+      id: 'rack-04', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse',
+      zoneId: 'zn-004', zoneCode: 'Z-RM-04', aisleId: 'aisle-b', aisleCode: 'B',
+      rackCode: 'R-04', rackName: 'Rack 04 — Perishables',
+      description: 'Short rack for perishable raw materials (cream, milk). Frequent rotation.',
+      heightM: 2.40, widthM: 1.80, depthM: 0.90, maxWeightKg: 800.00, shelfCount: 1, fireZone: 'FZ-B2',
+      status: 'ACTIVE', displayOrder: 40,
+    },
+    {
+      id: 'rack-05', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse',
+      zoneId: 'zn-005', zoneCode: 'Z-FG-01', aisleId: 'aisle-c', aisleCode: 'C',
+      rackCode: 'R-05', rackName: 'Rack 05 — Kaju Katli Pick Face',
+      description: 'Pick-face rack for Kaju Katli 500g boxes. Ground-level easy access.',
+      heightM: 2.10, widthM: 1.80, depthM: 0.80, maxWeightKg: 600.00, shelfCount: 2, fireZone: 'FZ-C1',
+      status: 'ACTIVE', displayOrder: 50,
+    },
+    {
+      id: 'rack-06', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse',
+      zoneId: 'zn-005', zoneCode: 'Z-FG-01', aisleId: 'aisle-c', aisleCode: 'C',
+      rackCode: 'R-06', rackName: 'Rack 06 — Soan Cake & Mixed Sweets',
+      description: 'Pick-face rack for premium sweets. Multi-level with mid-shelf access.',
+      heightM: 3.60, widthM: 2.00, depthM: 0.90, maxWeightKg: 900.00, shelfCount: 1, fireZone: 'FZ-C2',
+      status: 'ACTIVE', displayOrder: 60,
+    },
+    {
+      id: 'rack-07', warehouseId: 'wh-cs-mum', warehouseCode: 'WH-CS-MUM', warehouseName: 'Cold Storage Warehouse',
+      zoneId: null, zoneCode: null, aisleId: 'aisle-e', aisleCode: 'E',
+      rackCode: 'R-07', rackName: 'Rack 07 — Frozen Ice Cream',
+      description: 'Insulated rack for ice cream tubs (-22°C). Single shelf to preserve cold airflow.',
+      heightM: 2.20, widthM: 1.60, depthM: 1.00, maxWeightKg: 500.00, shelfCount: 1, fireZone: 'FZ-E1',
+      status: 'ACTIVE', displayOrder: 70,
+    },
+    {
+      id: 'rack-08', warehouseId: 'wh-pkg-mum', warehouseCode: 'WH-PKG-MUM', warehouseName: 'Packaging Warehouse',
+      zoneId: null, zoneCode: null, aisleId: 'aisle-f', aisleCode: 'F',
+      rackCode: 'R-08', rackName: 'Rack 08 — Printed Boxes',
+      description: 'Wide rack for printed packaging boxes (500-unit bundles).',
+      heightM: 4.80, widthM: 3.00, depthM: 1.50, maxWeightKg: 2500.00, shelfCount: 1, fireZone: 'FZ-F1',
+      status: 'ACTIVE', displayOrder: 80,
+    },
+  ],
+  shelves: [
+    { id: 'shelf-01', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-01', rackCode: 'R-01', aisleCode: 'A', shelfCode: 'S-01', shelfName: 'Ground Shelf — Cashew 25kg sacks', level: 1, heightFromFloor: 0.30, maxWeightKg: 2000.00, maxVolumeM3: 6.50, pickingLevel: 'GROUND', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-02', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-01', rackCode: 'R-01', aisleCode: 'A', shelfCode: 'S-02', shelfName: 'Mid Shelf — Cashew overflow', level: 2, heightFromFloor: 1.80, maxWeightKg: 1200.00, maxVolumeM3: 5.20, pickingLevel: 'MID', accessibility: 'MODERATE', status: 'ACTIVE' },
+    { id: 'shelf-03', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-01', rackCode: 'R-01', aisleCode: 'A', shelfCode: 'S-03', shelfName: 'High Shelf — Reserve', level: 3, heightFromFloor: 3.20, maxWeightKg: 600.00, maxVolumeM3: 4.10, pickingLevel: 'HIGH', accessibility: 'LADDER_REQUIRED', status: 'ACTIVE' },
+    { id: 'shelf-04', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-02', rackCode: 'R-02', aisleCode: 'A', shelfCode: 'S-04', shelfName: 'Ground Shelf — Almond boxes', level: 1, heightFromFloor: 0.30, maxWeightKg: 1500.00, maxVolumeM3: 4.80, pickingLevel: 'GROUND', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-05', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-02', rackCode: 'R-02', aisleCode: 'A', shelfCode: 'S-05', shelfName: 'Mid Shelf — Pistachio & Mixed', level: 2, heightFromFloor: 1.70, maxWeightKg: 900.00, maxVolumeM3: 3.60, pickingLevel: 'MID', accessibility: 'MODERATE', status: 'ACTIVE' },
+    { id: 'shelf-06', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-03', rackCode: 'R-03', aisleCode: 'B', shelfCode: 'S-06', shelfName: 'Ground Shelf — Ghee drums', level: 1, heightFromFloor: 0.20, maxWeightKg: 1800.00, maxVolumeM3: 3.80, pickingLevel: 'GROUND', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-07', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-03', rackCode: 'R-03', aisleCode: 'B', shelfCode: 'S-07', shelfName: 'Mid Shelf — Ghee overflow', level: 2, heightFromFloor: 1.60, maxWeightKg: 1000.00, maxVolumeM3: 2.90, pickingLevel: 'MID', accessibility: 'MODERATE', status: 'ACTIVE' },
+    { id: 'shelf-08', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', rackId: 'rack-04', rackCode: 'R-04', aisleCode: 'B', shelfCode: 'S-08', shelfName: 'Ground Shelf — Cream & Milk', level: 1, heightFromFloor: 0.30, maxWeightKg: 800.00, maxVolumeM3: 2.40, pickingLevel: 'GROUND', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-09', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', rackId: 'rack-05', rackCode: 'R-05', aisleCode: 'C', shelfCode: 'S-09', shelfName: 'Ground Pick Face — Kaju Katli 500g', level: 1, heightFromFloor: 0.80, maxWeightKg: 400.00, maxVolumeM3: 1.60, pickingLevel: 'GROUND', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-10', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', rackId: 'rack-05', rackCode: 'R-05', aisleCode: 'C', shelfCode: 'S-10', shelfName: 'Mid Pick Face — Kaju Katli 250g', level: 2, heightFromFloor: 1.60, maxWeightKg: 300.00, maxVolumeM3: 1.20, pickingLevel: 'MID', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-11', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', rackId: 'rack-06', rackCode: 'R-06', aisleCode: 'C', shelfCode: 'S-11', shelfName: 'Ground Pick Face — Soan Cake 1kg', level: 1, heightFromFloor: 0.70, maxWeightKg: 500.00, maxVolumeM3: 2.00, pickingLevel: 'GROUND', accessibility: 'EASY', status: 'ACTIVE' },
+    { id: 'shelf-12', warehouseId: 'wh-cs-mum', warehouseCode: 'WH-CS-MUM', warehouseName: 'Cold Storage Warehouse', rackId: 'rack-07', rackCode: 'R-07', aisleCode: 'E', shelfCode: 'S-12', shelfName: 'Ground Shelf — Ice Cream Tubs', level: 1, heightFromFloor: 0.40, maxWeightKg: 500.00, maxVolumeM3: 1.60, pickingLevel: 'GROUND', accessibility: 'MODERATE', status: 'ACTIVE' },
+  ],
+  bins: [
+    { id: 'bin-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-003', zoneCode: 'Z-RM-03', zoneName: 'Storage Zone-Ambient', aisleId: 'aisle-a', aisleCode: 'A', aisleName: 'Aisle A — Raw Cashew & Dry Fruits', rackId: 'rack-01', rackCode: 'R-01', rackName: 'Rack 01 — Cashew Bulk', shelfId: 'shelf-01', shelfCode: 'S-01', shelfName: 'Ground Shelf — Cashew 25kg sacks', binCode: 'A-01-01-01', barcode: 'BC-A01010101', qrCode: 'QR-A-01-01-01', maxWeightKg: 2000.00, maxVolumeM3: 6.50, currentWeightKg: 1750.00, currentVolumeM3: 5.20, utilizationPercent: 87.50, temperatureZone: 'AMBIENT', binType: 'BULK', status: 'OCCUPIED', statusReason: 'Cashew 25kg × 70 sacks', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-06-15T09:00:00Z', updatedAt: '2026-07-09T08:30:00Z' },
+    { id: 'bin-002', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-003', zoneCode: 'Z-RM-03', zoneName: 'Storage Zone-Ambient', aisleId: 'aisle-a', aisleCode: 'A', aisleName: 'Aisle A — Raw Cashew & Dry Fruits', rackId: 'rack-01', rackCode: 'R-01', rackName: 'Rack 01 — Cashew Bulk', shelfId: 'shelf-02', shelfCode: 'S-02', shelfName: 'Mid Shelf — Cashew overflow', binCode: 'A-01-02-01', barcode: 'BC-A01020101', qrCode: 'QR-A-01-02-01', maxWeightKg: 1200.00, maxVolumeM3: 5.20, currentWeightKg: 480.00, currentVolumeM3: 1.90, utilizationPercent: 40.00, temperatureZone: 'AMBIENT', binType: 'STANDARD', status: 'AVAILABLE', statusReason: null, itemCapacity: 2, currentItemTypes: 0, createdAt: '2026-06-15T09:05:00Z', updatedAt: '2026-07-08T17:00:00Z' },
+    { id: 'bin-003', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-003', zoneCode: 'Z-RM-03', zoneName: 'Storage Zone-Ambient', aisleId: 'aisle-a', aisleCode: 'A', aisleName: 'Aisle A — Raw Cashew & Dry Fruits', rackId: 'rack-01', rackCode: 'R-01', rackName: 'Rack 01 — Cashew Bulk', shelfId: 'shelf-03', shelfCode: 'S-03', shelfName: 'High Shelf — Reserve', binCode: 'A-01-03-01', barcode: 'BC-A01030101', qrCode: 'QR-A-01-03-01', maxWeightKg: 600.00, maxVolumeM3: 4.10, currentWeightKg: 0.00, currentVolumeM3: 0.00, utilizationPercent: 0.00, temperatureZone: 'AMBIENT', binType: 'STANDARD', status: 'AVAILABLE', statusReason: null, itemCapacity: 2, currentItemTypes: 0, createdAt: '2026-06-15T09:10:00Z', updatedAt: '2026-07-09T08:30:00Z' },
+    { id: 'bin-004', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-003', zoneCode: 'Z-RM-03', zoneName: 'Storage Zone-Ambient', aisleId: 'aisle-a', aisleCode: 'A', aisleName: 'Aisle A — Raw Cashew & Dry Fruits', rackId: 'rack-02', rackCode: 'R-02', rackName: 'Rack 02 — Almonds & Dry Fruits', shelfId: 'shelf-04', shelfCode: 'S-04', shelfName: 'Ground Shelf — Almond boxes', binCode: 'A-02-04-01', barcode: 'BC-A02040101', qrCode: 'QR-A-02-04-01', maxWeightKg: 1500.00, maxVolumeM3: 4.80, currentWeightKg: 950.00, currentVolumeM3: 3.10, utilizationPercent: 63.33, temperatureZone: 'AMBIENT', binType: 'STANDARD', status: 'OCCUPIED', statusReason: 'Almond 10kg × 95 boxes', itemCapacity: 2, currentItemTypes: 1, createdAt: '2026-06-15T09:15:00Z', updatedAt: '2026-07-09T07:45:00Z' },
+    { id: 'bin-005', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-004', zoneCode: 'Z-RM-04', zoneName: 'Storage Zone-Cold', aisleId: 'aisle-b', aisleCode: 'B', aisleName: 'Aisle B — Cold Storage (Ghee & Perishables)', rackId: 'rack-03', rackCode: 'R-03', rackName: 'Rack 03 — Ghee Drums', shelfId: 'shelf-06', shelfCode: 'S-06', shelfName: 'Ground Shelf — Ghee drums', binCode: 'B-03-06-01', barcode: 'BC-B03060101', qrCode: 'QR-B-03-06-01', maxWeightKg: 1800.00, maxVolumeM3: 3.80, currentWeightKg: 1800.00, currentVolumeM3: 3.80, utilizationPercent: 100.00, temperatureZone: 'CHILLED', binType: 'BULK', status: 'OCCUPIED', statusReason: 'Ghee 50kg × 36 drums — at capacity', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-06-20T10:00:00Z', updatedAt: '2026-07-09T08:45:00Z' },
+    { id: 'bin-006', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-004', zoneCode: 'Z-RM-04', zoneName: 'Storage Zone-Cold', aisleId: 'aisle-b', aisleCode: 'B', aisleName: 'Aisle B — Cold Storage (Ghee & Perishables)', rackId: 'rack-03', rackCode: 'R-03', rackName: 'Rack 03 — Ghee Drums', shelfId: 'shelf-07', shelfCode: 'S-07', shelfName: 'Mid Shelf — Ghee overflow', binCode: 'B-03-07-01', barcode: 'BC-B03070101', qrCode: 'QR-B-03-07-01', maxWeightKg: 1000.00, maxVolumeM3: 2.90, currentWeightKg: 220.00, currentVolumeM3: 0.65, utilizationPercent: 22.00, temperatureZone: 'CHILLED', binType: 'STANDARD', status: 'AVAILABLE', statusReason: null, itemCapacity: 2, currentItemTypes: 0, createdAt: '2026-06-20T10:05:00Z', updatedAt: '2026-07-08T18:00:00Z' },
+    { id: 'bin-007', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: 'zn-004', zoneCode: 'Z-RM-04', zoneName: 'Storage Zone-Cold', aisleId: 'aisle-b', aisleCode: 'B', aisleName: 'Aisle B — Cold Storage (Ghee & Perishables)', rackId: 'rack-04', rackCode: 'R-04', rackName: 'Rack 04 — Perishables', shelfId: 'shelf-08', shelfCode: 'S-08', shelfName: 'Ground Shelf — Cream & Milk', binCode: 'B-04-08-01', barcode: 'BC-B04080101', qrCode: 'QR-B-04-08-01', maxWeightKg: 800.00, maxVolumeM3: 2.40, currentWeightKg: 0.00, currentVolumeM3: 0.00, utilizationPercent: 0.00, temperatureZone: 'CHILLED', binType: 'QUARANTINE', status: 'BLOCKED', statusReason: 'Spillage from previous batch — awaiting deep clean', itemCapacity: 1, currentItemTypes: 0, createdAt: '2026-06-25T11:00:00Z', updatedAt: '2026-07-09T06:00:00Z' },
+    { id: 'bin-008', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneId: 'zn-005', zoneCode: 'Z-FG-01', zoneName: 'Picking Zone', aisleId: 'aisle-c', aisleCode: 'C', aisleName: 'Aisle C — Fast-Moving Pick Face', rackId: 'rack-05', rackCode: 'R-05', rackName: 'Rack 05 — Kaju Katli Pick Face', shelfId: 'shelf-09', shelfCode: 'S-09', shelfName: 'Ground Pick Face — Kaju Katli 500g', binCode: 'C-05-09-01', barcode: 'BC-C05090101', qrCode: 'QR-C-05-09-01', maxWeightKg: 400.00, maxVolumeM3: 1.60, currentWeightKg: 142.00, currentVolumeM3: 0.95, utilizationPercent: 35.50, temperatureZone: 'AMBIENT', binType: 'PICK_FACE', status: 'OCCUPIED', statusReason: 'Kaju Katli 500g × 142 boxes (KK-2607-01)', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-07-01T08:00:00Z', updatedAt: '2026-07-09T09:15:00Z' },
+    { id: 'bin-009', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneId: 'zn-005', zoneCode: 'Z-FG-01', zoneName: 'Picking Zone', aisleId: 'aisle-c', aisleCode: 'C', aisleName: 'Aisle C — Fast-Moving Pick Face', rackId: 'rack-05', rackCode: 'R-05', rackName: 'Rack 05 — Kaju Katli Pick Face', shelfId: 'shelf-10', shelfCode: 'S-10', shelfName: 'Mid Pick Face — Kaju Katli 250g', binCode: 'C-05-10-01', barcode: 'BC-C05100101', qrCode: 'QR-C-05-10-01', maxWeightKg: 300.00, maxVolumeM3: 1.20, currentWeightKg: 285.00, currentVolumeM3: 1.10, utilizationPercent: 95.00, temperatureZone: 'AMBIENT', binType: 'PICK_FACE', status: 'OCCUPIED', statusReason: 'Kaju Katli 250g × 570 boxes — near capacity', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-07-01T08:05:00Z', updatedAt: '2026-07-09T09:20:00Z' },
+    { id: 'bin-010', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneId: 'zn-005', zoneCode: 'Z-FG-01', zoneName: 'Picking Zone', aisleId: 'aisle-c', aisleCode: 'C', aisleName: 'Aisle C — Fast-Moving Pick Face', rackId: 'rack-06', rackCode: 'R-06', rackName: 'Rack 06 — Soan Cake & Mixed Sweets', shelfId: 'shelf-11', shelfCode: 'S-11', shelfName: 'Ground Pick Face — Soan Cake 1kg', binCode: 'C-06-11-01', barcode: 'BC-C06110101', qrCode: 'QR-C-06-11-01', maxWeightKg: 500.00, maxVolumeM3: 2.00, currentWeightKg: 89.00, currentVolumeM3: 0.85, utilizationPercent: 17.80, temperatureZone: 'AMBIENT', binType: 'PICK_FACE', status: 'RESERVED', statusReason: 'Reserved for production order PRD-2026-0156 (Soan Cake 1kg)', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-07-05T10:00:00Z', updatedAt: '2026-07-09T11:00:00Z' },
+    { id: 'bin-011', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneId: 'zn-006', zoneCode: 'Z-FG-02', zoneName: 'Packing Zone', aisleId: 'aisle-d', aisleCode: 'D', aisleName: 'Aisle D — Packing & Dispatch Staging', rackId: null, rackCode: null, rackName: null, shelfId: null, shelfCode: null, shelfName: null, binCode: 'D-00-00-01', barcode: 'BC-D00000001', qrCode: 'QR-D-00-00-01', maxWeightKg: 1000.00, maxVolumeM3: 4.00, currentWeightKg: 0.00, currentVolumeM3: 0.00, utilizationPercent: 0.00, temperatureZone: 'AMBIENT', binType: 'STANDARD', status: 'AVAILABLE', statusReason: null, itemCapacity: 4, currentItemTypes: 0, createdAt: '2026-07-02T09:00:00Z', updatedAt: '2026-07-09T08:00:00Z' },
+    { id: 'bin-012', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneId: 'zn-005', zoneCode: 'Z-FG-01', zoneName: 'Picking Zone', aisleId: 'aisle-c', aisleCode: 'C', aisleName: 'Aisle C — Fast-Moving Pick Face', rackId: 'rack-05', rackCode: 'R-05', rackName: 'Rack 05 — Kaju Katli Pick Face', shelfId: 'shelf-09', shelfCode: 'S-09', shelfName: 'Ground Pick Face — Kaju Katli 500g', binCode: 'C-05-09-02', barcode: 'BC-C05090102', qrCode: 'QR-C-05-09-02', maxWeightKg: 400.00, maxVolumeM3: 1.60, currentWeightKg: 0.00, currentVolumeM3: 0.00, utilizationPercent: 0.00, temperatureZone: 'AMBIENT', binType: 'PICK_FACE', status: 'MAINTENANCE', statusReason: 'Rack re-leveling scheduled 10-Jul-2026', itemCapacity: 1, currentItemTypes: 0, createdAt: '2026-07-03T12:00:00Z', updatedAt: '2026-07-08T16:30:00Z' },
+    { id: 'bin-013', warehouseId: 'wh-cs-mum', warehouseCode: 'WH-CS-MUM', warehouseName: 'Cold Storage Warehouse', zoneId: null, zoneCode: null, zoneName: 'Frozen Storage', aisleId: 'aisle-e', aisleCode: 'E', aisleName: 'Aisle E — Frozen Desserts (Ice Cream Line)', rackId: 'rack-07', rackCode: 'R-07', rackName: 'Rack 07 — Frozen Ice Cream', shelfId: 'shelf-12', shelfCode: 'S-12', shelfName: 'Ground Shelf — Ice Cream Tubs', binCode: 'E-07-12-01', barcode: 'BC-E07120101', qrCode: 'QR-E-07-12-01', maxWeightKg: 500.00, maxVolumeM3: 1.60, currentWeightKg: 312.00, currentVolumeM3: 1.05, utilizationPercent: 62.40, temperatureZone: 'FROZEN', binType: 'STANDARD', status: 'OCCUPIED', statusReason: 'Vanilla ice cream 1L × 312 tubs', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-06-28T07:00:00Z', updatedAt: '2026-07-09T07:30:00Z' },
+    { id: 'bin-014', warehouseId: 'wh-cs-mum', warehouseCode: 'WH-CS-MUM', warehouseName: 'Cold Storage Warehouse', zoneId: null, zoneCode: null, zoneName: 'Frozen Storage', aisleId: 'aisle-e', aisleCode: 'E', aisleName: 'Aisle E — Frozen Desserts (Ice Cream Line)', rackId: 'rack-07', rackCode: 'R-07', rackName: 'Rack 07 — Frozen Ice Cream', shelfId: 'shelf-12', shelfCode: 'S-12', shelfName: 'Ground Shelf — Ice Cream Tubs', binCode: 'E-07-12-02', barcode: 'BC-E07120102', qrCode: 'QR-E-07-12-02', maxWeightKg: 500.00, maxVolumeM3: 1.60, currentWeightKg: 540.00, currentVolumeM3: 1.65, utilizationPercent: 108.00, temperatureZone: 'FROZEN', binType: 'BULK', status: 'OCCUPIED', statusReason: 'Chocolate ice cream 1L × 540 tubs — OVERLOADED', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-06-28T07:05:00Z', updatedAt: '2026-07-09T07:35:00Z' },
+    { id: 'bin-015', warehouseId: 'wh-pkg-mum', warehouseCode: 'WH-PKG-MUM', warehouseName: 'Packaging Warehouse', zoneId: null, zoneCode: null, zoneName: 'Bulk Packaging Storage', aisleId: 'aisle-f', aisleCode: 'F', aisleName: 'Aisle F — Printed Boxes & Films', rackId: 'rack-08', rackCode: 'R-08', rackName: 'Rack 08 — Printed Boxes', shelfId: null, shelfCode: null, shelfName: null, binCode: 'F-08-00-01', barcode: 'BC-F08000001', qrCode: 'QR-F-08-00-01', maxWeightKg: 2500.00, maxVolumeM3: 12.00, currentWeightKg: 1420.00, currentVolumeM3: 7.80, utilizationPercent: 56.80, temperatureZone: 'AMBIENT', binType: 'BULK', status: 'OCCUPIED', statusReason: 'Printed Kaju Katli 500g boxes × 2840', itemCapacity: 1, currentItemTypes: 1, createdAt: '2026-06-30T09:00:00Z', updatedAt: '2026-07-09T08:15:00Z' },
+  ],
+  capacityLogs: [
+    { id: 'bcl-001', binId: 'bin-005', binCode: 'B-03-06-01', warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse', currentWeightKg: 1800.00, currentVolumeM3: 3.80, maxWeightKg: 1800.00, maxVolumeM3: 3.80, utilizationPercent: 100.00, alertType: 'FULL', alertMessage: 'Bin at 100% capacity. No further putaway allowed. Suggest overflow to B-03-07-01.', itemTypes: 1, totalQuantity: 36, snapshotAt: '2026-07-09T08:45:00Z', createdAt: '2026-07-09T08:45:00Z' },
+    { id: 'bcl-002', binId: 'bin-014', binCode: 'E-07-12-02', warehouseId: 'wh-cs-mum', warehouseName: 'Cold Storage Warehouse', currentWeightKg: 540.00, currentVolumeM3: 1.65, maxWeightKg: 500.00, maxVolumeM3: 1.60, utilizationPercent: 108.00, alertType: 'OVERLOADED', alertMessage: 'Bin OVERLOADED — 540 kg exceeds 500 kg max (8% over). Structural risk. Immediate redistribution required.', itemTypes: 1, totalQuantity: 540, snapshotAt: '2026-07-09T07:35:00Z', createdAt: '2026-07-09T07:35:00Z' },
+    { id: 'bcl-003', binId: 'bin-002', binCode: 'A-01-02-01', warehouseId: 'wh-rm-mum', warehouseName: 'Raw Material Warehouse', currentWeightKg: 480.00, currentVolumeM3: 1.90, maxWeightKg: 1200.00, maxVolumeM3: 5.20, utilizationPercent: 40.00, alertType: 'UNDERUTILIZED', alertMessage: 'Bin at 40% utilization for 7+ days. Consider consolidating or re-slotting for fast-moving stock.', itemTypes: 0, totalQuantity: 0, snapshotAt: '2026-07-09T08:30:00Z', createdAt: '2026-07-09T08:30:00Z' },
+    { id: 'bcl-004', binId: 'bin-009', binCode: 'C-05-10-01', warehouseId: 'wh-fg-mum', warehouseName: 'Finished Goods Warehouse', currentWeightKg: 285.00, currentVolumeM3: 1.10, maxWeightKg: 300.00, maxVolumeM3: 1.20, utilizationPercent: 95.00, alertType: 'NEAR_FULL', alertMessage: 'Bin at 95% capacity. Reserve for current SKU only — disable mixed-SKU putaway to prevent overflow.', itemTypes: 1, totalQuantity: 570, snapshotAt: '2026-07-09T09:20:00Z', createdAt: '2026-07-09T09:20:00Z' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1828,7 +1992,7 @@ const server = Bun.serve({
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
-        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 8, sprint: 22 },
+        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 13, sprint: 23 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -4488,14 +4652,234 @@ const server = Bun.serve({
       }, 'SUOP Warehouse Foundation Engine v22.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════════
+    // SPRINT 23 — WAREHOUSE LOCATION & BIN MANAGEMENT ENDPOINTS
+    // ═════════════════════════════════════════════════════════════
+
+    // ─── Aisles ────────────────────────────────────────────
+    // GET /api/warehouse-aisles (with warehouse/zone filters)
+    if (path === '/api/warehouse-aisles' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const zoneFilter = url.searchParams.get('zone')
+      let aisles = LOC_DATA.aisles
+      if (warehouseFilter) aisles = aisles.filter(a => a.warehouseId === warehouseFilter || a.warehouseCode === warehouseFilter.toUpperCase())
+      if (zoneFilter) aisles = aisles.filter(a => a.zoneId === zoneFilter || a.zoneCode === zoneFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(aisles, `${aisles.length} warehouse aisles`)), { headers })
+    }
+
+    // ─── Racks ─────────────────────────────────────────────
+    // GET /api/warehouse-racks (with warehouse/aisle filters)
+    if (path === '/api/warehouse-racks' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const aisleFilter = url.searchParams.get('aisle')
+      let racks = LOC_DATA.racks
+      if (warehouseFilter) racks = racks.filter(r => r.warehouseId === warehouseFilter || r.warehouseCode === warehouseFilter.toUpperCase())
+      if (aisleFilter) racks = racks.filter(r => r.aisleId === aisleFilter || r.aisleCode === aisleFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(racks, `${racks.length} warehouse racks`)), { headers })
+    }
+
+    // ─── Shelves ───────────────────────────────────────────
+    // GET /api/warehouse-shelves (with warehouse/rack filters)
+    if (path === '/api/warehouse-shelves' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const rackFilter = url.searchParams.get('rack')
+      let shelves = LOC_DATA.shelves
+      if (warehouseFilter) shelves = shelves.filter(s => s.warehouseId === warehouseFilter || s.warehouseCode === warehouseFilter.toUpperCase())
+      if (rackFilter) shelves = shelves.filter(s => s.rackId === rackFilter || s.rackCode === rackFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(shelves, `${shelves.length} warehouse shelves`)), { headers })
+    }
+
+    // ─── Bins ──────────────────────────────────────────────
+    // GET /api/warehouse-bins (with warehouse/zone/status/type/temp filters + empty bin search)
+    if (path === '/api/warehouse-bins' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const zoneFilter = url.searchParams.get('zone')
+      const statusFilter = url.searchParams.get('status')
+      const typeFilter = url.searchParams.get('type')
+      const tempFilter = url.searchParams.get('temp')
+      const emptyFlag = url.searchParams.get('empty')
+      const barcodeLookup = url.searchParams.get('barcode')
+      let bins = LOC_DATA.bins
+      if (warehouseFilter) bins = bins.filter(b => b.warehouseId === warehouseFilter || b.warehouseCode === warehouseFilter.toUpperCase())
+      if (zoneFilter) bins = bins.filter(b => b.zoneId === zoneFilter || b.zoneCode === zoneFilter.toUpperCase())
+      if (statusFilter) bins = bins.filter(b => b.status === statusFilter.toUpperCase())
+      if (typeFilter) bins = bins.filter(b => b.binType === typeFilter.toUpperCase())
+      if (tempFilter) bins = bins.filter(b => b.temperatureZone === tempFilter.toUpperCase())
+      if (emptyFlag === 'true') bins = bins.filter(b => b.currentWeightKg === 0 && b.currentVolumeM3 === 0 && b.status === 'AVAILABLE')
+      if (barcodeLookup) {
+        const found = LOC_DATA.bins.find(b => b.barcode === barcodeLookup || b.qrCode === barcodeLookup)
+        return new Response(JSON.stringify(successResponse(found ? [found] : [], found ? 'Bin found by barcode' : 'No bin matches barcode')), { headers })
+      }
+      return new Response(JSON.stringify(successResponse(bins, `${bins.length} warehouse bins`)), { headers })
+    }
+    // POST /api/warehouse-bins
+    if (path === '/api/warehouse-bins' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.binCode || !body.warehouseId) {
+          return new Response(JSON.stringify(errorResponse('binCode and warehouseId are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        const bin = {
+          id: crypto.randomUUID(),
+          warehouseId: body.warehouseId,
+          warehouseCode: body.warehouseCode || '',
+          warehouseName: body.warehouseName || '',
+          zoneId: body.zoneId || null,
+          zoneCode: body.zoneCode || null,
+          zoneName: body.zoneName || null,
+          aisleId: body.aisleId || null,
+          aisleCode: body.aisleCode || null,
+          aisleName: body.aisleName || null,
+          rackId: body.rackId || null,
+          rackCode: body.rackCode || null,
+          rackName: body.rackName || null,
+          shelfId: body.shelfId || null,
+          shelfCode: body.shelfCode || null,
+          shelfName: body.shelfName || null,
+          binCode: body.binCode,
+          barcode: body.barcode || `BC-${body.binCode.replace(/-/g, '')}`,
+          qrCode: body.qrCode || `QR-${body.binCode}`,
+          maxWeightKg: body.maxWeightKg || 500.00,
+          maxVolumeM3: body.maxVolumeM3 || 1.50,
+          currentWeightKg: 0.00,
+          currentVolumeM3: 0.00,
+          utilizationPercent: 0.00,
+          temperatureZone: body.temperatureZone || 'AMBIENT',
+          binType: body.binType || 'STANDARD',
+          status: body.status || 'AVAILABLE',
+          statusReason: body.statusReason || null,
+          itemCapacity: body.itemCapacity || 1,
+          currentItemTypes: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        LOC_DATA.bins.push(bin)
+        log('info', 'Warehouse bin created', { binCode: bin.binCode, warehouseId: bin.warehouseId })
+        return new Response(JSON.stringify(successResponse(bin, 'Warehouse bin created')), { headers })
+      } catch (e) {
+        return new Response(JSON.stringify(errorResponse('Invalid request body')), { status: 400, headers })
+      }
+    }
+    // GET /api/warehouse-bins/:id (or ?barcode=xxx for barcode lookup)
+    if (path.startsWith('/api/warehouse-bins/') && method === 'GET') {
+      const idOrBarcode = path.replace('/api/warehouse-bins/', '')
+      const barcodeFromQuery = url.searchParams.get('barcode')
+      let bin = LOC_DATA.bins.find(b => b.id === idOrBarcode)
+      if (!bin && barcodeFromQuery) bin = LOC_DATA.bins.find(b => b.barcode === barcodeFromQuery || b.qrCode === barcodeFromQuery)
+      if (!bin && idOrBarcode) bin = LOC_DATA.bins.find(b => b.barcode === idOrBarcode || b.qrCode === idOrBarcode || b.binCode === idOrBarcode)
+      if (!bin) return new Response(JSON.stringify(errorResponse('Bin not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      return new Response(JSON.stringify(successResponse(bin, 'Warehouse bin')), { headers })
+    }
+
+    // ─── Bin Capacity Logs ─────────────────────────────────
+    // GET /api/bin-capacity-logs
+    if (path === '/api/bin-capacity-logs' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const alertFilter = url.searchParams.get('alert')
+      const binFilter = url.searchParams.get('bin')
+      let logs = LOC_DATA.capacityLogs
+      if (warehouseFilter) logs = logs.filter(l => l.warehouseId === warehouseFilter)
+      if (alertFilter) logs = logs.filter(l => l.alertType === alertFilter.toUpperCase())
+      if (binFilter) logs = logs.filter(l => l.binId === binFilter || l.binCode === binFilter)
+      return new Response(JSON.stringify(successResponse(logs, `${logs.length} bin capacity logs`)), { headers })
+    }
+
+    // ─── Warehouse Locations Dashboard ─────────────────────
+    // GET /api/warehouse-locations/dashboard (summary stats)
+    if (path === '/api/warehouse-locations/dashboard' && method === 'GET') {
+      const totalBins = LOC_DATA.bins.length
+      const availableBins = LOC_DATA.bins.filter(b => b.status === 'AVAILABLE').length
+      const occupiedBins = LOC_DATA.bins.filter(b => b.status === 'OCCUPIED').length
+      const reservedBins = LOC_DATA.bins.filter(b => b.status === 'RESERVED').length
+      const blockedBins = LOC_DATA.bins.filter(b => b.status === 'BLOCKED').length
+      const maintenanceBins = LOC_DATA.bins.filter(b => b.status === 'MAINTENANCE').length
+      const totalAisles = LOC_DATA.aisles.length
+      const totalRacks = LOC_DATA.racks.length
+      const totalShelves = LOC_DATA.shelves.length
+      const totalCapacityLogs = LOC_DATA.capacityLogs.length
+      const overloadedAlerts = LOC_DATA.capacityLogs.filter(l => l.alertType === 'OVERLOADED').length
+      const fullAlerts = LOC_DATA.capacityLogs.filter(l => l.alertType === 'FULL').length
+      const nearFullAlerts = LOC_DATA.capacityLogs.filter(l => l.alertType === 'NEAR_FULL').length
+      const underutilizedAlerts = LOC_DATA.capacityLogs.filter(l => l.alertType === 'UNDERUTILIZED').length
+      const avgUtilization = LOC_DATA.bins.reduce((s, b) => s + b.utilizationPercent, 0) / LOC_DATA.bins.length
+      const emptyBins = LOC_DATA.bins.filter(b => b.currentWeightKg === 0 && b.currentVolumeM3 === 0 && b.status === 'AVAILABLE').length
+      const byBinType = LOC_DATA.bins.reduce((acc, b) => { acc[b.binType] = (acc[b.binType] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byTempZone = LOC_DATA.bins.reduce((acc, b) => { const z = b.temperatureZone || 'AMBIENT'; acc[z] = (acc[z] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byWarehouse = LOC_DATA.bins.reduce((acc, b) => { acc[b.warehouseCode] = (acc[b.warehouseCode] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byTrafficDirection = LOC_DATA.aisles.reduce((acc, a) => { acc[a.trafficDirection] = (acc[a.trafficDirection] || 0) + 1; return acc }, {} as Record<string, number>)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          aisles: totalAisles,
+          racks: totalRacks,
+          shelves: totalShelves,
+          bins: totalBins,
+          availableBins,
+          occupiedBins,
+          reservedBins,
+          blockedBins,
+          maintenanceBins,
+          capacityLogs: totalCapacityLogs,
+        },
+        avgUtilization: parseFloat(avgUtilization.toFixed(2)),
+        emptyBins,
+        activeAlerts: totalCapacityLogs,
+        alertsBreakdown: { FULL: fullAlerts, OVERLOADED: overloadedAlerts, NEAR_FULL: nearFullAlerts, UNDERUTILIZED: underutilizedAlerts },
+        binsByType: byBinType,
+        binsByTempZone: byTempZone,
+        binsByWarehouse: byWarehouse,
+        aislesByTrafficDirection: byTrafficDirection,
+        hierarchyLevels: ['Warehouse', 'Zone', 'Aisle', 'Rack', 'Shelf', 'Bin', 'Inventory'],
+        binNamingConvention: 'Aisle-AisleCode-RackCode-ShelfCode-BinSeq (e.g., A-05-03-12)',
+        scannerFirstWorkflow: 'Scan barcode/QR at bin → lookup hierarchy → confirm putaway/pick. Manual entry triggers WARN.',
+        trafficDirections: ['ONE_WAY', 'TWO_WAY', 'FORKLIFT_ONLY', 'WALKING_ONLY'],
+        pickingLevels: ['GROUND', 'MID', 'HIGH', 'TOP'],
+        accessibilityRatings: ['EASY', 'MODERATE', 'DIFFICULT', 'LADDER_REQUIRED'],
+        binTypes: ['STANDARD', 'BULK', 'PICK_FACE', 'CROSS_DOCK', 'QUARANTINE'],
+        binStatuses: ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'BLOCKED', 'MAINTENANCE', 'CLEANING', 'DISABLED'],
+        alertTypes: ['FULL', 'OVERLOADED', 'UNDERUTILIZED', 'NEAR_FULL'],
+        temperatureZones: ['AMBIENT', 'CHILLED', 'FROZEN', 'DEEP_FREEZE', 'HUMIDITY_CONTROLLED'],
+        part4Begun: true,
+        sprint: 23,
+        chiefArchitectNote: 'The Bin is the smallest addressable storage unit. Every putaway, pick, count, and transfer resolves to a specific bin via barcode/QR scan. This 6-level hierarchy (Warehouse→Zone→Aisle→Rack→Shelf→Bin) is the digital map of the warehouse — physical operations cannot be executed without it.',
+      }, 'Warehouse Location & Bin Management dashboard')), { headers })
+    }
+
+    // ─── Warehouse Locations Info ──────────────────────────
+    // GET /api/warehouse-locations/info
+    if (path === '/api/warehouse-locations/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Warehouse Location & Bin Management Engine', version: '23.0.0', sprint: 23,
+        sprintName: 'Warehouse Location & Bin Management',
+        trafficDirections: ['ONE_WAY', 'TWO_WAY', 'FORKLIFT_ONLY', 'WALKING_ONLY'],
+        pickingLevels: ['GROUND', 'MID', 'HIGH', 'TOP'],
+        accessibilityRatings: ['EASY', 'MODERATE', 'DIFFICULT', 'LADDER_REQUIRED'],
+        binTypes: ['STANDARD', 'BULK', 'PICK_FACE', 'CROSS_DOCK', 'QUARANTINE'],
+        binStatuses: ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'BLOCKED', 'MAINTENANCE', 'CLEANING', 'DISABLED'],
+        alertTypes: ['FULL', 'OVERLOADED', 'UNDERUTILIZED', 'NEAR_FULL'],
+        temperatureZones: ['AMBIENT', 'CHILLED', 'FROZEN', 'DEEP_FREEZE', 'HUMIDITY_CONTROLLED'],
+        hierarchyPrinciple: 'Warehouse → Zone → Aisle → Rack → Shelf → Bin. Each level narrows the physical location; the Bin is the smallest addressable storage unit where stock lives. Inventory is stored at the Bin level — every transaction references a specific bin.',
+        binCodePrinciple: 'Format: <AisleCode>-<RackSeq>-<ShelfSeq>-<BinSeq> (e.g., A-05-03-12 = Aisle A, Rack 05, Shelf 03, Bin 12). Human-readable, sortable, and parseable for slotting analytics.',
+        scannerFirstPrinciple: 'Every receive/putaway/pick/dispatch starts with a barcode or QR scan of the bin label. The system resolves the hierarchy, validates the operation against rules (MAX_BIN_WEIGHT, FEFO, BARCODE_MANDATORY), and confirms or blocks. Manual entry triggers a WARN.',
+        capacityPrinciple: 'Each bin tracks max weight (kg), max volume (m³), current weight, current volume, and utilization %. Capacity logs are snapshot-driven — periodic snapshots capture utilization and raise alerts: FULL (100%), OVERLOADED (>100%), NEAR_FULL (90-99%), UNDERUTILIZED (<40% for 7+ days).',
+        slottingPrinciple: 'Pick-face bins (GROUND level, EASY accessibility) are reserved for fast-moving (FSN=FAST) SKUs. Mid-level bins for medium movers. High/reserve bins for SLOW/NON_MOVING stock. Re-slotting is recommended when UNDERUTILIZED or OVERLOADED alerts fire.',
+        aisleTrafficPrinciple: 'ONE_WAY aisles maximize pick velocity (single direction, no oncoming traffic). TWO_WAY aisles allow bidirectional traffic for balanced throughput. FORKLIFT_ONLY aisles restrict to forklifts (narrow doors, cold storage, heavy pallets). WALKING_ONLY aisles are picker-foot-traffic only.',
+        endpoints: ['GET /api/warehouse-aisles', 'GET /api/warehouse-racks', 'GET /api/warehouse-shelves', 'GET /api/warehouse-bins', 'POST /api/warehouse-bins', 'GET /api/warehouse-bins/:id', 'GET /api/bin-capacity-logs', 'GET /api/warehouse-locations/dashboard', 'GET /api/warehouse-locations/info'],
+        part4Begun: true,
+        part4Sprint: 2,
+        part4Sprints: 12,
+        part4Tables: 13,
+      }, 'SUOP Warehouse Location & Bin Management Engine v23.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 22, sprintName: 'Warehouse Foundation — PART 4 BEGUN (22/33 sprints)' })
-log('info', 'PART 4 BEGUN — Enterprise Warehouse Management System kicked off', { sprint: 22, part: 4, tables: 193, warehouses: 6, zones: 10 })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 23, sprintName: 'Warehouse Location & Bin Management (23/33 sprints)' })
+log('info', 'Sprint 23 — Warehouse Location & Bin Management', { sprint: 23, part: 4, tables: 198, warehouses: 6, aisles: 6, racks: 8, shelves: 12, bins: 15 })
 log('info', 'Warehouse endpoints available', { warehouses: 'GET/POST /api/warehouses', warehouseDetail: 'GET /api/warehouses/:id', zones: 'GET /api/warehouse-zones', tempZones: 'GET /api/temperature-zones', tempLogs: 'GET /api/temperature-logs', capacity: 'GET /api/warehouse-capacity', calendar: 'GET /api/warehouse-calendar', accessRules: 'GET /api/warehouse-access-rules', rules: 'GET /api/warehouse-rules', dashboard: 'GET /api/warehouses/dashboard', info: 'GET /api/warehouses/info' })
+log('info', 'Warehouse location & bin endpoints available (Sprint 23)', { aisles: 'GET /api/warehouse-aisles', racks: 'GET /api/warehouse-racks', shelves: 'GET /api/warehouse-shelves', bins: 'GET/POST /api/warehouse-bins', binDetail: 'GET /api/warehouse-bins/:id', capacityLogs: 'GET /api/bin-capacity-logs', dashboard: 'GET /api/warehouse-locations/dashboard', info: 'GET /api/warehouse-locations/info' })
 log('info', 'Analytics & mission control endpoints available', { kpis: 'GET /api/inventory-analytics/kpis', ageing: 'GET /api/inventory-analytics/ageing', classifications: 'GET /api/inventory-analytics/classifications', reorder: 'GET /api/inventory-analytics/reorder', missionControl: 'GET /api/inventory-analytics/mission-control', reports: 'GET /api/inventory-analytics/reports', reportGenerate: 'POST /:id/generate', dashboard: 'GET /api/inventory-analytics/dashboard', info: 'GET /api/inventory-analytics/info' })
 log('info', 'Costing & valuation endpoints available', { costLayers: 'GET /api/cost-layers', costHistory: 'GET /api/cost-history', landedCosts: 'GET /api/landed-costs', landedCostAllocate: 'POST /:id/allocate', revaluations: 'GET /api/inventory-revaluations', revaluationApprove: 'POST /:id/approve', glPostings: 'GET /api/inventory-gl-postings', valuation: 'GET /api/inventory-valuation', dashboard: 'GET /api/costing/dashboard', info: 'GET /api/costing/info' })
 log('info', 'Batch & expiry endpoints available', { batchMaster: 'GET /api/batch-master', history: 'GET /:id/history', shelfLifeRules: 'GET /api/shelf-life-rules', expiryAlerts: 'GET /api/expiry-alerts', alertAction: 'POST /:id/action', recalls: 'GET /api/product-recalls', recallAdvance: 'POST /:id/advance', genealogy: 'GET /api/batch-genealogy', dashboard: 'GET /api/batch-master/dashboard', info: 'GET /api/batch-master/info' })

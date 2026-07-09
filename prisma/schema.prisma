@@ -6299,3 +6299,169 @@ model WarehouseRule {
   @@index([warehouseId, ruleType], map: "idx_wr_wh_type")
   @@index([ruleType, status], map: "idx_wr_type_status")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 23 — WAREHOUSE LOCATION, BIN MANAGEMENT & DIGITAL MAP
+// Zone → Aisle → Rack → Shelf → Bin hierarchy with barcodes
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 2: Aisle Management ──────────────────────────
+model WarehouseAisle {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  zoneId          String?  @db.Uuid @map("zone_id")
+  aisleCode       String   @map("aisle_code")
+  aisleName       String   @map("aisle_name")
+  description     String?
+  // ─── Physical ───
+  lengthM         Decimal? @db.Decimal(8, 2) @map("length_m")
+  widthM          Decimal? @db.Decimal(8, 2) @map("width_m")
+  // ─── Traffic ───
+  trafficDirection String  @default("TWO_WAY") @map("traffic_direction") // ONE_WAY, TWO_WAY, FORKLIFT_ONLY, WALKING_ONLY
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  displayOrder    Int      @default(100) @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([warehouseId, aisleCode], map: "wa_unique_wh_aisle")
+  @@map("warehouse_aisles")
+  @@index([warehouseId, zoneId], map: "idx_wa_wh_zone")
+  @@index([zoneId], map: "idx_wa_zone")
+  @@index([status], map: "idx_wa_status")
+}
+
+// ─── Epic 3: Rack Management ───────────────────────────
+model WarehouseRack {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  zoneId          String?  @db.Uuid @map("zone_id")
+  aisleId         String   @db.Uuid @map("aisle_id")
+  rackCode        String   @map("rack_code")
+  rackName        String   @map("rack_name")
+  description     String?
+  // ─── Physical ───
+  heightM         Decimal? @db.Decimal(8, 2) @map("height_m")
+  widthM          Decimal? @db.Decimal(8, 2) @map("width_m")
+  depthM          Decimal? @db.Decimal(8, 2) @map("depth_m")
+  maxWeightKg     Decimal? @db.Decimal(12, 2) @map("max_weight_kg")
+  shelfCount      Int      @default(1) @map("shelf_count")
+  // ─── Safety ───
+  fireZone        String?  @map("fire_zone")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  displayOrder    Int      @default(100) @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([warehouseId, rackCode], map: "wrk_unique_wh_rack")
+  @@map("warehouse_racks")
+  @@index([warehouseId, aisleId], map: "idx_wrk_wh_aisle")
+  @@index([aisleId], map: "idx_wrk_aisle")
+  @@index([zoneId], map: "idx_wrk_zone")
+  @@index([status], map: "idx_wrk_status")
+}
+
+// ─── Epic 4: Shelf Management ──────────────────────────
+model WarehouseShelf {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  rackId          String   @db.Uuid @map("rack_id")
+  shelfCode       String   @map("shelf_code")
+  shelfName       String   @map("shelf_name")
+  // ─── Physical ───
+  level           Int      @default(1) // 1 = bottom, higher = upper shelves
+  heightFromFloor Decimal? @db.Decimal(8, 2) @map("height_from_floor")
+  maxWeightKg     Decimal? @db.Decimal(12, 2) @map("max_weight_kg")
+  maxVolumeM3     Decimal? @db.Decimal(12, 2) @map("max_volume_m3")
+  // ─── Accessibility ───
+  pickingLevel    String   @default("GROUND") @map("picking_level") // GROUND, MID, HIGH, TOP
+  accessibility   String   @default("EASY") // EASY, MODERATE, DIFFICULT, LADDER_REQUIRED
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([warehouseId, shelfCode], map: "wsh_unique_wh_shelf")
+  @@map("warehouse_shelves")
+  @@index([warehouseId, rackId], map: "idx_wsh_wh_rack")
+  @@index([rackId], map: "idx_wsh_rack")
+  @@index([status], map: "idx_wsh_status")
+}
+
+// ─── Epic 5: Bin Master ────────────────────────────────
+model WarehouseBin {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseCode   String   @map("warehouse_code")
+  zoneId          String?  @db.Uuid @map("zone_id")
+  zoneCode        String?  @map("zone_code")
+  aisleId         String?  @db.Uuid @map("aisle_id")
+  aisleCode       String?  @map("aisle_code")
+  rackId          String?  @db.Uuid @map("rack_id")
+  rackCode        String?  @map("rack_code")
+  shelfId         String?  @db.Uuid @map("shelf_id")
+  shelfCode       String?  @map("shelf_code")
+  // ─── Bin code (human readable) ───
+  binCode         String   @map("bin_code") // e.g., A-05-03-12
+  // ─── Barcode / QR ───
+  barcode         String?  @unique
+  qrCode          String?  @unique @map("qr_code")
+  // ─── Capacity ───
+  maxWeightKg     Decimal? @db.Decimal(12, 2) @map("max_weight_kg")
+  maxVolumeM3     Decimal? @db.Decimal(12, 2) @map("max_volume_m3")
+  currentWeightKg Decimal  @db.Decimal(12, 2) @default(0) @map("current_weight_kg")
+  currentVolumeM3 Decimal  @db.Decimal(12, 2) @default(0) @map("current_volume_m3")
+  // ─── Utilization ───
+  utilizationPercent Decimal @db.Decimal(5, 2) @default(0) @map("utilization_percent")
+  // ─── Temperature ───
+  temperatureZone String?  @map("temperature_zone") // AMBIENT, CHILLED, FROZEN
+  // ─── Type ───
+  binType         String   @default("STANDARD") @map("bin_type") // STANDARD, BULK, PICK_FACE, CROSS_DOCK, QUARANTINE
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED, BLOCKED, MAINTENANCE, CLEANING, DISABLED
+  statusReason    String?  @map("status_reason")
+  // ─── Items ───
+  itemCapacity    Int      @default(1) @map("item_capacity") // max distinct products
+  currentItemTypes Int     @default(0) @map("current_item_types")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([warehouseId, binCode], map: "wb_unique_wh_bin")
+  @@map("warehouse_bins")
+  @@index([warehouseId, status], map: "idx_wb_wh_status")
+  @@index([zoneId, aisleId, rackId, shelfId], map: "idx_wb_hierarchy")
+  @@index([status], map: "idx_wb_status")
+  @@index([binType], map: "idx_wb_type")
+  @@index([temperatureZone], map: "idx_wb_temp")
+  @@index([utilizationPercent], map: "idx_wb_utilization")
+}
+
+// ─── Epic 6: Bin Capacity Engine ───────────────────────
+model BinCapacityLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  binId           String   @db.Uuid @map("bin_id")
+  binCode         String   @map("bin_code")
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  // ─── Snapshot ───
+  currentWeightKg Decimal  @db.Decimal(12, 2) @map("current_weight_kg")
+  currentVolumeM3 Decimal  @db.Decimal(12, 2) @map("current_volume_m3")
+  maxWeightKg     Decimal  @db.Decimal(12, 2) @map("max_weight_kg")
+  maxVolumeM3     Decimal  @db.Decimal(12, 2) @map("max_volume_m3")
+  utilizationPercent Decimal @db.Decimal(5, 2) @map("utilization_percent")
+  // ─── Alert ───
+  alertType       String?  @map("alert_type") // FULL, OVERLOADED, UNDERUTILIZED, NEAR_FULL
+  alertMessage    String?  @map("alert_message")
+  // ─── Items ───
+  itemTypes       Int      @default(0) @map("item_types")
+  totalQuantity   Decimal  @db.Decimal(18, 4) @default(0) @map("total_quantity")
+  // ─── Snapshot time ───
+  snapshotAt      DateTime @default(now()) @map("snapshot_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("bin_capacity_logs")
+  @@index([binId, snapshotAt], map: "idx_bcl_bin_time")
+  @@index([alertType], map: "idx_bcl_alert")
+  @@index([warehouseId, snapshotAt], map: "idx_bcl_wh_time")
+}
