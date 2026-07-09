@@ -7161,13 +7161,249 @@ const server = Bun.serve({
       }, 'SUOP Dispatch, Shipping & Load Management Engine v27.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 28 — WAVE PLANNING & TASK ORCHESTRATION ENDPOINTS
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/warehouse-waves — List all waves
+    if (path === '/api/warehouse-waves' && method === 'GET') {
+      const waves = [
+        { id: 'ww-001', waveNumber: 'WAVE-2026-001', waveType: 'MULTI_ORDER', strategy: 'FIFO', priority: 'HIGH', priorityScore: 80, status: 'IN_PROGRESS', warehouseId: 'wh-001', warehouseName: 'WH-MUM-MAIN', zoneName: 'C-Picking', totalOrders: 24, totalLines: 156, totalTasks: 42, plannedStart: '2026-07-09T03:30:00Z', plannedFinish: '2026-07-09T06:00:00Z', actualStart: '2026-07-09T03:32:00Z', progress: 64, assignedOperatorIds: ['op-001', 'op-003'], requiredEquipment: ['FORKLIFT'], optimizationScore: 87 },
+        { id: 'ww-002', waveNumber: 'WAVE-2026-002', waveType: 'CARRIER', strategy: 'PRIORITY', priority: 'NORMAL', priorityScore: 50, status: 'RELEASED', warehouseId: 'wh-001', warehouseName: 'WH-MUM-MAIN', zoneName: 'C-Picking', totalOrders: 18, totalLines: 89, totalTasks: 28, plannedStart: '2026-07-09T06:00:00Z', plannedFinish: '2026-07-09T08:00:00Z', actualStart: null, progress: 0, assignedOperatorIds: [], requiredEquipment: ['FORKLIFT'] },
+        { id: 'ww-004', waveNumber: 'WAVE-2026-004', waveType: 'EMERGENCY', strategy: 'PRIORITY', priority: 'EMERGENCY', priorityScore: 100, status: 'IN_PROGRESS', warehouseId: 'wh-001', warehouseName: 'WH-MUM-MAIN', zoneName: 'C-Picking', totalOrders: 4, totalLines: 22, totalTasks: 8, plannedStart: '2026-07-09T04:45:00Z', plannedFinish: '2026-07-09T05:15:00Z', actualStart: '2026-07-09T04:44:00Z', progress: 88, assignedOperatorIds: ['op-003'], requiredEquipment: ['FORKLIFT', 'SCANNER'] },
+      ]
+      return new Response(JSON.stringify(successResponse(waves, 'Waves retrieved')), { headers })
+    }
+
+    // POST /api/warehouse-waves — Create wave
+    if (path === '/api/warehouse-waves' && method === 'POST') {
+      const body = await req.json()
+      const wave = {
+        id: `ww-${Date.now()}`,
+        waveNumber: `WAVE-2026-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+        waveType: body.waveType || 'MULTI_ORDER',
+        strategy: body.strategy || 'FIFO',
+        priority: body.priority || 'NORMAL',
+        priorityScore: body.priority === 'EMERGENCY' ? 100 : body.priority === 'HIGH' ? 80 : 50,
+        status: 'DRAFT',
+        warehouseId: body.warehouseId,
+        warehouseName: body.warehouseName,
+        totalOrders: 0, totalLines: 0, totalTasks: 0,
+        plannedStart: body.plannedStart, plannedFinish: body.plannedFinish,
+        createdAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(wave, 'Wave created')), { status: 201, headers })
+    }
+
+    // POST /api/warehouse-waves/:id/release — Release wave (auto-generates tasks)
+    if (path.match(/^\/api\/warehouse-waves\/[\w-]+\/release$/) && method === 'POST') {
+      const waveId = path.split('/')[3]
+      const result = {
+        waveId,
+        status: 'RELEASED',
+        tasksGenerated: Math.floor(Math.random() * 40) + 10,
+        operatorsAutoAssigned: Math.floor(Math.random() * 5) + 2,
+        equipmentAllocated: Math.floor(Math.random() * 3) + 1,
+        releasedAt: new Date().toISOString(),
+        message: 'Wave released — tasks generated and operators auto-assigned by skill+workload algorithm',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Wave released')), { headers })
+    }
+
+    // GET /api/warehouse-tasks — List all warehouse tasks
+    if (path === '/api/warehouse-tasks' && method === 'GET') {
+      const tasks = [
+        { id: 'wt-001', taskNumber: 'TASK-2026-001', taskType: 'PICK', priority: 'EMERGENCY', priorityScore: 100, status: 'IN_PROGRESS', waveId: 'ww-004', waveNumber: 'WAVE-2026-004', warehouseId: 'wh-001', fromLocationCode: 'C-02-03-A', toLocationCode: 'PK-01', assignedOperatorId: 'op-003', assignedOperatorName: 'Suresh Mehta', assignedEquipmentCode: 'FL-002', slaDeadline: '2026-07-09T05:15:00Z', slaViolated: false, progress: 75, plannedQty: '24', actualQty: '18' },
+        { id: 'wt-002', taskNumber: 'TASK-2026-002', taskType: 'PUTAWAY', priority: 'HIGH', priorityScore: 80, status: 'ASSIGNED', waveId: null, warehouseId: 'wh-001', fromLocationCode: 'RECV-01', toLocationCode: 'B-01-02-C', assignedOperatorId: 'op-005', assignedOperatorName: 'Ramesh Patel', assignedEquipmentCode: 'FL-001', slaDeadline: '2026-07-09T06:00:00Z', slaViolated: false, progress: 0, plannedQty: '100' },
+        { id: 'wt-003', taskNumber: 'TASK-2026-003', taskType: 'PICK', priority: 'HIGH', priorityScore: 80, status: 'OPEN', waveId: 'ww-001', waveNumber: 'WAVE-2026-001', warehouseId: 'wh-001', fromLocationCode: 'C-03-01-B', toLocationCode: 'PK-02', assignedOperatorId: null, slaDeadline: '2026-07-09T06:00:00Z', slaViolated: false, progress: 0, plannedQty: '48' },
+        { id: 'wt-009', taskNumber: 'TASK-2026-009', taskType: 'PICK', priority: 'EMERGENCY', priorityScore: 100, status: 'ESCALATED', waveId: 'ww-004', waveNumber: 'WAVE-2026-004', warehouseId: 'wh-001', fromLocationCode: 'C-04-02-A', toLocationCode: 'PK-03', assignedOperatorId: null, slaDeadline: '2026-07-09T05:00:00Z', slaViolated: true, progress: 0, plannedQty: '6' },
+      ]
+      return new Response(JSON.stringify(successResponse(tasks, 'Warehouse tasks retrieved')), { headers })
+    }
+
+    // POST /api/warehouse-tasks/:id/assign — Auto-assign task to best operator
+    if (path.match(/^\/api\/warehouse-tasks\/[\w-]+\/assign$/) && method === 'POST') {
+      const taskId = path.split('/')[3]
+      const assignment = {
+        taskId,
+        assignedOperatorId: 'op-001',
+        assignedOperatorName: 'Rajesh Kumar',
+        assignedEquipmentId: 'eq-001',
+        assignedEquipmentCode: 'FL-001',
+        assignmentStrategy: 'AUTO_WORKLOAD_SKILL_DISTANCE',
+        assignmentScore: 92,
+        reason: 'Best match — skill level EXPERT, current workload 65% (capacity 35%), zone C-Picking match, distance 12m',
+        assignedAt: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(assignment, 'Task auto-assigned')), { headers })
+    }
+
+    // POST /api/warehouse-tasks/:id/complete — Complete task
+    if (path.match(/^\/api\/warehouse-tasks\/[\w-]+\/complete$/) && method === 'POST') {
+      const taskId = path.split('/')[3]
+      const body = await req.json().catch(() => ({}))
+      const result = {
+        taskId,
+        status: 'COMPLETED',
+        actualFinish: new Date().toISOString(),
+        actualQty: body.actualQty || null,
+        durationSeconds: body.durationSeconds || null,
+        nextTaskId: `wt-${Math.floor(Math.random() * 9000) + 1000}`,
+        nextTaskNumber: `TASK-2026-${Math.floor(Math.random() * 9000) + 1000}`,
+        message: 'Task completed — next highest-priority task auto-pushed to operator',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Task completed')), { headers })
+    }
+
+    // GET /api/warehouse-operators — List operators with workload
+    if (path === '/api/warehouse-operators' && method === 'GET') {
+      const operators = [
+        { id: 'op-001', operatorCode: 'OP-001', fullName: 'Rajesh Kumar', skillLevel: 'EXPERT', overallRating: 92, status: 'ACTIVE', isOnline: true, primaryShiftId: 'sh-001', homeWarehouseName: 'WH-MUM-MAIN', primaryZoneName: 'C-Picking', forkliftCertified: true, reachTruckCertified: true, stackerCertified: false, scannerCertified: true, tasksCompletedToday: 14, tasksCompletedWeek: 78, accuracyPercent: 98.5, utilizationPercent: 87 },
+        { id: 'op-003', operatorCode: 'OP-003', fullName: 'Suresh Mehta', skillLevel: 'EXPERT', overallRating: 88, status: 'ACTIVE', isOnline: true, primaryShiftId: 'sh-001', homeWarehouseName: 'WH-MUM-MAIN', primaryZoneName: 'E-Dispatch', forkliftCertified: true, reachTruckCertified: true, stackerCertified: false, scannerCertified: true, tasksCompletedToday: 18, tasksCompletedWeek: 92, accuracyPercent: 99.1, utilizationPercent: 94 },
+        { id: 'op-005', operatorCode: 'OP-005', fullName: 'Ramesh Patel', skillLevel: 'ADVANCED', overallRating: 79, status: 'ACTIVE', isOnline: false, primaryShiftId: 'sh-002', homeWarehouseName: 'WH-MUM-MAIN', primaryZoneName: 'B-Bulk', forkliftCertified: true, reachTruckCertified: false, stackerCertified: true, scannerCertified: true, tasksCompletedToday: 0, tasksCompletedWeek: 52, accuracyPercent: 95.5, utilizationPercent: 0 },
+      ]
+      return new Response(JSON.stringify(successResponse(operators, 'Operators retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-equipment — List equipment with status
+    if (path === '/api/warehouse-equipment' && method === 'GET') {
+      const equipment = [
+        { id: 'eq-001', equipmentCode: 'FL-001', equipmentType: 'FORKLIFT', make: 'Toyota', model: '8FBE15', status: 'IN_USE', batteryPercent: 78, currentOperatorId: 'op-001', currentOperatorName: 'Rajesh Kumar', currentTaskId: 'wt-002', warehouseId: 'wh-001', totalTasksDone: 342, totalOperatingHours: 1245.5, nextMaintenanceAt: '2026-09-15', requiredCertifications: ['FORKLIFT'] },
+        { id: 'eq-002', equipmentCode: 'FL-002', equipmentType: 'FORKLIFT', make: 'Godrej', model: 'GXE-15T', status: 'IN_USE', batteryPercent: 62, currentOperatorId: 'op-003', currentOperatorName: 'Suresh Mehta', currentTaskId: 'wt-001', warehouseId: 'wh-001', totalTasksDone: 287, totalOperatingHours: 982.3, nextMaintenanceAt: '2026-09-20', requiredCertifications: ['FORKLIFT'] },
+        { id: 'eq-005', equipmentCode: 'ST-001', equipmentType: 'STACKER', make: 'Godrej', model: 'GSX-10', status: 'CHARGING', batteryPercent: 23, currentOperatorId: null, warehouseId: 'wh-001', totalTasksDone: 198, totalOperatingHours: 734.1, nextMaintenanceAt: '2026-09-25', requiredCertifications: ['STACKER'] },
+        { id: 'eq-008', equipmentCode: 'FL-004', equipmentType: 'FORKLIFT', make: 'Toyota', model: '8FBE15', status: 'MAINTENANCE', batteryPercent: 0, currentOperatorId: null, warehouseId: 'wh-001', totalTasksDone: 567, totalOperatingHours: 2104.7, nextMaintenanceAt: '2026-10-08', requiredCertifications: ['FORKLIFT'] },
+      ]
+      return new Response(JSON.stringify(successResponse(equipment, 'Equipment retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-sla — List SLA configurations
+    if (path === '/api/warehouse-sla' && method === 'GET') {
+      const slas = [
+        { id: 'sla-001', slaCode: 'SLA-RECV-01', slaName: 'Receiving SLA', taskType: 'RECEIVE', priority: 'NORMAL', targetMinutes: 60, warningMinutes: 48, criticalMinutes: 60, onTimePercent: 94, totalTasks: 156, violations: 9, penaltyAmount: 0 },
+        { id: 'sla-003', slaCode: 'SLA-PICK-01', slaName: 'Picking SLA', taskType: 'PICK', priority: 'HIGH', targetMinutes: 30, warningMinutes: 24, criticalMinutes: 30, onTimePercent: 88, totalTasks: 412, violations: 49, penaltyAmount: 4500 },
+        { id: 'sla-005', slaCode: 'SLA-DISP-01', slaName: 'Dispatch SLA', taskType: 'DISPATCH', priority: 'HIGH', targetMinutes: 90, warningMinutes: 72, criticalMinutes: 90, onTimePercent: 93, totalTasks: 178, violations: 12, penaltyAmount: 2800 },
+      ]
+      return new Response(JSON.stringify(successResponse(slas, 'SLA configurations retrieved')), { headers })
+    }
+
+    // GET /api/sla-violations — List SLA violations
+    if (path === '/api/sla-violations' && method === 'GET') {
+      const violations = [
+        { id: 'sv-012', violationNumber: 'SLA-V-2026-012', slaCode: 'SLA-PICK-01', slaName: 'Picking SLA', taskId: 'wt-009', taskNumber: 'TASK-2026-009', taskType: 'PICK', operatorId: null, operatorName: null, severity: 'CRITICAL', overrunMinutes: 35, deadlineTime: '2026-07-09T05:00:00Z', violationTime: '2026-07-09T05:35:00Z', status: 'OPEN', penaltyApplied: false },
+        { id: 'sv-011', violationNumber: 'SLA-V-2026-011', slaCode: 'SLA-RECV-01', slaName: 'Receiving SLA', taskId: 'wt-006', taskNumber: 'TASK-2026-006', taskType: 'RECEIVE', operatorId: 'op-007', operatorName: 'Anil Kumar', severity: 'MAJOR', overrunMinutes: 18, deadlineTime: '2026-07-09T07:00:00Z', violationTime: '2026-07-09T07:18:00Z', status: 'INVESTIGATING', penaltyApplied: false },
+      ]
+      return new Response(JSON.stringify(successResponse(violations, 'SLA violations retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-exceptions — List exceptions
+    if (path === '/api/warehouse-exceptions' && method === 'GET') {
+      const exceptions = [
+        { id: 'wex-018', exceptionNumber: 'EX-2026-018', exceptionType: 'TASK_FAILURE', sourceType: 'PICKING', taskId: 'wt-009', taskNumber: 'TASK-2026-009', waveNumber: 'WAVE-2026-004', severity: 'CRITICAL', status: 'OPEN', title: 'Operator unavailable for emergency pick', description: 'Auto-assignment engine could not find a certified operator within 200m of C-04-02-A. Manual intervention required.', impactLevel: 'MAJOR', affectedTasks: 1, estimatedDelayMinutes: 35, reportedAt: '2026-07-09T05:05:00Z', reportedByName: 'Auto-Engine' },
+        { id: 'wex-016', exceptionNumber: 'EX-2026-016', exceptionType: 'EQUIPMENT_FAILURE', sourceType: 'EQUIPMENT', severity: 'HIGH', status: 'INVESTIGATING', title: 'FL-005 hydraulic failure during loading', description: 'Forklift FL-005 reported hydraulic pressure loss at DOCK-04 while loading pallet 3. Equipment moved to maintenance bay.', impactLevel: 'MAJOR', affectedTasks: 3, estimatedDelayMinutes: 45, reportedAt: '2026-07-09T04:35:00Z', reportedByName: 'Suresh Mehta' },
+      ]
+      return new Response(JSON.stringify(successResponse(exceptions, 'Exceptions retrieved')), { headers })
+    }
+
+    // POST /api/warehouse-exceptions/:id/resolve — Resolve exception
+    if (path.match(/^\/api\/warehouse-exceptions\/[\w-]+\/resolve$/) && method === 'POST') {
+      const exId = path.split('/')[3]
+      const body = await req.json().catch(() => ({}))
+      const result = {
+        exceptionId: exId,
+        status: 'RESOLVED',
+        resolution: body.resolution || 'CLOSE',
+        resolutionNotes: body.notes || 'Resolved by supervisor',
+        resolvedAt: new Date().toISOString(),
+        resolvedByName: body.resolvedByName || 'Supervisor',
+      }
+      return new Response(JSON.stringify(successResponse(result, 'Exception resolved')), { headers })
+    }
+
+    // GET /api/warehouse-control-tower — Live control tower data
+    if (path === '/api/warehouse-control-tower' && method === 'GET') {
+      const data = {
+        kpis: {
+          tasksPerHour: 42, targetTasksPerHour: 50,
+          ordersPerHour: 18, targetOrdersPerHour: 20,
+          avgCompletionMinutes: 4.2, targetCompletionMinutes: 3.5,
+          operatorUtilization: 78, targetOperatorUtilization: 85,
+          equipmentUtilization: 64, targetEquipmentUtilization: 70,
+          warehouseEfficiency: 92, targetEfficiency: 95,
+        },
+        zoneHeatMap: [
+          { zone: 'A-Receiving', load: 75, activeTasks: 6 },
+          { zone: 'B-Bulk', load: 45, activeTasks: 3 },
+          { zone: 'C-Picking', load: 92, activeTasks: 14 },
+          { zone: 'D-Pack', load: 68, activeTasks: 8 },
+          { zone: 'E-Dispatch', load: 88, activeTasks: 11 },
+          { zone: 'F-Cold', load: 30, activeTasks: 2 },
+        ],
+        dockActivity: [
+          { dock: 'DOCK-01', status: 'LOADING', vehicle: 'MH12-AB-1234', carrier: 'VRL Logistics', progress: 65 },
+          { dock: 'DOCK-02', status: 'UNLOADING', vehicle: 'KA05-CD-5678', carrier: 'In-House', progress: 40 },
+          { dock: 'DOCK-03', status: 'IDLE', vehicle: null, carrier: null, progress: 0 },
+        ],
+        onlineOperators: 7,
+        offlineOperators: 1,
+        openExceptions: 3,
+        criticalAlerts: 1,
+        timestamp: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Control tower live data')), { headers })
+    }
+
+    // GET /api/wave-planning/info — Sprint 28 info
+    if (path === '/api/wave-planning/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 28,
+        sprintName: 'Enterprise Wave Planning, Task Orchestration & Workforce Management Engine',
+        version: '28.0.0',
+        part: 4,
+        tables: 16,
+        epics: [
+          'Epic 1: Wave Planning Engine (8 wave types, 5 strategies)',
+          'Epic 2: Warehouse Task Engine (10 task types)',
+          'Epic 3: Dynamic Task Assignment (skill + workload + distance + zone + shift)',
+          'Epic 4: Workforce Management (shifts, attendance, KPIs)',
+          'Epic 5: Equipment Management (forklifts, reach trucks, scanners)',
+          'Epic 6: SLA Monitoring (7 task types, 4 severity levels)',
+          'Epic 7: Exception Management (11 exception types, escalation matrix)',
+          'Epic 8: Warehouse Control Tower (live KPIs, heat map, dock, yard)',
+        ],
+        domainEvents: ['WaveCreated', 'WaveReleased', 'TaskAssigned', 'TaskCompleted', 'OperatorAssigned', 'EquipmentAllocated', 'SLAViolated', 'ExceptionRaised'],
+        wavePlanningPrinciple: 'Wave Planning groups orders into manageable batches for efficient picking. SUOP supports 8 wave types: SINGLE_ORDER (emergency/VIP), MULTI_ORDER (batch picking), BATCH (high-volume), ZONE (zone-locked), CARRIER (carrier-grouped), ROUTE (route-grouped), PRIORITY (high-priority first), EMERGENCY (overrides all). Each wave has a strategy: FIFO (first in first out), FEFO (first expiry first out — critical for food), LIFO, PRIORITY, ZONE_SEQUENCE. Waves move through status: DRAFT → RELEASED → IN_PROGRESS → COMPLETED (or CANCELLED/ON_HOLD).',
+        taskEnginePrinciple: 'Warehouse Tasks are atomic units of work assigned to operators. 10 task types: RECEIVE (inbound), PUTAWAY (storage), PICK (outbound), PACK (consolidation), TRANSFER (bin-to-bin), COUNT (cycle count), INSPECT (QC), LOAD (vehicle loading), DISPATCH (final dispatch), REPLENISH (bin refill). Each task tracks planned vs actual qty, scan verification (from-location, to-location, product, qty), SLA deadline, and assignment strategy. Status: OPEN → ASSIGNED → ACCEPTED → IN_PROGRESS → COMPLETED (or FAILED/ESCALATED).',
+        dynamicAssignmentPrinciple: 'Dynamic Task Assignment is the heart of intelligent WMS. When a task is OPEN, the engine computes an assignment score for each eligible operator based on: (1) Current workload — operators with capacity get higher score; (2) Skill level — certified operators only for forklift/reach truck tasks; (3) Distance to task location — closer operators preferred; (4) Zone familiarity — operators in the same zone get bonus; (5) Shift — only on-shift operators considered; (6) Priority — emergency tasks can preempt lower-priority tasks. The highest-scoring operator is auto-assigned. Operators never manually select work — the system continuously pushes the highest-priority task.',
+        workforcePrinciple: 'Workforce Management tracks operators across 3 shifts (Morning 06-14, Evening 14-22, Night 22-06) plus overtime pool. Each operator has a skill matrix (BEGINNER → INTERMEDIATE → ADVANCED → EXPERT → SUPERVISOR) and certifications (FORKLIFT, REACH_TRUCK, STACKER, SCANNER). KPIs: tasks completed, accuracy %, utilization %, idle time, travel time, average task duration. Attendance: PRESENT, LATE, ABSENT, HALF_DAY, ON_LEAVE, HOLIDAY — with grace periods and overtime tracking.',
+        equipmentPrinciple: 'Equipment Management tracks forklifts, reach trucks, stackers, hand pallet trucks, scanners, mobile devices, and printers. Each equipment tracks battery/fuel level, charging status, maintenance schedule (last + next), total operating hours, total tasks done, current operator, current location, and required certifications. Status: AVAILABLE, IN_USE, CHARGING, MAINTENANCE, OUT_OF_SERVICE, RETIRED. Battery below 20% triggers charging alert; maintenance overdue triggers maintenance alert.',
+        slaPrinciple: 'SLA Monitoring measures task completion against time targets. 7 SLA types: Receiving (60 min), Putaway (45 min), Picking (30 min, HIGH priority), Packing (20 min), Dispatch (90 min, HIGH priority), Transfer (60 min), Cycle Count (240 min). Each has warning (80% of target) and critical (100% of target) thresholds. Violations are tracked with severity (WARNING, MINOR, MAJOR, CRITICAL) and may carry penalties. Resolution workflow: OPEN → ACKNOWLEDGED → INVESTIGATING → RESOLVED (or WAIVED).',
+        exceptionPrinciple: 'Exception Management handles 11 exception types: TASK_FAILURE, NO_STOCK, WRONG_BIN, EQUIPMENT_FAILURE, OPERATOR_UNAVAILABLE, PRIORITY_CHANGE, EMERGENCY_ORDER, TEMPERATURE_ALARM, SHORT_PICK, DAMAGED_GOODS, MISCELLANEOUS. Workflow: Exception → Auto-routed to Supervisor → Investigation → Decision (Reassign / Escalate / Close) → Audit Logged. Severity (LOW, MEDIUM, HIGH, CRITICAL) determines escalation level and notification chain. Impact assessment: NEGLIGIBLE, MINOR, MODERATE, MAJOR, SEVERE.',
+        controlTowerPrinciple: 'Warehouse Control Tower is the live operational dashboard. Displays: live operators (online/offline), open tasks (by type/priority), wave status, equipment status, warehouse heat map (zone load %), dock activity (loading/unloading/idle), vehicle queue (yard), alerts (critical/high/warning/info). KPIs: tasks/hour, orders/hour, avg completion time, operator utilization, equipment utilization, warehouse efficiency. Live mode updates every 5 seconds.',
+        chiefArchitectRecommendation: 'For Sudhamrit\'s manufacturing and distribution operations, implement Dynamic Replenishment Tasks. When picking bin stock falls below minimum, the system auto-creates a replenishment task. Forklift operator receives the task, moves stock from bulk to picking location, scans to confirm. This ensures fast-moving products (sweets, snacks, packaging materials) are always available in picking locations without manual supervision, reducing fulfillment delays.',
+        endpoints: [
+          'GET /api/warehouse-waves', 'POST /api/warehouse-waves', 'POST /api/warehouse-waves/:id/release',
+          'GET /api/warehouse-tasks', 'POST /api/warehouse-tasks/:id/assign', 'POST /api/warehouse-tasks/:id/complete',
+          'GET /api/warehouse-operators',
+          'GET /api/warehouse-equipment',
+          'GET /api/warehouse-sla', 'GET /api/sla-violations',
+          'GET /api/warehouse-exceptions', 'POST /api/warehouse-exceptions/:id/resolve',
+          'GET /api/warehouse-control-tower',
+          'GET /api/wave-planning/info',
+        ],
+        part4Sprint: 7,
+        part4Sprints: 12,
+        part4Tables: 54,
+      }, 'SUOP Wave Planning & Task Orchestration Engine v28.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 27, sprintName: 'Dispatch, Shipping & Load Management Engine (27/33 sprints)' })
-log('info', 'Sprint 27 — Dispatch, Shipping & Load Management Engine', { sprint: 27, part: 4, tables: 223, dispatchOrders: 6, dispatchVehicles: 5, loadPlans: 3, shippingDocuments: 4, vehicleSeals: 2, gateExitLogs: 2 })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 28, sprintName: 'Wave Planning, Task Orchestration & Workforce Management Engine (28/33 sprints)' })
+log('info', 'Sprint 28 — Wave Planning & Task Orchestration Engine', { sprint: 28, part: 4, tables: 239, waves: 8, tasks: 10, operators: 8, equipment: 10, slaConfigs: 7, violations: 6, exceptions: 8 })
+log('info', 'Wave planning endpoints available (Sprint 28)', { waves: 'GET/POST /api/warehouse-waves', waveRelease: 'POST /api/warehouse-waves/:id/release', tasks: 'GET /api/warehouse-tasks', taskAssign: 'POST /api/warehouse-tasks/:id/assign', taskComplete: 'POST /api/warehouse-tasks/:id/complete', operators: 'GET /api/warehouse-operators', equipment: 'GET /api/warehouse-equipment', sla: 'GET /api/warehouse-sla', violations: 'GET /api/sla-violations', exceptions: 'GET /api/warehouse-exceptions', exceptionResolve: 'POST /api/warehouse-exceptions/:id/resolve', controlTower: 'GET /api/warehouse-control-tower', info: 'GET /api/wave-planning/info' })
 log('info', 'Dispatch & shipping endpoints available (Sprint 27)', { dispatchOrders: 'GET/POST /api/dispatch-orders', dispatchComplete: 'POST /api/dispatch-orders/:id/complete', dispatchVehicles: 'GET /api/dispatch-vehicles', loadPlans: 'GET /api/load-plans', shippingDocuments: 'GET /api/shipping-documents', vehicleSeals: 'GET /api/vehicle-seals', gateExitLogs: 'GET /api/gate-exit-logs', gateExitApprove: 'POST /api/gate-exit-logs/:id/approve', dashboard: 'GET /api/dispatch/dashboard', info: 'GET /api/dispatch/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })

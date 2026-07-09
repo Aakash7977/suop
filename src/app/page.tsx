@@ -26,7 +26,8 @@ import {
   Truck, PackageCheck as PackageCheckIcon, FlaskConical, MapPin as MapPinIcon,
   Trash2, AlertTriangle as AlertTriangleIcon,
   Thermometer, Snowflake, Droplets, ScanLine as ScanIcon,
-  Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon
+  Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon,
+  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -47,7 +48,9 @@ import { cn } from '@/lib/utils'
 // ─── Types ──────────────────────────────────────────────
 type ModuleKey =
   | 'dashboard' | 'organization' | 'rbac' | 'products' | 'pim' | 'commercial' | 'partners' | 'identification' | 'governance' | 'inventory' | 'goodsreceipt' | 'stockissue' | 'transfer' | 'adjustment' | 'reservation' | 'cyclecount' | 'batchmgmt' | 'costing'
-  | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'dispatch' | 'manufacturing' | 'quality'
+  | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'dispatch'
+  | 'waveplanning' | 'taskqueue' | 'workforce' | 'equipment' | 'controltower' | 'sladashboard' | 'exceptioncenter' | 'workforceanalytics'
+  | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
 
@@ -154,6 +157,14 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Putaway', icon: <PackageOpen className="h-4 w-4" />, module: 'putaway', available: true },
       { name: 'Picking & Packing', icon: <ClipboardCheck className="h-4 w-4" />, module: 'fulfillment', available: true },
       { name: 'Dispatch', icon: <Truck className="h-4 w-4" />, module: 'dispatch', available: true },
+      { name: 'Wave Planning', icon: <Waves className="h-4 w-4" />, module: 'waveplanning', available: true },
+      { name: 'Task Queue', icon: <ListChecks className="h-4 w-4" />, module: 'taskqueue', available: true },
+      { name: 'Workforce', icon: <Users className="h-4 w-4" />, module: 'workforce', available: true },
+      { name: 'Equipment', icon: <Truck className="h-4 w-4" />, module: 'equipment', available: true },
+      { name: 'Control Tower', icon: <Grid3x3 className="h-4 w-4" />, module: 'controltower', available: true },
+      { name: 'SLA Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'sladashboard', available: true },
+      { name: 'Exception Center', icon: <AlertOctagon className="h-4 w-4" />, module: 'exceptioncenter', available: true },
+      { name: 'Workforce Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'workforceanalytics', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -10151,6 +10162,1193 @@ function SettingsModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 28 — WAVE PLANNING & TASK ORCHESTRATION MODULES
+// Epic 1-8: Wave Planning, Task Engine, Workforce, Equipment,
+//           Control Tower, SLA, Exceptions, Workforce Analytics
+// ═════════════════════════════════════════════════════════
+
+// ─── Shared Sprint 28 Helpers ────────────────────────────
+const S28_WAREHOUSES = ['WH-MUM-MAIN', 'WH-DEL-NORTH', 'WH-BLR-CENTRAL', 'WH-HYD-WEST']
+const S28_ZONES = ['A-Receiving', 'B-Bulk', 'C-Picking', 'D-Pack', 'E-Dispatch', 'F-Cold']
+
+function s28BadgeForStatus(status: string): { cls: string; label: string } {
+  const map: Record<string, { cls: string; label: string }> = {
+    DRAFT: { cls: 'bg-slate-100 text-slate-700', label: 'Draft' },
+    RELEASED: { cls: 'bg-blue-100 text-blue-700', label: 'Released' },
+    IN_PROGRESS: { cls: 'bg-amber-100 text-amber-700', label: 'In Progress' },
+    COMPLETED: { cls: 'bg-emerald-100 text-emerald-700', label: 'Completed' },
+    CANCELLED: { cls: 'bg-rose-100 text-rose-700', label: 'Cancelled' },
+    ON_HOLD: { cls: 'bg-orange-100 text-orange-700', label: 'On Hold' },
+    OPEN: { cls: 'bg-slate-100 text-slate-700', label: 'Open' },
+    ASSIGNED: { cls: 'bg-indigo-100 text-indigo-700', label: 'Assigned' },
+    ACCEPTED: { cls: 'bg-blue-100 text-blue-700', label: 'Accepted' },
+    PAUSED: { cls: 'bg-orange-100 text-orange-700', label: 'Paused' },
+    FAILED: { cls: 'bg-rose-100 text-rose-700', label: 'Failed' },
+    ESCALATED: { cls: 'bg-red-100 text-red-700', label: 'Escalated' },
+    AVAILABLE: { cls: 'bg-emerald-100 text-emerald-700', label: 'Available' },
+    IN_USE: { cls: 'bg-amber-100 text-amber-700', label: 'In Use' },
+    CHARGING: { cls: 'bg-blue-100 text-blue-700', label: 'Charging' },
+    MAINTENANCE: { cls: 'bg-orange-100 text-orange-700', label: 'Maintenance' },
+    OUT_OF_SERVICE: { cls: 'bg-rose-100 text-rose-700', label: 'Out of Service' },
+    ACTIVE: { cls: 'bg-emerald-100 text-emerald-700', label: 'Active' },
+    INACTIVE: { cls: 'bg-slate-100 text-slate-700', label: 'Inactive' },
+    ON_LEAVE: { cls: 'bg-amber-100 text-amber-700', label: 'On Leave' },
+    PRESENT: { cls: 'bg-emerald-100 text-emerald-700', label: 'Present' },
+    LATE: { cls: 'bg-amber-100 text-amber-700', label: 'Late' },
+    ABSENT: { cls: 'bg-rose-100 text-rose-700', label: 'Absent' },
+    SCHEDULED: { cls: 'bg-blue-100 text-blue-700', label: 'Scheduled' },
+    WARNING: { cls: 'bg-amber-100 text-amber-700', label: 'Warning' },
+    MINOR: { cls: 'bg-blue-100 text-blue-700', label: 'Minor' },
+    MAJOR: { cls: 'bg-orange-100 text-orange-700', label: 'Major' },
+    CRITICAL: { cls: 'bg-rose-100 text-rose-700', label: 'Critical' },
+    MEDIUM: { cls: 'bg-amber-100 text-amber-700', label: 'Medium' },
+    LOW: { cls: 'bg-slate-100 text-slate-700', label: 'Low' },
+    HIGH: { cls: 'bg-orange-100 text-orange-700', label: 'High' },
+    INVESTIGATING: { cls: 'bg-blue-100 text-blue-700', label: 'Investigating' },
+    RESOLVED: { cls: 'bg-emerald-100 text-emerald-700', label: 'Resolved' },
+    ACKNOWLEDGED: { cls: 'bg-indigo-100 text-indigo-700', label: 'Acknowledged' },
+    WAIVED: { cls: 'bg-slate-100 text-slate-700', label: 'Waived' },
+    CLOSED: { cls: 'bg-slate-100 text-slate-700', label: 'Closed' },
+    BUSY: { cls: 'bg-amber-100 text-amber-700', label: 'Busy' },
+    OVERLOADED: { cls: 'bg-rose-100 text-rose-700', label: 'Overloaded' },
+    IDLE: { cls: 'bg-blue-100 text-blue-700', label: 'Idle' },
+    OFFLINE: { cls: 'bg-slate-200 text-slate-600', label: 'Offline' },
+  }
+  return map[status] || { cls: 'bg-slate-100 text-slate-700', label: status }
+}
+
+function s28PriorityBadge(priority: string) {
+  const map: Record<string, string> = {
+    EMERGENCY: 'bg-red-100 text-red-700 border-red-300',
+    HIGH: 'bg-orange-100 text-orange-700 border-orange-300',
+    NORMAL: 'bg-blue-100 text-blue-700 border-blue-300',
+    LOW: 'bg-slate-100 text-slate-700 border-slate-300',
+  }
+  return map[priority] || map.NORMAL
+}
+
+// ─── Epic 1: Wave Planning Module ───────────────────────
+function WavePlanningModule() {
+  const [view, setView] = useState<'list' | 'kanban' | 'gantt'>('list')
+  const [filterStatus, setFilterStatus] = useState<string>('ALL')
+  const [filterType, setFilterType] = useState<string>('ALL')
+  const [showCreate, setShowCreate] = useState(false)
+
+  const waves = [
+    { id: 'W1', num: 'WAVE-2026-001', type: 'MULTI_ORDER', priority: 'HIGH', status: 'IN_PROGRESS', warehouse: 'WH-MUM-MAIN', zone: 'C-Picking', orders: 24, lines: 156, tasks: 42, plannedStart: '09:00', plannedFinish: '11:30', actualStart: '09:02', progress: 64, operator: 'Rajesh K.' },
+    { id: 'W2', num: 'WAVE-2026-002', type: 'CARRIER', priority: 'NORMAL', status: 'RELEASED', warehouse: 'WH-MUM-MAIN', zone: 'C-Picking', orders: 18, lines: 89, tasks: 28, plannedStart: '11:30', plannedFinish: '13:30', actualStart: null, progress: 0, operator: '—' },
+    { id: 'W3', num: 'WAVE-2026-003', type: 'ZONE', priority: 'NORMAL', status: 'COMPLETED', warehouse: 'WH-DEL-NORTH', zone: 'B-Bulk', orders: 12, lines: 67, tasks: 19, plannedStart: '07:00', plannedFinish: '09:00', actualStart: '06:58', progress: 100, operator: 'Anita S.' },
+    { id: 'W4', num: 'WAVE-2026-004', type: 'EMERGENCY', priority: 'EMERGENCY', status: 'IN_PROGRESS', warehouse: 'WH-MUM-MAIN', zone: 'C-Picking', orders: 4, lines: 22, tasks: 8, plannedStart: '10:15', plannedFinish: '10:45', actualStart: '10:14', progress: 88, operator: 'Suresh M.' },
+    { id: 'W5', num: 'WAVE-2026-005', type: 'BATCH', priority: 'NORMAL', status: 'DRAFT', warehouse: 'WH-BLR-CENTRAL', zone: 'D-Pack', orders: 32, lines: 210, tasks: 56, plannedStart: '14:00', plannedFinish: '17:00', actualStart: null, progress: 0, operator: '—' },
+    { id: 'W6', num: 'WAVE-2026-006', type: 'ROUTE', priority: 'HIGH', status: 'RELEASED', warehouse: 'WH-MUM-MAIN', zone: 'E-Dispatch', orders: 15, lines: 78, tasks: 22, plannedStart: '13:00', plannedFinish: '15:00', actualStart: null, progress: 0, operator: '—' },
+    { id: 'W7', num: 'WAVE-2026-007', type: 'PRIORITY', priority: 'HIGH', status: 'ON_HOLD', warehouse: 'WH-HYD-WEST', zone: 'C-Picking', orders: 9, lines: 45, tasks: 14, plannedStart: '12:00', plannedFinish: '14:00', actualStart: null, progress: 0, operator: '—' },
+    { id: 'W8', num: 'WAVE-2026-008', type: 'MULTI_ORDER', priority: 'NORMAL', status: 'COMPLETED', warehouse: 'WH-MUM-MAIN', zone: 'C-Picking', orders: 21, lines: 134, tasks: 38, plannedStart: '08:00', plannedFinish: '10:00', actualStart: '07:59', progress: 100, operator: 'Rajesh K.' },
+  ]
+
+  const filteredWaves = waves.filter(w =>
+    (filterStatus === 'ALL' || w.status === filterStatus) &&
+    (filterType === 'ALL' || w.type === filterType)
+  )
+
+  const stats = [
+    { label: 'Total Waves', value: waves.length, icon: <Waves className="h-5 w-5 text-blue-600" />, cls: 'from-blue-500 to-blue-600' },
+    { label: 'In Progress', value: waves.filter(w => w.status === 'IN_PROGRESS').length, icon: <Activity className="h-5 w-5 text-amber-600" />, cls: 'from-amber-500 to-amber-600' },
+    { label: 'Released', value: waves.filter(w => w.status === 'RELEASED').length, icon: <PlayCircle className="h-5 w-5 text-emerald-600" />, cls: 'from-emerald-500 to-emerald-600' },
+    { label: 'Draft', value: waves.filter(w => w.status === 'DRAFT').length, icon: <FileText className="h-5 w-5 text-slate-600" />, cls: 'from-slate-500 to-slate-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Wave Planning Engine</h2>
+          <p className="text-sm text-muted-foreground mt-1">Group orders into waves · auto-generate tasks · optimize operator assignment</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>
+          <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Wave</Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map(s => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center justify-between">
+              <div><p className="text-xs text-muted-foreground">{s.label}</p><p className="text-2xl font-bold mt-1">{s.value}</p></div>
+              <div className={`h-10 w-10 rounded-lg bg-gradient-to-br ${s.cls} flex items-center justify-center text-white`}>{s.icon}</div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Create Wave Panel */}
+      {showCreate && (
+        <Card className="p-4 border-blue-300 bg-blue-50/50">
+          <h3 className="font-semibold mb-3">Create New Wave</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Wave Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>SINGLE_ORDER</option><option>MULTI_ORDER</option><option>BATCH</option><option>ZONE</option><option>CARRIER</option><option>ROUTE</option><option>PRIORITY</option><option>EMERGENCY</option></select></div>
+            <div><Label className="text-xs">Warehouse</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md">{S28_WAREHOUSES.map(w => <option key={w}>{w}</option>)}</select></div>
+            <div><Label className="text-xs">Priority</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>EMERGENCY</option><option>HIGH</option><option>NORMAL</option><option>LOW</option></select></div>
+            <div><Label className="text-xs">Strategy</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>FIFO</option><option>FEFO</option><option>LIFO</option><option>PRIORITY</option><option>ZONE_SEQUENCE</option></select></div>
+            <div><Label className="text-xs">Planned Start</Label><Input type="time" className="mt-1" /></div>
+            <div><Label className="text-xs">Planned Finish</Label><Input type="time" className="mt-1" /></div>
+            <div className="md:col-span-2 flex items-end gap-2">
+              <Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Create Wave</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Filters & View Toggle */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+          <option value="ALL">All Status</option>
+          <option value="DRAFT">Draft</option><option value="RELEASED">Released</option><option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option><option value="ON_HOLD">On Hold</option><option value="CANCELLED">Cancelled</option>
+        </select>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+          <option value="ALL">All Types</option>
+          <option value="SINGLE_ORDER">Single Order</option><option value="MULTI_ORDER">Multi Order</option><option value="BATCH">Batch</option>
+          <option value="ZONE">Zone</option><option value="CARRIER">Carrier</option><option value="ROUTE">Route</option>
+          <option value="PRIORITY">Priority</option><option value="EMERGENCY">Emergency</option>
+        </select>
+        <div className="flex-1" />
+        <div className="flex rounded-md border overflow-hidden">
+          {(['list', 'kanban', 'gantt'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 text-xs font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* List View */}
+      {view === 'list' && (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium">Wave #</th>
+                  <th className="text-left px-4 py-3 font-medium">Type</th>
+                  <th className="text-left px-4 py-3 font-medium">Priority</th>
+                  <th className="text-left px-4 py-3 font-medium">Warehouse / Zone</th>
+                  <th className="text-left px-4 py-3 font-medium">Orders</th>
+                  <th className="text-left px-4 py-3 font-medium">Tasks</th>
+                  <th className="text-left px-4 py-3 font-medium">Schedule</th>
+                  <th className="text-left px-4 py-3 font-medium">Operator</th>
+                  <th className="text-left px-4 py-3 font-medium">Progress</th>
+                  <th className="text-left px-4 py-3 font-medium">Status</th>
+                  <th className="text-right px-4 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredWaves.map(w => {
+                  const b = s28BadgeForStatus(w.status)
+                  return (
+                    <tr key={w.id} className="border-b hover:bg-muted/30">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{w.num}</td>
+                      <td className="px-4 py-3"><span className="text-xs font-mono px-2 py-0.5 bg-muted rounded">{w.type}</span></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded border ${s28PriorityBadge(w.priority)}`}>{w.priority}</span></td>
+                      <td className="px-4 py-3 text-xs"><div className="font-medium">{w.warehouse}</div><div className="text-muted-foreground">{w.zone}</div></td>
+                      <td className="px-4 py-3 font-mono">{w.orders}</td>
+                      <td className="px-4 py-3 font-mono">{w.tasks}</td>
+                      <td className="px-4 py-3 text-xs"><div>{w.plannedStart} → {w.plannedFinish}</div>{w.actualStart && <div className="text-emerald-600">Started: {w.actualStart}</div>}</td>
+                      <td className="px-4 py-3 text-xs">{w.operator}</td>
+                      <td className="px-4 py-3 min-w-[100px]"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${w.progress === 100 ? 'bg-emerald-500' : w.progress > 0 ? 'bg-blue-500' : 'bg-slate-300'}`} style={{ width: `${w.progress}%` }} /></div><span className="text-xs font-mono w-8">{w.progress}%</span></div></td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                      <td className="px-4 py-3 text-right"><div className="flex justify-end gap-1"><Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button></div></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Kanban View */}
+      {view === 'kanban' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {['DRAFT', 'RELEASED', 'IN_PROGRESS', 'COMPLETED', 'ON_HOLD'].map(col => {
+            const colWaves = filteredWaves.filter(w => w.status === col)
+            return (
+              <div key={col} className="space-y-2">
+                <div className="flex items-center justify-between px-2"><span className="text-xs font-semibold uppercase">{col.replace('_', ' ')}</span><Badge variant="secondary">{colWaves.length}</Badge></div>
+                {colWaves.map(w => (
+                  <Card key={w.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-mono font-semibold text-blue-700">{w.num}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${s28PriorityBadge(w.priority)}`}>{w.priority}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">{w.type.replace('_', ' ')}</div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Orders:</span><span className="font-mono">{w.orders}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Tasks:</span><span className="font-mono">{w.tasks}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">WH:</span><span className="font-mono">{w.warehouse}</span></div>
+                    </div>
+                    {w.progress > 0 && <div className="mt-2 flex items-center gap-2"><div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${w.progress}%` }} /></div><span className="text-[10px] font-mono">{w.progress}%</span></div>}
+                    <div className="mt-2 pt-2 border-t text-[10px] text-muted-foreground">{w.plannedStart} → {w.plannedFinish}</div>
+                  </Card>
+                ))}
+                {colWaves.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">No waves</div>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Gantt View */}
+      {view === 'gantt' && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Wave Schedule — Today</h3>
+          <div className="space-y-2">
+            {filteredWaves.map(w => {
+              const startHour = parseInt(w.plannedStart.split(':')[0]) + parseInt(w.plannedStart.split(':')[1]) / 60
+              const endHour = parseInt(w.plannedFinish.split(':')[0]) + parseInt(w.plannedFinish.split(':')[1]) / 60
+              const leftPct = ((startHour - 6) / 12) * 100
+              const widthPct = ((endHour - startHour) / 12) * 100
+              const colors: Record<string, string> = { IN_PROGRESS: 'bg-blue-500', RELEASED: 'bg-emerald-500', COMPLETED: 'bg-slate-400', DRAFT: 'bg-slate-300', ON_HOLD: 'bg-orange-500', CANCELLED: 'bg-rose-500' }
+              return (
+                <div key={w.id} className="flex items-center gap-2">
+                  <div className="w-32 text-xs font-mono truncate">{w.num}</div>
+                  <div className="flex-1 relative h-7 bg-muted/40 rounded">
+                    <div className="absolute top-0 h-full rounded flex items-center px-2 text-[10px] text-white font-medium" style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 3)}%`, backgroundColor: '' }}>
+                      <div className={`absolute inset-0 rounded ${colors[w.status] || 'bg-slate-400'}`} />
+                      <span className="relative z-10 truncate">{w.orders} ord · {w.tasks} tasks</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            <div className="flex justify-between text-xs text-muted-foreground mt-2 pl-32 pr-2">
+              {['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00'].map(t => <span key={t}>{t}</span>)}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Wave Types Legend */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 text-sm">Wave Type Strategies</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          {[
+            { type: 'SINGLE_ORDER', desc: 'One order, one wave — used for emergency or VIP dispatch', icon: <Package className="h-4 w-4" /> },
+            { type: 'MULTI_ORDER', desc: 'Multiple orders grouped for batch picking efficiency', icon: <Layers3 className="h-4 w-4" /> },
+            { type: 'BATCH', desc: 'Large batch processing for high-volume fulfillment', icon: <Boxes className="h-4 w-4" /> },
+            { type: 'ZONE', desc: 'All orders within a specific warehouse zone', icon: <MapPin className="h-4 w-4" /> },
+            { type: 'CARRIER', desc: 'Grouped by shipping carrier for dock optimization', icon: <Truck className="h-4 w-4" /> },
+            { type: 'ROUTE', desc: 'Delivery route-based grouping for logistics', icon: <Route className="h-4 w-4" /> },
+            { type: 'PRIORITY', desc: 'High-priority orders processed first', icon: <Flag className="h-4 w-4" /> },
+            { type: 'EMERGENCY', desc: 'Override all other waves — immediate dispatch', icon: <Siren className="h-4 w-4" /> },
+          ].map(t => (
+            <div key={t.type} className="p-3 border rounded-md">
+              <div className="flex items-center gap-2 mb-1 text-blue-700">{t.icon}<span className="font-mono font-semibold">{t.type}</span></div>
+              <p className="text-muted-foreground text-[11px] leading-relaxed">{t.desc}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 2: Task Queue Module ──────────────────────────
+function TaskQueueModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+  const [assignmentFilter, setAssignmentFilter] = useState<string>('ALL')
+
+  const tasks = [
+    { id: 'T1', num: 'TASK-2026-001', type: 'PICK', priority: 'EMERGENCY', status: 'IN_PROGRESS', wave: 'WAVE-2026-004', operator: 'Suresh M.', equipment: 'FL-002', from: 'C-02-03-A', to: 'PK-01', product: 'Kaju Katli 500g', qty: '24 PCS', sla: '10:45', slaRisk: 'OK', progress: 75 },
+    { id: 'T2', num: 'TASK-2026-002', type: 'PUTAWAY', priority: 'HIGH', status: 'ASSIGNED', wave: '—', operator: 'Ramesh P.', equipment: 'FL-001', from: 'RECV-01', to: 'B-01-02-C', product: 'Saffron 10g × 100', qty: '100 PCS', sla: '11:30', slaRisk: 'OK', progress: 0 },
+    { id: 'T3', num: 'TASK-2026-003', type: 'PICK', priority: 'HIGH', status: 'OPEN', wave: 'WAVE-2026-001', operator: null, equipment: null, from: 'C-03-01-B', to: 'PK-02', product: 'Mysore Pak 250g', qty: '48 PCS', sla: '11:30', slaRisk: 'WARNING', progress: 0 },
+    { id: 'T4', num: 'TASK-2026-004', type: 'PACK', priority: 'NORMAL', status: 'IN_PROGRESS', wave: 'WAVE-2026-001', operator: 'Lakshmi V.', equipment: '—', from: 'PK-01', to: 'DISP-01', product: 'Mixed Sweets Box', qty: '12 BOX', sla: '12:00', slaRisk: 'OK', progress: 50 },
+    { id: 'T5', num: 'TASK-2026-005', type: 'LOAD', priority: 'HIGH', status: 'OPEN', wave: 'WAVE-2026-006', operator: null, equipment: 'FL-003', from: 'DISP-01', to: 'TRUCK-MH12', product: 'Multi-product', qty: '8 PALLET', sla: '14:30', slaRisk: 'OK', progress: 0 },
+    { id: 'T6', num: 'TASK-2026-006', type: 'RECEIVE', priority: 'NORMAL', status: 'IN_PROGRESS', wave: '—', operator: 'Anil K.', equipment: '—', from: 'DOCK-02', to: 'RECV-02', product: 'Raw Almonds 25kg', qty: '40 BAG', sla: '13:00', slaRisk: 'CRITICAL', progress: 30 },
+    { id: 'T7', num: 'TASK-2026-007', type: 'REPLENISH', priority: 'NORMAL', status: 'ASSIGNED', wave: '—', operator: 'Mahesh R.', equipment: 'RT-001', from: 'B-02-04-A', to: 'C-01-02-C', product: 'Gulab Jamun 1kg', qty: '12 PCS', sla: '14:00', slaRisk: 'OK', progress: 0 },
+    { id: 'T8', num: 'TASK-2026-008', type: 'COUNT', priority: 'LOW', status: 'OPEN', wave: '—', operator: null, equipment: null, from: 'B-01-01', to: '—', product: 'Cycle Count Zone B1', qty: '—', sla: '18:00', slaRisk: 'OK', progress: 0 },
+    { id: 'T9', num: 'TASK-2026-009', type: 'PICK', priority: 'EMERGENCY', status: 'ESCALATED', wave: 'WAVE-2026-004', operator: null, equipment: null, from: 'C-04-02-A', to: 'PK-03', product: 'Dry Fruit Mix 1kg', qty: '6 PCS', sla: '10:30 (OVERDUE)', slaRisk: 'CRITICAL', progress: 0 },
+    { id: 'T10', num: 'TASK-2026-010', type: 'TRANSFER', priority: 'NORMAL', status: 'COMPLETED', wave: '—', operator: 'Suresh M.', equipment: 'FL-002', from: 'B-01-03', to: 'C-02-01', product: 'Pista 500g', qty: '24 PCS', sla: '09:30', slaRisk: 'OK', progress: 100 },
+  ]
+
+  const filteredTasks = tasks.filter(t =>
+    (filter === 'ALL' || t.type === filter) &&
+    (assignmentFilter === 'ALL' || (assignmentFilter === 'ASSIGNED' && t.operator) || (assignmentFilter === 'UNASSIGNED' && !t.operator))
+  )
+
+  const stats = [
+    { label: 'Open Tasks', value: tasks.filter(t => t.status === 'OPEN').length, color: 'text-slate-600' },
+    { label: 'In Progress', value: tasks.filter(t => t.status === 'IN_PROGRESS').length, color: 'text-blue-600' },
+    { label: 'Completed', value: tasks.filter(t => t.status === 'COMPLETED').length, color: 'text-emerald-600' },
+    { label: 'SLA Critical', value: tasks.filter(t => t.slaRisk === 'CRITICAL').length, color: 'text-rose-600' },
+    { label: 'Unassigned', value: tasks.filter(t => !t.operator).length, color: 'text-amber-600' },
+    { label: 'Escalated', value: tasks.filter(t => t.status === 'ESCALATED').length, color: 'text-red-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Warehouse Task Engine</h2>
+        <p className="text-sm text-muted-foreground mt-1">Operator work queue · auto-prioritized · SLA-tracked · scan-verified</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => (
+          <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>
+        ))}
+      </div>
+
+      {/* Auto-Assignment Banner */}
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center text-white"><Workflow className="h-5 w-5" /></div>
+            <div><p className="font-semibold text-sm">Auto-Assignment Engine Active</p><p className="text-xs text-muted-foreground">Tasks auto-assigned by skill · workload · distance · zone · shift</p></div>
+          </div>
+          <div className="flex items-center gap-2"><Badge className="bg-emerald-500">4 Tasks Auto-Routed</Badge><Button size="sm" variant="outline">Configure Rules</Button></div>
+        </div>
+      </Card>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <select value={filter} onChange={e => setFilter(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+          <option value="ALL">All Types</option>
+          {['RECEIVE', 'PUTAWAY', 'PICK', 'PACK', 'TRANSFER', 'COUNT', 'INSPECT', 'LOAD', 'DISPATCH', 'REPLENISH'].map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select value={assignmentFilter} onChange={e => setAssignmentFilter(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+          <option value="ALL">All Assignments</option>
+          <option value="ASSIGNED">Assigned</option>
+          <option value="UNASSIGNED">Unassigned</option>
+        </select>
+      </div>
+
+      {/* Task Cards */}
+      <div className="space-y-2">
+        {filteredTasks.map(t => {
+          const b = s28BadgeForStatus(t.status)
+          const slaColor = t.slaRisk === 'CRITICAL' ? 'text-rose-600 bg-rose-50 border-rose-300' : t.slaRisk === 'WARNING' ? 'text-amber-600 bg-amber-50 border-amber-300' : 'text-emerald-600 bg-emerald-50 border-emerald-300'
+          const typeColors: Record<string, string> = { PICK: 'bg-blue-100 text-blue-700', PUTAWAY: 'bg-emerald-100 text-emerald-700', PACK: 'bg-purple-100 text-purple-700', LOAD: 'bg-amber-100 text-amber-700', RECEIVE: 'bg-cyan-100 text-cyan-700', REPLENISH: 'bg-orange-100 text-orange-700', COUNT: 'bg-slate-100 text-slate-700', TRANSFER: 'bg-indigo-100 text-indigo-700', DISPATCH: 'bg-pink-100 text-pink-700', INSPECT: 'bg-yellow-100 text-yellow-700' }
+          return (
+            <Card key={t.id} className={`p-3 ${t.status === 'ESCALATED' ? 'border-rose-400 bg-rose-50/30' : ''}`}>
+              <div className="flex items-center gap-4">
+                {/* Priority Bar */}
+                <div className={`w-1 self-stretch rounded-full ${t.priority === 'EMERGENCY' ? 'bg-red-500' : t.priority === 'HIGH' ? 'bg-orange-500' : t.priority === 'NORMAL' ? 'bg-blue-500' : 'bg-slate-300'}`} />
+
+                {/* Task Number & Type */}
+                <div className="w-32">
+                  <div className="font-mono text-xs font-semibold text-blue-700">{t.num}</div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[t.type] || 'bg-slate-100'}`}>{t.type}</span>
+                </div>
+
+                {/* Product & Movement */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{t.product}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                    <span className="font-mono">{t.from}</span><ArrowRight className="h-3 w-3" /><span className="font-mono">{t.to}</span>
+                    <span className="ml-2 font-mono">Qty: {t.qty}</span>
+                  </div>
+                </div>
+
+                {/* Assignment */}
+                <div className="w-40 text-xs">
+                  {t.operator ? (<div className="flex items-center gap-1.5"><UserCheck className="h-3 w-3 text-emerald-600" /><span className="truncate">{t.operator}</span></div>) : (<div className="text-amber-600 flex items-center gap-1"><UserCog className="h-3 w-3" />Unassigned</div>)}
+                  {t.equipment && <div className="text-muted-foreground mt-0.5 flex items-center gap-1"><Truck className="h-3 w-3" />{t.equipment}</div>}
+                </div>
+
+                {/* SLA */}
+                <div className={`px-2 py-1 rounded text-xs border ${slaColor}`}>
+                  <div className="flex items-center gap-1"><Clock className="h-3 w-3" /><span className="font-mono">{t.sla}</span></div>
+                  <div className="text-[10px] mt-0.5">{t.slaRisk}</div>
+                </div>
+
+                {/* Status */}
+                <div className="w-28">
+                  <span className={`text-xs px-2 py-1 rounded ${b.cls} block text-center`}>{b.label}</span>
+                  {t.progress > 0 && t.progress < 100 && <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${t.progress}%` }} /></div>}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-1">
+                  {!t.operator && t.status === 'OPEN' && <Button size="sm" variant="outline" className="h-7 text-xs">Auto-Assign</Button>}
+                  {t.status === 'ESCALATED' && <Button size="sm" variant="destructive" className="h-7 text-xs">Resolve</Button>}
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+                </div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 4: Workforce Management Module ────────────────
+function WorkforceModule() {
+  const [view, setView] = useState<'operators' | 'shifts' | 'attendance'>('operators')
+
+  const operators = [
+    { id: 'O1', code: 'OP-001', name: 'Rajesh Kumar', shift: 'Morning', shiftTime: '06:00-14:00', zone: 'C-Picking', skill: 'EXPERT', rating: 92, status: 'ACTIVE', online: true, today: 14, week: 78, accuracy: 98.5, util: 87, certs: ['FORKLIFT', 'REACH_TRUCK', 'SCANNER'] },
+    { id: 'O2', code: 'OP-002', name: 'Anita Sharma', shift: 'Morning', shiftTime: '06:00-14:00', zone: 'B-Bulk', skill: 'ADVANCED', rating: 85, status: 'ACTIVE', online: true, today: 11, week: 65, accuracy: 97.2, util: 82, certs: ['FORKLIFT', 'STACKER'] },
+    { id: 'O3', code: 'OP-003', name: 'Suresh Mehta', shift: 'Morning', shiftTime: '06:00-14:00', zone: 'E-Dispatch', skill: 'EXPERT', rating: 88, status: 'ACTIVE', online: true, today: 18, week: 92, accuracy: 99.1, util: 94, certs: ['FORKLIFT', 'REACH_TRUCK'] },
+    { id: 'O4', code: 'OP-004', name: 'Lakshmi V.', shift: 'Evening', shiftTime: '14:00-22:00', zone: 'D-Pack', skill: 'INTERMEDIATE', rating: 72, status: 'ACTIVE', online: true, today: 8, week: 41, accuracy: 96.0, util: 68, certs: ['SCANNER'] },
+    { id: 'O5', code: 'OP-005', name: 'Ramesh Patel', shift: 'Evening', shiftTime: '14:00-22:00', zone: 'B-Bulk', skill: 'ADVANCED', rating: 79, status: 'ACTIVE', online: false, today: 0, week: 52, accuracy: 95.5, util: 0, certs: ['FORKLIFT', 'STACKER', 'SCANNER'] },
+    { id: 'O6', code: 'OP-006', name: 'Mahesh Reddy', shift: 'Night', shiftTime: '22:00-06:00', zone: 'A-Receiving', skill: 'ADVANCED', rating: 81, status: 'ACTIVE', online: true, today: 6, week: 38, accuracy: 97.8, util: 71, certs: ['REACH_TRUCK', 'SCANNER'] },
+    { id: 'O7', code: 'OP-007', name: 'Anil Kumar', shift: 'Morning', shiftTime: '06:00-14:00', zone: 'A-Receiving', skill: 'INTERMEDIATE', rating: 68, status: 'ON_LEAVE', online: false, today: 0, week: 22, accuracy: 94.3, util: 0, certs: ['SCANNER'] },
+    { id: 'O8', code: 'OP-008', name: 'Priya Nair', shift: 'Morning', shiftTime: '06:00-14:00', zone: 'D-Pack', skill: 'BEGINNER', rating: 55, status: 'ACTIVE', online: true, today: 4, week: 18, accuracy: 92.0, util: 54, certs: ['SCANNER'] },
+  ]
+
+  const shifts = [
+    { code: 'SHIFT-M', name: 'Morning Shift', start: '06:00', end: '14:00', break: '10:00-10:15', operators: 5, present: 4, late: 1, absent: 0, type: 'REGULAR' },
+    { code: 'SHIFT-E', name: 'Evening Shift', start: '14:00', end: '22:00', break: '18:00-18:15', operators: 3, present: 2, late: 0, absent: 0, type: 'REGULAR' },
+    { code: 'SHIFT-N', name: 'Night Shift', start: '22:00', end: '06:00', break: '02:00-02:15', operators: 2, present: 2, late: 0, absent: 0, type: 'REGULAR' },
+    { code: 'SHIFT-OT', name: 'Overtime Pool', start: '—', end: '—', break: '—', operators: 4, present: 1, late: 0, absent: 0, type: 'OVERTIME' },
+  ]
+
+  const attendance = operators.map(o => ({
+    code: o.code, name: o.name, shift: o.shift,
+    checkIn: o.status === 'ACTIVE' && o.online ? (o.shift === 'Morning' ? '05:58' : o.shift === 'Evening' ? '14:02' : '22:05') : '—',
+    checkOut: '—',
+    status: o.status === 'ON_LEAVE' ? 'ON_LEAVE' : (o.online ? 'PRESENT' : 'ABSENT'),
+    workedHours: o.online ? 6.5 : 0, late: 0, ot: 0,
+  }))
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Workforce Management</h2><p className="text-sm text-muted-foreground mt-1">Operator skill matrix · shifts · attendance · KPI tracking</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Operator</Button>
+      </div>
+
+      {/* Top Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: 'Total Operators', value: operators.length, icon: <Users className="h-5 w-5 text-blue-600" /> },
+          { label: 'Online Now', value: operators.filter(o => o.online).length, icon: <Radio className="h-5 w-5 text-emerald-600" /> },
+          { label: 'On Leave', value: operators.filter(o => o.status === 'ON_LEAVE').length, icon: <Calendar className="h-5 w-5 text-amber-600" /> },
+          { label: 'Avg Accuracy', value: `${(operators.reduce((a, o) => a + o.accuracy, 0) / operators.length).toFixed(1)}%`, icon: <CheckCircle2 className="h-5 w-5 text-purple-600" /> },
+          { label: 'Avg Utilization', value: `${(operators.reduce((a, o) => a + o.util, 0) / operators.length).toFixed(0)}%`, icon: <Gauge className="h-5 w-5 text-orange-600" /> },
+        ].map(s => (
+          <Card key={s.label} className="p-4"><div className="flex items-center gap-3"><div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">{s.icon}</div><div><p className="text-xs text-muted-foreground">{s.label}</p><p className="text-xl font-bold">{s.value}</p></div></div></Card>
+        ))}
+      </div>
+
+      {/* View Tabs */}
+      <div className="flex rounded-md border overflow-hidden w-fit">
+        {(['operators', 'shifts', 'attendance'] as const).map(v => <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 text-sm font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v}</button>)}
+      </div>
+
+      {/* Operators View */}
+      {view === 'operators' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {operators.map(o => (
+            <Card key={o.id} className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${o.online ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-600'}`}>{o.name.split(' ').map(n => n[0]).join('')}</div>
+                  <div>
+                    <div className="font-semibold text-sm">{o.name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{o.code}</div>
+                  </div>
+                </div>
+                <span className={`h-2 w-2 rounded-full ${o.online ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Shift:</span><span>{o.shift} ({o.shiftTime})</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Zone:</span><span className="font-mono">{o.zone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Skill:</span><Badge variant="outline" className="text-[10px]">{o.skill}</Badge></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Today / Week:</span><span className="font-mono">{o.today} / {o.week}</span></div>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                <div><div className="flex justify-between text-[10px] text-muted-foreground"><span>Accuracy</span><span>{o.accuracy}%</span></div><div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${o.accuracy}%` }} /></div></div>
+                <div><div className="flex justify-between text-[10px] text-muted-foreground"><span>Utilization</span><span>{o.util}%</span></div><div className="h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${o.util}%` }} /></div></div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {o.certs.map(c => <span key={c} className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-mono">{c}</span>)}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Shifts View */}
+      {view === 'shifts' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {shifts.map(s => (
+            <Card key={s.code} className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3"><div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center"><Clock className="h-5 w-5 text-indigo-700" /></div><div><div className="font-semibold">{s.name}</div><div className="text-xs text-muted-foreground font-mono">{s.start} → {s.end}</div></div></div>
+                <Badge variant={s.type === 'OVERTIME' ? 'default' : 'secondary'} className="text-[10px]">{s.type}</Badge>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center my-3">
+                <div className="p-2 bg-muted/50 rounded"><p className="text-xs text-muted-foreground">Operators</p><p className="text-lg font-bold">{s.operators}</p></div>
+                <div className="p-2 bg-emerald-50 rounded"><p className="text-xs text-muted-foreground">Present</p><p className="text-lg font-bold text-emerald-700">{s.present}</p></div>
+                <div className="p-2 bg-amber-50 rounded"><p className="text-xs text-muted-foreground">Late</p><p className="text-lg font-bold text-amber-700">{s.late}</p></div>
+              </div>
+              <div className="text-xs text-muted-foreground">Break: <span className="font-mono">{s.break}</span></div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Attendance View */}
+      {view === 'attendance' && (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr>
+                <th className="text-left px-4 py-3 font-medium">Operator</th><th className="text-left px-4 py-3 font-medium">Shift</th>
+                <th className="text-left px-4 py-3 font-medium">Check In</th><th className="text-left px-4 py-3 font-medium">Check Out</th>
+                <th className="text-left px-4 py-3 font-medium">Worked Hrs</th><th className="text-left px-4 py-3 font-medium">Late (min)</th>
+                <th className="text-left px-4 py-3 font-medium">OT (min)</th><th className="text-left px-4 py-3 font-medium">Status</th>
+              </tr></thead>
+              <tbody>
+                {attendance.map(a => {
+                  const b = s28BadgeForStatus(a.status)
+                  return (
+                    <tr key={a.code} className="border-b hover:bg-muted/30">
+                      <td className="px-4 py-3"><div className="font-medium">{a.name}</div><div className="text-xs text-muted-foreground font-mono">{a.code}</div></td>
+                      <td className="px-4 py-3 text-xs">{a.shift}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{a.checkIn}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{a.checkOut}</td>
+                      <td className="px-4 py-3 font-mono">{a.workedHours}</td>
+                      <td className="px-4 py-3 font-mono">{a.late}</td>
+                      <td className="px-4 py-3 font-mono">{a.ot}</td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ─── Epic 5: Equipment Management Module ────────────────
+function EquipmentModule() {
+  const equipment = [
+    { id: 'E1', code: 'FL-001', type: 'FORKLIFT', make: 'Toyota', model: '8FBE15', serial: 'TY2024-001', status: 'IN_USE', battery: 78, op: 'Rajesh K.', task: 'TASK-2026-002', wh: 'WH-MUM-MAIN', lastMaint: '2026-06-15', nextMaint: '2026-09-15', hours: 1245.5, tasksDone: 342, certs: ['FORKLIFT'] },
+    { id: 'E2', code: 'FL-002', type: 'FORKLIFT', make: 'Godrej', model: 'GXE-15T', serial: 'GD2024-118', status: 'IN_USE', battery: 62, op: 'Suresh M.', task: 'TASK-2026-001', wh: 'WH-MUM-MAIN', lastMaint: '2026-06-20', nextMaint: '2026-09-20', hours: 982.3, tasksDone: 287, certs: ['FORKLIFT'] },
+    { id: 'E3', code: 'FL-003', type: 'FORKLIFT', make: 'Toyota', model: '8FBE20', serial: 'TY2024-002', status: 'AVAILABLE', battery: 95, op: null, task: null, wh: 'WH-MUM-MAIN', lastMaint: '2026-07-01', nextMaint: '2026-10-01', hours: 456.8, tasksDone: 124, certs: ['FORKLIFT'] },
+    { id: 'E4', code: 'RT-001', type: 'REACH_TRUCK', make: 'Crown', model: 'RR5200', serial: 'CR2024-005', status: 'IN_USE', battery: 45, op: 'Mahesh R.', task: 'TASK-2026-007', wh: 'WH-MUM-MAIN', lastMaint: '2026-05-10', nextMaint: '2026-08-10', hours: 1876.2, tasksDone: 412, certs: ['REACH_TRUCK'] },
+    { id: 'E5', code: 'ST-001', type: 'STACKER', make: 'Godrej', model: 'GSX-10', serial: 'GD2024-201', status: 'CHARGING', battery: 23, op: null, task: null, wh: 'WH-MUM-MAIN', lastMaint: '2026-06-25', nextMaint: '2026-09-25', hours: 734.1, tasksDone: 198, certs: ['STACKER'] },
+    { id: 'E6', code: 'HPT-001', type: 'HAND_PALLET_TRUCK', make: 'Nilkamal', model: 'HP-20', serial: 'NK2024-001', status: 'AVAILABLE', battery: null, op: null, task: null, wh: 'WH-MUM-MAIN', lastMaint: '2026-06-01', nextMaint: '2026-09-01', hours: null, tasksDone: 678, certs: [] },
+    { id: 'E7', code: 'SC-001', type: 'SCANNER', make: 'Zebra', model: 'TC52', serial: 'ZB2024-1001', status: 'IN_USE', battery: 88, op: 'Anita S.', task: 'TASK-2026-003', wh: 'WH-MUM-MAIN', lastMaint: '2026-07-05', nextMaint: '2027-07-05', hours: null, tasksDone: 1245, certs: ['SCANNER'] },
+    { id: 'E8', code: 'FL-004', type: 'FORKLIFT', make: 'Toyota', model: '8FBE15', serial: 'TY2024-003', status: 'MAINTENANCE', battery: 0, op: null, task: null, wh: 'WH-MUM-MAIN', lastMaint: '2026-07-08', nextMaint: '2026-10-08', hours: 2104.7, tasksDone: 567, certs: ['FORKLIFT'] },
+    { id: 'E9', code: 'PR-001', type: 'LABEL_PRINTER', make: 'Zebra', model: 'ZT411', serial: 'ZB2024-2001', status: 'AVAILABLE', battery: null, op: null, task: null, wh: 'WH-MUM-MAIN', lastMaint: '2026-06-10', nextMaint: '2026-09-10', hours: null, tasksDone: 8920, certs: [] },
+    { id: 'E10', code: 'FL-005', type: 'FORKLIFT', make: 'Godrej', model: 'GXE-15T', serial: 'GD2024-119', status: 'OUT_OF_SERVICE', battery: 0, op: null, task: null, wh: 'WH-MUM-MAIN', lastMaint: '2026-07-09', nextMaint: '2026-10-09', hours: 1890.4, tasksDone: 421, certs: ['FORKLIFT'] },
+  ]
+
+  const stats = [
+    { label: 'Total Equipment', value: equipment.length, color: 'text-blue-600' },
+    { label: 'Available', value: equipment.filter(e => e.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+    { label: 'In Use', value: equipment.filter(e => e.status === 'IN_USE').length, color: 'text-amber-600' },
+    { label: 'Charging', value: equipment.filter(e => e.status === 'CHARGING').length, color: 'text-blue-600' },
+    { label: 'Maintenance', value: equipment.filter(e => e.status === 'MAINTENANCE').length, color: 'text-orange-600' },
+    { label: 'Out of Service', value: equipment.filter(e => e.status === 'OUT_OF_SERVICE').length, color: 'text-rose-600' },
+  ]
+
+  const typeIcons: Record<string, React.ReactNode> = {
+    FORKLIFT: <Truck className="h-4 w-4" />,
+    REACH_TRUCK: <Truck className="h-4 w-4" />,
+    STACKER: <Truck className="h-4 w-4" />,
+    HAND_PALLET_TRUCK: <Truck className="h-4 w-4" />,
+    SCANNER: <ScanLine className="h-4 w-4" />,
+    LABEL_PRINTER: <Printer className="h-4 w-4" />,
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Equipment Management</h2><p className="text-sm text-muted-foreground mt-1">Forklifts · scanners · reach trucks · battery & maintenance tracking</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />Add Equipment</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {equipment.map(e => {
+          const b = s28BadgeForStatus(e.status)
+          const batteryColor = e.battery === null ? 'bg-slate-200' : e.battery > 60 ? 'bg-emerald-500' : e.battery > 30 ? 'bg-amber-500' : e.battery > 10 ? 'bg-orange-500' : 'bg-rose-500'
+          return (
+            <Card key={e.id} className={`p-4 ${e.status === 'OUT_OF_SERVICE' ? 'border-rose-300 bg-rose-50/30' : e.status === 'MAINTENANCE' ? 'border-orange-300 bg-orange-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">{typeIcons[e.type] || <Truck className="h-4 w-4" />}</div>
+                  <div>
+                    <div className="font-mono font-semibold text-sm">{e.code}</div>
+                    <div className="text-xs text-muted-foreground">{e.make} {e.model}</div>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Type:</span><span className="font-mono">{e.type}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Serial:</span><span className="font-mono">{e.serial}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Warehouse:</span><span className="font-mono">{e.wh}</span></div>
+                {e.battery !== null && (
+                  <div className="flex items-center gap-2 mt-2"><span className="text-muted-foreground text-[10px] w-16">Battery:</span><div className="flex-1 h-3 bg-muted rounded-full overflow-hidden relative"><div className={`h-full ${batteryColor}`} style={{ width: `${e.battery}%` }} />{e.battery < 20 && e.status === 'CHARGING' && <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-medium">⚡</span>}</div><span className="text-[10px] font-mono w-8">{e.battery}%</span></div>
+                )}
+                {e.op && <div className="flex justify-between mt-1"><span className="text-muted-foreground">Operator:</span><span>{e.op}</span></div>}
+                {e.task && <div className="flex justify-between"><span className="text-muted-foreground">Task:</span><span className="font-mono text-blue-600">{e.task}</span></div>}
+                {e.hours !== null && <div className="flex justify-between"><span className="text-muted-foreground">Op Hours:</span><span className="font-mono">{e.hours}h</span></div>}
+                <div className="flex justify-between"><span className="text-muted-foreground">Tasks Done:</span><span className="font-mono">{e.tasksDone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Next Maint:</span><span className="font-mono text-orange-600">{e.nextMaint}</span></div>
+              </div>
+              {e.certs.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{e.certs.map(c => <span key={c} className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-mono">{c}</span>)}</div>}
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 8: Warehouse Control Tower ────────────────────
+function ControlTowerModule() {
+  const [liveMode, setLiveMode] = useState(true)
+
+  const kpis = [
+    { label: 'Tasks / Hour', value: 42, target: 50, trend: '+8%', color: 'text-emerald-600' },
+    { label: 'Orders / Hour', value: 18, target: 20, trend: '+12%', color: 'text-emerald-600' },
+    { label: 'Avg Completion', value: '4.2 min', target: '3.5 min', trend: '-5%', color: 'text-amber-600' },
+    { label: 'Operator Util', value: '78%', target: '85%', trend: '+3%', color: 'text-emerald-600' },
+    { label: 'Equipment Util', value: '64%', target: '70%', trend: '+2%', color: 'text-emerald-600' },
+    { label: 'Warehouse Eff', value: '92%', target: '95%', trend: '+1%', color: 'text-emerald-600' },
+  ]
+
+  const zoneHeat = [
+    { zone: 'A-Receiving', load: 75, color: 'bg-amber-500', tasks: 6 },
+    { zone: 'B-Bulk', load: 45, color: 'bg-emerald-500', tasks: 3 },
+    { zone: 'C-Picking', load: 92, color: 'bg-rose-500', tasks: 14 },
+    { zone: 'D-Pack', load: 68, color: 'bg-amber-500', tasks: 8 },
+    { zone: 'E-Dispatch', load: 88, color: 'bg-rose-500', tasks: 11 },
+    { zone: 'F-Cold', load: 30, color: 'bg-emerald-500', tasks: 2 },
+  ]
+
+  const dockActivity = [
+    { dock: 'DOCK-01', status: 'LOADING', vehicle: 'MH12-AB-1234', carrier: 'VRL Logistics', eta: 'On Time', progress: 65 },
+    { dock: 'DOCK-02', status: 'UNLOADING', vehicle: 'KA05-CD-5678', carrier: 'In-House', eta: 'On Time', progress: 40 },
+    { dock: 'DOCK-03', status: 'IDLE', vehicle: null, carrier: null, eta: null, progress: 0 },
+    { dock: 'DOCK-04', status: 'LOADING', vehicle: 'DL01-EF-9012', carrier: 'Blue Dart', eta: '5 min late', progress: 85 },
+    { dock: 'DOCK-05', status: 'MAINTENANCE', vehicle: null, carrier: null, eta: null, progress: 0 },
+  ]
+
+  const vehicleQueue = [
+    { id: 'Q1', vehicle: 'MH12-XY-1111', type: 'INBOUND', purpose: 'Delivery', arrival: '10:30', status: 'WAITING', bay: null, dock: null },
+    { id: 'Q2', vehicle: 'KA05-ZZ-2222', type: 'OUTBOUND', purpose: 'Dispatch', arrival: '10:45', status: 'ASSIGNED', bay: null, dock: 'DOCK-04' },
+    { id: 'Q3', vehicle: 'DL01-AA-3333', type: 'INBOUND', purpose: 'Returns', arrival: '11:00', status: 'WAITING', bay: null, dock: null },
+    { id: 'Q4', vehicle: 'TN09-BB-4444', type: 'OUTBOUND', purpose: 'Dispatch', arrival: '11:15', status: 'CHECKED_IN', bay: 'BAY-2', dock: null },
+  ]
+
+  const alerts = [
+    { sev: 'CRITICAL', msg: 'SLA breach on TASK-2026-009 (WAVE-2026-004)', time: '2 min ago' },
+    { sev: 'HIGH', msg: 'FL-005 out of service — hydraulic failure', time: '15 min ago' },
+    { sev: 'WARNING', msg: 'FL-004 battery low (15%) — schedule charging', time: '20 min ago' },
+    { sev: 'WARNING', msg: 'Operator OP-007 marked absent — shift uncovered', time: '35 min ago' },
+    { sev: 'INFO', msg: 'WAVE-2026-001 reached 64% completion', time: '1 hour ago' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Warehouse Control Tower</h2><p className="text-sm text-muted-foreground mt-1">Real-time operational visibility · live KPIs · dock · yard · alerts</p></div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2"><Switch checked={liveMode} onCheckedChange={setLiveMode} />{liveMode ? <span className="text-xs text-emerald-600 flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />LIVE</span> : <span className="text-xs text-muted-foreground">PAUSED</span>}</div>
+          <Badge variant="outline"><Activity className="mr-1 h-3 w-3" />Updated: just now</Badge>
+        </div>
+      </div>
+
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpis.map(k => (
+          <Card key={k.label} className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{k.label}</p>
+            <p className="text-xl font-bold mt-1">{k.value}</p>
+            <div className="flex items-center justify-between mt-1"><span className={`text-[10px] ${k.color}`}>{k.trend}</span><span className="text-[10px] text-muted-foreground">Target: {k.target}</span></div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Zone Heat Map */}
+        <Card className="p-4 lg:col-span-2">
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold">Warehouse Zone Heat Map</h3><Badge variant="outline">{liveMode && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse mr-1" />}Live Load</Badge></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {zoneHeat.map(z => (
+              <div key={z.zone} className="p-3 rounded-lg border relative overflow-hidden">
+                <div className={`absolute inset-0 ${z.color} opacity-10`} />
+                <div className="relative">
+                  <div className="text-xs font-semibold mb-1">{z.zone}</div>
+                  <div className="text-2xl font-bold">{z.load}%</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">{z.tasks} active tasks</div>
+                  <div className="mt-2 h-1.5 bg-white/40 rounded-full overflow-hidden"><div className={`h-full ${z.color}`} style={{ width: `${z.load}%` }} /></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Alerts */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold">Live Alerts</h3><Badge variant="destructive" className="text-[10px]">{alerts.filter(a => a.sev === 'CRITICAL').length} CRITICAL</Badge></div>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {alerts.map((a, i) => {
+              const cls = a.sev === 'CRITICAL' ? 'border-rose-300 bg-rose-50' : a.sev === 'HIGH' ? 'border-orange-300 bg-orange-50' : a.sev === 'WARNING' ? 'border-amber-300 bg-amber-50' : 'border-blue-300 bg-blue-50'
+              const txt = a.sev === 'CRITICAL' ? 'text-rose-700' : a.sev === 'HIGH' ? 'text-orange-700' : a.sev === 'WARNING' ? 'text-amber-700' : 'text-blue-700'
+              return (
+                <div key={i} className={`p-2 rounded border ${cls}`}>
+                  <div className="flex items-start justify-between"><span className={`text-[10px] font-bold ${txt}`}>{a.sev}</span><span className="text-[10px] text-muted-foreground">{a.time}</span></div>
+                  <p className="text-xs mt-0.5">{a.msg}</p>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Dock Activity */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Dock Activity</h3>
+          <div className="space-y-2">
+            {dockActivity.map(d => {
+              const b = s28BadgeForStatus(d.status)
+              return (
+                <div key={d.dock} className="flex items-center gap-3 p-2 border rounded">
+                  <div className="w-16 font-mono text-xs font-semibold">{d.dock}</div>
+                  <div className="flex-1">
+                    {d.vehicle ? (<><div className="text-xs font-medium">{d.vehicle}</div><div className="text-[10px] text-muted-foreground">{d.carrier} · ETA: {d.eta}</div></>) : (<div className="text-xs text-muted-foreground">{d.status === 'MAINTENANCE' ? 'Under maintenance' : 'No vehicle'}</div>)}
+                    {d.progress > 0 && <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-blue-500" style={{ width: `${d.progress}%` }} /></div>}
+                  </div>
+                  <span className={`text-[10px] px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* Vehicle Queue */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Vehicle Yard Queue</h3>
+          <div className="space-y-2">
+            {vehicleQueue.map(v => (
+              <div key={v.id} className="flex items-center gap-3 p-2 border rounded">
+                <Truck className={`h-4 w-4 ${v.type === 'INBOUND' ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <div className="flex-1">
+                  <div className="text-xs font-medium font-mono">{v.vehicle}</div>
+                  <div className="text-[10px] text-muted-foreground">{v.type} · {v.purpose} · Arrived: {v.arrival}</div>
+                </div>
+                <div className="text-right">
+                  <span className={`text-[10px] px-2 py-0.5 rounded ${v.status === 'WAITING' ? 'bg-amber-100 text-amber-700' : v.status === 'ASSIGNED' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>{v.status}</span>
+                  {v.dock && <div className="text-[10px] text-muted-foreground mt-0.5 font-mono">{v.dock}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Live Operators Grid */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3"><h3 className="font-semibold">Live Operator Status</h3><Badge variant="outline">7 Online · 1 Offline</Badge></div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+          {[
+            { name: 'Rajesh K.', task: 'PICK-003', util: 87, status: 'BUSY' },
+            { name: 'Anita S.', task: 'COUNT', util: 82, status: 'BUSY' },
+            { name: 'Suresh M.', task: 'PICK-001', util: 94, status: 'BUSY' },
+            { name: 'Lakshmi V.', task: 'PACK-004', util: 68, status: 'BUSY' },
+            { name: 'Ramesh P.', task: 'IDLE', util: 0, status: 'IDLE' },
+            { name: 'Mahesh R.', task: 'REPL-007', util: 71, status: 'BUSY' },
+            { name: 'Priya N.', task: 'PACK-008', util: 54, status: 'BUSY' },
+            { name: 'Anil K.', task: '—', util: 0, status: 'OFFLINE' },
+          ].map((o, i) => {
+            const s = o.status === 'BUSY' ? 'bg-amber-500' : o.status === 'IDLE' ? 'bg-blue-500' : 'bg-slate-300'
+            return (
+              <div key={i} className="p-2 border rounded text-center">
+                <div className="relative inline-block">
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold">{o.name.split(' ').map(n => n[0]).join('')}</div>
+                  <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ${s} border-2 border-background`} />
+                </div>
+                <div className="text-xs font-medium mt-1 truncate">{o.name}</div>
+                <div className="text-[10px] text-muted-foreground font-mono">{o.task}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{o.util}% util</div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 6: SLA Dashboard Module ───────────────────────
+function SLADashboardModule() {
+  const slaConfigs = [
+    { code: 'SLA-RECV-01', name: 'Receiving SLA', task: 'RECEIVE', priority: 'NORMAL', target: 60, warning: 48, critical: 60, onTime: 94, total: 156, violations: 9, penalty: 0 },
+    { code: 'SLA-PUT-01', name: 'Putaway SLA', task: 'PUTAWAY', priority: 'NORMAL', target: 45, warning: 36, critical: 45, onTime: 91, total: 234, violations: 21, penalty: 0 },
+    { code: 'SLA-PICK-01', name: 'Picking SLA', task: 'PICK', priority: 'HIGH', target: 30, warning: 24, critical: 30, onTime: 88, total: 412, violations: 49, penalty: 4500 },
+    { code: 'SLA-PACK-01', name: 'Packing SLA', task: 'PACK', priority: 'NORMAL', target: 20, warning: 16, critical: 20, onTime: 96, total: 287, violations: 11, penalty: 0 },
+    { code: 'SLA-DISP-01', name: 'Dispatch SLA', task: 'DISPATCH', priority: 'HIGH', target: 90, warning: 72, critical: 90, onTime: 93, total: 178, violations: 12, penalty: 2800 },
+    { code: 'SLA-TRN-01', name: 'Transfer SLA', task: 'TRANSFER', priority: 'NORMAL', target: 60, warning: 48, critical: 60, onTime: 98, total: 89, violations: 2, penalty: 0 },
+    { code: 'SLA-CC-01', name: 'Cycle Count SLA', task: 'CYCLE_COUNT', priority: 'LOW', target: 240, warning: 192, critical: 240, onTime: 99, total: 56, violations: 1, penalty: 0 },
+  ]
+
+  const violations = [
+    { id: 'V1', num: 'SLA-V-2026-012', sla: 'SLA-PICK-01', task: 'TASK-2026-009', op: 'Unassigned', sev: 'CRITICAL', overrun: 35, deadline: '10:30', actual: null, status: 'OPEN' },
+    { id: 'V2', num: 'SLA-V-2026-011', sla: 'SLA-RECV-01', task: 'TASK-2026-006', op: 'Anil K.', sev: 'MAJOR', overrun: 18, deadline: '12:30', actual: null, status: 'INVESTIGATING' },
+    { id: 'V3', num: 'SLA-V-2026-010', sla: 'SLA-PICK-01', task: 'TASK-2026-003', op: 'Unassigned', sev: 'WARNING', overrun: 0, deadline: '11:30', actual: null, status: 'OPEN' },
+    { id: 'V4', num: 'SLA-V-2026-009', sla: 'SLA-PICK-01', task: 'TASK-2026-014', op: 'Rajesh K.', sev: 'MINOR', overrun: 12, deadline: '09:30', actual: '09:42', status: 'RESOLVED' },
+    { id: 'V5', num: 'SLA-V-2026-008', sla: 'SLA-DISP-01', task: 'TASK-2026-021', op: 'Suresh M.', sev: 'MAJOR', overrun: 28, deadline: '08:30', actual: '08:58', status: 'RESOLVED' },
+    { id: 'V6', num: 'SLA-V-2026-007', sla: 'SLA-PUT-01', task: 'TASK-2026-031', op: 'Anita S.', sev: 'WARNING', overrun: 8, deadline: '11:00', actual: '11:08', status: 'WAIVED' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">SLA Monitoring Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Service Level Agreements per task type · violation tracking · penalty monitoring</p></div>
+
+      {/* Top KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: 'Total SLA Tracked', value: slaConfigs.length, color: 'text-blue-600' },
+          { label: 'Total Tasks (30d)', value: slaConfigs.reduce((a, s) => a + s.total, 0), color: 'text-slate-700' },
+          { label: 'On-Time %', value: `${(slaConfigs.reduce((a, s) => a + s.onTime * s.total, 0) / slaConfigs.reduce((a, s) => a + s.total, 0)).toFixed(1)}%`, color: 'text-emerald-600' },
+          { label: 'Open Violations', value: violations.filter(v => v.status === 'OPEN' || v.status === 'INVESTIGATING').length, color: 'text-rose-600' },
+          { label: 'Penalty (30d)', value: `₹${slaConfigs.reduce((a, s) => a + s.penalty, 0).toLocaleString('en-IN')}`, color: 'text-amber-600' },
+        ].map(s => <Card key={s.label} className="p-4"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {/* SLA Compliance Table */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">SLA Compliance by Task Type</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">SLA Code</th><th className="text-left px-4 py-3 font-medium">Task Type</th>
+              <th className="text-left px-4 py-3 font-medium">Priority</th><th className="text-left px-4 py-3 font-medium">Target (min)</th>
+              <th className="text-left px-4 py-3 font-medium">Tasks (30d)</th><th className="text-left px-4 py-3 font-medium">On-Time %</th>
+              <th className="text-left px-4 py-3 font-medium">Compliance</th><th className="text-left px-4 py-3 font-medium">Violations</th>
+              <th className="text-left px-4 py-3 font-medium">Penalty</th>
+            </tr></thead>
+            <tbody>
+              {slaConfigs.map(s => {
+                const color = s.onTime >= 95 ? 'bg-emerald-500' : s.onTime >= 85 ? 'bg-amber-500' : 'bg-rose-500'
+                return (
+                  <tr key={s.code} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{s.code}</td>
+                    <td className="px-4 py-3 text-xs">{s.name}</td>
+                    <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded border ${s28PriorityBadge(s.priority)}`}>{s.priority}</span></td>
+                    <td className="px-4 py-3 font-mono">{s.target}</td>
+                    <td className="px-4 py-3 font-mono">{s.total}</td>
+                    <td className="px-4 py-3 font-mono font-semibold">{s.onTime}%</td>
+                    <td className="px-4 py-3 min-w-[120px]"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${color}`} style={{ width: `${s.onTime}%` }} /></div></div></td>
+                    <td className="px-4 py-3 font-mono"><span className={s.violations > 10 ? 'text-rose-600 font-bold' : s.violations > 0 ? 'text-amber-600' : 'text-emerald-600'}>{s.violations}</span></td>
+                    <td className="px-4 py-3 font-mono text-xs">{s.penalty > 0 ? <span className="text-amber-700">₹{s.penalty.toLocaleString('en-IN')}</span> : <span className="text-muted-foreground">—</span>}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Violations */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b flex items-center justify-between"><h3 className="font-semibold">Recent SLA Violations</h3><Button size="sm" variant="outline"><Filter className="mr-1 h-3 w-3" />Filter</Button></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Violation #</th><th className="text-left px-4 py-3 font-medium">SLA</th>
+              <th className="text-left px-4 py-3 font-medium">Task</th><th className="text-left px-4 py-3 font-medium">Operator</th>
+              <th className="text-left px-4 py-3 font-medium">Severity</th><th className="text-left px-4 py-3 font-medium">Deadline</th>
+              <th className="text-left px-4 py-3 font-medium">Actual</th><th className="text-left px-4 py-3 font-medium">Overrun</th>
+              <th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {violations.map(v => {
+                const b = s28BadgeForStatus(v.sev)
+                const sb = s28BadgeForStatus(v.status)
+                return (
+                  <tr key={v.id} className={`border-b hover:bg-muted/30 ${v.sev === 'CRITICAL' ? 'bg-rose-50/50' : ''}`}>
+                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{v.num}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{v.sla}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{v.task}</td>
+                    <td className="px-4 py-3 text-xs">{v.op}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                    <td className="px-4 py-3 font-mono text-xs">{v.deadline}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{v.actual || '—'}</td>
+                    <td className="px-4 py-3 font-mono"><span className={v.overrun > 20 ? 'text-rose-600 font-bold' : v.overrun > 0 ? 'text-amber-600' : 'text-muted-foreground'}>{v.overrun}m</span></td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${sb.cls}`}>{sb.label}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 7: Exception Center Module ────────────────────
+function ExceptionCenterModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+
+  const exceptions = [
+    { id: 'X1', num: 'EX-2026-018', type: 'TASK_FAILURE', source: 'PICKING', task: 'TASK-2026-009', wave: 'WAVE-2026-004', sev: 'CRITICAL', status: 'OPEN', title: 'Operator unavailable for emergency pick', reported: '10:35', by: 'Auto-Engine', assigned: null, impact: 'MAJOR', delay: 35 },
+    { id: 'X2', num: 'EX-2026-017', type: 'NO_STOCK', source: 'PICKING', task: 'TASK-2026-015', wave: 'WAVE-2026-001', sev: 'HIGH', status: 'ASSIGNED', title: 'Insufficient stock at C-03-01-B (Mysore Pak)', reported: '10:18', by: 'Scan Engine', assigned: 'Rajesh K.', impact: 'MODERATE', delay: 15 },
+    { id: 'X3', num: 'EX-2026-016', type: 'EQUIPMENT_FAILURE', source: 'EQUIPMENT', task: null, wave: null, sev: 'HIGH', status: 'INVESTIGATING', title: 'FL-005 hydraulic failure during loading', reported: '10:05', by: 'Suresh M.', assigned: 'Maintenance', impact: 'MAJOR', delay: 45 },
+    { id: 'X4', num: 'EX-2026-015', type: 'WRONG_BIN', source: 'PUTAWAY', task: 'TASK-2026-022', wave: null, sev: 'MEDIUM', status: 'RESOLVED', title: 'Operator scanned wrong bin — system blocked', reported: '09:42', by: 'Validation Engine', assigned: 'Ramesh P.', impact: 'MINOR', delay: 5 },
+    { id: 'X5', num: 'EX-2026-014', type: 'PRIORITY_CHANGE', source: 'WAVE', task: null, wave: 'WAVE-2026-007', sev: 'MEDIUM', status: 'CLOSED', title: 'Customer requested priority upgrade — wave reordered', reported: '09:20', by: 'Customer Service', assigned: 'Supervisor', impact: 'MINOR', delay: 0 },
+    { id: 'X6', num: 'EX-2026-013', type: 'TEMPERATURE_ALARM', source: 'INVENTORY', task: null, wave: null, sev: 'CRITICAL', status: 'RESOLVED', title: 'Cold zone F-01 temp exceeded 8°C threshold', reported: '08:55', by: 'IoT Sensor', assigned: 'Maintenance', impact: 'SEVERE', delay: 0 },
+    { id: 'X7', num: 'EX-2026-012', type: 'EMERGENCY_ORDER', source: 'WAVE', task: null, wave: 'WAVE-2026-004', sev: 'HIGH', status: 'CLOSED', title: 'Emergency order inserted — wave priority boosted', reported: '08:30', by: 'Sales Team', assigned: 'Auto-Engine', impact: 'MODERATE', delay: 0 },
+    { id: 'X8', num: 'EX-2026-011', type: 'SHORT_PICK', source: 'PICKING', task: 'TASK-2026-008', wave: 'WAVE-2026-001', sev: 'LOW', status: 'RESOLVED', title: 'Short pick — 2 units missing, substituted', reported: '08:15', by: 'Lakshmi V.', assigned: 'Supervisor', impact: 'NEGLIGIBLE', delay: 0 },
+  ]
+
+  const filtered = exceptions.filter(e => filter === 'ALL' || e.type === filter || e.status === filter)
+
+  const stats = [
+    { label: 'Open', value: exceptions.filter(e => e.status === 'OPEN').length, color: 'text-rose-600' },
+    { label: 'Assigned', value: exceptions.filter(e => e.status === 'ASSIGNED').length, color: 'text-blue-600' },
+    { label: 'Investigating', value: exceptions.filter(e => e.status === 'INVESTIGATING').length, color: 'text-amber-600' },
+    { label: 'Resolved (24h)', value: exceptions.filter(e => e.status === 'RESOLVED').length, color: 'text-emerald-600' },
+    { label: 'Critical', value: exceptions.filter(e => e.sev === 'CRITICAL').length, color: 'text-red-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Exception Center</h2><p className="text-sm text-muted-foreground mt-1">Warehouse exceptions · supervisor workflow · escalation matrix</p></div>
+        <Button size="sm" variant="destructive"><Siren className="mr-2 h-4 w-4" />Report Exception</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {/* Exception Workflow */}
+      <Card className="p-4 bg-gradient-to-r from-slate-50 to-slate-100">
+        <h3 className="font-semibold mb-3 text-sm">Exception Resolution Workflow</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Exception Raised', 'Auto-Routed to Supervisor', 'Investigation', 'Decision', 'Reassign / Escalate / Close', 'Audit Logged'].map((step, i, arr) => (
+            <div key={step} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'TASK_FAILURE', 'NO_STOCK', 'WRONG_BIN', 'EQUIPMENT_FAILURE', 'OPERATOR_UNAVAILABLE', 'PRIORITY_CHANGE', 'EMERGENCY_ORDER', 'TEMPERATURE_ALARM', 'SHORT_PICK'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1 rounded-full border ${filter === f ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{f.replace('_', ' ')}</button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {filtered.map(e => {
+          const sb = s28BadgeForStatus(e.status)
+          const sevColor = e.sev === 'CRITICAL' ? 'border-rose-400 bg-rose-50/50' : e.sev === 'HIGH' ? 'border-orange-300 bg-orange-50/30' : e.sev === 'MEDIUM' ? 'border-amber-200 bg-amber-50/20' : 'border-slate-200'
+          const sevBadge = e.sev === 'CRITICAL' ? 'bg-rose-100 text-rose-700' : e.sev === 'HIGH' ? 'bg-orange-100 text-orange-700' : e.sev === 'MEDIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+          const typeIcons: Record<string, React.ReactNode> = {
+            TASK_FAILURE: <AlertOctagon className="h-4 w-4" />, NO_STOCK: <Package className="h-4 w-4" />,
+            WRONG_BIN: <MapPin className="h-4 w-4" />, EQUIPMENT_FAILURE: <Truck className="h-4 w-4" />,
+            OPERATOR_UNAVAILABLE: <UserCog className="h-4 w-4" />, PRIORITY_CHANGE: <Flag className="h-4 w-4" />,
+            EMERGENCY_ORDER: <Siren className="h-4 w-4" />, TEMPERATURE_ALARM: <Thermometer className="h-4 w-4" />,
+            SHORT_PICK: <PackageOpen className="h-4 w-4" />,
+          }
+          return (
+            <Card key={e.id} className={`p-4 ${sevColor}`}>
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-lg bg-white border flex items-center justify-center flex-shrink-0">{typeIcons[e.type] || <AlertTriangle className="h-4 w-4" />}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-mono text-xs font-semibold text-blue-700">{e.num}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded font-mono">{e.type}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${sevBadge}`}>{e.sev}</span>
+                    <span className="text-[10px] text-muted-foreground">Source: {e.source}</span>
+                    {e.task && <span className="text-[10px] text-muted-foreground font-mono">Task: {e.task}</span>}
+                    {e.wave && <span className="text-[10px] text-muted-foreground font-mono">Wave: {e.wave}</span>}
+                  </div>
+                  <p className="text-sm font-medium">{e.title}</p>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                    <span>Reported: {e.reported} by {e.by}</span>
+                    <span>·</span>
+                    <span>Assigned to: {e.assigned || '—'}</span>
+                    <span>·</span>
+                    <span>Impact: <span className="font-medium">{e.impact}</span></span>
+                    {e.delay > 0 && <><span>·</span><span className="text-rose-600">Delay: {e.delay}m</span></>}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`text-xs px-2 py-1 rounded ${sb.cls}`}>{sb.label}</span>
+                  {(e.status === 'OPEN' || e.status === 'ASSIGNED' || e.status === 'INVESTIGATING') && (
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" className="h-7 text-xs">Reassign</Button>
+                      <Button size="sm" variant="default" className="h-7 text-xs">Escalate</Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs">Close</Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 8: Workforce Analytics Module ─────────────────
+function WorkforceAnalyticsModule() {
+  const operatorKPIs = [
+    { rank: 1, code: 'OP-003', name: 'Suresh Mehta', tasks: 92, accuracy: 99.1, util: 94, idle: 12, travel: 38, avgDur: 3.8, rating: 88 },
+    { rank: 2, code: 'OP-001', name: 'Rajesh Kumar', tasks: 78, accuracy: 98.5, util: 87, idle: 18, travel: 42, avgDur: 4.2, rating: 92 },
+    { rank: 3, code: 'OP-002', name: 'Anita Sharma', tasks: 65, accuracy: 97.2, util: 82, idle: 22, travel: 48, avgDur: 4.6, rating: 85 },
+    { rank: 4, code: 'OP-005', name: 'Ramesh Patel', tasks: 52, accuracy: 95.5, util: 79, idle: 28, travel: 52, avgDur: 5.1, rating: 79 },
+    { rank: 5, code: 'OP-006', name: 'Mahesh Reddy', tasks: 38, accuracy: 97.8, util: 71, idle: 35, travel: 58, avgDur: 5.4, rating: 81 },
+    { rank: 6, code: 'OP-004', name: 'Lakshmi V.', tasks: 41, accuracy: 96.0, util: 68, idle: 32, travel: 45, avgDur: 5.2, rating: 72 },
+    { rank: 7, code: 'OP-008', name: 'Priya Nair', tasks: 18, accuracy: 92.0, util: 54, idle: 48, travel: 65, avgDur: 6.8, rating: 55 },
+    { rank: 8, code: 'OP-007', name: 'Anil Kumar', tasks: 22, accuracy: 94.3, util: 0, idle: 0, travel: 0, avgDur: 0, rating: 68 },
+  ]
+
+  const dailyTrend = [
+    { day: 'Mon', tasks: 312, accuracy: 97.2 }, { day: 'Tue', tasks: 345, accuracy: 96.8 },
+    { day: 'Wed', tasks: 389, accuracy: 97.5 }, { day: 'Thu', tasks: 367, accuracy: 98.1 },
+    { day: 'Fri', tasks: 412, accuracy: 96.5 }, { day: 'Sat', tasks: 298, accuracy: 97.8 },
+    { day: 'Sun', tasks: 187, accuracy: 98.5 },
+  ]
+  const maxTasks = Math.max(...dailyTrend.map(d => d.tasks))
+
+  const skillMatrix = [
+    { skill: 'FORKLIFT', certified: 6, expert: 2, advanced: 3, intermediate: 1, beginner: 0 },
+    { skill: 'REACH_TRUCK', certified: 4, expert: 1, advanced: 2, intermediate: 1, beginner: 0 },
+    { skill: 'STACKER', certified: 5, expert: 1, advanced: 2, intermediate: 2, beginner: 0 },
+    { skill: 'PICKER', certified: 8, expert: 3, advanced: 3, intermediate: 2, beginner: 0 },
+    { skill: 'PACKER', certified: 7, expert: 2, advanced: 2, intermediate: 2, beginner: 1 },
+    { skill: 'RECEIVER', certified: 5, expert: 1, advanced: 2, intermediate: 1, beginner: 1 },
+    { skill: 'CYCLE_COUNT', certified: 4, expert: 1, advanced: 1, intermediate: 2, beginner: 0 },
+    { skill: 'SCANNER', certified: 8, expert: 8, advanced: 0, intermediate: 0, beginner: 0 },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Workforce Analytics</h2><p className="text-sm text-muted-foreground mt-1">Operator productivity · skill matrix · accuracy · utilization insights</p></div>
+
+      {/* Top KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Tasks Completed (7d)', value: dailyTrend.reduce((a, d) => a + d.tasks, 0), icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />, change: '+12%' },
+          { label: 'Avg Accuracy', value: `${(dailyTrend.reduce((a, d) => a + d.accuracy, 0) / dailyTrend.length).toFixed(1)}%`, icon: <Target className="h-5 w-5 text-blue-600" />, change: '+0.3%' },
+          { label: 'Avg Utilization', value: '78%', icon: <Gauge className="h-5 w-5 text-orange-600" />, change: '+5%' },
+          { label: 'Idle Hours (7d)', value: '142h', icon: <Clock className="h-5 w-5 text-amber-600" />, change: '-8%' },
+        ].map(s => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center justify-between"><div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">{s.icon}</div><span className="text-xs text-emerald-600">{s.change}</span></div>
+            <p className="text-xs text-muted-foreground mt-2">{s.label}</p><p className="text-2xl font-bold">{s.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Daily Trend Chart */}
+        <Card className="p-4 lg:col-span-2">
+          <h3 className="font-semibold mb-3">Tasks Completed — Last 7 Days</h3>
+          <div className="flex items-end justify-between gap-3 h-48">
+            {dailyTrend.map(d => (
+              <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-xs font-mono text-muted-foreground">{d.tasks}</div>
+                <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end"><div className="w-full bg-gradient-to-t from-blue-600 to-blue-400" style={{ height: `${(d.tasks / maxTasks) * 100}%` }} /></div>
+                <div className="text-xs">{d.day}</div>
+                <div className="text-[10px] text-emerald-600">{d.accuracy}%</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1"><span className="h-2 w-2 bg-blue-500 rounded" />Tasks</span><span className="flex items-center gap-1"><span className="h-2 w-2 bg-emerald-500 rounded" />Accuracy %</span></div>
+        </Card>
+
+        {/* Skill Matrix Summary */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Skill Matrix</h3>
+          <div className="space-y-2 text-xs">
+            {skillMatrix.map(s => (
+              <div key={s.skill} className="flex items-center gap-2">
+                <div className="w-24 font-mono text-[10px]">{s.skill}</div>
+                <div className="flex-1 flex h-4 rounded overflow-hidden">
+                  <div className="bg-emerald-500" style={{ width: `${(s.expert / 8) * 100}%` }} title={`${s.expert} expert`} />
+                  <div className="bg-blue-500" style={{ width: `${(s.advanced / 8) * 100}%` }} title={`${s.advanced} advanced`} />
+                  <div className="bg-amber-500" style={{ width: `${(s.intermediate / 8) * 100}%` }} title={`${s.intermediate} intermediate`} />
+                  <div className="bg-slate-300" style={{ width: `${(s.beginner / 8) * 100}%` }} title={`${s.beginner} beginner`} />
+                </div>
+                <div className="w-8 text-right font-mono">{s.certified}/8</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-emerald-500 rounded" />Expert</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-blue-500 rounded" />Advanced</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-amber-500 rounded" />Inter.</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 bg-slate-300 rounded" />Beginner</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* Operator Leaderboard */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Operator Performance Leaderboard</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Rank</th><th className="text-left px-4 py-3 font-medium">Operator</th>
+              <th className="text-left px-4 py-3 font-medium">Tasks (7d)</th><th className="text-left px-4 py-3 font-medium">Accuracy</th>
+              <th className="text-left px-4 py-3 font-medium">Utilization</th><th className="text-left px-4 py-3 font-medium">Idle (min)</th>
+              <th className="text-left px-4 py-3 font-medium">Travel (min)</th><th className="text-left px-4 py-3 font-medium">Avg Dur</th>
+              <th className="text-left px-4 py-3 font-medium">Rating</th>
+            </tr></thead>
+            <tbody>
+              {operatorKPIs.map(o => (
+                <tr key={o.code} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3"><span className={`font-bold ${o.rank === 1 ? 'text-amber-600' : o.rank === 2 ? 'text-slate-500' : o.rank === 3 ? 'text-orange-700' : 'text-muted-foreground'}`}>#{o.rank}</span></td>
+                  <td className="px-4 py-3"><div className="font-medium">{o.name}</div><div className="text-xs text-muted-foreground font-mono">{o.code}</div></td>
+                  <td className="px-4 py-3 font-mono">{o.tasks}</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><span className="font-mono text-xs w-12">{o.accuracy}%</span><div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${o.accuracy > 97 ? 'bg-emerald-500' : o.accuracy > 95 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${o.accuracy}%` }} /></div></div></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><span className="font-mono text-xs w-10">{o.util}%</span><div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${o.util > 80 ? 'bg-emerald-500' : o.util > 60 ? 'bg-amber-500' : 'bg-slate-300'}`} style={{ width: `${o.util}%` }} /></div></div></td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.idle}m</td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.travel}m</td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.avgDur > 0 ? `${o.avgDur}m` : '—'}</td>
+                  <td className="px-4 py-3"><Badge variant="outline" className={`text-[10px] ${o.rating > 85 ? 'border-emerald-300 text-emerald-700' : o.rating > 70 ? 'border-blue-300 text-blue-700' : 'border-amber-300 text-amber-700'}`}>{o.rating}/100</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* AI Recommendations */}
+      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm">AI-Ready Task Optimization Insights</h3>
+            <div className="mt-2 space-y-1.5 text-xs">
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Priya Nair</strong> has 48 min idle time — consider cross-training on PICKER skill to improve utilization.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Travel time</strong> averages 42 min/operator/day — zone-based assignment could reduce by ~30%.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Morning shift</strong> has 18% higher throughput than evening — consider rebalancing wave releases.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>FORKLIFT certification</strong> gap: 6/8 certified — train Lakshmi & Priya to enable forklift task assignment.</span></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -10168,8 +11366,20 @@ export default function Home() {
   const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode } = useAuthStore()
   const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [zoom, setZoom] = useState(100)
 
   useEffect(() => { initialize() }, [initialize])
+
+  // Ctrl/Cmd + scroll = zoom; Ctrl/Cmd + 0 = reset; + / - to zoom
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setZoom(z => Math.min(150, z + 10)) }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); setZoom(z => Math.max(60, z - 10)) }
+      else if ((e.ctrlKey || e.metaKey) && e.key === '0') { e.preventDefault(); setZoom(100) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   if (isLoading) {
     return (
@@ -10192,7 +11402,9 @@ export default function Home() {
     partners: 'Business Partners', identification: 'Identification & Traceability',
     governance: 'Data Governance', inventory: 'Inventory Engine',
     goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
-    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', dispatch: 'Dispatch & Shipping', manufacturing: 'Manufacturing',
+    warehouse: 'Warehouse Management', whlocations: 'Locations & Bins', receiving: 'Receiving Operations', putaway: 'Directed Putaway', fulfillment: 'Picking & Packing', dispatch: 'Dispatch & Shipping',
+    waveplanning: 'Wave Planning', taskqueue: 'Task Queue', workforce: 'Workforce Management', equipment: 'Equipment Management', controltower: 'Warehouse Control Tower', sladashboard: 'SLA Dashboard', exceptioncenter: 'Exception Center', workforceanalytics: 'Workforce Analytics',
+    manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
     ai: 'AI Copilot',
@@ -10241,12 +11453,38 @@ export default function Home() {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
           <div className="flex-1" />
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 27 · 223 Tables · Part 4 WMS</Badge>
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-1 py-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(60, z - 10))} title="Zoom Out (Ctrl -)">
+              <span className="text-base leading-none">−</span>
+            </Button>
+            <button
+              onClick={() => setZoom(100)}
+              className="min-w-[44px] text-xs font-medium hover:bg-accent rounded px-1 py-0.5"
+              title="Reset Zoom (Ctrl 0)"
+            >
+              {zoom}%
+            </button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(150, z + 10))} title="Zoom In (Ctrl +)">
+              <span className="text-base leading-none">+</span>
+            </Button>
+          </div>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 28 · 239 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
-        <ScrollArea className="flex-1">
-          <main className="p-6 max-w-[1600px] mx-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollBehavior: 'smooth' }}>
+          <main
+            className="p-6 mx-auto origin-top"
+            style={{
+              maxWidth: '1600px',
+              zoom: `${zoom}%`,
+              // Firefox doesn't support zoom property — fall back to transform
+              ...(typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('firefox')
+                ? { transform: `scale(${zoom / 100})`, transformOrigin: 'top center', zoom: 'normal' as unknown as string }
+                : {}),
+            }}
+          >
             {activeModule === 'dashboard' && <DashboardModule />}
             {activeModule === 'organization' && <OrganizationModule />}
             {activeModule === 'rbac' && <RBACModule />}
@@ -10272,14 +11510,22 @@ export default function Home() {
             {activeModule === 'putaway' && <PutawayModule />}
             {activeModule === 'fulfillment' && <FulfillmentModule />}
             {activeModule === 'dispatch' && <DispatchModule />}
+            {activeModule === 'waveplanning' && <WavePlanningModule />}
+            {activeModule === 'taskqueue' && <TaskQueueModule />}
+            {activeModule === 'workforce' && <WorkforceModule />}
+            {activeModule === 'equipment' && <EquipmentModule />}
+            {activeModule === 'controltower' && <ControlTowerModule />}
+            {activeModule === 'sladashboard' && <SLADashboardModule />}
+            {activeModule === 'exceptioncenter' && <ExceptionCenterModule />}
+            {activeModule === 'workforceanalytics' && <WorkforceAnalyticsModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-27 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence, Picking & Packing & Order Fulfillment, Dispatch & Shipping & Load Management) · 223 Database Tables</p>
+              <p className="mt-1">Sprints 1-28 · Part 4 WMS (Warehouse Foundation, Locations, Receiving, Putaway, Picking & Packing, Dispatch, Wave Planning & Task Orchestration) · 239 Database Tables</p>
             </div>
           </main>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   )

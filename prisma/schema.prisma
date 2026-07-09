@@ -7521,3 +7521,651 @@ model GateExitLog {
   @@index([exitDate, status], map: "idx_gel_date_status")
   @@index([status], map: "idx_gel_status")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 28 — WAVE PLANNING, TASK ORCHESTRATION & WORKFORCE ENGINE
+// Epic 1: Wave Planning · Epic 2: Task Engine · Epic 3: Dynamic Assignment
+// Epic 4: Workforce · Epic 5: Equipment · Epic 6: SLA · Epic 7: Exceptions
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Wave Planning Engine ───────────────────────
+model WarehouseWave {
+  id              String   @id @default(uuid()) @db.Uuid
+  waveNumber      String   @unique @map("wave_number")
+  // ─── Type & Strategy ───
+  waveType        String   @map("wave_type") // SINGLE_ORDER, MULTI_ORDER, BATCH, ZONE, CARRIER, ROUTE, PRIORITY, EMERGENCY
+  strategy        String   @default("FIFO") // FIFO, FEFO, LIFO, PRIORITY, ZONE_SEQUENCE
+  // ─── Scope ───
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseName   String   @map("warehouse_name")
+  zoneId          String?  @db.Uuid @map("zone_id")
+  zoneName        String?  @map("zone_name")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  priorityScore   Int      @default(50) @map("priority_score") // 0-100
+  // ─── Schedule ───
+  plannedStart    DateTime @map("planned_start")
+  plannedFinish   DateTime @map("planned_finish")
+  actualStart     DateTime? @map("actual_start")
+  actualFinish    DateTime? @map("actual_finish")
+  // ─── Status ───
+  status          String   @default("DRAFT") // DRAFT, RELEASED, IN_PROGRESS, COMPLETED, CANCELLED, ON_HOLD
+  releaseReason   String?  @map("release_reason")
+  // ─── Capacity ───
+  totalOrders     Int      @default(0) @map("total_orders")
+  totalLines      Int      @default(0) @map("total_lines")
+  totalTasks      Int      @default(0) @map("total_tasks")
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  totalWeightKg   Decimal  @db.Decimal(12, 2) @default(0) @map("total_weight_kg")
+  // ─── Operator & Equipment ───
+  assignedOperatorIds String[] @default([]) @map("assigned_operator_ids")
+  requiredEquipment   String[] @default([]) @map("required_equipment")
+  // ─── Release / Audit ───
+  releasedById    String?  @db.Uuid @map("released_by_id")
+  releasedByName  String?  @map("released_by_name")
+  releasedAt      DateTime? @map("released_at")
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  // ─── AI Optimization ───
+  optimizationScore Int?   @map("optimization_score") // 0-100, AI-calculated
+  optimizationNotes String? @map("optimization_notes")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  orders          WaveOrder[]
+  statusHistory   WaveStatusHistory[]
+  tasks           WarehouseTask[]
+
+  @@map("warehouse_waves")
+  @@index([warehouseId, status], map: "idx_ww_wh_status")
+  @@index([waveType, status], map: "idx_ww_type_status")
+  @@index([plannedStart], map: "idx_ww_planned_start")
+  @@index([priority, status], map: "idx_ww_priority_status")
+}
+
+model WaveOrder {
+  id              String   @id @default(uuid()) @db.Uuid
+  waveId          String   @db.Uuid @map("wave_id")
+  // ─── Order Reference ───
+  orderType       String   @map("order_type") // SALES_ORDER, TRANSFER_ORDER, REPLENISHMENT, RETURN, PRODUCTION_ORDER
+  orderNumber     String   @map("order_number")
+  orderId         String?  @db.Uuid @map("order_id")
+  // ─── Partner ───
+  partnerId       String?  @db.Uuid @map("partner_id")
+  partnerName     String?  @map("partner_name")
+  // ─── Route / Carrier ───
+  carrierId       String?  @db.Uuid @map("carrier_id")
+  carrierName     String?  @map("carrier_name")
+  routeId         String?  @db.Uuid @map("route_id")
+  routeName       String?  @map("route_name")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") @map("priority")
+  priorityScore   Int      @default(50) @map("priority_score")
+  // ─── Schedule ───
+  requiredShipDate DateTime? @map("required_ship_date")
+  promisedDate    DateTime? @map("promised_date")
+  // ─── Lines & Qty ───
+  totalLines      Int      @default(0) @map("total_lines")
+  totalQty        Decimal  @db.Decimal(18, 4) @default(0) @map("total_qty")
+  // ─── Allocation ───
+  fullyAllocated  Boolean  @default(false) @map("fully_allocated")
+  partiallyAllocated Boolean @default(false) @map("partially_allocated")
+  // ─── Status ───
+  status          String   @default("PLANNED") // PLANNED, ALLOCATED, SHORT_PICKED, COMPLETED, CANCELLED
+  exceptionFlag   Boolean  @default(false) @map("exception_flag")
+  exceptionReason String?  @map("exception_reason")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  wave            WarehouseWave @relation(fields: [waveId], references: [id], onDelete: Cascade)
+
+  @@map("wave_orders")
+  @@unique([waveId, orderNumber], map: "uq_wo_wave_order")
+  @@index([waveId], map: "idx_wo_wave")
+  @@index([orderNumber], map: "idx_wo_order")
+  @@index([status], map: "idx_wo_status")
+}
+
+model WaveStatusHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  waveId          String   @db.Uuid @map("wave_id")
+  fromStatus      String?  @map("from_status")
+  toStatus        String   @map("to_status")
+  changedById     String?  @db.Uuid @map("changed_by_id")
+  changedByName   String?  @map("changed_by_name")
+  changeReason    String?  @map("change_reason")
+  changedAt       DateTime @default(now()) @map("changed_at")
+
+  wave            WarehouseWave @relation(fields: [waveId], references: [id], onDelete: Cascade)
+
+  @@map("wave_status_history")
+  @@index([waveId, changedAt], map: "idx_wsh_wave_time")
+}
+
+// ─── Epic 2: Warehouse Task Engine ──────────────────────
+model WarehouseTask {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskNumber      String   @unique @map("task_number")
+  // ─── Type ───
+  taskType        String   @map("task_type") // RECEIVE, PUTAWAY, PICK, PACK, TRANSFER, COUNT, INSPECT, LOAD, DISPATCH, REPLENISH
+  // ─── Wave Link ───
+  waveId          String?  @db.Uuid @map("wave_id")
+  waveNumber      String?  @map("wave_number")
+  // ─── Source Reference ───
+  sourceType      String?  @map("source_type") // WAVE, MANUAL, REPLENISHMENT, CYCLE_COUNT, EXCEPTION, AI_SUGGESTED
+  sourceId        String?  @db.Uuid @map("source_id")
+  sourceNumber    String?  @map("source_number")
+  // ─── Scope ───
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseName   String   @map("warehouse_name")
+  zoneId          String?  @db.Uuid @map("zone_id")
+  zoneName        String?  @map("zone_name")
+  // ─── Locations ───
+  fromLocationId  String?  @db.Uuid @map("from_location_id")
+  fromLocationCode String? @map("from_location_code")
+  toLocationId    String?  @db.Uuid @map("to_location_id")
+  toLocationCode  String?  @map("to_location_code")
+  // ─── Product ───
+  productId       String?  @db.Uuid @map("product_id")
+  productSku      String?  @map("product_sku")
+  productName     String?  @map("product_name")
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  // ─── Qty ───
+  plannedQty      Decimal  @db.Decimal(18, 4) @default(0) @map("planned_qty")
+  actualQty       Decimal  @db.Decimal(18, 4) @default(0) @map("actual_qty")
+  uom             String?  @map("uom")
+  // ─── Priority ───
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  priorityScore   Int      @default(50) @map("priority_score") // 0-100
+  // ─── Assignment ───
+  assignedOperatorId String? @db.Uuid @map("assigned_operator_id")
+  assignedOperatorName String? @map("assigned_operator_name")
+  assignedEquipmentId String? @db.Uuid @map("assigned_equipment_id")
+  assignedEquipmentCode String? @map("assigned_equipment_code")
+  assignmentStrategy String? @map("assignment_strategy") // MANUAL, AUTO_WORKLOAD, AUTO_SKILL, AUTO_DISTANCE, AUTO_ZONE
+  // ─── Schedule ───
+  plannedStart    DateTime? @map("planned_start")
+  plannedFinish   DateTime? @map("planned_finish")
+  actualStart     DateTime? @map("actual_start")
+  actualFinish    DateTime? @map("actual_finish")
+  durationSeconds Int?     @map("duration_seconds")
+  // ─── SLA ───
+  slaDeadline     DateTime? @map("sla_deadline")
+  slaViolated     Boolean  @default(false) @map("sla_violated")
+  slaViolationId  String?  @db.Uuid @map("sla_violation_id")
+  // ─── Status ───
+  status          String   @default("OPEN") // OPEN, ASSIGNED, ACCEPTED, IN_PROGRESS, PAUSED, COMPLETED, CANCELLED, FAILED, ESCALATED
+  acceptanceTime  DateTime? @map("acceptance_time")
+  // ─── Validation ───
+  fromScanVerified Boolean @default(false) @map("from_scan_verified")
+  toScanVerified   Boolean @default(false) @map("to_scan_verified")
+  productScanVerified Boolean @default(false) @map("product_scan_verified")
+  qtyConfirmed    Boolean  @default(false) @map("qty_confirmed")
+  // ─── Notes ───
+  instructions    String?
+  notes           String?
+  exceptionFlag   Boolean  @default(false) @map("exception_flag")
+  exceptionReason String?  @map("exception_reason")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  wave            WarehouseWave? @relation(fields: [waveId], references: [id])
+  taskLines       WarehouseTaskLine[]
+  statusHistory   TaskStatusHistory[]
+
+  @@map("warehouse_tasks")
+  @@index([warehouseId, status], map: "idx_wt_wh_status")
+  @@index([taskType, status], map: "idx_wt_type_status")
+  @@index([assignedOperatorId, status], map: "idx_wt_op_status")
+  @@index([priority, status], map: "idx_wt_priority_status")
+  @@index([waveId], map: "idx_wt_wave")
+  @@index([slaDeadline], map: "idx_wt_sla")
+}
+
+model WarehouseTaskLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskId          String   @db.Uuid @map("task_id")
+  lineNo          Int      @map("line_no")
+  // ─── Product ───
+  productId       String   @db.Uuid @map("product_id")
+  productSku      String   @map("product_sku")
+  productName     String   @map("product_name")
+  // ─── Lot / Batch ───
+  batchId         String?  @db.Uuid @map("batch_id")
+  batchNumber     String?  @map("batch_number")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Qty ───
+  plannedQty      Decimal  @db.Decimal(18, 4) @default(0) @map("planned_qty")
+  actualQty       Decimal  @db.Decimal(18, 4) @default(0) @map("actual_qty")
+  shortQty        Decimal  @db.Decimal(18, 4) @default(0) @map("short_qty")
+  uom             String   @map("uom")
+  // ─── Location ───
+  fromLocationId  String?  @db.Uuid @map("from_location_id")
+  fromLocationCode String? @map("from_location_code")
+  toLocationId    String?  @db.Uuid @map("to_location_id")
+  toLocationCode  String?  @map("to_location_code")
+  // ─── Status ───
+  status          String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, SHORT_PICKED, CANCELLED
+  scanVerified    Boolean  @default(false) @map("scan_verified")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  task            WarehouseTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("warehouse_task_lines")
+  @@index([taskId], map: "idx_wtl_task")
+  @@index([productId], map: "idx_wtl_product")
+}
+
+model TaskStatusHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskId          String   @db.Uuid @map("task_id")
+  fromStatus      String?  @map("from_status")
+  toStatus        String   @map("to_status")
+  changedById     String?  @db.Uuid @map("changed_by_id")
+  changedByName   String?  @map("changed_by_name")
+  changeReason    String?  @map("change_reason")
+  locationLat     Decimal? @db.Decimal(10, 7) @map("location_lat")
+  locationLng     Decimal? @db.Decimal(10, 7) @map("location_lng")
+  changedAt       DateTime @default(now()) @map("changed_at")
+
+  task            WarehouseTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("task_status_history")
+  @@index([taskId, changedAt], map: "idx_tsh_task_time")
+}
+
+// ─── Epic 4: Workforce Management ───────────────────────
+model WarehouseShift {
+  id              String   @id @default(uuid()) @db.Uuid
+  shiftCode       String   @unique @map("shift_code")
+  shiftName       String   @map("shift_name") // Morning, Evening, Night
+  // ─── Schedule ───
+  startTime       String   @map("start_time") // HH:mm
+  endTime         String   @map("end_time") // HH:mm
+  breakStart      String?  @map("break_start")
+  breakEnd        String?  @map("break_end")
+  // ─── Days ───
+  workingDays     String[] @default([]) @map("working_days") // MON, TUE, ...
+  // ─── Type ───
+  shiftType       String   @default("REGULAR") // REGULAR, OVERTIME, WEEKEND, HOLIDAY
+  // ─── Grace ───
+  graceEarlyMinutes Int    @default(15) @map("grace_early_minutes")
+  graceLateMinutes  Int    @default(15) @map("grace_late_minutes")
+  // ─── Status ───
+  isActive        Boolean  @default(true) @map("is_active")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  operators       WarehouseOperator[]
+  attendances     OperatorAttendance[]
+
+  @@map("warehouse_shifts")
+}
+
+model WarehouseOperator {
+  id              String   @id @default(uuid()) @db.Uuid
+  operatorCode    String   @unique @map("operator_code")
+  // ─── Identity ───
+  userId          String?  @db.Uuid @map("user_id")
+  employeeId      String?  @unique @map("employee_id")
+  firstName       String   @map("first_name")
+  lastName        String   @map("last_name")
+  fullName        String   @map("full_name")
+  phone           String?
+  email           String?
+  // ─── Photo / Bio ───
+  photoUrl        String?  @map("photo_url")
+  // ─── Shift ───
+  primaryShiftId  String?  @db.Uuid @map("primary_shift_id")
+  // ─── Warehouse ───
+  homeWarehouseId String?  @db.Uuid @map("home_warehouse_id")
+  homeWarehouseName String? @map("home_warehouse_name")
+  // ─── Zone ───
+  primaryZoneId   String?  @db.Uuid @map("primary_zone_id")
+  primaryZoneName String?  @map("primary_zone_name")
+  // ─── Skill Matrix ───
+  skillLevel      String   @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT, SUPERVISOR
+  overallRating   Int      @default(50) @map("overall_rating") // 0-100
+  // ─── Certifications ───
+  forkliftCertified Boolean @default(false) @map("forklift_certified")
+  reachTruckCertified Boolean @default(false) @map("reach_truck_certified")
+  stackerCertified  Boolean @default(false) @map("stacker_certified")
+  scannerCertified  Boolean @default(true) @map("scanner_certified")
+  // ─── Equipment ───
+  preferredEquipment String[] @default([]) @map("preferred_equipment")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED, ON_LEAVE, TERMINATED
+  isOnline        Boolean  @default(false) @map("is_online")
+  lastSeenAt      DateTime? @map("last_seen_at")
+  // ─── KPIs (rolling) ───
+  tasksCompletedToday Int  @default(0) @map("tasks_completed_today")
+  tasksCompletedWeek Int   @default(0) @map("tasks_completed_week")
+  avgTaskDurationSeconds Int? @map("avg_task_duration_seconds")
+  accuracyPercent Decimal? @db.Decimal(5, 2) @map("accuracy_percent")
+  utilizationPercent Decimal? @db.Decimal(5, 2) @map("utilization_percent")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  primaryShift    WarehouseShift? @relation(fields: [primaryShiftId], references: [id])
+  attendances     OperatorAttendance[]
+  skills          OperatorSkill[]
+  workloads       OperatorWorkload[]
+
+  @@map("warehouse_operators")
+  @@index([homeWarehouseId], map: "idx_wo_wh")
+  @@index([status, isOnline], map: "idx_wo_status_online")
+  @@index([primaryZoneId], map: "idx_wo_zone")
+}
+
+model OperatorAttendance {
+  id              String   @id @default(uuid()) @db.Uuid
+  operatorId      String   @db.Uuid @map("operator_id")
+  operatorCode    String   @map("operator_code")
+  operatorName    String   @map("operator_name")
+  shiftId         String?  @db.Uuid @map("shift_id")
+  shiftName       String?  @map("shift_name")
+  // ─── Date ───
+  attendanceDate  DateTime @map("attendance_date")
+  // ─── Check In / Out ───
+  checkInTime     DateTime? @map("check_in_time")
+  checkOutTime    DateTime? @map("check_out_time")
+  // ─── Status ───
+  status          String   @default("SCHEDULED") // SCHEDULED, PRESENT, LATE, ABSENT, HALF_DAY, ON_LEAVE, HOLIDAY
+  lateMinutes     Int      @default(0) @map("late_minutes")
+  earlyMinutes    Int      @default(0) @map("early_minutes")
+  overtimeMinutes Int      @default(0) @map("overtime_minutes")
+  // ─── Breaks ───
+  break1Start     DateTime? @map("break1_start")
+  break1End       DateTime? @map("break1_end")
+  break2Start     DateTime? @map("break2_start")
+  break2End       DateTime? @map("break2_end")
+  // ─── Working Hours ───
+  workedHours     Decimal? @db.Decimal(5, 2) @map("worked_hours")
+  // ─── Notes ───
+  notes           String?
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  operator        WarehouseOperator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  shift           WarehouseShift? @relation(fields: [shiftId], references: [id])
+
+  @@map("operator_attendance")
+  @@unique([operatorId, attendanceDate], map: "uq_oa_op_date")
+  @@index([attendanceDate, status], map: "idx_oa_date_status")
+}
+
+model OperatorSkill {
+  id              String   @id @default(uuid()) @db.Uuid
+  operatorId      String   @db.Uuid @map("operator_id")
+  // ─── Skill ───
+  skillCode       String   @map("skill_code") // FORKLIFT, REACH_TRUCK, STACKER, PICKER, PACKER, RECEIVER, CYCLE_COUNT, QC, SCANNER
+  skillName       String   @map("skill_name")
+  // ─── Proficiency ───
+  level           String   @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
+  rating          Int      @default(50) // 0-100
+  // ─── Certification ───
+  certified       Boolean  @default(false)
+  certifiedDate   DateTime? @map("certified_date")
+  certifyingBody  String?  @map("certifying_body")
+  certificateNumber String? @map("certificate_number")
+  expiryDate      DateTime? @map("expiry_date")
+  // ─── Tasks Done ───
+  tasksCompleted  Int      @default(0) @map("tasks_completed")
+  lastUsedAt      DateTime? @map("last_used_at")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  operator        WarehouseOperator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_skills")
+  @@unique([operatorId, skillCode], map: "uq_os_op_skill")
+  @@index([skillCode, certified], map: "idx_os_skill_certified")
+}
+
+model OperatorWorkload {
+  id              String   @id @default(uuid()) @db.Uuid
+  operatorId      String   @db.Uuid @map("operator_id")
+  // ─── Snapshot Date ───
+  snapshotDate    DateTime @default(now()) @map("snapshot_date")
+  // ─── Current Load ───
+  openTasks       Int      @default(0) @map("open_tasks")
+  inProgressTasks Int      @default(0) @map("in_progress_tasks")
+  completedToday  Int      @default(0) @map("completed_today")
+  failedToday     Int      @default(0) @map("failed_today")
+  // ─── Time ───
+  estimatedRemainingMinutes Int @default(0) @map("estimated_remaining_minutes")
+  actualWorkedMinutes Int    @default(0) @map("actual_worked_minutes")
+  idleMinutes     Int      @default(0) @map("idle_minutes")
+  // ─── Utilization ───
+  utilizationPercent Decimal @db.Decimal(5, 2) @default(0) @map("utilization_percent")
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, BUSY, OVERLOADED, IDLE, OFFLINE
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  operator        WarehouseOperator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_workload")
+  @@index([operatorId, snapshotDate], map: "idx_owl_op_date")
+  @@index([status], map: "idx_owl_status")
+}
+
+// ─── Epic 5: Equipment Management ───────────────────────
+model WarehouseEquipment {
+  id              String   @id @default(uuid()) @db.Uuid
+  equipmentCode   String   @unique @map("equipment_code")
+  // ─── Type ───
+  equipmentType   String   @map("equipment_type") // FORKLIFT, HAND_PALLET_TRUCK, REACH_TRUCK, STACKER, SCANNER, MOBILE_DEVICE, PRINTER, LABEL_PRINTER, RF_TERMINAL
+  make            String?
+  model           String?
+  serialNumber    String?  @unique @map("serial_number")
+  // ─── Assignment ───
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  warehouseName   String   @map("warehouse_name")
+  homeZoneId      String?  @db.Uuid @map("home_zone_id")
+  homeZoneName    String?  @map("home_zone_name")
+  // ─── Battery / Fuel ───
+  batteryPercent  Int?     @map("battery_percent") // 0-100
+  fuelPercent     Int?     @map("fuel_percent")
+  chargingStatus  String?  @map("charging_status") // CHARGING, NOT_CHARGING, FULL
+  // ─── Maintenance ───
+  lastMaintenanceAt DateTime? @map("last_maintenance_at")
+  nextMaintenanceAt DateTime? @map("next_maintenance_at")
+  maintenanceDueKm Int?    @map("maintenance_due_km")
+  totalOperatingHours Decimal? @db.Decimal(10, 2) @map("total_operating_hours")
+  totalTasksDone  Int      @default(0) @map("total_tasks_done")
+  // ─── Status ───
+  status          String   @default("AVAILABLE") // AVAILABLE, IN_USE, CHARGING, MAINTENANCE, OUT_OF_SERVICE, RETIRED
+  currentOperatorId String? @db.Uuid @map("current_operator_id")
+  currentOperatorName String? @map("current_operator_name")
+  currentTaskId   String?  @db.Uuid @map("current_task_id")
+  currentLocationCode String? @map("current_location_code")
+  // ─── Certifications Required ───
+  requiredCertifications String[] @default([]) @map("required_certifications")
+  // ─── Audit ───
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  assignments     EquipmentAssignment[]
+
+  @@map("warehouse_equipment")
+  @@index([warehouseId, status], map: "idx_we_wh_status")
+  @@index([equipmentType, status], map: "idx_we_type_status")
+  @@index([status], map: "idx_we_status")
+}
+
+model EquipmentAssignment {
+  id              String   @id @default(uuid()) @db.Uuid
+  equipmentId     String   @db.Uuid @map("equipment_id")
+  equipmentCode   String   @map("equipment_code")
+  equipmentType   String   @map("equipment_type")
+  // ─── Assignment ───
+  operatorId      String?  @db.Uuid @map("operator_id")
+  operatorCode    String?  @map("operator_code")
+  operatorName    String?  @map("operator_name")
+  taskId          String?  @db.Uuid @map("task_id")
+  taskNumber      String?  @map("task_number")
+  // ─── Schedule ───
+  assignedAt      DateTime @default(now()) @map("assigned_at")
+  releasedAt      DateTime? @map("released_at")
+  durationMinutes Int?     @map("duration_minutes")
+  // ─── Status ───
+  status          String   @default("ASSIGNED") // ASSIGNED, ACTIVE, RELEASED, RECALLED
+  assignmentReason String? @map("assignment_reason") // TASK, SHIFT, BREAKDOWN_REPLACEMENT
+  // ─── Audit ───
+  notes           String?
+
+  equipment       WarehouseEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@map("equipment_assignments")
+  @@index([equipmentId, status], map: "idx_ea_eq_status")
+  @@index([operatorId, status], map: "idx_ea_op_status")
+}
+
+// ─── Epic 6: SLA Monitoring ─────────────────────────────
+model WarehouseSLA {
+  id              String   @id @default(uuid()) @db.Uuid
+  slaCode         String   @unique @map("sla_code")
+  slaName         String   @map("sla_name")
+  // ─── Scope ───
+  warehouseId     String?  @db.Uuid @map("warehouse_id")
+  warehouseName   String?  @map("warehouse_name")
+  // ─── Type ───
+  taskType        String   @map("task_type") // RECEIVE, PUTAWAY, PICK, PACK, DISPATCH, TRANSFER, CYCLE_COUNT
+  priority        String   @default("NORMAL") // EMERGENCY, HIGH, NORMAL, LOW
+  // ─── Threshold ───
+  targetMinutes   Int      @map("target_minutes")
+  warningMinutes  Int?     @map("warning_minutes") // when 80% reached
+  criticalMinutes Int?     @map("critical_minutes")
+  // ─── Penalty ───
+  penaltyAmount   Decimal? @db.Decimal(10, 2) @map("penalty_amount")
+  penaltyCurrency String?  @map("penalty_currency")
+  // ─── Status ───
+  isActive        Boolean  @default(true) @map("is_active")
+  effectiveFrom   DateTime @default(now()) @map("effective_from")
+  effectiveTo     DateTime? @map("effective_to")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouse_sla")
+  @@index([taskType, priority], map: "idx_ws_task_priority")
+  @@index([warehouseId, isActive], map: "idx_ws_wh_active")
+}
+
+model SLAViolation {
+  id              String   @id @default(uuid()) @db.Uuid
+  violationNumber String   @unique @map("violation_number")
+  // ─── SLA ───
+  slaId           String?  @db.Uuid @map("sla_id")
+  slaCode         String   @map("sla_code")
+  slaName         String   @map("sla_name")
+  // ─── Task ───
+  taskId          String?  @db.Uuid @map("task_id")
+  taskNumber      String   @map("task_number")
+  taskType        String   @map("task_type")
+  // ─── Operator ───
+  operatorId      String?  @db.Uuid @map("operator_id")
+  operatorName    String?  @map("operator_name")
+  // ─── Timing ───
+  plannedStart    DateTime? @map("planned_start")
+  plannedFinish   DateTime? @map("planned_finish")
+  actualFinish    DateTime? @map("actual_finish")
+  deadlineTime    DateTime @map("deadline_time")
+  violationTime   DateTime @default(now()) @map("violation_time")
+  // ─── Severity ───
+  severity        String   @default("WARNING") // WARNING, MINOR, MAJOR, CRITICAL
+  overrunMinutes  Int      @default(0) @map("overrun_minutes")
+  // ─── Penalty ───
+  penaltyApplied  Boolean  @default(false) @map("penalty_applied")
+  penaltyAmount   Decimal? @db.Decimal(10, 2) @map("penalty_amount")
+  // ─── Resolution ───
+  status          String   @default("OPEN") // OPEN, ACKNOWLEDGED, INVESTIGATING, RESOLVED, WAIVED
+  resolvedById    String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName  String?  @map("resolved_by_name")
+  resolvedAt      DateTime? @map("resolved_at")
+  resolutionNotes String?  @map("resolution_notes")
+  rootCause       String?  @map("root_cause")
+  preventiveAction String? @map("preventive_action")
+  // ─── Audit ───
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("sla_violations")
+  @@index([status], map: "idx_sv_status")
+  @@index([severity, status], map: "idx_sv_severity_status")
+  @@index([taskId], map: "idx_sv_task")
+  @@index([violationTime], map: "idx_sv_time")
+}
+
+// ─── Epic 7: Exception Management ───────────────────────
+model WarehouseException {
+  id                  String   @id @default(uuid()) @db.Uuid
+  exceptionNumber     String   @unique @map("exception_number")
+  // ─── Type ───
+  exceptionType       String   @map("exception_type") // TASK_FAILURE, NO_STOCK, WRONG_BIN, EQUIPMENT_FAILURE, OPERATOR_UNAVAILABLE, PRIORITY_CHANGE, EMERGENCY_ORDER, TEMPERATURE_ALARM, SHORT_PICK, DAMAGED_GOODS, MISCELLANEOUS
+  // ─── Source ───
+  sourceType          String   @map("source_type") // TASK, WAVE, RECEIVING, PUTAWAY, PICKING, PACKING, DISPATCH, INVENTORY, EQUIPMENT
+  sourceId            String?  @db.Uuid @map("source_id")
+  sourceNumber        String?  @map("source_number")
+  taskId              String?  @db.Uuid @map("task_id")
+  taskNumber          String?  @map("task_number")
+  waveId              String?  @db.Uuid @map("wave_id")
+  waveNumber          String?  @map("wave_number")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  zoneId              String?  @db.Uuid @map("zone_id")
+  zoneName            String?  @map("zone_name")
+  // ─── Severity ───
+  severity            String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Description ───
+  title               String
+  description         String
+  rootCause           String?  @map("root_cause")
+  // ─── Reporter ───
+  reportedById        String?  @db.Uuid @map("reported_by_id")
+  reportedByName      String?  @map("reported_by_name")
+  reportedAt          DateTime @default(now()) @map("reported_at")
+  // ─── Assignment ───
+  assignedToId        String?  @db.Uuid @map("assigned_to_id")
+  assignedToName      String?  @map("assigned_to_name")
+  assignedAt          DateTime? @map("assigned_at")
+  // ─── Resolution ───
+  status              String   @default("OPEN") // OPEN, ASSIGNED, INVESTIGATING, RESOLVED, ESCALATED, CLOSED, CANCELLED
+  resolution          String?  // REASSIGN, ESCALATE, CLOSE
+  resolutionNotes     String?  @map("resolution_notes")
+  resolvedById        String?  @db.Uuid @map("resolved_by_id")
+  resolvedByName      String?  @map("resolved_by_name")
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Escalation ───
+  escalatedToId       String?  @db.Uuid @map("escalated_to_id")
+  escalatedToName     String?  @map("escalated_to_name")
+  escalatedAt         DateTime? @map("escalated_at")
+  escalationLevel     Int      @default(0) @map("escalation_level")
+  // ─── Impact ───
+  impactLevel         String   @default("MINOR") // NEGLIGIBLE, MINOR, MODERATE, MAJOR, SEVERE
+  affectedTasks       Int      @default(0) @map("affected_tasks")
+  affectedOrders      Int      @default(0) @map("affected_orders")
+  estimatedDelayMinutes Int    @default(0) @map("estimated_delay_minutes")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouse_exceptions")
+  @@index([status, severity], map: "idx_wex_status_severity")
+  @@index([exceptionType, status], map: "idx_wex_type_status")
+  @@index([warehouseId, status], map: "idx_wex_wh_status")
+  @@index([reportedAt], map: "idx_wex_reported")
+}

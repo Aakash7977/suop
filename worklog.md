@@ -1859,3 +1859,58 @@ Color maps defined: 9 dispatch types, 10 dispatch statuses, 4 priorities, 7 vehi
 Vehicle Load Verification is the Chief Architect recommendation for Sprint 27. After Loading Complete, the loading supervisor follows an 8-step verification chain: (1) Loading Complete confirmed, (2) Scan Every Pallet barcode against dispatch plan, (3) Scan Vehicle number to confirm right vehicle loaded, (4) Verify Dispatch Plan matches loaded cartons/pallets, (5) Generate Delivery Manifest, (6) Apply Vehicle Seal, (7) Security Gate Verification (seal + docs + vehicle inspection), (8) Vehicle Exit. This chain ensures zero wrong-vehicle and zero wrong-load dispatches and gives complete genealogy: Sales Order → Picking Task → Packing Job → Carton → Dispatch Order → Vehicle → Seal → Gate Exit → Carrier Tracking → Customer Delivery. The 9 dispatch types (RETAIL_DISPATCH/DISTRIBUTOR_DISPATCH/RESTAURANT_REPLENISHMENT/BRANCH_TRANSFER/EXPORT_SHIPMENT/COURIER_SHIPMENT/DIRECT_DELIVERY/CUSTOMER_PICKUP/VENDOR_RETURN) cover every outbound scenario, while the 4 ownership models (OWN_FLEET/THIRD_PARTY/COURIER/RENTAL) handle the carrier mix from company trucks to per-trip rentals.
 
 ### Next: Sprint 28 — Inbound Logistics & Procurement Foundation (Purchase Requisition, RFQ, Supplier Quotation, Purchase Order, Goods Receipt against PO, Supplier Invoice Matching) — Part 5 begins
+
+---
+Task ID: 28
+Agent: Main Agent (Super Z)
+Task: Sprint 28 — Enterprise Wave Planning, Task Orchestration & Workforce Management Engine + UI Scroll/Zoom Fix
+
+Work Log:
+- Investigated user-reported scroll/zoom issue: main content area used Radix `ScrollArea` which has known issues with very large content (10K+ lines)
+- Replaced `<ScrollArea>` with native `<div className="flex-1 overflow-y-auto overflow-x-hidden">` for reliable scrolling
+- Added zoom controls to header: zoom out (−), zoom percentage (click to reset), zoom in (+) — range 60% to 150%
+- Added keyboard shortcuts: Ctrl/Cmd + `+` zoom in, Ctrl/Cmd + `-` zoom out, Ctrl/Cmd + `0` reset
+- Used CSS `zoom` property (with Firefox fallback to `transform: scale()`) for true layout zoom that reflows content
+- Updated `ModuleKey` type to add 8 new Sprint 28 modules: `waveplanning`, `taskqueue`, `workforce`, `equipment`, `controltower`, `sladashboard`, `exceptioncenter`, `workforceanalytics`
+- Updated `moduleNames` map with friendly titles for all 8 new modules
+- Added 8 sidebar entries under "Operations (Sprint 12+)" section for the new modules
+- Added Sprint 28 Prisma schema — 16 new models appended to `prisma/schema.prisma`:
+  * Epic 1 Wave Planning: `WarehouseWave`, `WaveOrder`, `WaveStatusHistory`
+  * Epic 2 Task Engine: `WarehouseTask`, `WarehouseTaskLine`, `TaskStatusHistory`
+  * Epic 4 Workforce: `WarehouseShift`, `WarehouseOperator`, `OperatorAttendance`, `OperatorSkill`, `OperatorWorkload`
+  * Epic 5 Equipment: `WarehouseEquipment`, `EquipmentAssignment`
+  * Epic 6 SLA: `WarehouseSLA`, `SLAViolation`
+  * Epic 7 Exceptions: `WarehouseException`
+- Total tables: 223 (Sprint 27) + 16 (Sprint 28) = 239 tables
+- Built 8 frontend React modules in `src/app/page.tsx` (~1,400 lines added):
+  1. `WavePlanningModule` — list/kanban/gantt views, 8 wave types, create-wave form, wave-type legend
+  2. `TaskQueueModule` — 10 task types, SLA risk indicators, auto-assignment banner, priority bars
+  3. `WorkforceModule` — 3 views (operators/shifts/attendance), skill matrix, certifications, KPIs
+  4. `EquipmentModule` — 6 equipment types, battery gauges, maintenance tracking, certification matrix
+  5. `ControlTowerModule` — live KPIs, zone heat map, dock activity, vehicle queue, live alerts, operator grid
+  6. `SLADashboardModule` — 7 SLA types, compliance table, violations table with severity
+  7. `ExceptionCenterModule` — 11 exception types, resolution workflow diagram, severity-coded cards
+  8. `WorkforceAnalyticsModule` — daily trend chart, skill matrix, operator leaderboard, AI recommendations
+- Added shared Sprint 28 helpers: `s28BadgeForStatus()` (40+ status mappings), `s28PriorityBadge()`
+- Added Sprint 28 backend endpoints to `mini-services/suop-backend/index.ts`:
+  * `GET/POST /api/warehouse-waves`, `POST /api/warehouse-waves/:id/release`
+  * `GET /api/warehouse-tasks`, `POST /api/warehouse-tasks/:id/assign`, `POST /api/warehouse-tasks/:id/complete`
+  * `GET /api/warehouse-operators`, `GET /api/warehouse-equipment`
+  * `GET /api/warehouse-sla`, `GET /api/sla-violations`
+  * `GET /api/warehouse-exceptions`, `POST /api/warehouse-exceptions/:id/resolve`
+  * `GET /api/warehouse-control-tower`, `GET /api/wave-planning/info`
+- Updated Sprint 28 backend log messages and `info` endpoint with all 8 epic principles + chief architect recommendation (Dynamic Replenishment Tasks)
+- Fixed TypeScript build errors: removed non-existent lucide-react icons (`PunchCard`, `FingerPrint`, `Helicopter`, `Container`, `Forklift`, `Pickaxe`, `Sailboat`, `Anchor`, etc.) and kept only ones that exist and are used (`Waves`, `Radio`, `Siren`, `UserCheck`, `Target`, `BatteryLow`, `Timer`)
+- Fixed duplicate `Flag` import (already existed in original imports)
+- Updated header badge: `Sprint 28 · 239 Tables · Part 4 WMS`
+- Updated footer: `Sprints 1-28 · Part 4 WMS (...) · 239 Database Tables`
+- Verified `npm run build` succeeds — Turbopack compiled successfully in 19.7s
+- Verified dev server returns HTTP 200 OK on `http://localhost:3000`
+- Verified backend (`bun run index.ts`) starts and logs all Sprint 28 endpoints
+
+Stage Summary:
+- Sprint 28 implementation COMPLETE: 16 new Prisma models, 8 new frontend modules (~1,400 LOC), 13 new API endpoints
+- Scroll/zoom issue RESOLVED: replaced Radix ScrollArea with native overflow scroll, added zoom controls (60%-150%) with keyboard shortcuts
+- Project builds cleanly, dev server runs, backend starts successfully
+- Total project state: Sprints 1-28 complete, 239 database tables, 23+ frontend modules, Part 4 WMS at 7/12 sprints (58%)
+- Next sprint (29): Enterprise Cross-Docking, Dock Yard & Yard Management System (YMS)
