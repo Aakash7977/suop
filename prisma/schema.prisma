@@ -13215,3 +13215,372 @@ model ManufacturingJournalLine {
   @@index([journalId], map: "idx_mjl42_journal")
   @@index([accountCode], map: "idx_mjl42_account")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 43 — MACHINE INTEGRATION, EQUIPMENT MONITORING & INDUSTRIAL IoT FOUNDATION
+// Part 5: MES · 11 new models · Epic 1-7 (machines, models, IoT gateways,
+// connections, heartbeats, runtime events, counters, sensors, maintenance)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Industrial Machine Master ──────────────────────────────────
+model IndustrialMachine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  machineCode         String   @unique @map("machine_code") // MIX-01, COOK-01, FRY-01
+  machineName         String   @map("machine_name")
+  // ─── Equipment Type ───
+  equipmentCategory   String   @map("equipment_category") // MIXER, BOILER, ROASTER, FRYER, COOLING_TUNNEL, PACKAGING, LABEL_PRINTER, METAL_DETECTOR, CHECK_WEIGHER, CONVEYOR, COMPRESSOR, OVEN, COLD_ROOM
+  // ─── Make / Model ───
+  manufacturer        String?  @map("manufacturer")
+  modelNumber         String?  @map("model_number")
+  serialNumber        String?  @map("serial_number")
+  firmwareVersion     String?  @map("firmware_version")
+  // ─── Location ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantCode           String?  @map("plant_code")
+  productionLineId    String?  @db.Uuid @map("production_line_id")
+  productionLineCode  String?  @map("production_line_code")
+  workCenterId        String?  @db.Uuid @map("work_center_id")
+  workCenterCode      String?  @map("work_center_code")
+  // ─── PLC / Connectivity ───
+  plcType             String?  @map("plc_type") // SIEMENS, ALLEN_BRADLEY, MITSUBISHI, SCHNEIDER, OMRON, DELTA
+  communicationProtocol String? @map("communication_protocol") // OPC_UA, MODBUS_TCP, MODBUS_RTU, ETHERNET_IP, PROFINET, MQTT
+  ipAddress           String?  @map("ip_address")
+  port                Int?
+  opcEndpoint         String?  @map("opc_endpoint")
+  modbusUnitId        Int?     @map("modbus_unit_id")
+  // ─── Installation ───
+  installationDate    DateTime? @map("installation_date")
+  warrantyExpiry      DateTime? @map("warranty_expiry")
+  // ─── Status ───
+  status              String   @default("OFFLINE") @map("status") // RUNNING, IDLE, SETUP, CLEANING, MAINTENANCE, FAULT, OFFLINE, RETIRED
+  statusChangedAt     DateTime? @map("status_changed_at")
+  // ─── IoT Gateway Link ───
+  iotGatewayId        String?  @db.Uuid @map("iot_gateway_id")
+  isConnected         Boolean  @default(false) @map("is_connected")
+  lastHeartbeatAt     DateTime? @map("last_heartbeat_at")
+  // ─── Current Operation ───
+  currentBatchNumber  String?  @map("current_batch_number")
+  currentWorkOrderNumber String? @map("current_work_order_number")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Maintenance ───
+  totalOperatingHours Decimal  @db.Decimal(12, 3) @default(0) @map("total_operating_hours")
+  totalCycles         Int      @default(0) @map("total_cycles")
+  lastMaintenanceAt   DateTime? @map("last_maintenance_at")
+  nextMaintenanceDue  DateTime? @map("next_maintenance_due")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  runtimeEvents       MachineRuntimeEvent[]
+  counters            MachineCounter[]
+  sensorReadings      SensorReading[]
+  sensorAlerts        SensorAlert[]
+  maintenanceTriggers MaintenanceTrigger[]
+
+  @@map("industrial_machines")
+  @@index([equipmentCategory, status], map: "idx_im43_cat_status")
+  @@index([productionLineId], map: "idx_im43_line")
+  @@index([workCenterId], map: "idx_im43_wc")
+  @@index([status], map: "idx_im43_status")
+  @@index([isConnected], map: "idx_im43_connected")
+}
+
+model MachineModel {
+  id                  String   @id @default(uuid()) @db.Uuid
+  modelCode           String   @unique @map("model_code")
+  modelName           String   @map("model_name")
+  // ─── Make ───
+  manufacturer        String   @map("manufacturer")
+  category            String   @map("category") // MIXER, BOILER, etc.
+  // ─── Specifications ───
+  capacityPerHour     Decimal? @db.Decimal(12, 3) @map("capacity_per_hour")
+  capacityUom         String?  @map("capacity_uom") // KG, LITER, PCS
+  powerKw             Decimal? @db.Decimal(8, 2) @map("power_kw")
+  voltage             String?  @map("voltage") // 415V/3Ph/50Hz
+  // ─── Maintenance ───
+  recommendedMaintenanceHours Int @default(500) @map("recommended_maintenance_hours")
+  // ─── Status ───
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("machine_models")
+  @@index([manufacturer, category], map: "idx_mm43_make_cat")
+}
+
+// ─── Epic 3: Industrial IoT Gateway ─────────────────────────────────────
+model IoTGateway {
+  id                  String   @id @default(uuid()) @db.Uuid
+  gatewayCode         String   @unique @map("gateway_code") // GW-THN-01
+  gatewayName         String   @map("gateway_name")
+  // ─── Location ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantCode           String   @map("plant_code")
+  plantName           String   @map("plant_name")
+  // ─── Network ───
+  ipAddress           String   @map("ip_address")
+  macAddress          String?  @map("mac_address")
+  firmwareVersion     String?  @map("firmware_version")
+  // ─── Capacity ───
+  maxDevices          Int      @default(50) @map("max_devices")
+  connectedDevices    Int      @default(0) @map("connected_devices")
+  // ─── Status ───
+  status              String   @default("ONLINE") @map("status") // ONLINE, OFFLINE, DEGRADED, MAINTENANCE
+  lastHeartbeatAt     DateTime? @map("last_heartbeat_at")
+  // ─── Performance ───
+  eventsPerMinute     Int      @default(0) @map("events_per_minute")
+  avgProcessingMs     Int      @default(0) @map("avg_processing_ms")
+  // ─── Audit ───
+  installedAt         DateTime @default(now()) @map("installed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  connections         IoTConnection[]
+  heartbeats          DeviceHeartbeat[]
+
+  @@map("iot_gateways")
+  @@index([plantCode, status], map: "idx_iotgw43_plant_status")
+  @@index([status], map: "idx_iotgw43_status")
+}
+
+model IoTConnection {
+  id                  String   @id @default(uuid()) @db.Uuid
+  connectionCode      String   @unique @map("connection_code") // CONN-000001
+  // ─── Links ───
+  gatewayId           String   @db.Uuid @map("gateway_id")
+  gatewayCode         String   @map("gateway_code")
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  // ─── Protocol ───
+  protocol            String   @map("protocol") // OPC_UA, MODBUS_TCP, MODBUS_RTU, ETHERNET_IP, PROFINET, MQTT
+  endpoint            String   @map("endpoint")
+  authenticationToken String?  @map("authentication_token")
+  // ─── Status ───
+  status              String   @default("CONNECTED") @map("status") // CONNECTED, DISCONNECTED, AUTHENTICATING, ERROR
+  connectedAt         DateTime? @map("connected_at")
+  disconnectedAt      DateTime? @map("disconnected_at")
+  lastDataReceivedAt  DateTime? @map("last_data_received_at")
+  // ─── Stats ───
+  messagesReceived    Int      @default(0) @map("messages_received")
+  messagesFailed      Int      @default(0) @map("messages_failed")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  gateway             IoTGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+
+  @@map("iot_connections")
+  @@index([gatewayId, status], map: "idx_iotc43_gw_status")
+  @@index([machineId], map: "idx_iotc43_machine")
+  @@index([status], map: "idx_iotc43_status")
+}
+
+model DeviceHeartbeat {
+  id                  String   @id @default(uuid()) @db.Uuid
+  gatewayId           String   @db.Uuid @map("gateway_id")
+  gatewayCode         String   @map("gateway_code")
+  // ─── Heartbeat ───
+  heartbeatAt         DateTime @default(now()) @map("heartbeat_at")
+  cpuPercent          Decimal? @db.Decimal(5, 2) @map("cpu_percent")
+  memoryPercent       Decimal? @db.Decimal(5, 2) @map("memory_percent")
+  diskPercent         Decimal? @db.Decimal(5, 2) @map("disk_percent")
+  temperature         Decimal? @db.Decimal(5, 2) @map("temperature")
+  uptimeSeconds       Int?     @map("uptime_seconds")
+  networkLatencyMs    Int?     @map("network_latency_ms")
+  // ─── Status ───
+  status              String   @default("HEALTHY") @map("status") // HEALTHY, WARNING, CRITICAL
+
+  gateway             IoTGateway @relation(fields: [gatewayId], references: [id], onDelete: Cascade)
+
+  @@map("device_heartbeats")
+  @@index([gatewayId, heartbeatAt], map: "idx_dh43_gw_time")
+  @@index([heartbeatAt], map: "idx_dh43_time")
+}
+
+// ─── Epic 4: Machine Runtime Monitoring ─────────────────────────────────
+model MachineRuntimeEvent {
+  id                  String   @id @default(uuid()) @db.Uuid
+  eventCode           String   @unique @map("event_code") // MRE-000001
+  // ─── Links ───
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  // ─── Event ───
+  eventType           String   @map("event_type") // MACHINE_START, MACHINE_STOP, CYCLE_COMPLETE, DOWNTIME_START, DOWNTIME_END, SETUP_START, SETUP_END, CLEANING_START, CLEANING_END, FAULT, RECOVERY
+  fromStatus          String?  @map("from_status")
+  toStatus            String   @map("to_status")
+  // ─── Reason ───
+  reasonCode          String?  @map("reason_code") // CHANGE_OVER, MATERIAL_SHORTAGE, MACHINE_FAILURE, POWER_FAILURE, OPERATOR_BREAK, QUALITY_HOLD, SCHEDULED_MAINTENANCE, CLEANING
+  reasonDescription   String?  @map("reason_description")
+  // ─── Time ───
+  eventStartTime      DateTime @map("event_start_time")
+  eventEndTime        DateTime? @map("event_end_time")
+  durationMinutes     Int?     @map("duration_minutes")
+  // ─── Source ───
+  source              String   @default("PLC") @map("source") // PLC (automatic), OPERATOR (manual), SYSTEM (scheduled)
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  machine             IndustrialMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@map("machine_runtime_events")
+  @@index([machineId, eventStartTime], map: "idx_mre43_machine_time")
+  @@index([eventType, eventStartTime], map: "idx_mre43_type_time")
+  @@index([reasonCode], map: "idx_mre43_reason")
+}
+
+// ─── Epic 5: Production Counters ────────────────────────────────────────
+model MachineCounter {
+  id                  String   @id @default(uuid()) @db.Uuid
+  counterCode         String   @unique @map("counter_code") // CTR-000001
+  // ─── Links ───
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  productionBatchNumber String? @map("production_batch_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Counter Type ───
+  counterType         String   @map("counter_type") // GOOD_PIECES, REJECTED_PIECES, CYCLE_COUNT, PRODUCTION_QTY, PACKAGING_COUNT, SPEED_RPM, OUTPUT_RATE
+  // ─── Value ───
+  currentValue        Decimal  @db.Decimal(14, 3) @default(0) @map("current_value")
+  previousValue       Decimal  @db.Decimal(14, 3) @default(0) @map("previous_value")
+  deltaValue          Decimal  @db.Decimal(14, 3) @default(0) @map("delta_value")
+  uom                 String   @default("PCS") @map("uom")
+  // ─── Source ───
+  source              String   @default("PLC") @map("source") // PLC, OPERATOR, SYSTEM
+  // ─── Time ───
+  lastUpdated         DateTime @default(now()) @map("last_updated")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  machine             IndustrialMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  history             CounterHistory[]
+
+  @@map("machine_counters")
+  @@index([machineId, counterType], map: "idx_mc43_machine_type")
+  @@index([productionBatchNumber], map: "idx_mc43_batch")
+  @@index([lastUpdated], map: "idx_mc43_time")
+}
+
+model CounterHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  counterId           String   @db.Uuid @map("counter_id")
+  // ─── Snapshot ───
+  recordedValue       Decimal  @db.Decimal(14, 3) @map("recorded_value")
+  deltaValue          Decimal  @db.Decimal(14, 3) @default(0) @map("delta_value")
+  // ─── Time ───
+  recordedAt          DateTime @default(now()) @map("recorded_at")
+
+  counter             MachineCounter @relation(fields: [counterId], references: [id], onDelete: Cascade)
+
+  @@map("counter_history")
+  @@index([counterId, recordedAt], map: "idx_ch43_counter_time")
+}
+
+// ─── Epic 6: Sensor Monitoring ──────────────────────────────────────────
+model SensorReading {
+  id                  String   @id @default(uuid()) @db.Uuid
+  readingCode         String   @unique @map("reading_code") // SR-000001
+  // ─── Links ───
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  // ─── Sensor ───
+  sensorType          String   @map("sensor_type") // TEMPERATURE, HUMIDITY, PRESSURE, WEIGHT, VIBRATION, POWER_CONSUMPTION, CURRENT, VOLTAGE, RPM
+  sensorName          String   @map("sensor_name")
+  sensorLocation      String?  @map("sensor_location") // COOKING_CHAMBER, MOTOR, BEARING, EXHAUST
+  // ─── Reading ───
+  value               Decimal  @db.Decimal(12, 3) @map("value")
+  unitOfMeasure       String   @map("unit_of_measure") // °C, %, BAR, KG, MM/S, KW, A, V, RPM
+  // ─── Threshold ───
+  minValue            Decimal? @db.Decimal(12, 3) @map("min_value")
+  maxValue            Decimal? @db.Decimal(12, 3) @map("max_value")
+  isAlert             Boolean  @default(false) @map("is_alert")
+  alertLevel          String?  @map("alert_level") // WARNING, CRITICAL
+  // ─── Source ───
+  source              String   @default("PLC") @map("source")
+  // ─── Time ───
+  readingAt           DateTime @default(now()) @map("reading_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  machine             IndustrialMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@map("sensor_readings")
+  @@index([machineId, sensorType, readingAt], map: "idx_sr43_machine_type_time")
+  @@index([sensorType, isAlert], map: "idx_sr43_type_alert")
+  @@index([readingAt], map: "idx_sr43_time")
+}
+
+model SensorAlert {
+  id                  String   @id @default(uuid()) @db.Uuid
+  alertCode           String   @unique @map("alert_code") // SA-000001
+  // ─── Links ───
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  sensorReadingId     String?  @db.Uuid @map("sensor_reading_id")
+  // ─── Alert ───
+  alertType           String   @map("alert_type") // HIGH_TEMPERATURE, LOW_TEMPERATURE, POWER_FAILURE, SENSOR_FAILURE, THRESHOLD_BREACH, VIBRATION_HIGH, PRESSURE_HIGH
+  sensorType          String   @map("sensor_type")
+  // ─── Values ───
+  measuredValue       Decimal  @db.Decimal(12, 3) @map("measured_value")
+  thresholdValue      Decimal? @db.Decimal(12, 3) @map("threshold_value")
+  unitOfMeasure       String   @map("unit_of_measure")
+  // ─── Severity ───
+  severity            String   @default("WARNING") @map("severity") // INFO, WARNING, CRITICAL, EMERGENCY
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, ACKNOWLEDGED, RESOLVED, DISMISSED
+  acknowledgedBy      String?  @map("acknowledged_by")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  resolvedAt          DateTime? @map("resolved_at")
+  resolutionNotes     String?  @map("resolution_notes")
+  // ─── Notification ───
+  notificationSent    Boolean  @default(false) @map("notification_sent")
+  // ─── Audit ───
+  raisedAt            DateTime @default(now()) @map("raised_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  machine             IndustrialMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@map("sensor_alerts")
+  @@index([machineId, status], map: "idx_sa43_machine_status")
+  @@index([alertType, severity], map: "idx_sa43_type_sev")
+  @@index([status, severity], map: "idx_sa43_status_sev")
+  @@index([raisedAt], map: "idx_sa43_time")
+}
+
+// ─── Epic 7: Maintenance Integration ────────────────────────────────────
+model MaintenanceTrigger {
+  id                  String   @id @default(uuid()) @db.Uuid
+  triggerCode         String   @unique @map("trigger_code") // MT-000001
+  // ─── Links ───
+  machineId           String   @db.Uuid @map("machine_id")
+  machineCode         String   @map("machine_code")
+  // ─── Trigger ───
+  triggerType         String   @map("trigger_type") // OPERATING_HOURS, CYCLE_COUNT, SENSOR_ALERT, RUNTIME, MANUAL_REPORT, SCHEDULED
+  triggerDescription  String   @map("trigger_description")
+  // ─── Threshold ───
+  thresholdValue      Decimal? @db.Decimal(14, 3) @map("threshold_value")
+  currentValue        Decimal? @db.Decimal(14, 3) @map("current_value")
+  thresholdUnit       String?  @map("threshold_unit") // HOURS, CYCLES, °C
+  // ─── Work Order ───
+  maintenanceWorkOrderNumber String? @map("maintenance_work_order_number")
+  technicianId        String?  @db.Uuid @map("technician_id")
+  technicianName      String?  @map("technician_name")
+  assignedAt          DateTime? @map("assigned_at")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED
+  priority            String   @default("MEDIUM") @map("priority") // LOW, MEDIUM, HIGH, EMERGENCY
+  // ─── Resolution ───
+  repairNotes         String?  @map("repair_notes")
+  machineBackOnlineAt DateTime? @map("machine_back_online_at")
+  downtimeMinutes     Int?     @map("downtime_minutes")
+  // ─── Audit ───
+  triggeredAt         DateTime @default(now()) @map("triggered_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  machine             IndustrialMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_triggers")
+  @@index([machineId, status], map: "idx_mt43_machine_status")
+  @@index([triggerType, status], map: "idx_mt43_type_status")
+  @@index([priority, status], map: "idx_mt43_priority_status")
+}

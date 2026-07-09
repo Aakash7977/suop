@@ -2551,3 +2551,50 @@ Stage Summary:
 - **Profitability Insights**: Most profitable Kaju Katli 500g (38.8% margin), least profitable Shwet Idli Batter (20.4% margin)
 - **Build Status**: ✅ Frontend + Backend both compile cleanly
 - **Next Sprint**: Sprint 43 — Enterprise Machine Integration, Equipment Monitoring & Industrial IoT Foundation
+
+---
+
+Task ID: Sprint-43
+Agent: Main (Claude Sonnet)
+Task: Sprint 43 — Enterprise Machine Integration, Equipment Monitoring & Industrial IoT Foundation
+
+Work Log:
+- Added 11 new Prisma models: IndustrialMachine, MachineModel, IoTGateway, IoTConnection, DeviceHeartbeat, MachineRuntimeEvent, MachineCounter, CounterHistory, SensorReading, SensorAlert, MaintenanceTrigger — schema now at 384 tables
+- Used distinct names (IndustrialMachine instead of Machine; IoTGateway/IoTConnection instead of Gateway/Connection) to avoid conflicts with Sprint 38 MachineExecution and Sprint 31 EquipmentMaster
+- Validated Prisma schema — passes
+- Implemented 12 new backend endpoints under /api/machines/* and /api/iot/*: dashboard, machines (list/create), runtime, counters, maintenance, machineCode/event, machineCode/counter, machineCode/sensor (PLC push), iot/gateways, iot/sensors, info
+- Backend version bumped to 43.0.0; backend file grew from 10,920 to 11,260 lines
+- Created 8 new admin modules in main page.tsx (~1,840 lines added):
+  - MachineDashboardModule (KPIs, live machine cards, alarm panel, industrial architecture flow)
+  - MachineMasterModule (6 machines with PLC info, network, op hours, maintenance schedule, 13 equipment types, 6 PLC types + 6 protocols)
+  - IoTGatewayModule (3 gateways with CPU/Mem/Disk/Temp monitoring, 6 active connections with messages/failures, responsibilities)
+  - PLCMonitorModule (6 PLCs across 6 protocols, supported PLC types and protocol descriptions)
+  - SensorDashboardModule (9 sensor types with icons, live readings grid with threshold alerts, summary)
+  - MachineTimelineModule (6 runtime events with type/from/to/reason/source/operator, 11 event types)
+  - EquipmentHealthModule (health scores 42-96, op hours, cycles, maintenance schedule, auto work order workflow)
+  - ProductionCountersModule (7 counter types: good/reject/cycle/speed/output/packaging, source PLC/Operator/System)
+- Updated ModuleKey type with 8 new keys
+- Added Sprint 43 sidebar section with 8 module entries
+- Wired all 8 new modules into main render area
+- Updated badge to "Sprint 43 · 384 Tables · Part 5 MES"
+- Updated footer to reflect Sprint 43 theme
+- Verified `npm run build` passes (15.7s compilation)
+- Verified backend `bun build` passes
+
+Stage Summary:
+- **Sprint 43 Status**: ✅ COMPLETE
+- **Database**: 11 new models (384 total project tables)
+- **Backend**: 12 new endpoints under /api/machines/* and /api/iot/* (v43.0.0)
+- **Frontend**: 8 new admin modules (~1,840 lines added)
+- **13 Equipment Categories**: Mixers, Steam Boilers, Roasters, Fryers, Cooling Tunnels, Packaging, Label Printers, Metal Detectors, Check Weighers, Conveyors, Compressors, Industrial Ovens, Cold Rooms
+- **8 Machine Statuses**: Running, Idle, Setup, Cleaning, Maintenance, Fault, Offline, Retired
+- **6 PLC Types**: Siemens, Allen-Bradley, Mitsubishi, Schneider, Omron, Delta
+- **6 Communication Protocols**: OPC-UA, Modbus TCP, Modbus RTU, EtherNet/IP, Profinet, MQTT (future)
+- **9 Sensor Types**: Temperature, Humidity, Pressure, Weight, Vibration, Power Consumption, Current, Voltage, RPM
+- **7 Counter Types**: Good Pieces, Rejected Pieces, Cycle Count, Production Qty, Packaging Count, Speed (RPM), Output Rate
+- **11 Runtime Event Types**: Machine Start/Stop, Cycle Complete, Downtime Start/End, Setup Start/End, Cleaning Start/End, Fault, Recovery
+- **5 Maintenance Trigger Types**: Operating Hours, Cycle Count, Sensor Alert, Runtime, Manual Report
+- **Performance Targets**: 5,000 connected devices, 100,000 sensor events/min, event processing <1s, gateway failover <30s
+- **Chief Architect Recommendation**: Design for Industry 4.0 but implement in 3 phases — Phase 1 (Immediate): manual registration + operator start/stop + scheduled maintenance; Phase 2 (When Automation Added): PLC integration + automatic counters + live sensors + power monitoring + automatic downtime + alarm sync; Phase 3 (Future Smart Factory): Predictive maintenance AI + Digital Twin + energy optimization + AI production optimization + computer vision quality
+- **Build Status**: ✅ Frontend + Backend both compile cleanly
+- **Next Sprint**: Sprint 44 — Enterprise OEE, Production Analytics & Manufacturing Performance Intelligence
