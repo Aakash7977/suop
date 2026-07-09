@@ -31,7 +31,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const PORT = 3030
-const VERSION = "21.0.0"
+const VERSION = "22.0.0"
 
 // ─── Supabase Admin Client (service role) ───────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -1153,6 +1153,287 @@ const ANALYTICS_DATA = {
   ],
 }
 
+// ─── Sprint 22: Warehouse Foundation Seed Data (PART 4 BEGINS) ───
+// Chief Architect recommendation: 6-warehouse multi-tier Mumbai architecture
+const WH_DATA = {
+  warehouses: [
+    {
+      id: 'wh-rm-mum',
+      warehouseCode: 'WH-RM-MUM',
+      warehouseName: 'Raw Material Warehouse',
+      description: 'Stores incoming raw materials (cashew, sugar, ghee, flour) for Mumbai production plant. FEFO + quarantine enforced.',
+      warehouseType: 'RAW_MATERIAL',
+      companyId: 'co-suop-01',
+      companyName: 'SUOP Sweets Pvt. Ltd.',
+      branchId: 'br-mum-plant',
+      branchName: 'Mumbai Plant',
+      managerId: 'emp-rm-01',
+      managerName: 'Rajesh Patel',
+      addressLine1: 'Plot 14, MIDC Industrial Area',
+      addressLine2: 'Andheri East',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '400093',
+      phone: '+91-22-2851-2000',
+      email: 'rm.warehouse@suop.in',
+      timezone: 'Asia/Kolkata',
+      barcodeEnabled: true,
+      fifoEnabled: false,
+      fefoEnabled: true,
+      qualityInspectionRequired: true,
+      defaultPickingStrategy: 'FEFO',
+      defaultPutawayStrategy: 'FEFO',
+      defaultUom: 'KG',
+      totalVolumeM3: 4500.00,
+      totalWeightKg: 250000.00,
+      totalPalletPositions: 600,
+      totalBins: 4800,
+      operatingHoursStart: '06:00',
+      operatingHoursEnd: '22:00',
+      workingDays: 'MON,TUE,WED,THU,FRI,SAT',
+      status: 'ACTIVE',
+      statusReason: null,
+    },
+    {
+      id: 'wh-pkg-mum',
+      warehouseCode: 'WH-PKG-MUM',
+      warehouseName: 'Packaging Warehouse',
+      description: 'Stores packaging materials (printed boxes, films, labels, pouches) for Mumbai plant. Bulk storage with barcode tracking.',
+      warehouseType: 'PACKAGING',
+      companyId: 'co-suop-01',
+      companyName: 'SUOP Sweets Pvt. Ltd.',
+      branchId: 'br-mum-plant',
+      branchName: 'Mumbai Plant',
+      managerId: 'emp-pkg-01',
+      managerName: 'Sneha Kulkarni',
+      addressLine1: 'Plot 14, MIDC Industrial Area',
+      addressLine2: 'Andheri East',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '400093',
+      phone: '+91-22-2851-2001',
+      email: 'pkg.warehouse@suop.in',
+      timezone: 'Asia/Kolkata',
+      barcodeEnabled: true,
+      fifoEnabled: true,
+      fefoEnabled: false,
+      qualityInspectionRequired: false,
+      defaultPickingStrategy: 'FIFO',
+      defaultPutawayStrategy: 'FIFO',
+      defaultUom: 'EA',
+      totalVolumeM3: 2200.00,
+      totalWeightKg: 80000.00,
+      totalPalletPositions: 280,
+      totalBins: 2200,
+      operatingHoursStart: '07:00',
+      operatingHoursEnd: '19:00',
+      workingDays: 'MON,TUE,WED,THU,FRI,SAT',
+      status: 'ACTIVE',
+      statusReason: null,
+    },
+    {
+      id: 'wh-fg-mum',
+      warehouseCode: 'WH-FG-MUM',
+      warehouseName: 'Finished Goods Warehouse',
+      description: 'Stores finished sweets & namkeen produced at Mumbai plant before dispatch to DCs. FEFO strictly enforced for shelf-life compliance.',
+      warehouseType: 'FINISHED_GOODS',
+      companyId: 'co-suop-01',
+      companyName: 'SUOP Sweets Pvt. Ltd.',
+      branchId: 'br-mum-plant',
+      branchName: 'Mumbai Plant',
+      managerId: 'emp-fg-01',
+      managerName: 'Anil Deshpande',
+      addressLine1: 'Plot 14, MIDC Industrial Area',
+      addressLine2: 'Andheri East',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '400093',
+      phone: '+91-22-2851-2002',
+      email: 'fg.warehouse@suop.in',
+      timezone: 'Asia/Kolkata',
+      barcodeEnabled: true,
+      fifoEnabled: false,
+      fefoEnabled: true,
+      qualityInspectionRequired: true,
+      defaultPickingStrategy: 'FEFO',
+      defaultPutawayStrategy: 'FEFO',
+      defaultUom: 'EA',
+      totalVolumeM3: 3800.00,
+      totalWeightKg: 180000.00,
+      totalPalletPositions: 500,
+      totalBins: 4000,
+      operatingHoursStart: '06:00',
+      operatingHoursEnd: '23:00',
+      workingDays: 'MON,TUE,WED,THU,FRI,SAT,SUN',
+      status: 'ACTIVE',
+      statusReason: null,
+    },
+    {
+      id: 'wh-qua-mum',
+      warehouseCode: 'WH-QUA-MUM',
+      warehouseName: 'Quarantine Warehouse',
+      description: 'Holds incoming raw materials & FG awaiting quality inspection/release. Access restricted to QA team. Auto-release on pass, scrap on fail.',
+      warehouseType: 'QUARANTINE',
+      companyId: 'co-suop-01',
+      companyName: 'SUOP Sweets Pvt. Ltd.',
+      branchId: 'br-mum-plant',
+      branchName: 'Mumbai Plant',
+      managerId: 'emp-qa-01',
+      managerName: 'Priya Nair',
+      addressLine1: 'Plot 14, MIDC Industrial Area',
+      addressLine2: 'Andheri East',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '400093',
+      phone: '+91-22-2851-2003',
+      email: 'qa.warehouse@suop.in',
+      timezone: 'Asia/Kolkata',
+      barcodeEnabled: true,
+      fifoEnabled: false,
+      fefoEnabled: true,
+      qualityInspectionRequired: true,
+      defaultPickingStrategy: 'FEFO',
+      defaultPutawayStrategy: 'FEFO',
+      defaultUom: 'KG',
+      totalVolumeM3: 800.00,
+      totalWeightKg: 40000.00,
+      totalPalletPositions: 100,
+      totalBins: 800,
+      operatingHoursStart: '08:00',
+      operatingHoursEnd: '20:00',
+      workingDays: 'MON,TUE,WED,THU,FRI',
+      status: 'ACTIVE',
+      statusReason: null,
+    },
+    {
+      id: 'wh-ret-mum-dc',
+      warehouseCode: 'WH-RET-MUM-DC',
+      warehouseName: 'Returns Warehouse',
+      description: 'Processes customer returns from Mumbai Distribution Center. Sorted by reason (damaged, expired, recall), then routed to scrap/quarantine/restock.',
+      warehouseType: 'RETURNS',
+      companyId: 'co-suop-01',
+      companyName: 'SUOP Sweets Pvt. Ltd.',
+      branchId: 'br-mum-dc',
+      branchName: 'Mumbai DC',
+      managerId: 'emp-ret-01',
+      managerName: 'Vikas Shetty',
+      addressLine1: 'B Wing, Logistics Park',
+      addressLine2: 'Bhiwandi',
+      city: 'Bhiwandi',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '421302',
+      phone: '+91-22-2541-3000',
+      email: 'returns.mumdc@suop.in',
+      timezone: 'Asia/Kolkata',
+      barcodeEnabled: true,
+      fifoEnabled: false,
+      fefoEnabled: true,
+      qualityInspectionRequired: true,
+      defaultPickingStrategy: 'FEFO',
+      defaultPutawayStrategy: 'FEFO',
+      defaultUom: 'EA',
+      totalVolumeM3: 1200.00,
+      totalWeightKg: 60000.00,
+      totalPalletPositions: 150,
+      totalBins: 1200,
+      operatingHoursStart: '09:00',
+      operatingHoursEnd: '18:00',
+      workingDays: 'MON,TUE,WED,THU,FRI,SAT',
+      status: 'ACTIVE',
+      statusReason: null,
+    },
+    {
+      id: 'wh-scr-mum-dc',
+      warehouseCode: 'WH-SCR-MUM-DC',
+      warehouseName: 'Scrap Warehouse',
+      description: 'Holds expired, damaged, recalled, and condemned stock pending disposal. Heavily restricted access; requires finance approval for write-off.',
+      warehouseType: 'SCRAP',
+      companyId: 'co-suop-01',
+      companyName: 'SUOP Sweets Pvt. Ltd.',
+      branchId: 'br-mum-dc',
+      branchName: 'Mumbai DC',
+      managerId: 'emp-scr-01',
+      managerName: 'Mahesh Iyer',
+      addressLine1: 'C Wing, Logistics Park',
+      addressLine2: 'Bhiwandi',
+      city: 'Bhiwandi',
+      state: 'Maharashtra',
+      country: 'India',
+      pincode: '421302',
+      phone: '+91-22-2541-3001',
+      email: 'scrap.mumdc@suop.in',
+      timezone: 'Asia/Kolkata',
+      barcodeEnabled: true,
+      fifoEnabled: false,
+      fefoEnabled: false,
+      qualityInspectionRequired: false,
+      defaultPickingStrategy: 'FIFO',
+      defaultPutawayStrategy: 'FIFO',
+      defaultUom: 'KG',
+      totalVolumeM3: 500.00,
+      totalWeightKg: 25000.00,
+      totalPalletPositions: 60,
+      totalBins: 480,
+      operatingHoursStart: '09:00',
+      operatingHoursEnd: '17:00',
+      workingDays: 'MON,TUE,WED,THU,FRI',
+      status: 'MAINTENANCE',
+      statusReason: 'Annual pest-control & deep cleaning scheduled 11-13 July 2026',
+    },
+  ],
+  zones: [
+    { id: 'zn-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneCode: 'Z-RM-01', zoneName: 'Receiving Zone', zoneType: 'RECEIVING', parentZoneId: null, displayOrder: 10, temperatureZoneId: null, tempZoneType: null, volumeM3: 400.00, weightCapacityKg: 30000.00, palletPositions: 50, binCount: 100, isRestricted: false, accessRequired: false, status: 'ACTIVE' },
+    { id: 'zn-002', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneCode: 'Z-RM-02', zoneName: 'Putaway Zone', zoneType: 'PUTAWAY', parentZoneId: 'zn-001', displayOrder: 20, temperatureZoneId: null, tempZoneType: null, volumeM3: 200.00, weightCapacityKg: 15000.00, palletPositions: 25, binCount: 50, isRestricted: false, accessRequired: false, status: 'ACTIVE' },
+    { id: 'zn-003', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneCode: 'Z-RM-03', zoneName: 'Storage Zone-Ambient', zoneType: 'STORAGE', parentZoneId: null, displayOrder: 30, temperatureZoneId: 'tz-001', tempZoneType: 'AMBIENT', volumeM3: 2400.00, weightCapacityKg: 180000.00, palletPositions: 320, binCount: 2560, isRestricted: false, accessRequired: false, status: 'ACTIVE' },
+    { id: 'zn-004', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneCode: 'Z-RM-04', zoneName: 'Storage Zone-Cold', zoneType: 'STORAGE', parentZoneId: null, displayOrder: 40, temperatureZoneId: 'tz-002', tempZoneType: 'CHILLED', volumeM3: 800.00, weightCapacityKg: 30000.00, palletPositions: 100, binCount: 800, isRestricted: true, accessRequired: true, status: 'ACTIVE' },
+    { id: 'zn-005', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneCode: 'Z-FG-01', zoneName: 'Picking Zone', zoneType: 'PICKING', parentZoneId: null, displayOrder: 50, temperatureZoneId: null, tempZoneType: null, volumeM3: 600.00, weightCapacityKg: 24000.00, palletPositions: 80, binCount: 800, isRestricted: false, accessRequired: false, status: 'ACTIVE' },
+    { id: 'zn-006', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneCode: 'Z-FG-02', zoneName: 'Packing Zone', zoneType: 'PACKING', parentZoneId: null, displayOrder: 60, temperatureZoneId: null, tempZoneType: null, volumeM3: 400.00, weightCapacityKg: 16000.00, palletPositions: 50, binCount: 200, isRestricted: false, accessRequired: false, status: 'ACTIVE' },
+    { id: 'zn-007', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneCode: 'Z-FG-03', zoneName: 'Dispatch Zone', zoneType: 'DISPATCH', parentZoneId: null, displayOrder: 70, temperatureZoneId: null, tempZoneType: null, volumeM3: 500.00, weightCapacityKg: 20000.00, palletPositions: 70, binCount: 100, isRestricted: false, accessRequired: false, status: 'ACTIVE' },
+    { id: 'zn-008', warehouseId: 'wh-qua-mum', warehouseCode: 'WH-QUA-MUM', warehouseName: 'Quarantine Warehouse', zoneCode: 'Z-QU-01', zoneName: 'Quarantine Zone', zoneType: 'QUARANTINE', parentZoneId: null, displayOrder: 80, temperatureZoneId: null, tempZoneType: null, volumeM3: 600.00, weightCapacityKg: 30000.00, palletPositions: 80, binCount: 600, isRestricted: true, accessRequired: true, status: 'ACTIVE' },
+    { id: 'zn-009', warehouseId: 'wh-qua-mum', warehouseCode: 'WH-QUA-MUM', warehouseName: 'Quarantine Warehouse', zoneCode: 'Z-QU-02', zoneName: 'Quality Inspection Zone', zoneType: 'QUALITY_INSPECTION', parentZoneId: 'zn-008', displayOrder: 90, temperatureZoneId: null, tempZoneType: null, volumeM3: 200.00, weightCapacityKg: 10000.00, palletPositions: 20, binCount: 40, isRestricted: true, accessRequired: true, status: 'ACTIVE' },
+    { id: 'zn-010', warehouseId: 'wh-ret-mum-dc', warehouseCode: 'WH-RET-MUM-DC', warehouseName: 'Returns Warehouse', zoneCode: 'Z-RT-01', zoneName: 'Damaged Goods Zone', zoneType: 'DAMAGED_GOODS', parentZoneId: null, displayOrder: 100, temperatureZoneId: null, tempZoneType: null, volumeM3: 300.00, weightCapacityKg: 15000.00, palletPositions: 40, binCount: 200, isRestricted: true, accessRequired: true, status: 'ACTIVE' },
+  ],
+  temperatureZones: [
+    { id: 'tz-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneCode: 'TZ-AMB-01', zoneName: 'Ambient Storage', tempZoneType: 'AMBIENT', minTemperature: 15.00, maxTemperature: 30.00, targetTemperature: 22.00, minHumidity: 30.00, maxHumidity: 60.00, targetHumidity: 45.00, alertThresholdMin: 2.00, alertThresholdMax: 2.00, isActive: true, lastReading: 23.50, lastReadingAt: '2026-07-09T07:45:00Z', status: 'ACTIVE' },
+    { id: 'tz-002', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneCode: 'TZ-CHL-01', zoneName: 'Chilled Storage (Perishables)', tempZoneType: 'CHILLED', minTemperature: 2.00, maxTemperature: 8.00, targetTemperature: 4.00, minHumidity: 50.00, maxHumidity: 75.00, targetHumidity: 60.00, alertThresholdMin: 1.00, alertThresholdMax: 1.50, isActive: true, lastReading: 5.20, lastReadingAt: '2026-07-09T07:50:00Z', status: 'ACTIVE' },
+    { id: 'tz-003', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneCode: 'TZ-FRZ-01', zoneName: 'Frozen Storage (Ice Cream Line)', tempZoneType: 'FROZEN', minTemperature: -25.00, maxTemperature: -18.00, targetTemperature: -22.00, minHumidity: 40.00, maxHumidity: 60.00, targetHumidity: 50.00, alertThresholdMin: 1.00, alertThresholdMax: 2.00, isActive: true, lastReading: -21.80, lastReadingAt: '2026-07-09T07:55:00Z', status: 'ACTIVE' },
+    { id: 'tz-004', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneCode: 'TZ-HUM-01', zoneName: 'Humidity-Controlled Storage (Dry Sweets)', tempZoneType: 'HUMIDITY_CONTROLLED', minTemperature: 18.00, maxTemperature: 25.00, targetTemperature: 20.00, minHumidity: 35.00, maxHumidity: 50.00, targetHumidity: 40.00, alertThresholdMin: 2.00, alertThresholdMax: 3.00, isActive: true, lastReading: 21.40, lastReadingAt: '2026-07-09T08:00:00Z', status: 'ACTIVE' },
+  ],
+  temperatureLogs: [
+    { id: 'tlog-001', temperatureZoneId: 'tz-001', tempZoneType: 'AMBIENT', zoneName: 'Ambient Storage', warehouseCode: 'WH-RM-MUM', temperature: 23.50, humidity: 48.00, isAlert: false, alertType: null, alertMessage: null, sensorId: 'SNR-AMB-01', sensorLocation: 'Z-RM-03 / Rack 2 / Shelf 3', recordedAt: '2026-07-09T07:45:00Z' },
+    { id: 'tlog-002', temperatureZoneId: 'tz-002', tempZoneType: 'CHILLED', zoneName: 'Chilled Storage (Perishables)', warehouseCode: 'WH-RM-MUM', temperature: 9.40, humidity: 62.00, isAlert: true, alertType: 'HIGH_TEMP', alertMessage: 'Temperature 9.40°C exceeds max threshold 8.00°C by 1.40°C. Chiller unit #2 may be failing.', sensorId: 'SNR-CHL-02', sensorLocation: 'Z-RM-04 / Rack 1 / Shelf 1', recordedAt: '2026-07-09T07:50:00Z' },
+    { id: 'tlog-003', temperatureZoneId: 'tz-003', tempZoneType: 'FROZEN', zoneName: 'Frozen Storage (Ice Cream Line)', warehouseCode: 'WH-FG-MUM', temperature: -21.80, humidity: 52.00, isAlert: false, alertType: null, alertMessage: null, sensorId: 'SNR-FRZ-01', sensorLocation: 'Z-FG-FRZ / Rack 4 / Shelf 1', recordedAt: '2026-07-09T07:55:00Z' },
+    { id: 'tlog-004', temperatureZoneId: 'tz-004', tempZoneType: 'HUMIDITY_CONTROLLED', zoneName: 'Humidity-Controlled Storage (Dry Sweets)', warehouseCode: 'WH-FG-MUM', temperature: 21.40, humidity: 54.00, isAlert: true, alertType: 'HIGH_HUMIDITY', alertMessage: 'Humidity 54% exceeds max threshold 50% by 4%. Dehumidifier check recommended.', sensorId: 'SNR-HUM-01', sensorLocation: 'Z-FG-HUM / Rack 1 / Shelf 2', recordedAt: '2026-07-09T08:00:00Z' },
+  ],
+  capacity: [
+    { id: 'wcap-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', zoneId: null, totalVolume: 4500.00, usedVolume: 3285.00, availableVolume: 1215.00, reservedVolume: 200.00, totalWeight: 250000.00, usedWeight: 178500.00, availableWeight: 71500.00, totalPallets: 600, usedPallets: 472, availablePallets: 128, totalBins: 4800, usedBins: 3696, availableBins: 1104, utilizationPercent: 73.00, snapshotDate: '2026-07-09T08:00:00Z' },
+    { id: 'wcap-002', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', zoneId: null, totalVolume: 3800.00, usedVolume: 3078.00, availableVolume: 722.00, reservedVolume: 150.00, totalWeight: 180000.00, usedWeight: 136800.00, availableWeight: 43200.00, totalPallets: 500, usedPallets: 405, availablePallets: 95, totalBins: 4000, usedBins: 3280, availableBins: 720, utilizationPercent: 81.00, snapshotDate: '2026-07-09T08:00:00Z' },
+    { id: 'wcap-003', warehouseId: 'wh-pkg-mum', warehouseCode: 'WH-PKG-MUM', warehouseName: 'Packaging Warehouse', zoneId: null, totalVolume: 2200.00, usedVolume: 1188.00, availableVolume: 1012.00, reservedVolume: 100.00, totalWeight: 80000.00, usedWeight: 41600.00, availableWeight: 38400.00, totalPallets: 280, usedPallets: 154, availablePallets: 126, totalBins: 2200, usedBins: 1188, availableBins: 1012, utilizationPercent: 54.00, snapshotDate: '2026-07-09T08:00:00Z' },
+  ],
+  calendar: [
+    { id: 'wcal-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', calendarDate: '2026-07-13', dayType: 'WORKING_DAY', startTime: '06:00', endTime: '22:00', shift1Start: '06:00', shift1End: '14:00', shift2Start: '14:00', shift2End: '22:00', shift3Start: null, shift3End: null, description: 'Regular working day — 2 shifts', isClosed: false },
+    { id: 'wcal-002', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', calendarDate: '2026-08-15', dayType: 'HOLIDAY', startTime: null, endTime: null, shift1Start: null, shift1End: null, shift2Start: null, shift2End: null, shift3Start: null, shift3End: null, description: 'Independence Day — closed', isClosed: true },
+    { id: 'wcal-003', warehouseId: 'wh-scr-mum-dc', warehouseCode: 'WH-SCR-MUM-DC', warehouseName: 'Scrap Warehouse', calendarDate: '2026-07-11', dayType: 'MAINTENANCE', startTime: '08:00', endTime: '12:00', shift1Start: '08:00', shift1End: '12:00', shift2Start: null, shift2End: null, shift3Start: null, shift3End: null, description: 'Annual pest-control & deep cleaning (11-13 July)', isClosed: true },
+  ],
+  accessRules: [
+    { id: 'war-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', userRole: 'WAREHOUSE_MANAGER', canReceive: true, canPutaway: true, canPick: true, canPack: true, canDispatch: true, canAdjust: true, canCount: true, canAccessRestricted: true, canAccessColdStorage: true, restrictedZoneIds: [], status: 'ACTIVE' },
+    { id: 'war-002', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', userRole: 'OPERATOR', canReceive: true, canPutaway: true, canPick: true, canPack: false, canDispatch: false, canAdjust: false, canCount: false, canAccessRestricted: false, canAccessColdStorage: false, restrictedZoneIds: ['zn-004'], status: 'ACTIVE' },
+    { id: 'war-003', warehouseId: 'wh-qua-mum', warehouseCode: 'WH-QUA-MUM', warehouseName: 'Quarantine Warehouse', userRole: 'QUALITY_INSPECTOR', canReceive: false, canPutaway: false, canPick: false, canPack: false, canDispatch: false, canAdjust: true, canCount: true, canAccessRestricted: true, canAccessColdStorage: true, restrictedZoneIds: [], status: 'ACTIVE' },
+  ],
+  rules: [
+    { id: 'wr-001', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', ruleCode: 'MAX_BIN_WEIGHT', ruleName: 'Maximum Bin Weight', description: 'No single bin may hold more than 25 kg of stock to prevent structural damage & ergonomic injury.', ruleType: 'MAX_BIN_WEIGHT', ruleValue: '25', ruleUnit: 'KG', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'wr-002', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', ruleCode: 'FEFO_ENABLED', ruleName: 'FEFO Picking Enforced', description: 'Picking must follow First-Expired-First-Out across all FG bins. Non-FEFO picks are blocked.', ruleType: 'FEFO_ENABLED', ruleValue: 'true', ruleUnit: 'BOOLEAN', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'wr-003', warehouseId: 'wh-rm-mum', warehouseCode: 'WH-RM-MUM', warehouseName: 'Raw Material Warehouse', ruleCode: 'BARCODE_MANDATORY', ruleName: 'Barcode Scan Mandatory', description: 'Every receive/putaway/pick/dispatch must scan barcode. Manual entry triggers a warning.', ruleType: 'BARCODE_MANDATORY', ruleValue: 'true', ruleUnit: 'BOOLEAN', enforcementMode: 'WARN', status: 'ACTIVE' },
+    { id: 'wr-004', warehouseId: 'wh-qua-mum', warehouseCode: 'WH-QUA-MUM', warehouseName: 'Quarantine Warehouse', ruleCode: 'QUALITY_INSPECTION_REQUIRED', ruleName: 'Quality Inspection Required', description: 'All inbound & returned stock must pass QA inspection before release to storage.', ruleType: 'QUALITY_INSPECTION_REQUIRED', ruleValue: 'true', ruleUnit: 'BOOLEAN', enforcementMode: 'BLOCK', status: 'ACTIVE' },
+    { id: 'wr-005', warehouseId: 'wh-fg-mum', warehouseCode: 'WH-FG-MUM', warehouseName: 'Finished Goods Warehouse', ruleCode: 'MAX_STACK_HEIGHT', ruleName: 'Maximum Pallet Stack Height', description: 'Pallet stack may not exceed 2.4 m to comply with ceiling clearance & forklift safety.', ruleType: 'MAX_STACK_HEIGHT', ruleValue: '2.4', ruleUnit: 'M', enforcementMode: 'WARN', status: 'ACTIVE' },
+  ],
+}
+
 // ─── HTTP Server ────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
@@ -1547,7 +1828,7 @@ const server = Bun.serve({
         { code: 'BAT', name: 'Batch & Expiry Management', status: 'active', entities: 7, sprint: 19 },
         { code: 'COST', name: 'Costing & Valuation', status: 'active', entities: 7, sprint: 20 },
         { code: 'ANL', name: 'Inventory Analytics & Mission Control', status: 'active', entities: 6, sprint: 21 },
-        { code: 'WHS', name: 'Warehouse', status: 'planned', entities: 18, sprint: 19 },
+        { code: 'WHS', name: 'Warehouse Management', status: 'active', entities: 8, sprint: 22 },
         { code: 'MFG', name: 'Manufacturing', status: 'planned', entities: 25, sprint: 18 },
         { code: 'FIN', name: 'Finance', status: 'planned', entities: 100, sprint: 18 },
       ], 'Modules')), { headers })
@@ -4009,12 +4290,212 @@ const server = Bun.serve({
       }, 'SUOP Inventory Analytics & Mission Control Engine v21.0.0')), { headers })
     }
 
+    // ─── Sprint 22: Warehouse Foundation Endpoints (PART 4 BEGINS) ───
+    if (path === '/api/warehouses' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      const statusFilter = url.searchParams.get('status')
+      let warehouses = WH_DATA.warehouses
+      if (typeFilter) warehouses = warehouses.filter(w => w.warehouseType === typeFilter.toUpperCase())
+      if (statusFilter) warehouses = warehouses.filter(w => w.status === statusFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(warehouses, `${warehouses.length} warehouses`)), { headers })
+    }
+    if (path === '/api/warehouses' && method === 'POST') {
+      try {
+        const body = await req.json()
+        if (!body.warehouseCode || !body.warehouseName || !body.warehouseType) {
+          return new Response(JSON.stringify(errorResponse('warehouseCode, warehouseName and warehouseType are required', 'VALIDATION_ERROR', 400)), { status: 400, headers })
+        }
+        const newWh = {
+          id: `wh-${Date.now()}`,
+          warehouseCode: body.warehouseCode,
+          warehouseName: body.warehouseName,
+          description: body.description || null,
+          warehouseType: body.warehouseType,
+          companyId: body.companyId || null,
+          companyName: body.companyName || null,
+          branchId: body.branchId || null,
+          branchName: body.branchName || null,
+          managerId: body.managerId || null,
+          managerName: body.managerName || null,
+          addressLine1: body.addressLine1 || null,
+          addressLine2: body.addressLine2 || null,
+          city: body.city || null,
+          state: body.state || null,
+          country: body.country || 'India',
+          pincode: body.pincode || null,
+          phone: body.phone || null,
+          email: body.email || null,
+          timezone: body.timezone || 'Asia/Kolkata',
+          barcodeEnabled: body.barcodeEnabled ?? true,
+          fifoEnabled: body.fifoEnabled ?? false,
+          fefoEnabled: body.fefoEnabled ?? true,
+          qualityInspectionRequired: body.qualityInspectionRequired ?? true,
+          defaultPickingStrategy: body.defaultPickingStrategy || 'FEFO',
+          defaultPutawayStrategy: body.defaultPutawayStrategy || 'FEFO',
+          defaultUom: body.defaultUom || null,
+          totalVolumeM3: body.totalVolumeM3 || 0,
+          totalWeightKg: body.totalWeightKg || 0,
+          totalPalletPositions: body.totalPalletPositions || 0,
+          totalBins: body.totalBins || 0,
+          operatingHoursStart: body.operatingHoursStart || '08:00',
+          operatingHoursEnd: body.operatingHoursEnd || '20:00',
+          workingDays: body.workingDays || 'MON,TUE,WED,THU,FRI,SAT',
+          status: body.status || 'ACTIVE',
+          statusReason: body.statusReason || null,
+          createdAt: new Date().toISOString(),
+        } as typeof WH_DATA.warehouses[number]
+        WH_DATA.warehouses.push(newWh)
+        log('info', 'Warehouse created', { code: newWh.warehouseCode, type: newWh.warehouseType })
+        return new Response(JSON.stringify(successResponse(newWh, `Warehouse ${newWh.warehouseCode} created`)), { headers })
+      } catch (error) {
+        return new Response(JSON.stringify(errorResponse('Failed to create warehouse')), { status: 500, headers })
+      }
+    }
+    if (path.match(/^\/api\/warehouses\/[^/]+$/) && method === 'GET') {
+      const id = path.split('/').pop()!
+      const wh = WH_DATA.warehouses.find(w => w.id === id || w.warehouseCode === id)
+      if (!wh) return new Response(JSON.stringify(errorResponse('Warehouse not found', 'NOT_FOUND', 404)), { status: 404, headers })
+      const zones = WH_DATA.zones.filter(z => z.warehouseId === wh.id)
+      const tempZones = WH_DATA.temperatureZones.filter(t => t.warehouseId === wh.id)
+      const cap = WH_DATA.capacity.find(c => c.warehouseId === wh.id)
+      const rules = WH_DATA.rules.filter(r => r.warehouseId === wh.id)
+      const accessRules = WH_DATA.accessRules.filter(a => a.warehouseId === wh.id)
+      const calendar = WH_DATA.calendar.filter(c => c.warehouseId === wh.id)
+      return new Response(JSON.stringify(successResponse({ ...wh, zones, temperatureZones: tempZones, capacity: cap, rules, accessRules, calendar }, 'Warehouse detail')), { headers })
+    }
+    if (path === '/api/warehouse-zones' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const typeFilter = url.searchParams.get('type')
+      let zones = WH_DATA.zones
+      if (warehouseFilter) zones = zones.filter(z => z.warehouseId === warehouseFilter || z.warehouseCode === warehouseFilter.toUpperCase())
+      if (typeFilter) zones = zones.filter(z => z.zoneType === typeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(zones, `${zones.length} warehouse zones`)), { headers })
+    }
+    if (path === '/api/temperature-zones' && method === 'GET') {
+      const typeFilter = url.searchParams.get('type')
+      let zones = WH_DATA.temperatureZones
+      if (typeFilter) zones = zones.filter(z => z.tempZoneType === typeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(zones, `${zones.length} temperature zones`)), { headers })
+    }
+    if (path === '/api/temperature-logs' && method === 'GET') {
+      const zoneFilter = url.searchParams.get('zone')
+      const alertFilter = url.searchParams.get('alert')
+      let logs = WH_DATA.temperatureLogs
+      if (zoneFilter) logs = logs.filter(l => l.temperatureZoneId === zoneFilter)
+      if (alertFilter === 'true') logs = logs.filter(l => l.isAlert)
+      if (alertFilter === 'false') logs = logs.filter(l => !l.isAlert)
+      return new Response(JSON.stringify(successResponse(logs, `${logs.length} temperature logs`)), { headers })
+    }
+    if (path === '/api/warehouse-capacity' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      let caps = WH_DATA.capacity
+      if (warehouseFilter) caps = caps.filter(c => c.warehouseId === warehouseFilter || c.warehouseCode === warehouseFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(caps, `${caps.length} warehouse capacity records`)), { headers })
+    }
+    if (path === '/api/warehouse-calendar' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const dayTypeFilter = url.searchParams.get('dayType')
+      let cal = WH_DATA.calendar
+      if (warehouseFilter) cal = cal.filter(c => c.warehouseId === warehouseFilter || c.warehouseCode === warehouseFilter.toUpperCase())
+      if (dayTypeFilter) cal = cal.filter(c => c.dayType === dayTypeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(cal, `${cal.length} warehouse calendar entries`)), { headers })
+    }
+    if (path === '/api/warehouse-access-rules' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const roleFilter = url.searchParams.get('role')
+      let rules = WH_DATA.accessRules
+      if (warehouseFilter) rules = rules.filter(r => r.warehouseId === warehouseFilter || r.warehouseCode === warehouseFilter.toUpperCase())
+      if (roleFilter) rules = rules.filter(r => r.userRole === roleFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(rules, `${rules.length} warehouse access rules`)), { headers })
+    }
+    if (path === '/api/warehouse-rules' && method === 'GET') {
+      const warehouseFilter = url.searchParams.get('warehouse')
+      const typeFilter = url.searchParams.get('type')
+      let rules = WH_DATA.rules
+      if (warehouseFilter) rules = rules.filter(r => r.warehouseId === warehouseFilter || r.warehouseCode === warehouseFilter.toUpperCase())
+      if (typeFilter) rules = rules.filter(r => r.ruleType === typeFilter.toUpperCase())
+      return new Response(JSON.stringify(successResponse(rules, `${rules.length} warehouse rules`)), { headers })
+    }
+    if (path === '/api/warehouses/dashboard' && method === 'GET') {
+      const totalWarehouses = WH_DATA.warehouses.length
+      const activeWarehouses = WH_DATA.warehouses.filter(w => w.status === 'ACTIVE').length
+      const maintenanceWarehouses = WH_DATA.warehouses.filter(w => w.status === 'MAINTENANCE').length
+      const totalZones = WH_DATA.zones.length
+      const restrictedZones = WH_DATA.zones.filter(z => z.isRestricted).length
+      const temperatureZones = WH_DATA.temperatureZones.length
+      const activeAlerts = WH_DATA.temperatureLogs.filter(l => l.isAlert).length
+      const capacityRecords = WH_DATA.capacity.length
+      const avgUtilization = WH_DATA.capacity.reduce((s, c) => s + c.utilizationPercent, 0) / WH_DATA.capacity.length
+      const coldStorageUnits = WH_DATA.temperatureZones.filter(t => t.tempZoneType === 'CHILLED' || t.tempZoneType === 'FROZEN').length
+      const accessRulesCount = WH_DATA.accessRules.length
+      const operatingRulesCount = WH_DATA.rules.length
+      const calendarEntries = WH_DATA.calendar.length
+      const byType = WH_DATA.warehouses.reduce((acc, w) => { acc[w.warehouseType] = (acc[w.warehouseType] || 0) + 1; return acc }, {} as Record<string, number>)
+      const byCity = WH_DATA.warehouses.reduce((acc, w) => { acc[w.city || 'Unknown'] = (acc[w.city || 'Unknown'] || 0) + 1; return acc }, {} as Record<string, number>)
+      return new Response(JSON.stringify(successResponse({
+        counts: {
+          warehouses: totalWarehouses,
+          activeWarehouses,
+          maintenanceWarehouses,
+          zones: totalZones,
+          restrictedZones,
+          temperatureZones,
+          capacityRecords,
+          accessRules: accessRulesCount,
+          operatingRules: operatingRulesCount,
+          calendarEntries,
+        },
+        activeAlerts,
+        avgUtilization: parseFloat(avgUtilization.toFixed(2)),
+        coldStorageUnits,
+        warehousesByType: byType,
+        warehousesByCity: byCity,
+        recommendedArchitecture: '6-warehouse multi-tier Mumbai model: Raw Material, Packaging, Finished Goods, Quarantine (Plant) + Returns, Scrap (DC).',
+        hierarchyLevels: ['Company', 'Branch', 'Warehouse', 'Zone', 'Aisle', 'Rack', 'Shelf', 'Bin'],
+        warehouseTypes: ['RAW_MATERIAL', 'FINISHED_GOODS', 'PACKAGING', 'COLD_STORAGE', 'DEEP_FREEZE', 'RETURNS', 'TRANSIT', 'QUARANTINE', 'SCRAP', 'DISTRIBUTION_CENTER', 'DARK_STORE'],
+        zoneTypes: ['RECEIVING', 'PUTAWAY', 'STORAGE', 'PICKING', 'PACKING', 'DISPATCH', 'RETURNS', 'QUARANTINE', 'QUALITY_INSPECTION', 'DAMAGED_GOODS'],
+        tempZoneTypes: ['AMBIENT', 'CHILLED', 'FROZEN', 'DEEP_FREEZE', 'HUMIDITY_CONTROLLED'],
+        enforcementModes: ['BLOCK', 'WARN', 'LOG'],
+        part4Begun: true,
+        sprint: 22,
+        chiefArchitectNote: 'Six warehouses cover the full physical lifecycle of stock: inbound (Raw Material + Quarantine), production support (Packaging), outbound (Finished Goods), reverse logistics (Returns), and disposal (Scrap). Each is a dedicated facility with its own manager, zones, capacity, and access rules.',
+      }, 'Warehouse foundation dashboard')), { headers })
+    }
+    if (path === '/api/warehouses/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        name: 'SUOP Warehouse Foundation Engine', version: '22.0.0', sprint: 22,
+        sprintName: 'Warehouse Foundation — PART 4 BEGINS',
+        warehouseTypes: ['RAW_MATERIAL', 'FINISHED_GOODS', 'PACKAGING', 'COLD_STORAGE', 'DEEP_FREEZE', 'RETURNS', 'TRANSIT', 'QUARANTINE', 'SCRAP', 'DISTRIBUTION_CENTER', 'DARK_STORE'],
+        zoneTypes: ['RECEIVING', 'PUTAWAY', 'STORAGE', 'PICKING', 'PACKING', 'DISPATCH', 'RETURNS', 'QUARANTINE', 'QUALITY_INSPECTION', 'DAMAGED_GOODS'],
+        tempZoneTypes: ['AMBIENT', 'CHILLED', 'FROZEN', 'DEEP_FREEZE', 'HUMIDITY_CONTROLLED'],
+        alertTypes: ['HIGH_TEMP', 'LOW_TEMP', 'HIGH_HUMIDITY', 'LOW_HUMIDITY'],
+        dayTypes: ['WORKING_DAY', 'HOLIDAY', 'MAINTENANCE', 'SPECIAL'],
+        userRoles: ['WAREHOUSE_MANAGER', 'SUPERVISOR', 'OPERATOR', 'FORKLIFT_OPERATOR', 'QUALITY_INSPECTOR', 'VISITOR'],
+        ruleTypes: ['MAX_BIN_WEIGHT', 'MAX_STACK_HEIGHT', 'HAZARDOUS_MATERIAL', 'FOOD_SAFETY', 'FIFO_ENABLED', 'FEFO_ENABLED', 'BARCODE_MANDATORY', 'QUALITY_INSPECTION_REQUIRED', 'MAX_PICK_TIME', 'PUTAWAY_RULE'],
+        ruleUnits: ['KG', 'M', 'HOURS', 'BOOLEAN', 'PERCENT'],
+        enforcementModes: ['BLOCK', 'WARN', 'LOG'],
+        warehouseStatuses: ['ACTIVE', 'INACTIVE', 'MAINTENANCE', 'CLOSED'],
+        hierarchyPrinciple: 'Company → Branch → Warehouse → Zone → Aisle → Rack → Shelf → Bin. Each level narrows physical location; bin is the smallest addressable storage unit.',
+        capacityPrinciple: 'Three independent capacity dimensions: Volume (m³), Weight (kg), Pallet positions / Bins. Reserved capacity is held for inbound expected stock; available = total − used − reserved.',
+        temperaturePrinciple: 'Each temperature zone has min/max/target temp + humidity range. Sensors log readings; values outside (min − alertThresholdMin) or (max + alertThresholdMax) trigger alerts.',
+        accessRulePrinciple: 'Role-based access per warehouse — WAREHOUSE_MANAGER (full access), OPERATOR (receive/putaway/pick only, no restricted zones), QUALITY_INSPECTOR (adjust/count + restricted access).',
+        ruleEnforcementPrinciple: 'BLOCK — operation rejected at the source. WARN — operation allowed but logged with a warning. LOG — silent audit log entry for analytics.',
+        fefoPrinciple: 'First-Expired-First-Out: batches picked in order of expiry date (earliest first). Critical for food & pharma. Combined with barcode scan to enforce at the bin level.',
+        endpoints: ['GET /api/warehouses', 'POST /api/warehouses', 'GET /api/warehouses/:id', 'GET /api/warehouse-zones', 'GET /api/temperature-zones', 'GET /api/temperature-logs', 'GET /api/warehouse-capacity', 'GET /api/warehouse-calendar', 'GET /api/warehouse-access-rules', 'GET /api/warehouse-rules', 'GET /api/warehouses/dashboard', 'GET /api/warehouses/info'],
+        part4Begun: true,
+        part4Sprints: 12,
+        part4Tables: 8,
+      }, 'SUOP Warehouse Foundation Engine v22.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 21, sprintName: 'Inventory Analytics, AI Insights & Mission Control — PART 3 COMPLETE (21/21 sprints)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 22, sprintName: 'Warehouse Foundation — PART 4 BEGUN (22/33 sprints)' })
+log('info', 'PART 4 BEGUN — Enterprise Warehouse Management System kicked off', { sprint: 22, part: 4, tables: 193, warehouses: 6, zones: 10 })
+log('info', 'Warehouse endpoints available', { warehouses: 'GET/POST /api/warehouses', warehouseDetail: 'GET /api/warehouses/:id', zones: 'GET /api/warehouse-zones', tempZones: 'GET /api/temperature-zones', tempLogs: 'GET /api/temperature-logs', capacity: 'GET /api/warehouse-capacity', calendar: 'GET /api/warehouse-calendar', accessRules: 'GET /api/warehouse-access-rules', rules: 'GET /api/warehouse-rules', dashboard: 'GET /api/warehouses/dashboard', info: 'GET /api/warehouses/info' })
 log('info', 'Analytics & mission control endpoints available', { kpis: 'GET /api/inventory-analytics/kpis', ageing: 'GET /api/inventory-analytics/ageing', classifications: 'GET /api/inventory-analytics/classifications', reorder: 'GET /api/inventory-analytics/reorder', missionControl: 'GET /api/inventory-analytics/mission-control', reports: 'GET /api/inventory-analytics/reports', reportGenerate: 'POST /:id/generate', dashboard: 'GET /api/inventory-analytics/dashboard', info: 'GET /api/inventory-analytics/info' })
 log('info', 'Costing & valuation endpoints available', { costLayers: 'GET /api/cost-layers', costHistory: 'GET /api/cost-history', landedCosts: 'GET /api/landed-costs', landedCostAllocate: 'POST /:id/allocate', revaluations: 'GET /api/inventory-revaluations', revaluationApprove: 'POST /:id/approve', glPostings: 'GET /api/inventory-gl-postings', valuation: 'GET /api/inventory-valuation', dashboard: 'GET /api/costing/dashboard', info: 'GET /api/costing/info' })
 log('info', 'Batch & expiry endpoints available', { batchMaster: 'GET /api/batch-master', history: 'GET /:id/history', shelfLifeRules: 'GET /api/shelf-life-rules', expiryAlerts: 'GET /api/expiry-alerts', alertAction: 'POST /:id/action', recalls: 'GET /api/product-recalls', recallAdvance: 'POST /:id/advance', genealogy: 'GET /api/batch-genealogy', dashboard: 'GET /api/batch-master/dashboard', info: 'GET /api/batch-master/info' })

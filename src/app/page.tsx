@@ -24,7 +24,9 @@ import {
   DownloadCloud, UploadCloud, ShieldAlert, Gauge, ListChecks, Workflow,
   PackageOpen, ArrowLeftRight, BookOpen, Layers3, Activity as ActivityIcon,
   Truck, PackageCheck as PackageCheckIcon, FlaskConical, MapPin as MapPinIcon,
-  Trash2, AlertTriangle as AlertTriangleIcon
+  Trash2, AlertTriangle as AlertTriangleIcon,
+  Thermometer, Snowflake, Droplets, ScanLine as ScanIcon,
+  Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -99,7 +101,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
           <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
             <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
           </Button>
-          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-21 · Part 2 Complete + Part 3 Inventory Engine COMPLETE (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control)</p>
+          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-22 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS BEGUN (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation)</p>
         </Card>
       </div>
     </div>
@@ -134,7 +136,7 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
     ]
   },
   {
-    section: 'Operations (Sprint 12+) — PART 3',
+    section: 'Operations (Sprint 12+) — PART 4',
     items: [
       { name: 'Inventory Engine', icon: <Boxes className="h-4 w-4" />, module: 'inventory', available: true },
       { name: 'Goods Receipt', icon: <Truck className="h-4 w-4" />, module: 'goodsreceipt', available: true },
@@ -146,7 +148,7 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Batch & Expiry', icon: <Calendar className="h-4 w-4" />, module: 'batchmgmt', available: true },
       { name: 'Costing', icon: <IndianRupee className="h-4 w-4" />, module: 'costing', available: true },
       { name: 'Mission Control', icon: <BarChart3 className="h-4 w-4" />, module: 'analytics', available: true },
-      { name: 'Warehouse', icon: <Warehouse className="h-4 w-4" />, module: 'warehouse', available: false },
+      { name: 'Warehouse', icon: <Warehouse className="h-4 w-4" />, module: 'warehouse', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
     ]
@@ -199,6 +201,7 @@ function DashboardModule() {
     { sprint: 'Sprint 19', name: 'Batch & Expiry Management', status: 'done', desc: 'Batch Lifecycle, Shelf-Life Rules, Expiry Alerts, Product Recall Engine, Batch Genealogy' },
     { sprint: 'Sprint 20', name: 'Costing & Valuation', status: 'done', desc: 'Cost Layers, Landed Cost, Revaluation, GL Integration, Inventory Valuation (ABC/XYZ)' },
     { sprint: 'Sprint 21', name: 'Inventory Analytics & Mission Control', status: 'done', desc: 'Inventory KPIs, Ageing Analysis, ABC/XYZ/FSN Classification, Reorder Rules, Mission Control Dashboard, Executive Reports — PART 3 COMPLETE' },
+    { sprint: 'Sprint 22', name: 'Warehouse Foundation — PART 4 BEGUN', status: 'done', desc: 'Warehouse Master, Zones, Temperature Zones & Logs, Capacity, Calendar, Access Rules, Warehouse Rules — 6-warehouse Mumbai architecture' },
   ]
 
   return (
@@ -207,16 +210,16 @@ function DashboardModule() {
         <h2 className="text-2xl font-bold mb-1">Welcome to SUOP Admin</h2>
         <p className="text-slate-300 text-sm max-w-3xl">
           Sudhastar Unified Operating Platform — Enterprise Operating System for Food Manufacturing,
-          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 3: Enterprise Inventory Engine — COMPLETE (21/21 Sprints)</span>.
+          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: Warehouse Management System (Sprint 22 of 33) — BEGUN</span>.
         </p>
         <div className="flex items-center gap-6 mt-4">
-          <div className="text-center"><p className="text-3xl font-bold">185</p><p className="text-xs text-slate-400">Database Tables</p></div>
+          <div className="text-center"><p className="text-3xl font-bold">193</p><p className="text-xs text-slate-400">Database Tables</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">821</p><p className="text-xs text-slate-400">Architecture Entities</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
           <div className="text-center"><p className="text-3xl font-bold">249</p><p className="text-xs text-slate-400">Arch. Decisions</p></div>
           <Separator orientation="vertical" className="h-12 bg-slate-700" />
-          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">21</p><p className="text-xs text-slate-400">Sprints Done · Part 3 COMPLETE</p></div>
+          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">22</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
         </div>
       </Card>
 
@@ -6886,6 +6889,466 @@ function MissionControlReorderTab() {
   )
 }
 
+// ─── Warehouse Management Module (Sprint 22 — PART 4 BEGINS) ───
+type WarehouseTab = 'overview' | 'warehouses' | 'zones' | 'temperature' | 'rules'
+
+const WAREHOUSE_TYPE_COLORS: Record<string, string> = {
+  RAW_MATERIAL: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  PACKAGING: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  FINISHED_GOODS: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  QUARANTINE: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  RETURNS: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  SCRAP: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  COLD_STORAGE: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  DEEP_FREEZE: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300',
+  TRANSIT: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
+  DISTRIBUTION_CENTER: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+  DARK_STORE: 'bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-300',
+}
+
+const ZONE_TYPE_COLORS: Record<string, string> = {
+  RECEIVING: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  PUTAWAY: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
+  STORAGE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+  PICKING: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+  PACKING: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  DISPATCH: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  RETURNS: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+  QUARANTINE: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+  QUALITY_INSPECTION: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  DAMAGED_GOODS: 'bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-300',
+}
+
+const TEMP_ZONE_COLORS: Record<string, string> = {
+  AMBIENT: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  CHILLED: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  FROZEN: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300',
+  DEEP_FREEZE: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300',
+  HUMIDITY_CONTROLLED: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300',
+}
+
+const WAREHOUSE_STATUS_COLORS: Record<string, string> = {
+  ACTIVE: 'bg-emerald-600 text-white',
+  INACTIVE: 'bg-slate-500 text-white',
+  MAINTENANCE: 'bg-amber-500 text-white',
+  CLOSED: 'bg-red-600 text-white',
+}
+
+const ENFORCEMENT_COLORS: Record<string, string> = {
+  BLOCK: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  WARN: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  LOG: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
+}
+
+const WHM_WAREHOUSES = [
+  { id: 'wh-rm-mum', code: 'WH-RM-MUM', name: 'Raw Material Warehouse', type: 'RAW_MATERIAL', company: 'SUOP Sweets Pvt. Ltd.', branch: 'Mumbai Plant', manager: 'Rajesh Patel', city: 'Mumbai', volumeM3: 4500, weightKg: 250000, pallets: 600, bins: 4800, hours: '06:00 - 22:00', status: 'ACTIVE', workingDays: 'Mon-Sat' },
+  { id: 'wh-pkg-mum', code: 'WH-PKG-MUM', name: 'Packaging Warehouse', type: 'PACKAGING', company: 'SUOP Sweets Pvt. Ltd.', branch: 'Mumbai Plant', manager: 'Sneha Kulkarni', city: 'Mumbai', volumeM3: 2200, weightKg: 80000, pallets: 280, bins: 2200, hours: '07:00 - 19:00', status: 'ACTIVE', workingDays: 'Mon-Sat' },
+  { id: 'wh-fg-mum', code: 'WH-FG-MUM', name: 'Finished Goods Warehouse', type: 'FINISHED_GOODS', company: 'SUOP Sweets Pvt. Ltd.', branch: 'Mumbai Plant', manager: 'Anil Deshpande', city: 'Mumbai', volumeM3: 3800, weightKg: 180000, pallets: 500, bins: 4000, hours: '06:00 - 23:00', status: 'ACTIVE', workingDays: 'Mon-Sun' },
+  { id: 'wh-qua-mum', code: 'WH-QUA-MUM', name: 'Quarantine Warehouse', type: 'QUARANTINE', company: 'SUOP Sweets Pvt. Ltd.', branch: 'Mumbai Plant', manager: 'Priya Nair', city: 'Mumbai', volumeM3: 800, weightKg: 40000, pallets: 100, bins: 800, hours: '08:00 - 20:00', status: 'ACTIVE', workingDays: 'Mon-Fri' },
+  { id: 'wh-ret-mum-dc', code: 'WH-RET-MUM-DC', name: 'Returns Warehouse', type: 'RETURNS', company: 'SUOP Sweets Pvt. Ltd.', branch: 'Mumbai DC', manager: 'Vikas Shetty', city: 'Bhiwandi', volumeM3: 1200, weightKg: 60000, pallets: 150, bins: 1200, hours: '09:00 - 18:00', status: 'ACTIVE', workingDays: 'Mon-Sat' },
+  { id: 'wh-scr-mum-dc', code: 'WH-SCR-MUM-DC', name: 'Scrap Warehouse', type: 'SCRAP', company: 'SUOP Sweets Pvt. Ltd.', branch: 'Mumbai DC', manager: 'Mahesh Iyer', city: 'Bhiwandi', volumeM3: 500, weightKg: 25000, pallets: 60, bins: 480, hours: '09:00 - 17:00', status: 'MAINTENANCE', workingDays: 'Mon-Fri' },
+]
+
+const WHM_ZONES = [
+  { id: 'zn-001', code: 'Z-RM-01', name: 'Receiving Zone', type: 'RECEIVING', warehouse: 'WH-RM-MUM', parentZone: '—', tempZone: '—', volumeM3: 400, weightKg: 30000, pallets: 50, bins: 100, restricted: false, status: 'ACTIVE' },
+  { id: 'zn-002', code: 'Z-RM-02', name: 'Putaway Zone', type: 'PUTAWAY', warehouse: 'WH-RM-MUM', parentZone: 'Z-RM-01', tempZone: '—', volumeM3: 200, weightKg: 15000, pallets: 25, bins: 50, restricted: false, status: 'ACTIVE' },
+  { id: 'zn-003', code: 'Z-RM-03', name: 'Storage Zone-Ambient', type: 'STORAGE', warehouse: 'WH-RM-MUM', parentZone: '—', tempZone: 'TZ-AMB-01 (AMBIENT)', volumeM3: 2400, weightKg: 180000, pallets: 320, bins: 2560, restricted: false, status: 'ACTIVE' },
+  { id: 'zn-004', code: 'Z-RM-04', name: 'Storage Zone-Cold', type: 'STORAGE', warehouse: 'WH-RM-MUM', parentZone: '—', tempZone: 'TZ-CHL-01 (CHILLED)', volumeM3: 800, weightKg: 30000, pallets: 100, bins: 800, restricted: true, status: 'ACTIVE' },
+  { id: 'zn-005', code: 'Z-FG-01', name: 'Picking Zone', type: 'PICKING', warehouse: 'WH-FG-MUM', parentZone: '—', tempZone: '—', volumeM3: 600, weightKg: 24000, pallets: 80, bins: 800, restricted: false, status: 'ACTIVE' },
+  { id: 'zn-006', code: 'Z-FG-02', name: 'Packing Zone', type: 'PACKING', warehouse: 'WH-FG-MUM', parentZone: '—', tempZone: '—', volumeM3: 400, weightKg: 16000, pallets: 50, bins: 200, restricted: false, status: 'ACTIVE' },
+  { id: 'zn-007', code: 'Z-FG-03', name: 'Dispatch Zone', type: 'DISPATCH', warehouse: 'WH-FG-MUM', parentZone: '—', tempZone: '—', volumeM3: 500, weightKg: 20000, pallets: 70, bins: 100, restricted: false, status: 'ACTIVE' },
+  { id: 'zn-008', code: 'Z-QU-01', name: 'Quarantine Zone', type: 'QUARANTINE', warehouse: 'WH-QUA-MUM', parentZone: '—', tempZone: '—', volumeM3: 600, weightKg: 30000, pallets: 80, bins: 600, restricted: true, status: 'ACTIVE' },
+  { id: 'zn-009', code: 'Z-QU-02', name: 'Quality Inspection Zone', type: 'QUALITY_INSPECTION', warehouse: 'WH-QUA-MUM', parentZone: 'Z-QU-01', tempZone: '—', volumeM3: 200, weightKg: 10000, pallets: 20, bins: 40, restricted: true, status: 'ACTIVE' },
+  { id: 'zn-010', code: 'Z-RT-01', name: 'Damaged Goods Zone', type: 'DAMAGED_GOODS', warehouse: 'WH-RET-MUM-DC', parentZone: '—', tempZone: '—', volumeM3: 300, weightKg: 15000, pallets: 40, bins: 200, restricted: true, status: 'ACTIVE' },
+]
+
+const WHM_TEMP_ZONES = [
+  { id: 'tz-001', code: 'TZ-AMB-01', name: 'Ambient Storage', type: 'AMBIENT', warehouse: 'WH-RM-MUM', minTemp: 15.0, maxTemp: 30.0, targetTemp: 22.0, minHum: 30.0, maxHum: 60.0, lastReading: 23.5, lastReadingAt: '09 Jul 07:45', alert: false, monitoring: 'ACTIVE' },
+  { id: 'tz-002', code: 'TZ-CHL-01', name: 'Chilled Storage (Perishables)', type: 'CHILLED', warehouse: 'WH-RM-MUM', minTemp: 2.0, maxTemp: 8.0, targetTemp: 4.0, minHum: 50.0, maxHum: 75.0, lastReading: 9.4, lastReadingAt: '09 Jul 07:50', alert: true, monitoring: 'ACTIVE' },
+  { id: 'tz-003', code: 'TZ-FRZ-01', name: 'Frozen Storage (Ice Cream Line)', type: 'FROZEN', warehouse: 'WH-FG-MUM', minTemp: -25.0, maxTemp: -18.0, targetTemp: -22.0, minHum: 40.0, maxHum: 60.0, lastReading: -21.8, lastReadingAt: '09 Jul 07:55', alert: false, monitoring: 'ACTIVE' },
+  { id: 'tz-004', code: 'TZ-HUM-01', name: 'Humidity-Controlled Storage (Dry Sweets)', type: 'HUMIDITY_CONTROLLED', warehouse: 'WH-FG-MUM', minTemp: 18.0, maxTemp: 25.0, targetTemp: 20.0, minHum: 35.0, maxHum: 50.0, lastReading: 21.4, lastReadingAt: '09 Jul 08:00', alert: true, monitoring: 'ACTIVE' },
+]
+
+const WHM_RULES = [
+  { id: 'wr-001', code: 'MAX_BIN_WEIGHT', name: 'Maximum Bin Weight', type: 'MAX_BIN_WEIGHT', value: '25', unit: 'KG', enforcement: 'BLOCK', warehouse: 'WH-RM-MUM', desc: 'No single bin may hold more than 25 kg of stock to prevent structural damage & ergonomic injury.' },
+  { id: 'wr-002', code: 'FEFO_ENABLED', name: 'FEFO Picking Enforced', type: 'FEFO_ENABLED', value: 'true', unit: 'BOOLEAN', enforcement: 'BLOCK', warehouse: 'WH-FG-MUM', desc: 'Picking must follow First-Expired-First-Out across all FG bins. Non-FEFO picks are blocked.' },
+  { id: 'wr-003', code: 'BARCODE_MANDATORY', name: 'Barcode Scan Mandatory', type: 'BARCODE_MANDATORY', value: 'true', unit: 'BOOLEAN', enforcement: 'WARN', warehouse: 'WH-RM-MUM', desc: 'Every receive/putaway/pick/dispatch must scan barcode. Manual entry triggers a warning.' },
+  { id: 'wr-004', code: 'QUALITY_INSPECTION_REQUIRED', name: 'Quality Inspection Required', type: 'QUALITY_INSPECTION_REQUIRED', value: 'true', unit: 'BOOLEAN', enforcement: 'BLOCK', warehouse: 'WH-QUA-MUM', desc: 'All inbound & returned stock must pass QA inspection before release to storage.' },
+  { id: 'wr-005', code: 'MAX_STACK_HEIGHT', name: 'Maximum Pallet Stack Height', type: 'MAX_STACK_HEIGHT', value: '2.4', unit: 'M', enforcement: 'WARN', warehouse: 'WH-FG-MUM', desc: 'Pallet stack may not exceed 2.4 m to comply with ceiling clearance & forklift safety.' },
+]
+
+const WHM_RECOMMENDED = [
+  { code: 'WH-RM-MUM', name: 'Raw Material Warehouse', type: 'RAW_MATERIAL', purpose: 'Inbound raw materials (cashew, sugar, ghee, flour) for Mumbai plant. FEFO + quarantine enforced.' },
+  { code: 'WH-PKG-MUM', name: 'Packaging Warehouse', type: 'PACKAGING', purpose: 'Packaging materials (printed boxes, films, labels, pouches). Bulk storage with barcode tracking.' },
+  { code: 'WH-FG-MUM', name: 'Finished Goods Warehouse', type: 'FINISHED_GOODS', purpose: 'Finished sweets & namkeen awaiting dispatch to DCs. FEFO strictly enforced.' },
+  { code: 'WH-QUA-MUM', name: 'Quarantine Warehouse', type: 'QUARANTINE', purpose: 'Holds inbound RM & FG awaiting QA release. Auto-release on pass, scrap on fail.' },
+  { code: 'WH-RET-MUM-DC', name: 'Returns Warehouse', type: 'RETURNS', purpose: 'Customer returns from Mumbai DC. Sorted by reason, routed to scrap/quarantine/restock.' },
+  { code: 'WH-SCR-MUM-DC', name: 'Scrap Warehouse', type: 'SCRAP', purpose: 'Expired, damaged, recalled & condemned stock pending disposal. Requires finance approval.' },
+]
+
+function WarehouseModule() {
+  const [tab, setTab] = useState<WarehouseTab>('overview')
+  const tabs: Array<{ key: WarehouseTab; label: string; icon: React.ReactNode }> = [
+    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+    { key: 'warehouses', label: 'Warehouses', icon: <Warehouse className="h-4 w-4" /> },
+    { key: 'zones', label: 'Zones', icon: <Layers3 className="h-4 w-4" /> },
+    { key: 'temperature', label: 'Temperature', icon: <Thermometer className="h-4 w-4" /> },
+    { key: 'rules', label: 'Rules', icon: <ShieldCheck className="h-4 w-4" /> },
+  ]
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 bg-gradient-to-r from-amber-950 via-orange-900 to-red-900 text-white border-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+              <Warehouse className="h-7 w-7" /> Warehouse Management System
+            </h2>
+            <p className="text-amber-200 text-sm max-w-3xl">
+              Multi-warehouse architecture covering the full physical lifecycle of stock —
+              inbound (Raw Material + Quarantine), production support (Packaging), outbound (Finished Goods),
+              reverse logistics (Returns), and disposal (Scrap). 6 warehouses · 10 zones · 4 temperature zones ·
+              8 database tables. PART 4 BEGUN.
+            </p>
+          </div>
+          <Badge className="bg-orange-500 text-orange-950 hover:bg-orange-500">Sprint 22 · PART 4 BEGUN</Badge>
+        </div>
+      </Card>
+      <div className="flex flex-wrap gap-2 border-b pb-3">
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'overview' && <WarehouseOverviewTab />}
+      {tab === 'warehouses' && <WarehouseWarehousesTab />}
+      {tab === 'zones' && <WarehouseZonesTab />}
+      {tab === 'temperature' && <WarehouseTemperatureTab />}
+      {tab === 'rules' && <WarehouseRulesTab />}
+    </div>
+  )
+}
+
+function WarehouseOverviewTab() {
+  const stats = [
+    { label: 'Total Warehouses', value: '6', sub: '4 Plant · 2 DC', icon: <Warehouse className="h-5 w-5 text-amber-600" /> },
+    { label: 'Active Warehouses', value: '5', sub: '1 in MAINTENANCE', icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" /> },
+    { label: 'Total Zones', value: '10', sub: '4 restricted · 2 cold', icon: <Layers3 className="h-5 w-5 text-blue-600" /> },
+    { label: 'Temperature Zones', value: '4', sub: '2 alerts active', icon: <Thermometer className="h-5 w-5 text-cyan-600" /> },
+    { label: 'Avg Utilization', value: '69.3%', sub: 'WH-FG at 81% — highest', icon: <Gauge className="h-5 w-5 text-purple-600" /> },
+    { label: 'Cold Storage Units', value: '2', sub: '1 CHILLED · 1 FROZEN', icon: <Snowflake className="h-5 w-5 text-sky-600" /> },
+    { label: 'Access Rules', value: '3', sub: 'Manager · Operator · QA', icon: <UserCog className="h-5 w-5 text-indigo-600" /> },
+    { label: 'Operating Rules', value: '5', sub: '3 BLOCK · 2 WARN', icon: <ShieldCheck className="h-5 w-5 text-rose-600" /> },
+  ]
+  const hierarchy = [
+    { level: 'Company', icon: <Building2 className="h-4 w-4" />, desc: 'SUOP Sweets Pvt. Ltd.', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200' },
+    { level: 'Branch', icon: <Building className="h-4 w-4" />, desc: 'Mumbai Plant · Mumbai DC', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' },
+    { level: 'Warehouse', icon: <Warehouse className="h-4 w-4" />, desc: 'WH-RM-MUM · WH-FG-MUM · ...', color: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' },
+    { level: 'Zone', icon: <Layers3 className="h-4 w-4" />, desc: 'Receiving · Storage · Picking', color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' },
+    { level: 'Aisle', icon: <Route className="h-4 w-4" />, desc: 'A-01 · A-02 · B-01 ...', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' },
+    { level: 'Rack', icon: <Grid3x3 className="h-4 w-4" />, desc: 'R-01 · R-02 · R-03 ...', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300' },
+    { level: 'Shelf', icon: <Box className="h-4 w-4" />, desc: 'S-01 · S-02 · S-03 ...', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' },
+    { level: 'Bin', icon: <Hash className="h-4 w-4" />, desc: 'Smallest addressable unit', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' },
+  ]
+  return (
+    <div className="space-y-6">
+      {/* PART 4 BEGUN celebration banner */}
+      <Card className="p-5 bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 text-white border-0">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur">
+              <Sparkles className="h-7 w-7" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold flex items-center gap-2">PART 4 BEGUN <Warehouse className="h-5 w-5 text-amber-200" /></h3>
+              <p className="text-amber-100 text-sm">Enterprise Warehouse Management System — Sprint 22 of 33. 6-warehouse Mumbai architecture laid.</p>
+            </div>
+          </div>
+          <Badge className="bg-white/20 text-white hover:bg-white/30 border-0">Sprint 22 · 193 tables</Badge>
+        </div>
+      </Card>
+
+      {/* 8 stat cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map(s => (
+          <Card key={s.label} className="p-5">
+            <div className="flex items-start justify-between mb-2"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">{s.icon}</div></div>
+            <p className="text-2xl font-bold">{s.value}</p>
+            <p className="text-sm font-medium mt-1">{s.label}</p>
+            <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Hierarchy diagram */}
+      <Card className="p-5">
+        <h3 className="font-semibold mb-4 flex items-center gap-2"><Network className="h-5 w-5 text-indigo-600" /> Warehouse Hierarchy — 8 Levels</h3>
+        <p className="text-sm text-muted-foreground mb-4">Physical storage is addressed through 8 nested levels. The Bin is the smallest addressable storage unit where stock lives.</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {hierarchy.map((h, i) => (
+            <div key={h.level} className="flex items-center gap-2">
+              <div className={cn('flex items-center gap-2 px-3 py-2 rounded-md', h.color)}>
+                {h.icon}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide">{h.level}</p>
+                  <p className="text-xs opacity-80">{h.desc}</p>
+                </div>
+              </div>
+              {i < hierarchy.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Chief Architect recommendation table */}
+      <Card className="p-5">
+        <h3 className="font-semibold mb-1 flex items-center gap-2"><Building2 className="h-5 w-5 text-amber-600" /> Chief Architect — Recommended 6-Warehouse Mumbai Architecture</h3>
+        <p className="text-sm text-muted-foreground mb-4">Six warehouses cover the full physical lifecycle of stock: inbound (RM + Quarantine), production support (Packaging), outbound (FG), reverse logistics (Returns), and disposal (Scrap).</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left px-3 py-2 font-medium">Code</th>
+                <th className="text-left px-3 py-2 font-medium">Warehouse</th>
+                <th className="text-left px-3 py-2 font-medium">Type</th>
+                <th className="text-left px-3 py-2 font-medium">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              {WHM_RECOMMENDED.map(w => (
+                <tr key={w.code} className="border-b hover:bg-muted/30">
+                  <td className="px-3 py-2 font-mono text-xs">{w.code}</td>
+                  <td className="px-3 py-2 font-medium">{w.name}</td>
+                  <td className="px-3 py-2"><Badge className={cn('text-xs', WAREHOUSE_TYPE_COLORS[w.type])}>{w.type.replace(/_/g, ' ')}</Badge></td>
+                  <td className="px-3 py-2 text-muted-foreground">{w.purpose}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function WarehouseWarehousesTab() {
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900">
+        <p className="text-sm text-amber-900 dark:text-amber-200">
+          <Warehouse className="inline h-4 w-4 mr-1" /> 6 warehouses across 11 supported types (RAW_MATERIAL, PACKAGING, FINISHED_GOODS, COLD_STORAGE, DEEP_FREEZE, RETURNS, TRANSIT, QUARANTINE, SCRAP, DISTRIBUTION_CENTER, DARK_STORE). Each has a dedicated manager, capacity limits, and operating hours.
+        </p>
+      </Card>
+      <Card className="p-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="text-left px-3 py-2 font-medium">Code</th>
+                <th className="text-left px-3 py-2 font-medium">Name</th>
+                <th className="text-left px-3 py-2 font-medium">Type</th>
+                <th className="text-left px-3 py-2 font-medium">Branch</th>
+                <th className="text-left px-3 py-2 font-medium">Manager</th>
+                <th className="text-left px-3 py-2 font-medium">City</th>
+                <th className="text-right px-3 py-2 font-medium">Volume (m³)</th>
+                <th className="text-right px-3 py-2 font-medium">Pallets</th>
+                <th className="text-right px-3 py-2 font-medium">Bins</th>
+                <th className="text-left px-3 py-2 font-medium">Hours</th>
+                <th className="text-center px-3 py-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {WHM_WAREHOUSES.map(w => (
+                <tr key={w.id} className="border-b hover:bg-muted/30">
+                  <td className="px-3 py-2 font-mono text-xs">{w.code}</td>
+                  <td className="px-3 py-2 font-medium">{w.name}</td>
+                  <td className="px-3 py-2"><Badge className={cn('text-xs', WAREHOUSE_TYPE_COLORS[w.type])}>{w.type.replace(/_/g, ' ')}</Badge></td>
+                  <td className="px-3 py-2 text-muted-foreground text-xs">{w.branch}</td>
+                  <td className="px-3 py-2 text-xs">{w.manager}</td>
+                  <td className="px-3 py-2 text-xs">{w.city}</td>
+                  <td className="px-3 py-2 text-right font-mono">{w.volumeM3.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right font-mono">{w.pallets}</td>
+                  <td className="px-3 py-2 text-right font-mono">{w.bins.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-xs">{w.hours}</td>
+                  <td className="px-3 py-2 text-center"><Badge className={cn('text-xs', WAREHOUSE_STATUS_COLORS[w.status])}>{w.status}</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function WarehouseZonesTab() {
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900">
+        <p className="text-sm text-purple-900 dark:text-purple-200">
+          <Layers3 className="inline h-4 w-4 mr-1" /> 10 zones across 10 zone types (RECEIVING, PUTAWAY, STORAGE, PICKING, PACKING, DISPATCH, RETURNS, QUARANTINE, QUALITY_INSPECTION, DAMAGED_GOODS). Each zone may be linked to a temperature zone, support a parent zone, and be restricted.
+        </p>
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {WHM_ZONES.map(z => (
+          <Card key={z.id} className="p-4">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="font-mono text-xs text-muted-foreground">{z.code}</p>
+                <p className="font-semibold text-sm">{z.name}</p>
+              </div>
+              <Badge className={cn('text-xs', ZONE_TYPE_COLORS[z.type])}>{z.type.replace(/_/g, ' ')}</Badge>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Warehouse</span>
+                <span className="font-mono">{z.warehouse}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Parent Zone</span>
+                <span className="font-mono">{z.parentZone}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Temp Zone</span>
+                <span className="font-mono text-right">{z.tempZone}</span>
+              </div>
+            </div>
+            <Separator className="my-2" />
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div><p className="text-muted-foreground">Volume</p><p className="font-mono font-semibold">{z.volumeM3} m³</p></div>
+              <div><p className="text-muted-foreground">Pallets</p><p className="font-mono font-semibold">{z.pallets}</p></div>
+              <div><p className="text-muted-foreground">Bins</p><p className="font-mono font-semibold">{z.bins}</p></div>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              {z.restricted ? <Badge className="text-xs bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"><LockIcon className="mr-1 h-3 w-3" /> Restricted</Badge> : <Badge className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Open</Badge>}
+              <Badge className="text-xs bg-emerald-600 text-white">{z.status}</Badge>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function WarehouseTemperatureTab() {
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 bg-cyan-50 dark:bg-cyan-950/30 border-cyan-200 dark:border-cyan-900">
+        <p className="text-sm text-cyan-900 dark:text-cyan-200">
+          <Thermometer className="inline h-4 w-4 mr-1" /> 4 temperature zones across 5 supported types (AMBIENT, CHILLED, FROZEN, DEEP_FREEZE, HUMIDITY_CONTROLLED). Each zone has min/max/target temp + humidity range, with sensor-driven alerts when readings breach thresholds.
+        </p>
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {WHM_TEMP_ZONES.map(t => (
+          <Card key={t.id} className={cn('p-5 border-2', t.alert ? 'border-red-300 dark:border-red-800' : 'border-emerald-200 dark:border-emerald-900')}>
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg', TEMP_ZONE_COLORS[t.type])}>
+                  {t.type === 'FROZEN' || t.type === 'DEEP_FREEZE' ? <Snowflake className="h-5 w-5" /> : t.type === 'HUMIDITY_CONTROLLED' ? <Droplets className="h-5 w-5" /> : <Thermometer className="h-5 w-5" />}
+                </div>
+                <div>
+                  <p className="font-mono text-xs text-muted-foreground">{t.code}</p>
+                  <p className="font-semibold text-sm">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.warehouse}</p>
+                </div>
+              </div>
+              <Badge className={cn('text-xs', TEMP_ZONE_COLORS[t.type])}>{t.type.replace(/_/g, ' ')}</Badge>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center mb-3">
+              <div className="rounded-md bg-muted/50 p-2">
+                <p className="text-xs text-muted-foreground">Min Temp</p>
+                <p className="text-sm font-mono font-semibold">{t.minTemp.toFixed(1)}°C</p>
+              </div>
+              <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 p-2">
+                <p className="text-xs text-muted-foreground">Target</p>
+                <p className="text-sm font-mono font-semibold text-emerald-700 dark:text-emerald-400">{t.targetTemp.toFixed(1)}°C</p>
+              </div>
+              <div className="rounded-md bg-muted/50 p-2">
+                <p className="text-xs text-muted-foreground">Max Temp</p>
+                <p className="text-sm font-mono font-semibold">{t.maxTemp.toFixed(1)}°C</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="text-muted-foreground">Humidity Range</span>
+              <span className="font-mono">{t.minHum.toFixed(0)}% - {t.maxHum.toFixed(0)}%</span>
+            </div>
+            <Separator className="my-2" />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Last Reading</p>
+                <p className={cn('text-lg font-bold font-mono', t.alert ? 'text-red-600' : 'text-emerald-600')}>{t.lastReading.toFixed(1)}°C</p>
+                <p className="text-xs text-muted-foreground">{t.lastReadingAt}</p>
+              </div>
+              {t.alert ? (
+                <Badge className="bg-red-600 text-white"><AlertTriangle className="mr-1 h-3 w-3" /> ALERT</Badge>
+              ) : (
+                <Badge className="bg-emerald-600 text-white"><CheckCircle2 className="mr-1 h-3 w-3" /> NORMAL</Badge>
+              )}
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <span className="text-muted-foreground flex items-center gap-1"><Activity className="h-3 w-3" /> Monitoring: {t.monitoring}</span>
+              <Badge variant="outline" className="text-xs">{t.alert ? 'Action required' : 'Within range'}</Badge>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function WarehouseRulesTab() {
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900">
+        <p className="text-sm text-rose-900 dark:text-rose-200">
+          <ShieldCheck className="inline h-4 w-4 mr-1" /> 5 warehouse operating rules across 10 rule types (MAX_BIN_WEIGHT, MAX_STACK_HEIGHT, HAZARDOUS_MATERIAL, FOOD_SAFETY, FIFO/FEFO_ENABLED, BARCODE_MANDATORY, QUALITY_INSPECTION_REQUIRED, MAX_PICK_TIME, PUTAWAY_RULE). Enforcement modes: BLOCK (operation rejected), WARN (logged warning), LOG (silent audit).
+        </p>
+      </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {WHM_RULES.map(r => (
+          <Card key={r.id} className="p-5">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="font-mono text-xs text-muted-foreground">{r.code}</p>
+                <p className="font-semibold text-sm">{r.name}</p>
+              </div>
+              <Badge className={cn('text-xs', ENFORCEMENT_COLORS[r.enforcement])}>{r.enforcement}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">{r.desc}</p>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Rule Type</span>
+                <Badge variant="outline" className="font-mono text-xs">{r.type}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Value</span>
+                <span className="font-mono font-semibold text-base">{r.value} <span className="text-xs text-muted-foreground">{r.unit}</span></span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Warehouse</span>
+                <span className="font-mono">{r.warehouse}</span>
+              </div>
+            </div>
+            <Separator className="my-2" />
+            <div className="flex items-center justify-between">
+              {r.enforcement === 'BLOCK' ? (
+                <Badge className="text-xs bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"><ShieldAlert className="mr-1 h-3 w-3" /> Operation blocked</Badge>
+              ) : r.enforcement === 'WARN' ? (
+                <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"><AlertTriangle className="mr-1 h-3 w-3" /> Warning logged</Badge>
+              ) : (
+                <Badge className="text-xs bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"><FileText className="mr-1 h-3 w-3" /> Audit logged</Badge>
+              )}
+              <Badge className="text-xs bg-emerald-600 text-white">{r.id ? 'ACTIVE' : 'INACTIVE'}</Badge>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Settings Module (Sprint 2) ─────────────────────────
 function SettingsModule() {
   return (
@@ -6959,7 +7422,7 @@ export default function Home() {
     partners: 'Business Partners', identification: 'Identification & Traceability',
     governance: 'Data Governance', inventory: 'Inventory Engine',
     goodsreceipt: 'Goods Receipt & Putaway', stockissue: 'Stock Issue & Outbound', transfer: 'Stock Transfer', adjustment: 'Adjustments & Write-Off', reservation: 'Reservations & Allocation', cyclecount: 'Cycle Count & Audit', batchmgmt: 'Batch & Expiry Management', costing: 'Costing & Valuation', analytics: 'Mission Control', settings: 'Settings',
-    warehouse: 'Warehouse', manufacturing: 'Manufacturing',
+    warehouse: 'Warehouse Management', manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
     ai: 'AI Copilot',
@@ -7008,7 +7471,7 @@ export default function Home() {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
           <div className="flex-1" />
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 21 · 185 Tables · Part 3 COMPLETE</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 22 · 193 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
         </header>
 
@@ -7033,11 +7496,12 @@ export default function Home() {
             {activeModule === 'batchmgmt' && <BatchExpiryModule />}
             {activeModule === 'costing' && <CostingModule />}
             {activeModule === 'analytics' && <MissionControlModule />}
+            {activeModule === 'warehouse' && <WarehouseModule />}
             {activeModule === 'settings' && <SettingsModule />}
-            {(activeModule === 'warehouse' || activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
+            {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-21 · Part 2 Complete + Part 3 Inventory Engine COMPLETE · 185 Database Tables</p>
+              <p className="mt-1">Sprints 1-22 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS BEGUN · 193 Database Tables</p>
             </div>
           </main>
         </ScrollArea>

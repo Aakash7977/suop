@@ -6016,3 +6016,286 @@ model ExecutiveReport {
   @@index([status], map: "idx_er_status")
   @@index([createdAt], map: "idx_er_date")
 }
+
+// ═══════════════════════════════════════════════════════════
+// SPRINT 22 — WAREHOUSE FOUNDATION (PART 4 BEGINS)
+// Multi-warehouse architecture, zones, capacity, temperature
+// ═══════════════════════════════════════════════════════════
+
+// ─── Epic 1: Warehouse Master ──────────────────────────
+model WarehouseMaster {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseCode   String   @unique @map("warehouse_code")
+  warehouseName   String   @map("warehouse_name")
+  description     String?
+  // ─── Type ───
+  warehouseType   String   @map("warehouse_type") // RAW_MATERIAL, FINISHED_GOODS, PACKAGING, COLD_STORAGE, DEEP_FREEZE, RETURNS, TRANSIT, QUARANTINE, SCRAP, DISTRIBUTION_CENTER, DARK_STORE
+  // ─── Hierarchy ───
+  companyId       String?  @db.Uuid @map("company_id")
+  companyName     String?  @map("company_name")
+  branchId        String?  @db.Uuid @map("branch_id")
+  branchName      String?  @map("branch_name")
+  // ─── Manager ───
+  managerId       String?  @db.Uuid @map("manager_id")
+  managerName     String?  @map("manager_name")
+  // ─── Address ───
+  addressLine1    String?  @map("address_line_1")
+  addressLine2    String?  @map("address_line_2")
+  city            String?
+  state           String?
+  country         String   @default("India")
+  pincode         String?
+  // ─── Contact ───
+  phone           String?
+  email           String?
+  // ─── Configuration ───
+  timezone        String   @default("Asia/Kolkata")
+  barcodeEnabled  Boolean  @default(true) @map("barcode_enabled")
+  fifoEnabled     Boolean  @default(false) @map("fifo_enabled")
+  fefoEnabled     Boolean  @default(true) @map("fefo_enabled")
+  qualityInspectionRequired Boolean @default(true) @map("quality_inspection_required")
+  defaultPickingStrategy String @default("FEFO") @map("default_picking_strategy")
+  defaultPutawayStrategy String @default("FEFO") @map("default_putaway_strategy")
+  defaultUom      String?  @map("default_uom")
+  // ─── Capacity ───
+  totalVolumeM3   Decimal? @db.Decimal(12, 2) @map("total_volume_m3")
+  totalWeightKg   Decimal? @db.Decimal(12, 2) @map("total_weight_kg")
+  totalPalletPositions Int? @map("total_pallet_positions")
+  totalBins       Int?     @map("total_bins")
+  // ─── Operating hours ───
+  operatingHoursStart String @default("08:00") @map("operating_hours_start")
+  operatingHoursEnd   String @default("20:00") @map("operating_hours_end")
+  workingDays     String   @default("MON,TUE,WED,THU,FRI,SAT") @map("working_days")
+  // ─── Status ───
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, MAINTENANCE, CLOSED
+  statusReason    String?  @map("status_reason")
+  // ─── Audit ───
+  createdById     String?  @db.Uuid @map("created_by_id")
+  createdByName   String?  @map("created_by_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  zones           WarehouseZone[]
+  capacityRecords WarehouseCapacity[]
+  temperatureZones TemperatureZone[]
+  calendar        WarehouseCalendar[]
+  rules           WarehouseRule[]
+  accessRules     WarehouseAccessRule[]
+
+  @@map("warehouse_master")
+  @@index([warehouseType, status], map: "idx_wm_type_status")
+  @@index([companyId, branchId], map: "idx_wm_company_branch")
+  @@index([status], map: "idx_wm_status")
+}
+
+// ─── Epic 2: Warehouse Zones ───────────────────────────
+model WarehouseZone {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  zoneCode        String   @map("zone_code")
+  zoneName        String   @map("zone_name")
+  description     String?
+  // ─── Type ───
+  zoneType        String   @map("zone_type") // RECEIVING, PUTAWAY, STORAGE, PICKING, PACKING, DISPATCH, RETURNS, QUARANTINE, QUALITY_INSPECTION, DAMAGED_GOODS
+  // ─── Hierarchy ───
+  parentZoneId    String?  @db.Uuid @map("parent_zone_id")
+  displayOrder    Int      @default(100) @map("display_order")
+  // ─── Temperature ───
+  temperatureZoneId String? @db.Uuid @map("temperature_zone_id")
+  // ─── Capacity ───
+  volumeM3        Decimal? @db.Decimal(12, 2) @map("volume_m3")
+  weightCapacityKg Decimal? @db.Decimal(12, 2) @map("weight_capacity_kg")
+  palletPositions Int?     @map("pallet_positions")
+  binCount        Int      @default(0) @map("bin_count")
+  // ─── Access ───
+  isRestricted    Boolean  @default(false) @map("is_restricted")
+  accessRequired  Boolean  @default(false) @map("access_required")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  warehouse       WarehouseMaster @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, zoneCode], map: "wz_unique_wh_zone")
+  @@map("warehouse_zones")
+  @@index([warehouseId, zoneType], map: "idx_wz_wh_type")
+  @@index([zoneType, status], map: "idx_wz_type_status")
+}
+
+// ─── Epic 3: Temperature Zones ─────────────────────────
+model TemperatureZone {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  zoneCode        String   @map("zone_code")
+  zoneName        String   @map("zone_name")
+  // ─── Type ───
+  tempZoneType    String   @map("temp_zone_type") // AMBIENT, CHILLED, FROZEN, DEEP_FREEZE, HUMIDITY_CONTROLLED
+  // ─── Configuration ───
+  minTemperature  Decimal  @db.Decimal(5, 2) @map("min_temperature")
+  maxTemperature  Decimal  @db.Decimal(5, 2) @map("max_temperature")
+  targetTemperature Decimal? @db.Decimal(5, 2) @map("target_temperature")
+  minHumidity     Decimal? @db.Decimal(5, 2) @map("min_humidity")
+  maxHumidity     Decimal? @db.Decimal(5, 2) @map("max_humidity")
+  targetHumidity  Decimal? @db.Decimal(5, 2) @map("target_humidity")
+  // ─── Alert ───
+  alertThresholdMin Decimal @db.Decimal(5, 2) @default(2) @map("alert_threshold_min")
+  alertThresholdMax Decimal @db.Decimal(5, 2) @default(2) @map("alert_threshold_max")
+  // ─── Monitoring ───
+  isActive        Boolean  @default(true) @map("is_active")
+  lastReading     Decimal? @db.Decimal(5, 2) @map("last_reading")
+  lastReadingAt   DateTime? @map("last_reading_at")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  warehouse       WarehouseMaster @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  logs            TemperatureLog[]
+
+  @@unique([warehouseId, zoneCode], map: "tz_unique_wh_zone")
+  @@map("temperature_zones")
+  @@index([warehouseId, tempZoneType], map: "idx_tz_wh_type")
+  @@index([tempZoneType, status], map: "idx_tz_type_status")
+}
+
+model TemperatureLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  temperatureZoneId String  @db.Uuid @map("temperature_zone_id")
+  // ─── Reading ───
+  temperature     Decimal  @db.Decimal(5, 2)
+  humidity        Decimal? @db.Decimal(5, 2)
+  // ─── Alert ───
+  isAlert         Boolean  @default(false) @map("is_alert")
+  alertType       String?  @map("alert_type") // HIGH_TEMP, LOW_TEMP, HIGH_HUMIDITY, LOW_HUMIDITY
+  alertMessage    String?  @map("alert_message")
+  // ─── Sensor ───
+  sensorId        String?  @map("sensor_id")
+  sensorLocation  String?  @map("sensor_location")
+  // ─── Timestamp ───
+  recordedAt      DateTime @map("recorded_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  temperatureZone TemperatureZone @relation(fields: [temperatureZoneId], references: [id], onDelete: Cascade)
+
+  @@map("temperature_logs")
+  @@index([temperatureZoneId, recordedAt], map: "idx_tl_zone_time")
+  @@index([isAlert], map: "idx_tl_alert")
+}
+
+// ─── Epic 4: Warehouse Capacity ─────────────────────────
+model WarehouseCapacity {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  zoneId          String?  @db.Uuid @map("zone_id")
+  // ─── Capacity ───
+  totalVolume     Decimal  @db.Decimal(12, 2) @default(0) @map("total_volume")
+  usedVolume      Decimal  @db.Decimal(12, 2) @default(0) @map("used_volume")
+  availableVolume Decimal  @db.Decimal(12, 2) @default(0) @map("available_volume")
+  reservedVolume  Decimal  @db.Decimal(12, 2) @default(0) @map("reserved_volume")
+  totalWeight     Decimal  @db.Decimal(12, 2) @default(0) @map("total_weight")
+  usedWeight      Decimal  @db.Decimal(12, 2) @default(0) @map("used_weight")
+  availableWeight Decimal  @db.Decimal(12, 2) @default(0) @map("available_weight")
+  totalPallets    Int      @default(0) @map("total_pallets")
+  usedPallets     Int      @default(0) @map("used_pallets")
+  availablePallets Int     @default(0) @map("available_pallets")
+  totalBins       Int      @default(0) @map("total_bins")
+  usedBins        Int      @default(0) @map("used_bins")
+  availableBins   Int      @default(0) @map("available_bins")
+  // ─── Utilization ───
+  utilizationPercent Decimal @db.Decimal(5, 2) @default(0) @map("utilization_percent")
+  // ─── Snapshot ───
+  snapshotDate    DateTime @map("snapshot_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  warehouse       WarehouseMaster @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@map("warehouse_capacity")
+  @@index([warehouseId, snapshotDate], map: "idx_wc_wh_date")
+  @@index([zoneId], map: "idx_wc_zone")
+}
+
+// ─── Epic 5: Warehouse Calendar ────────────────────────
+model WarehouseCalendar {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  calendarDate    DateTime @map("calendar_date")
+  // ─── Type ───
+  dayType         String   @map("day_type") // WORKING_DAY, HOLIDAY, MAINTENANCE, SPECIAL
+  // ─── Hours ───
+  startTime       String?  @map("start_time")
+  endTime         String?  @map("end_time")
+  // ─── Shifts ───
+  shift1Start     String?  @map("shift1_start")
+  shift1End       String?  @map("shift1_end")
+  shift2Start     String?  @map("shift2_start")
+  shift2End       String?  @map("shift2_end")
+  shift3Start     String?  @map("shift3_start")
+  shift3End       String?  @map("shift3_end")
+  // ─── Description ───
+  description     String?
+  // ─── Status ───
+  isClosed        Boolean  @default(false) @map("is_closed")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  warehouse       WarehouseMaster @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@map("warehouse_calendar")
+  @@index([warehouseId, calendarDate], map: "idx_wcal_wh_date")
+}
+
+// ─── Epic 6: Warehouse Security ────────────────────────
+model WarehouseAccessRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  // ─── Access ───
+  userRole        String   @map("user_role") // WAREHOUSE_MANAGER, SUPERVISOR, OPERATOR, FORKLIFT_OPERATOR, QUALITY_INSPECTOR, VISITOR
+  // ─── Permissions ───
+  canReceive      Boolean  @default(false) @map("can_receive")
+  canPutaway      Boolean  @default(false) @map("can_putaway")
+  canPick         Boolean  @default(false) @map("can_pick")
+  canPack         Boolean  @default(false) @map("can_pack")
+  canDispatch     Boolean  @default(false) @map("can_dispatch")
+  canAdjust       Boolean  @default(false) @map("can_adjust")
+  canCount        Boolean  @default(false) @map("can_count")
+  canAccessRestricted Boolean @default(false) @map("can_access_restricted")
+  canAccessColdStorage  Boolean @default(false) @map("can_access_cold_storage")
+  // ─── Restricted zones ───
+  restrictedZoneIds String[] @default([]) @map("restricted_zone_ids")
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  warehouse       WarehouseMaster @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@map("warehouse_access_rules")
+  @@index([warehouseId, userRole], map: "idx_war_wh_role")
+  @@index([status], map: "idx_war_status")
+}
+
+// ─── Epic 7: Warehouse Rules ───────────────────────────
+model WarehouseRule {
+  id              String   @id @default(uuid()) @db.Uuid
+  warehouseId     String   @db.Uuid @map("warehouse_id")
+  ruleCode        String   @map("rule_code")
+  ruleName        String   @map("rule_name")
+  description     String?
+  // ─── Rule ───
+  ruleType        String   @map("rule_type") // MAX_BIN_WEIGHT, MAX_STACK_HEIGHT, HAZARDOUS_MATERIAL, FOOD_SAFETY, FIFO_ENABLED, FEFO_ENABLED, BARCODE_MANDATORY, QUALITY_INSPECTION_REQUIRED, MAX_PICK_TIME, PUTAWAY_RULE
+  ruleValue       String   @map("rule_value")
+  ruleUnit        String?  @map("rule_unit") // KG, M, HOURS, BOOLEAN, PERCENT
+  // ─── Enforcement ───
+  enforcementMode String   @default("WARN") @map("enforcement_mode") // BLOCK, WARN, LOG
+  // ─── Status ───
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  warehouse       WarehouseMaster @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, ruleCode], map: "wr_unique_wh_rule")
+  @@map("warehouse_rules")
+  @@index([warehouseId, ruleType], map: "idx_wr_wh_type")
+  @@index([ruleType, status], map: "idx_wr_type_status")
+}
