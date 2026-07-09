@@ -14992,6 +14992,661 @@ function EnterpriseAnalyticsModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 34 — MANUFACTURING FOUNDATION & PLANT MASTER (PART 5)
+// Epic 1: Plant · Epic 2: Dept · Epic 3: Line · Epic 4: Work Center
+// Epic 5: Calendar · Epic 6: Resources · Epic 7: Config · Epic 8: Dashboard
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Plant Master Module ────────────────────────
+function PlantMasterModule() {
+  const [showCreate, setShowCreate] = useState(false)
+  const plants = [
+    { id: 'P1', code: 'PLANT-THANE-01', name: 'Thane Sweet Manufacturing Plant', type: 'SWEET_MANUFACTURING', manager: 'Rajesh Patil', city: 'Thane', state: 'Maharashtra', capacity: 2500, operatingStart: '06:00', operatingEnd: '22:00', status: 'ACTIVE', departments: 5, lines: 8, resources: 42 },
+    { id: 'P2', code: 'PLANT-THANE-02', name: 'Thane Namkeen Plant', type: 'NAMKEEN_MANUFACTURING', manager: 'Suresh Iyer', city: 'Thane', state: 'Maharashtra', capacity: 1800, operatingStart: '06:00', operatingEnd: '22:00', status: 'ACTIVE', departments: 4, lines: 6, resources: 28 },
+    { id: 'P3', code: 'PLANT-BLR-01', name: 'Bangalore Batter Production', type: 'BATTER_PRODUCTION', manager: 'Anil Reddy', city: 'Bangalore', state: 'Karnataka', capacity: 1200, operatingStart: '05:00', operatingEnd: '20:00', status: 'ACTIVE', departments: 3, lines: 4, resources: 18 },
+    { id: 'P4', code: 'PLANT-MUM-01', name: 'Mumbai Central Kitchen', type: 'CENTRAL_KITCHEN', manager: 'Priya Nair', city: 'Mumbai', state: 'Maharashtra', capacity: 800, operatingStart: '04:00', operatingEnd: '18:00', status: 'ACTIVE', departments: 4, lines: 5, resources: 22 },
+    { id: 'P5', code: 'PLANT-PUN-01', name: 'Pune Packaging Plant', type: 'PACKAGING_PLANT', manager: 'Mahesh Desai', city: 'Pune', state: 'Maharashtra', capacity: 3000, operatingStart: '08:00', operatingEnd: '20:00', status: 'MAINTENANCE', departments: 2, lines: 3, resources: 15 },
+  ]
+
+  const typeColors: Record<string, string> = { SWEET_MANUFACTURING: 'bg-amber-100 text-amber-700', NAMKEEN_MANUFACTURING: 'bg-orange-100 text-orange-700', BATTER_PRODUCTION: 'bg-blue-100 text-blue-700', CENTRAL_KITCHEN: 'bg-purple-100 text-purple-700', PACKAGING_PLANT: 'bg-emerald-100 text-emerald-700' }
+  const typeIcons: Record<string, React.ReactNode> = { SWEET_MANUFACTURING: '🍬', NAMKEEN_MANUFACTURING: '🥜', BATTER_PRODUCTION: '🥣', CENTRAL_KITCHEN: '🍳', PACKAGING_PLANT: '📦' }
+
+  const stats = [
+    { label: 'Total Plants', value: plants.length, color: 'text-blue-600' },
+    { label: 'Active', value: plants.filter(p => p.status === 'ACTIVE').length, color: 'text-emerald-600' },
+    { label: 'Maintenance', value: plants.filter(p => p.status === 'MAINTENANCE').length, color: 'text-orange-600' },
+    { label: 'Total Capacity (kg/day)', value: plants.reduce((a, p) => a + p.capacity, 0).toLocaleString('en-IN'), color: 'text-purple-600' },
+    { label: 'Total Departments', value: plants.reduce((a, p) => a + p.departments, 0), color: 'text-cyan-600' },
+    { label: 'Total Lines', value: plants.reduce((a, p) => a + p.lines, 0), color: 'text-amber-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Manufacturing Plant Master</h2><p className="text-sm text-muted-foreground mt-1">Multi-plant management · Company → Branch → Plant → Department → Line → Work Center</p></div>
+        <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Plant</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {/* Manufacturing Hierarchy Diagram */}
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <h3 className="font-semibold mb-3 text-sm">Manufacturing Hierarchy — Sudhamrit Example</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Sudhamrit Foods', 'Thane Plant', 'Production Building', 'Sweet Dept', 'Kaju Katli Line', 'Mixing → Cooking → Cooling → Cutting → Packing'].map((step, i, arr) => (
+            <div key={i} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-amber-600" />}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {showCreate && (
+        <Card className="p-4 border-amber-300 bg-amber-50/50">
+          <h3 className="font-semibold mb-3">Register New Plant</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Plant Code</Label><Input className="mt-1" placeholder="PLANT-XXX-01" /></div>
+            <div><Label className="text-xs">Plant Name</Label><Input className="mt-1" placeholder="Thane Sweet Plant" /></div>
+            <div><Label className="text-xs">Plant Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>SWEET_MANUFACTURING</option><option>NAMKEEN_MANUFACTURING</option><option>BATTER_PRODUCTION</option><option>CENTRAL_KITCHEN</option><option>PACKAGING_PLANT</option></select></div>
+            <div><Label className="text-xs">Manager</Label><Input className="mt-1" placeholder="Plant manager name" /></div>
+            <div><Label className="text-xs">City</Label><Input className="mt-1" placeholder="Thane" /></div>
+            <div><Label className="text-xs">Daily Capacity (kg)</Label><Input type="number" className="mt-1" placeholder="2500" /></div>
+            <div><Label className="text-xs">Operating Start</Label><Input type="time" className="mt-1" defaultValue="06:00" /></div>
+            <div><Label className="text-xs">Operating End</Label><Input type="time" className="mt-1" defaultValue="22:00" /></div>
+            <div className="md:col-span-4 flex gap-2"><Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Create Plant</Button><Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button></div>
+          </div>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {plants.map(p => {
+          const b = s28BadgeForStatus(p.status)
+          return (
+            <Card key={p.id} className={`p-4 ${p.status === 'MAINTENANCE' ? 'border-orange-300 bg-orange-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-2xl">{typeIcons[p.type] || '🏭'}</div>
+                  <div>
+                    <div className="font-mono text-xs font-semibold text-blue-700">{p.code}</div>
+                    <div className="font-semibold text-sm">{p.name}</div>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Type:</span><span className={`px-1.5 py-0.5 rounded font-medium ${typeColors[p.type] || 'bg-slate-100'}`}>{p.type.replace(/_/g, ' ')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Manager:</span><span>{p.manager}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Location:</span><span className="font-mono">{p.city}, {p.state}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Capacity:</span><span className="font-mono font-bold">{p.capacity.toLocaleString('en-IN')} kg/day</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Operating:</span><span className="font-mono">{p.operatingStart} - {p.operatingEnd}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Hierarchy:</span><span className="font-mono">{p.departments} depts · {p.lines} lines · {p.resources} resources</span></div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="text-center p-2 bg-muted/50 rounded"><p className="text-lg font-bold text-blue-600">{p.departments}</p><p className="text-[10px] text-muted-foreground">DEPTS</p></div>
+                <div className="text-center p-2 bg-muted/50 rounded"><p className="text-lg font-bold text-purple-600">{p.lines}</p><p className="text-[10px] text-muted-foreground">LINES</p></div>
+                <div className="text-center p-2 bg-muted/50 rounded"><p className="text-lg font-bold text-amber-600">{p.resources}</p><p className="text-[10px] text-muted-foreground">RESOURCES</p></div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 2: Production Departments ─────────────────────
+function ProductionDepartmentsModule() {
+  const departments = [
+    { code: 'DEPT-SWEET-01', name: 'Sweet Production', plant: 'PLANT-THANE-01', type: 'SWEET_PRODUCTION', manager: 'Rajesh Patil', capacity: 1500, lines: 4, status: 'ACTIVE' },
+    { code: 'DEPT-NAMKEEN-01', name: 'Namkeen Production', plant: 'PLANT-THANE-02', type: 'NAMKEEN_PRODUCTION', manager: 'Suresh Iyer', capacity: 1200, lines: 3, status: 'ACTIVE' },
+    { code: 'DEPT-BATTER-01', name: 'Batter Production', plant: 'PLANT-BLR-01', type: 'BATTER_PRODUCTION', manager: 'Anil Reddy', capacity: 800, lines: 2, status: 'ACTIVE' },
+    { code: 'DEPT-PACK-01', name: 'Packaging', plant: 'PLANT-THANE-01', type: 'PACKAGING', manager: 'Lakshmi V.', capacity: 2000, lines: 3, status: 'ACTIVE' },
+    { code: 'DEPT-QH-01', name: 'Quality Hold', plant: 'PLANT-THANE-01', type: 'QUALITY_HOLD', manager: 'QC Team', capacity: 0, lines: 0, status: 'ACTIVE' },
+    { code: 'DEPT-FG-01', name: 'Finished Goods', plant: 'PLANT-THANE-01', type: 'FINISHED_GOODS', manager: 'Dispatch Team', capacity: 0, lines: 0, status: 'ACTIVE' },
+    { code: 'DEPT-MAINT-01', name: 'Maintenance', plant: 'PLANT-THANE-01', type: 'MAINTENANCE', manager: 'Tech Team', capacity: 0, lines: 0, status: 'ACTIVE' },
+    { code: 'DEPT-CLEAN-01', name: 'Cleaning', plant: 'PLANT-THANE-01', type: 'CLEANING', manager: 'Sanitation Team', capacity: 0, lines: 0, status: 'ACTIVE' },
+  ]
+
+  const typeColors: Record<string, string> = { SWEET_PRODUCTION: 'bg-amber-100 text-amber-700', NAMKEEN_PRODUCTION: 'bg-orange-100 text-orange-700', BATTER_PRODUCTION: 'bg-blue-100 text-blue-700', PACKAGING: 'bg-emerald-100 text-emerald-700', QUALITY_HOLD: 'bg-rose-100 text-rose-700', FINISHED_GOODS: 'bg-purple-100 text-purple-700', MAINTENANCE: 'bg-slate-100 text-slate-700', CLEANING: 'bg-cyan-100 text-cyan-700' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Production Departments</h2><p className="text-sm text-muted-foreground mt-1">Sweet · Namkeen · Batter · Packaging · Quality · Finished Goods · Maintenance · Cleaning</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Department</Button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Departments', value: departments.length, color: 'text-blue-600' },
+          { label: 'Active', value: departments.filter(d => d.status === 'ACTIVE').length, color: 'text-emerald-600' },
+          { label: 'Production Depts', value: departments.filter(d => d.type.includes('PRODUCTION')).length, color: 'text-amber-600' },
+          { label: 'Support Depts', value: departments.filter(d => !d.type.includes('PRODUCTION')).length, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">Department</th>
+              <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Plant</th>
+              <th className="text-left px-4 py-3 font-medium">Manager</th><th className="text-left px-4 py-3 font-medium">Capacity (kg/day)</th>
+              <th className="text-left px-4 py-3 font-medium">Lines</th><th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {departments.map(d => {
+                const b = s28BadgeForStatus(d.status)
+                return (
+                  <tr key={d.code} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{d.code}</td>
+                    <td className="px-4 py-3 text-xs font-medium">{d.name}</td>
+                    <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[d.type] || 'bg-slate-100'}`}>{d.type.replace(/_/g, ' ')}</span></td>
+                    <td className="px-4 py-3 font-mono text-xs">{d.plant}</td>
+                    <td className="px-4 py-3 text-xs">{d.manager}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{d.capacity > 0 ? d.capacity.toLocaleString('en-IN') : '—'}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{d.lines}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 3: Production Lines ───────────────────────────
+function ProductionLinesModule() {
+  const lines = [
+    { code: 'LINE-KK-01', name: 'Kaju Katli Line', plant: 'PLANT-THANE-01', dept: 'Sweet Production', capacityHr: 120, capacityShift: 960, capacityDay: 1920, primary: 'Kaju Katli', status: 'ACTIVE', current: 'RUNNING', workCenters: 8 },
+    { code: 'LINE-LD-01', name: 'Laddu Line', plant: 'PLANT-THANE-01', dept: 'Sweet Production', capacityHr: 100, capacityShift: 800, capacityDay: 1600, primary: 'Motichoor Laddu', status: 'ACTIVE', current: 'RUNNING', workCenters: 6 },
+    { code: 'LINE-BF-01', name: 'Barfi Line', plant: 'PLANT-THANE-01', dept: 'Sweet Production', capacityHr: 90, capacityShift: 720, capacityDay: 1440, primary: 'Coconut Barfi', status: 'ACTIVE', current: 'CHANGEOVER', workCenters: 5 },
+    { code: 'LINE-NM-01', name: 'Namkeen Frying Line', plant: 'PLANT-THANE-02', dept: 'Namkeen Production', capacityHr: 150, capacityShift: 1200, capacityDay: 2400, primary: 'Mixed Namkeen', status: 'ACTIVE', current: 'RUNNING', workCenters: 7 },
+    { code: 'LINE-MX-01', name: 'Mixture Line', plant: 'PLANT-THANE-02', dept: 'Namkeen Production', capacityHr: 120, capacityShift: 960, capacityDay: 1920, primary: 'Spicy Mixture', status: 'ACTIVE', current: 'IDLE', workCenters: 5 },
+    { code: 'LINE-IB-01', name: 'Idli Batter Line', plant: 'PLANT-BLR-01', dept: 'Batter Production', capacityHr: 80, capacityShift: 640, capacityDay: 1280, primary: 'Shwet Idli Batter', status: 'ACTIVE', current: 'RUNNING', workCenters: 4 },
+    { code: 'LINE-DB-01', name: 'Dosa Batter Line', plant: 'PLANT-BLR-01', dept: 'Batter Production', capacityHr: 70, capacityShift: 560, capacityDay: 1120, primary: 'Dosa Batter', status: 'ACTIVE', current: 'CLEANING', workCenters: 4 },
+    { code: 'LINE-PK-01', name: 'Packing Line A', plant: 'PLANT-THANE-01', dept: 'Packaging', capacityHr: 500, capacityShift: 4000, capacityDay: 8000, primary: 'Multi-product', status: 'ACTIVE', current: 'RUNNING', workCenters: 3 },
+  ]
+
+  const currentColors: Record<string, string> = { RUNNING: 'bg-emerald-500', IDLE: 'bg-slate-400', CHANGEOVER: 'bg-amber-500', CLEANING: 'bg-blue-500', MAINTENANCE: 'bg-rose-500' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Production Lines</h2><p className="text-sm text-muted-foreground mt-1">Kaju Katli · Laddu · Barfi · Namkeen · Mixture · Idli Batter · Dosa Batter · Packing</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Line</Button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Lines', value: lines.length, color: 'text-blue-600' },
+          { label: 'Running', value: lines.filter(l => l.current === 'RUNNING').length, color: 'text-emerald-600' },
+          { label: 'Idle', value: lines.filter(l => l.current === 'IDLE').length, color: 'text-slate-600' },
+          { label: 'Changeover', value: lines.filter(l => l.current === 'CHANGEOVER').length, color: 'text-amber-600' },
+          { label: 'Cleaning', value: lines.filter(l => l.current === 'CLEANING').length, color: 'text-blue-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {lines.map(l => (
+          <Card key={l.code} className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="font-mono text-xs font-semibold text-blue-700">{l.code}</div>
+                <div className="font-semibold text-sm">{l.name}</div>
+                <div className="text-[10px] text-muted-foreground">{l.plant} · {l.dept}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`h-3 w-3 rounded-full ${currentColors[l.current]} ${l.current === 'RUNNING' ? 'animate-pulse' : ''}`} />
+                <span className="text-xs font-medium">{l.current}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="text-center p-2 bg-muted/50 rounded"><p className="font-bold text-blue-600">{l.capacityHr}</p><p className="text-[10px] text-muted-foreground">KG/HR</p></div>
+              <div className="text-center p-2 bg-muted/50 rounded"><p className="font-bold text-purple-600">{l.capacityShift}</p><p className="text-[10px] text-muted-foreground">KG/SHIFT</p></div>
+              <div className="text-center p-2 bg-muted/50 rounded"><p className="font-bold text-amber-600">{l.capacityDay}</p><p className="text-[10px] text-muted-foreground">KG/DAY</p></div>
+            </div>
+            <div className="mt-2 space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Primary Product:</span><span className="font-medium">{l.primary}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Work Centers:</span><span className="font-mono">{l.workCenters}</span></div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 4: Work Centers ───────────────────────────────
+function WorkCentersModule() {
+  const workCenters = [
+    { code: 'WC-KK-01', name: 'Raw Material Preparation', line: 'LINE-KK-01', type: 'RAW_MATERIAL_PREP', seq: 1, capacity: 150, cycle: 15, operators: 2, machines: 0, efficiency: 92, current: 'IDLE' },
+    { code: 'WC-KK-02', name: 'Mixing Station', line: 'LINE-KK-01', type: 'MIXING', seq: 2, capacity: 130, cycle: 20, operators: 1, machines: 1, efficiency: 88, current: 'RUNNING' },
+    { code: 'WC-KK-03', name: 'Cooking Station', line: 'LINE-KK-01', type: 'COOKING', seq: 3, capacity: 120, cycle: 45, operators: 1, machines: 2, efficiency: 85, current: 'RUNNING' },
+    { code: 'WC-KK-04', name: 'Cooling Station', line: 'LINE-KK-01', type: 'COOLING', seq: 4, capacity: 120, cycle: 30, operators: 0, machines: 1, efficiency: 95, current: 'IDLE' },
+    { code: 'WC-KK-05', name: 'Rolling Station', line: 'LINE-KK-01', type: 'ROLLING', seq: 5, capacity: 110, cycle: 15, operators: 2, machines: 1, efficiency: 82, current: 'PAUSED' },
+    { code: 'WC-KK-06', name: 'Cutting Station', line: 'LINE-KK-01', type: 'CUTTING', seq: 6, capacity: 120, cycle: 10, operators: 1, machines: 1, efficiency: 90, current: 'IDLE' },
+    { code: 'WC-KK-07', name: 'Quality Inspection', line: 'LINE-KK-01', type: 'INSPECTION', seq: 7, capacity: 200, cycle: 5, operators: 1, machines: 0, efficiency: 98, current: 'IDLE' },
+    { code: 'WC-KK-08', name: 'Packing Station', line: 'LINE-KK-01', type: 'PACKING', seq: 8, capacity: 150, cycle: 12, operators: 2, machines: 1, efficiency: 87, current: 'SETUP' },
+    { code: 'WC-NM-01', name: 'Roasting Station', line: 'LINE-NM-01', type: 'ROASTING', seq: 1, capacity: 180, cycle: 25, operators: 1, machines: 1, efficiency: 91, current: 'RUNNING' },
+    { code: 'WC-NM-02', name: 'Frying Station', line: 'LINE-NM-01', type: 'FRYING', seq: 2, capacity: 160, cycle: 30, operators: 2, machines: 2, efficiency: 84, current: 'RUNNING' },
+  ]
+
+  const typeColors: Record<string, string> = { RAW_MATERIAL_PREP: 'bg-slate-100 text-slate-700', MIXING: 'bg-blue-100 text-blue-700', COOKING: 'bg-orange-100 text-orange-700', COOLING: 'bg-cyan-100 text-cyan-700', ROLLING: 'bg-purple-100 text-purple-700', CUTTING: 'bg-amber-100 text-amber-700', INSPECTION: 'bg-rose-100 text-rose-700', PACKING: 'bg-emerald-100 text-emerald-700', ROASTING: 'bg-orange-100 text-orange-700', FRYING: 'bg-red-100 text-red-700' }
+  const currentColors: Record<string, string> = { RUNNING: 'bg-emerald-500', IDLE: 'bg-slate-400', PAUSED: 'bg-amber-500', SETUP: 'bg-blue-500', CLEANING: 'bg-cyan-500', MAINTENANCE: 'bg-rose-500' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Work Centers</h2><p className="text-sm text-muted-foreground mt-1">Mixing → Cooking → Cooling → Rolling → Cutting → Inspection → Packing — per Chief Architect recommendation</p></div>
+
+      {/* Kaju Katli Production Flow */}
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <h3 className="font-semibold mb-3 text-sm">Kaju Katli Production Flow — Work Center Sequence</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Raw Material Prep', 'Mixing', 'Cooking', 'Cooling', 'Rolling', 'Cutting', 'Quality Inspection', 'Packing', 'FG Warehouse'].map((step, i, arr) => (
+            <div key={i} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-amber-600" />}
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">Work Center approach provides: precise tracking, better utilization, accurate costing per stage, bottleneck analysis, strong traceability for food safety.</p>
+      </Card>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Work Centers', value: workCenters.length, color: 'text-blue-600' },
+          { label: 'Running', value: workCenters.filter(w => w.current === 'RUNNING').length, color: 'text-emerald-600' },
+          { label: 'Idle', value: workCenters.filter(w => w.current === 'IDLE').length, color: 'text-slate-600' },
+          { label: 'Paused', value: workCenters.filter(w => w.current === 'PAUSED').length, color: 'text-amber-600' },
+          { label: 'Avg Efficiency', value: `${Math.round(workCenters.reduce((a, w) => a + w.efficiency, 0) / workCenters.length)}%`, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">Work Center</th>
+              <th className="text-left px-4 py-3 font-medium">Type</th><th className="text-left px-4 py-3 font-medium">Seq</th>
+              <th className="text-left px-4 py-3 font-medium">Line</th><th className="text-left px-4 py-3 font-medium">Cap (kg/hr)</th>
+              <th className="text-left px-4 py-3 font-medium">Cycle (min)</th><th className="text-left px-4 py-3 font-medium">Operators</th>
+              <th className="text-left px-4 py-3 font-medium">Efficiency</th><th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {workCenters.map(w => (
+                <tr key={w.code} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{w.code}</td>
+                  <td className="px-4 py-3 text-xs font-medium">{w.name}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${typeColors[w.type] || 'bg-slate-100'}`}>{w.type.replace(/_/g, ' ')}</span></td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.seq}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.line}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.capacity}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.cycle}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{w.operators} 👤 · {w.machines} 🔧</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${w.efficiency > 90 ? 'bg-emerald-500' : w.efficiency > 85 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${w.efficiency}%` }} /></div><span className="font-mono text-xs">{w.efficiency}%</span></div></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1"><span className={`h-2 w-2 rounded-full ${currentColors[w.current]}`} /><span className="text-xs">{w.current}</span></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 5: Manufacturing Calendar ─────────────────────
+function ManufacturingCalendarModule() {
+  const [view, setView] = useState<'shifts' | 'calendar' | 'holidays'>('shifts')
+
+  const shifts = [
+    { code: 'SHIFT-M', name: 'Morning Shift', plant: 'PLANT-THANE-01', start: '06:00', end: '14:00', break: '10:00-10:15', days: ['MON','TUE','WED','THU','FRI','SAT'], type: 'REGULAR', active: true },
+    { code: 'SHIFT-A', name: 'Afternoon Shift', plant: 'PLANT-THANE-01', start: '14:00', end: '22:00', break: '18:00-18:15', days: ['MON','TUE','WED','THU','FRI','SAT'], type: 'REGULAR', active: true },
+    { code: 'SHIFT-N', name: 'Night Shift', plant: 'PLANT-THANE-01', start: '22:00', end: '06:00', break: '02:00-02:15', days: ['SUN','MON','TUE','WED','THU'], type: 'REGULAR', active: true },
+    { code: 'SHIFT-OT', name: 'Overtime Pool', plant: 'PLANT-THANE-01', start: '—', end: '—', break: '—', days: ['SAT','SUN'], type: 'OVERTIME', active: true },
+  ]
+
+  const holidays = [
+    { date: '2026-08-15', name: 'Independence Day', type: 'NATIONAL', plant: 'All Plants', fullDay: true },
+    { date: '2026-08-19', name: 'Janmashtami', type: 'FESTIVAL', plant: 'All Plants', fullDay: true },
+    { date: '2026-09-07', name: 'Ganesh Chaturthi', type: 'FESTIVAL', plant: 'PLANT-THANE-01', fullDay: true },
+    { date: '2026-09-21', name: 'Monthly Maintenance Shutdown', type: 'MAINTENANCE', plant: 'All Plants', fullDay: true },
+    { date: '2026-10-02', name: 'Gandhi Jayanti', type: 'NATIONAL', plant: 'All Plants', fullDay: true },
+    { date: '2026-10-12', name: 'Vijaya Dashami', type: 'FESTIVAL', plant: 'All Plants', fullDay: true },
+    { date: '2026-11-01', name: 'Diwali', type: 'FESTIVAL', plant: 'All Plants', fullDay: true },
+    { date: '2026-11-02', name: 'Diwali (Day 2)', type: 'FESTIVAL', plant: 'All Plants', fullDay: true },
+  ]
+
+  const typeColors: Record<string, string> = { NATIONAL: 'bg-blue-100 text-blue-700', FESTIVAL: 'bg-amber-100 text-amber-700', MAINTENANCE: 'bg-orange-100 text-orange-700', PUBLIC: 'bg-purple-100 text-purple-700', COMPANY: 'bg-emerald-100 text-emerald-700' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Manufacturing Calendar</h2><p className="text-sm text-muted-foreground mt-1">Shifts · holidays · maintenance shutdowns · festival schedule · emergency shutdown</p></div>
+        <div className="flex rounded-md border overflow-hidden">
+          {(['shifts', 'calendar', 'holidays'] as const).map(v => <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 text-xs font-medium capitalize ${view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{v}</button>)}
+        </div>
+      </div>
+
+      {view === 'shifts' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Production Shifts</h3></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b"><tr>
+                <th className="text-left px-4 py-3 font-medium">Code</th><th className="text-left px-4 py-3 font-medium">Shift</th>
+                <th className="text-left px-4 py-3 font-medium">Time</th><th className="text-left px-4 py-3 font-medium">Break</th>
+                <th className="text-left px-4 py-3 font-medium">Days</th><th className="text-left px-4 py-3 font-medium">Type</th>
+                <th className="text-left px-4 py-3 font-medium">Status</th>
+              </tr></thead>
+              <tbody>
+                {shifts.map(s => (
+                  <tr key={s.code} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-blue-700">{s.code}</td>
+                    <td className="px-4 py-3 text-xs font-medium">{s.name}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{s.start} - {s.end}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{s.break}</td>
+                    <td className="px-4 py-3"><div className="flex gap-1">{s.days.map(d => <span key={d} className="text-[9px] px-1 py-0.5 bg-muted rounded font-mono">{d}</span>)}</div></td>
+                    <td className="px-4 py-3"><span className={`text-[10px] px-1.5 py-0.5 rounded ${s.type === 'OVERTIME' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>{s.type}</span></td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${s.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100'}`}>{s.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {view === 'holidays' && (
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b"><h3 className="font-semibold">Plant Holidays & Shutdowns</h3></div>
+          <div className="p-4 space-y-2">
+            {holidays.map((h, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 border rounded">
+                <div className="text-center w-16">
+                  <p className="text-xs text-muted-foreground">{new Date(h.date).toLocaleDateString('en-IN', { month: 'short' })}</p>
+                  <p className="text-2xl font-bold">{new Date(h.date).getDate()}</p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{h.name}</p>
+                  <p className="text-xs text-muted-foreground">{h.plant} · {h.fullDay ? 'Full Day' : 'Half Day'}</p>
+                </div>
+                <span className={`text-[10px] px-2 py-1 rounded font-medium ${typeColors[h.type] || 'bg-slate-100'}`}>{h.type}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {view === 'calendar' && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">July 2026 — Operating Calendar</h3>
+          <div className="grid grid-cols-7 gap-1">
+            {['MON','TUE','WED','THU','FRI','SAT','SUN'].map(d => <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>)}
+            {Array.from({ length: 31 }, (_, i) => {
+              const day = i + 1
+              const isHoliday = [15, 19].includes(day)
+              const isMaintenance = day === 21
+              const isSunday = new Date(2026, 6, day).getDay() === 0
+              return (
+                <div key={day} className={`aspect-square rounded border p-1 text-[10px] ${isHoliday ? 'bg-rose-50 border-rose-300' : isMaintenance ? 'bg-orange-50 border-orange-300' : isSunday ? 'bg-slate-50' : 'bg-emerald-50 border-emerald-200'}`}>
+                  <div className="font-bold">{day}</div>
+                  {isHoliday && <div className="text-[8px] text-rose-600">Holiday</div>}
+                  {isMaintenance && <div className="text-[8px] text-orange-600">Maint</div>}
+                  {!isHoliday && !isMaintenance && !isSunday && <div className="text-[8px] text-emerald-600">3 shifts</div>}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ─── Epic 6: Production Resources ───────────────────────
+function ProductionResourcesModule() {
+  const resources = [
+    { code: 'RES-MIX-01', name: 'Industrial Mixer 500L', plant: 'PLANT-THANE-01', type: 'MACHINE', wc: 'WC-KK-02', capacity: 130, unit: 'KG', status: 'IN_USE' },
+    { code: 'RES-COOK-01', name: 'Cooking Kettle 200L', plant: 'PLANT-THANE-01', type: 'MACHINE', wc: 'WC-KK-03', capacity: 120, unit: 'KG', status: 'IN_USE' },
+    { code: 'RES-COOL-01', name: 'Cooling Tunnel', plant: 'PLANT-THANE-01', type: 'MACHINE', wc: 'WC-KK-04', capacity: 120, unit: 'KG', status: 'AVAILABLE' },
+    { code: 'RES-CUT-01', name: 'Automatic Cutting Machine', plant: 'PLANT-THANE-01', type: 'MACHINE', wc: 'WC-KK-06', capacity: 120, unit: 'KG', status: 'AVAILABLE' },
+    { code: 'RES-FRY-01', name: 'Continuous Fryer', plant: 'PLANT-THANE-02', type: 'MACHINE', wc: 'WC-NM-02', capacity: 160, unit: 'KG', status: 'IN_USE' },
+    { code: 'RES-ROAST-01', name: 'Roasting Drum', plant: 'PLANT-THANE-02', type: 'MACHINE', wc: 'WC-NM-01', capacity: 180, unit: 'KG', status: 'IN_USE' },
+    { code: 'RES-GRIND-01', name: 'Wet Grinder 100L', plant: 'PLANT-BLR-01', type: 'MACHINE', wc: 'WC-IB-01', capacity: 80, unit: 'KG', status: 'IN_USE' },
+    { code: 'RES-TBL-01', name: 'Production Table A', plant: 'PLANT-THANE-01', type: 'PRODUCTION_TABLE', wc: 'WC-KK-01', capacity: 0, unit: '—', status: 'IN_USE' },
+    { code: 'RES-PK-01', name: 'Packing Station A', plant: 'PLANT-THANE-01', type: 'PACKAGING_STATION', wc: 'WC-KK-08', capacity: 150, unit: 'KG', status: 'AVAILABLE' },
+    { code: 'RES-CLEAN-01', name: 'CIP System', plant: 'PLANT-THANE-01', type: 'CLEANING_EQUIPMENT', wc: null, capacity: 0, unit: '—', status: 'AVAILABLE' },
+    { code: 'RES-UTIL-01', name: 'Steam Boiler', plant: 'PLANT-THANE-01', type: 'UTILITY', wc: null, capacity: 0, unit: '—', status: 'IN_USE' },
+    { code: 'RES-UTIL-02', name: 'Chilling Unit', plant: 'PLANT-THANE-01', type: 'UTILITY', wc: null, capacity: 0, unit: '—', status: 'MAINTENANCE' },
+  ]
+
+  const typeColors: Record<string, string> = { MACHINE: 'bg-blue-100 text-blue-700', OPERATOR: 'bg-purple-100 text-purple-700', TOOL: 'bg-slate-100 text-slate-700', UTILITY: 'bg-orange-100 text-orange-700', PRODUCTION_TABLE: 'bg-amber-100 text-amber-700', PACKAGING_STATION: 'bg-emerald-100 text-emerald-700', CLEANING_EQUIPMENT: 'bg-cyan-100 text-cyan-700' }
+  const typeIcons: Record<string, string> = { MACHINE: '🔧', OPERATOR: '👤', TOOL: '🔨', UTILITY: '⚡', PRODUCTION_TABLE: '🪵', PACKAGING_STATION: '📦', CLEANING_EQUIPMENT: '🧹' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Production Resources</h2><p className="text-sm text-muted-foreground mt-1">Machines · operators · tools · utilities · production tables · packaging stations · cleaning equipment</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Resource</Button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Resources', value: resources.length, color: 'text-blue-600' },
+          { label: 'In Use', value: resources.filter(r => r.status === 'IN_USE').length, color: 'text-amber-600' },
+          { label: 'Available', value: resources.filter(r => r.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+          { label: 'Maintenance', value: resources.filter(r => r.status === 'MAINTENANCE').length, color: 'text-orange-600' },
+          { label: 'Machines', value: resources.filter(r => r.type === 'MACHINE').length, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {resources.map(r => {
+          const b = s28BadgeForStatus(r.status)
+          return (
+            <Card key={r.code} className={`p-4 ${r.status === 'MAINTENANCE' ? 'border-orange-300 bg-orange-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-xl">{typeIcons[r.type] || '🔧'}</div>
+                  <div><div className="font-mono text-xs font-semibold text-blue-700">{r.code}</div><div className="text-xs text-muted-foreground">{r.name}</div></div>
+                </div>
+                <span className={`text-[10px] px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+              </div>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Type:</span><span className={`px-1.5 py-0.5 rounded font-medium ${typeColors[r.type] || 'bg-slate-100'}`}>{r.type.replace(/_/g, ' ')}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Plant:</span><span className="font-mono">{r.plant}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Work Center:</span><span className="font-mono">{r.wc || '—'}</span></div>
+                {r.capacity > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Capacity:</span><span className="font-mono font-bold">{r.capacity} {r.unit}/hr</span></div>}
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 7: Plant Configuration ────────────────────────
+function PlantConfigModule() {
+  const [config, setConfig] = useState({
+    productionStart: '06:00',
+    autoEndShift: '22:00',
+    requireShiftLogin: true,
+    batchFormat: 'BATCH-{YYYY}-{SEQ:0000}',
+    productionFormat: 'PROD-{YYYY}-{SEQ:0000}',
+    autoQHold: true,
+    qHoldHours: 24,
+    requireSupervisorApproval: true,
+    requireBatchBarcode: true,
+    requireProductBarcode: true,
+    enforceFIFO: true,
+    enforceFEFO: true,
+    mandatoryBatch: true,
+    recipeLocking: true,
+    digitalSignoff: false,
+  })
+
+  const toggle = (key: keyof typeof config) => setConfig({ ...config, [key]: !config[key as keyof typeof config] })
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Plant Configuration</h2><p className="text-sm text-muted-foreground mt-1">Production rules · shift rules · numbering · quality hold · barcode rules · manufacturing rules</p></div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Production & Shift Rules</h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between"><span className="text-muted-foreground">Production Start Time</span><span className="font-mono font-bold">{config.productionStart}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Auto End Shift At</span><span className="font-mono font-bold">{config.autoEndShift}</span></div>
+            <div className="flex items-center justify-between"><span>Require Shift Login</span><Switch checked={config.requireShiftLogin} onCheckedChange={() => toggle('requireShiftLogin')} /></div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Numbering Format</h3>
+          <div className="space-y-3 text-xs">
+            <div><Label className="text-xs">Batch Number Format</Label><Input className="mt-1 font-mono text-sm" value={config.batchFormat} onChange={e => setConfig({ ...config, batchFormat: e.target.value })} /></div>
+            <div><Label className="text-xs">Production Number Format</Label><Input className="mt-1 font-mono text-sm" value={config.productionFormat} onChange={e => setConfig({ ...config, productionFormat: e.target.value })} /></div>
+            <p className="text-[10px] text-muted-foreground">Placeholders: {'{YYYY}'} = year, {'{SEQ:0000}'} = sequence with padding</p>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Quality Hold Rules</h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex items-center justify-between"><span>Auto Quality Hold on New Batch</span><Switch checked={config.autoQHold} onCheckedChange={() => toggle('autoQHold')} /></div>
+            <div className="flex justify-between items-center"><span className="text-muted-foreground">Quality Hold Duration</span><div className="flex items-center gap-2"><Input type="number" className="w-16 text-center font-mono" value={config.qHoldHours} onChange={e => setConfig({ ...config, qHoldHours: parseInt(e.target.value) || 0 })} /><span>hours</span></div></div>
+            <div className="flex items-center justify-between"><span>Require Supervisor Approval</span><Switch checked={config.requireSupervisorApproval} onCheckedChange={() => toggle('requireSupervisorApproval')} /></div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Barcode Rules</h3>
+          <div className="space-y-3 text-xs">
+            <div className="flex items-center justify-between"><span>Require Batch Barcode</span><Switch checked={config.requireBatchBarcode} onCheckedChange={() => toggle('requireBatchBarcode')} /></div>
+            <div className="flex items-center justify-between"><span>Require Product Barcode</span><Switch checked={config.requireProductBarcode} onCheckedChange={() => toggle('requireProductBarcode')} /></div>
+          </div>
+        </Card>
+
+        <Card className="p-4 lg:col-span-2">
+          <h3 className="font-semibold mb-3">Manufacturing Rules</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded"><span>FIFO Materials</span><Switch checked={config.enforceFIFO} onCheckedChange={() => toggle('enforceFIFO')} /></div>
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded"><span>FEFO Ingredients</span><Switch checked={config.enforceFEFO} onCheckedChange={() => toggle('enforceFEFO')} /></div>
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded"><span>Mandatory Batch</span><Switch checked={config.mandatoryBatch} onCheckedChange={() => toggle('mandatoryBatch')} /></div>
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded"><span>Recipe Locking</span><Switch checked={config.recipeLocking} onCheckedChange={() => toggle('recipeLocking')} /></div>
+            <div className="flex items-center justify-between p-2 bg-muted/50 rounded"><span>Digital Sign-off</span><Switch checked={config.digitalSignoff} onCheckedChange={() => toggle('digitalSignoff')} /></div>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-amber-500 flex items-center justify-center text-white"><Award className="h-5 w-5" /></div>
+          <div>
+            <h3 className="font-semibold text-sm">Chief Architect Recommendation — Work Center Approach</h3>
+            <p className="text-xs text-muted-foreground mt-1">Model production using Work Centers (Mixing → Cooking → Cooling → Rolling → Cutting → Inspection → Packing) rather than only production lines. This provides: precise tracking, better labor/machine utilization, accurate costing per stage, easier bottleneck analysis, strong traceability for food safety.</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 8: Production Dashboard ───────────────────────
+function ProductionDashboardModule() {
+  const kpis = [
+    { label: 'Active Plants', value: '4/5', sub: '1 in maintenance', color: 'text-blue-600' },
+    { label: 'Running Lines', value: '5/8', sub: '3 idle/changeover', color: 'text-emerald-600' },
+    { label: 'Today Output', value: '4,820 kg', sub: 'Target 6,000 kg', color: 'text-amber-600' },
+    { label: 'Active Work Centers', value: '4/10', sub: '6 idle', color: 'text-purple-600' },
+    { label: 'OEE (Overall)', value: '82.5%', sub: 'Target 85%', color: 'text-cyan-600' },
+    { label: 'Quality Pass Rate', value: '98.2%', sub: '2 batches on hold', color: 'text-emerald-600' },
+  ]
+
+  const plantOutput = [
+    { plant: 'PLANT-THANE-01', target: 2500, actual: 2150, lines: 4, running: 3 },
+    { plant: 'PLANT-THANE-02', target: 1800, actual: 1620, lines: 3, running: 2 },
+    { plant: 'PLANT-BLR-01', target: 1200, actual: 850, lines: 2, running: 1 },
+    { plant: 'PLANT-MUM-01', target: 800, actual: 200, lines: 1, running: 0 },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Production Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Live plant status · output vs target · OEE · quality · work center status</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpis.map(k => (
+          <Card key={k.label} className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase">{k.label}</p>
+            <p className={`text-xl font-bold mt-1 ${k.color}`}>{k.value}</p>
+            <p className="text-[10px] text-muted-foreground">{k.sub}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Plant Output vs Target — Today</h3>
+          <div className="space-y-3">
+            {plantOutput.map(p => {
+              const pct = (p.actual / p.target) * 100
+              return (
+                <div key={p.plant}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="font-mono font-medium">{p.plant}</span>
+                    <span className="font-mono"><span className="font-bold">{p.actual.toLocaleString('en-IN')}</span> / {p.target.toLocaleString('en-IN')} kg</span>
+                  </div>
+                  <div className="h-4 bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full ${pct > 80 ? 'bg-emerald-500' : pct > 60 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">{p.running}/{p.lines} lines running · {pct.toFixed(0)}% of target</div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Work Center Status — Live</h3>
+          <div className="space-y-2">
+            {[
+              { wc: 'WC-KK-02 Mixing', status: 'RUNNING', product: 'Kaju Katli', efficiency: 88 },
+              { wc: 'WC-KK-03 Cooking', status: 'RUNNING', product: 'Kaju Katli', efficiency: 85 },
+              { wc: 'WC-KK-05 Rolling', status: 'PAUSED', product: 'Kaju Katli', efficiency: 0 },
+              { wc: 'WC-NM-01 Roasting', status: 'RUNNING', product: 'Mixed Namkeen', efficiency: 91 },
+              { wc: 'WC-NM-02 Frying', status: 'RUNNING', product: 'Mixed Namkeen', efficiency: 84 },
+              { wc: 'WC-IB-01 Grinding', status: 'RUNNING', product: 'Idli Batter', efficiency: 89 },
+            ].map((w, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 border rounded">
+                <span className={`h-3 w-3 rounded-full ${w.status === 'RUNNING' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                <div className="flex-1">
+                  <p className="text-xs font-medium">{w.wc}</p>
+                  <p className="text-[10px] text-muted-foreground">{w.product}</p>
+                </div>
+                <span className="text-xs font-mono">{w.efficiency}%</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center text-white"><Factory className="h-5 w-5" /></div>
+          <div>
+            <h3 className="font-semibold text-sm">Production App Integration — Future (Sprint 40)</h3>
+            <p className="text-xs text-muted-foreground mt-1">Operator workflow: Login → Select Production Line → Scan Work Center QR → Start Shift → Receive Production Tasks → Begin Manufacturing. Every production transaction will be linked to: Plant → Department → Line → Work Center → Operator → Shift.</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (

@@ -8521,12 +8521,116 @@ const server = Bun.serve({
       }, '🎉 SUOP Part 4 WMS COMPLETE — Mission Control, AI Ops & Digital Twin v33.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 34 — MANUFACTURING FOUNDATION (PART 5 MES)
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/manufacturing/plants — List all plants
+    if (path === '/api/manufacturing/plants' && method === 'GET') {
+      const plants = [
+        { id: 'mp-001', plantCode: 'PLANT-THANE-01', plantName: 'Thane Sweet Manufacturing Plant', plantType: 'SWEET_MANUFACTURING', managerName: 'Rajesh Patil', city: 'Thane', state: 'Maharashtra', capacityPerDayKg: 2500, operatingHoursStart: '06:00', operatingHoursEnd: '22:00', status: 'ACTIVE', departments: 5, lines: 8, resources: 42 },
+        { id: 'mp-002', plantCode: 'PLANT-THANE-02', plantName: 'Thane Namkeen Plant', plantType: 'NAMKEEN_MANUFACTURING', managerName: 'Suresh Iyer', city: 'Thane', state: 'Maharashtra', capacityPerDayKg: 1800, operatingHoursStart: '06:00', operatingHoursEnd: '22:00', status: 'ACTIVE', departments: 4, lines: 6, resources: 28 },
+        { id: 'mp-003', plantCode: 'PLANT-BLR-01', plantName: 'Bangalore Batter Production', plantType: 'BATTER_PRODUCTION', managerName: 'Anil Reddy', city: 'Bangalore', state: 'Karnataka', capacityPerDayKg: 1200, operatingHoursStart: '05:00', operatingHoursEnd: '20:00', status: 'ACTIVE', departments: 3, lines: 4, resources: 18 },
+      ]
+      return new Response(JSON.stringify(successResponse(plants, 'Manufacturing plants retrieved')), { headers })
+    }
+
+    // POST /api/manufacturing/plants — Create plant
+    if (path === '/api/manufacturing/plants' && method === 'POST') {
+      const body = await req.json()
+      const plant = { id: `mp-${Date.now()}`, plantCode: body.plantCode, plantName: body.plantName, plantType: body.plantType, status: 'ACTIVE', createdAt: new Date().toISOString() }
+      return new Response(JSON.stringify(successResponse(plant, 'Plant created')), { status: 201, headers })
+    }
+
+    // GET /api/manufacturing/departments — List departments
+    if (path === '/api/manufacturing/departments' && method === 'GET') {
+      const departments = [
+        { departmentCode: 'DEPT-SWEET-01', departmentName: 'Sweet Production', plantName: 'PLANT-THANE-01', departmentType: 'SWEET_PRODUCTION', managerName: 'Rajesh Patil', capacityPerDayKg: 1500, lines: 4, status: 'ACTIVE' },
+        { departmentCode: 'DEPT-NAMKEEN-01', departmentName: 'Namkeen Production', plantName: 'PLANT-THANE-02', departmentType: 'NAMKEEN_PRODUCTION', managerName: 'Suresh Iyer', capacityPerDayKg: 1200, lines: 3, status: 'ACTIVE' },
+        { departmentCode: 'DEPT-BATTER-01', departmentName: 'Batter Production', plantName: 'PLANT-BLR-01', departmentType: 'BATTER_PRODUCTION', managerName: 'Anil Reddy', capacityPerDayKg: 800, lines: 2, status: 'ACTIVE' },
+      ]
+      return new Response(JSON.stringify(successResponse(departments, 'Departments retrieved')), { headers })
+    }
+
+    // GET /api/manufacturing/lines — List production lines
+    if (path === '/api/manufacturing/lines' && method === 'GET') {
+      const lines = [
+        { lineCode: 'LINE-KK-01', lineName: 'Kaju Katli Line', plantName: 'PLANT-THANE-01', departmentName: 'Sweet Production', capacityPerHourKg: 120, capacityPerDayKg: 1920, primaryProduct: 'Kaju Katli', currentStatus: 'RUNNING', workCenters: 8 },
+        { lineCode: 'LINE-NM-01', lineName: 'Namkeen Frying Line', plantName: 'PLANT-THANE-02', departmentName: 'Namkeen Production', capacityPerHourKg: 150, capacityPerDayKg: 2400, primaryProduct: 'Mixed Namkeen', currentStatus: 'RUNNING', workCenters: 7 },
+        { lineCode: 'LINE-IB-01', lineName: 'Idli Batter Line', plantName: 'PLANT-BLR-01', departmentName: 'Batter Production', capacityPerHourKg: 80, capacityPerDayKg: 1280, primaryProduct: 'Shwet Idli Batter', currentStatus: 'RUNNING', workCenters: 4 },
+      ]
+      return new Response(JSON.stringify(successResponse(lines, 'Production lines retrieved')), { headers })
+    }
+
+    // GET /api/manufacturing/work-centers — List work centers
+    if (path === '/api/manufacturing/work-centers' && method === 'GET') {
+      const wcs = [
+        { workCenterCode: 'WC-KK-02', workCenterName: 'Mixing Station', lineName: 'LINE-KK-01', workCenterType: 'MIXING', sequenceNo: 2, capacityPerHourKg: 130, currentStatus: 'RUNNING', efficiency: 88 },
+        { workCenterCode: 'WC-KK-03', workCenterName: 'Cooking Station', lineName: 'LINE-KK-01', workCenterType: 'COOKING', sequenceNo: 3, capacityPerHourKg: 120, currentStatus: 'RUNNING', efficiency: 85 },
+      ]
+      return new Response(JSON.stringify(successResponse(wcs, 'Work centers retrieved')), { headers })
+    }
+
+    // GET /api/manufacturing/dashboard — Production dashboard
+    if (path === '/api/manufacturing/dashboard' && method === 'GET') {
+      const data = {
+        kpis: { activePlants: 4, runningLines: 5, todayOutputKg: 4820, targetKg: 6000, activeWorkCenters: 4, oee: 82.5, qualityPassRate: 98.2 },
+        plantOutput: [
+          { plant: 'PLANT-THANE-01', target: 2500, actual: 2150, lines: 4, running: 3 },
+          { plant: 'PLANT-THANE-02', target: 1800, actual: 1620, lines: 3, running: 2 },
+          { plant: 'PLANT-BLR-01', target: 1200, actual: 850, lines: 2, running: 1 },
+        ],
+        workCenterStatus: [
+          { wc: 'WC-KK-02 Mixing', status: 'RUNNING', product: 'Kaju Katli', efficiency: 88 },
+          { wc: 'WC-KK-03 Cooking', status: 'RUNNING', product: 'Kaju Katli', efficiency: 85 },
+          { wc: 'WC-NM-01 Roasting', status: 'RUNNING', product: 'Mixed Namkeen', efficiency: 91 },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Production dashboard data')), { headers })
+    }
+
+    // GET /api/manufacturing/info — Sprint 34 info
+    if (path === '/api/manufacturing/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 34,
+        sprintName: 'Enterprise Manufacturing Foundation & Plant Master',
+        version: '34.0.0',
+        part: 5,
+        tables: 9,
+        epics: [
+          'Epic 1: Manufacturing Plant Master (5 plant types, multi-plant, capacity, operating hours)',
+          'Epic 2: Production Departments (9 types: Sweet, Namkeen, Batter, Packaging, Quality, FG, Maintenance, Utilities, Cleaning)',
+          'Epic 3: Production Lines (Kaju Katli, Laddu, Barfi, Namkeen, Mixture, Idli Batter, Dosa Batter, Packing)',
+          'Epic 4: Work Centers (Mixing, Cooking, Roasting, Frying, Cooling, Cutting, Rolling, Packing, Inspection, Dispatch Prep)',
+          'Epic 5: Manufacturing Calendar (shifts, holidays, maintenance shutdowns, festival schedule)',
+          'Epic 6: Production Resources (Machines, Operators, Tools, Utilities, Production Tables, Packaging Stations, Cleaning Equipment)',
+          'Epic 7: Plant Configuration (numbering, quality hold rules, barcode rules, manufacturing rules)',
+          'Epic 8: Production Dashboard (plant output, OEE, work center status, quality)',
+        ],
+        hierarchy: 'Company → Branch → Plant → Department → Production Line → Work Center → Machine → Operator',
+        chiefArchitectRecommendation: 'Model production using Work Centers (Mixing → Cooking → Cooling → Rolling → Cutting → Inspection → Packing) rather than only production lines. Provides: precise tracking, better utilization, accurate costing per stage, easier bottleneck analysis, strong traceability for food safety.',
+        endpoints: [
+          'GET/POST /api/manufacturing/plants',
+          'GET /api/manufacturing/departments',
+          'GET /api/manufacturing/lines',
+          'GET /api/manufacturing/work-centers',
+          'GET /api/manufacturing/dashboard',
+          'GET /api/manufacturing/info',
+        ],
+        part5Sprint: 1,
+        part5Sprints: 15,
+        totalProjectTables: 291,
+      }, 'SUOP Manufacturing Foundation v34.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 33, sprintName: '🎉 Mission Control, AI Ops & Digital Twin — PART 4 WMS COMPLETE (33/33 sprints)' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 34, sprintName: 'Manufacturing Foundation & Plant Master — PART 5 MES STARTED (34/48 sprints)' })
+log('info', 'Sprint 34 — Manufacturing Foundation', { sprint: 34, part: 5, tables: 291, plants: 5, departments: 8, lines: 8, workCenters: 10 })
+log('info', 'Manufacturing endpoints available (Sprint 34)', { plants: 'GET/POST /api/manufacturing/plants', departments: 'GET /api/manufacturing/departments', lines: 'GET /api/manufacturing/lines', workCenters: 'GET /api/manufacturing/work-centers', dashboard: 'GET /api/manufacturing/dashboard', info: 'GET /api/manufacturing/info' })
 log('info', '🎉 Sprint 33 — FINAL WMS Sprint — Mission Control + AI Ops + Digital Twin + Disaster Recovery', { sprint: 33, part: 4, tables: 282, enterpriseEndpoints: 9, part4Complete: true })
 log('info', 'Enterprise command center endpoints available (Sprint 33)', { missionControl: 'GET /api/enterprise/mission-control', controlTower: 'GET /api/enterprise/control-tower', digitalTwin: 'GET /api/enterprise/digital-twin', aiRecommendations: 'GET /api/enterprise/ai-recommendations', alerts: 'GET /api/enterprise/alerts', alertAck: 'POST /api/enterprise/alerts/:id/acknowledge', recovery: 'GET /api/enterprise/recovery', executiveDashboard: 'GET /api/enterprise/executive-dashboard', info: 'GET /api/enterprise/info' })
 log('info', '🎉 PART 4 ENTERPRISE WAREHOUSE MANAGEMENT SYSTEM — 100% COMPLETE', { sprints: '22-33 (12 sprints)', tables: 282, modules: '55+ ERP + Mobile App', nextPhase: 'Part 5 — Manufacturing Execution System (MES)' })
