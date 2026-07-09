@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "SUOP Warehouse",
+    "slug": "suop-warehouse-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sudhamrit.suop.warehouse"
+    },
+    "android": {
+      "package": "com.sudhamrit.suop.warehouse",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        { "cameraPermission": "SUOP Warehouse needs camera access for barcode scanning" }
+      ],
+      [
+        "expo-local-authentication",
+        { "faceIDPermission": "Use Face ID to login to SUOP Warehouse" }
+      ]
+    ],
+    "extra": {
+      "eas": { "projectId": "suop-warehouse" }
+    },
+    "runtimeVersion": { "policy": "sdkVersion" },
+    "updates": {
+      "url": "https://u.expo.dev/suop-warehouse"
+    }
+  }
+}
