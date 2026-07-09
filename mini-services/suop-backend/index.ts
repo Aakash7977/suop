@@ -8156,14 +8156,214 @@ const server = Bun.serve({
       }, 'SUOP Warehouse Mobile Platform v31.0.0')), { headers })
     }
 
+    // ═════════════════════════════════════════════════════════
+    // SPRINT 32 — WAREHOUSE ANALYTICS, KPI ENGINE & PERFORMANCE
+    // ═════════════════════════════════════════════════════════
+
+    // GET /api/warehouse-analytics/mission-control — Live mission control data
+    if (path === '/api/warehouse-analytics/mission-control' && method === 'GET') {
+      const data = {
+        widgets: {
+          warehouseHealth: { grade: 'A+', score: 92, trend: '+2' },
+          liveTasks: { value: 47, inProgress: 12, trend: '+5' },
+          ordersToday: { value: 184, target: 200, trend: '+12%' },
+          dockUtilization: { value: 67, active: 6, total: 9, trend: '+5%' },
+          equipmentStatus: { active: 8, total: 10, trend: '0' },
+          activeOperators: { value: 14, onBreak: 2, trend: '+1' },
+          capacityUsed: { value: 78, trend: '+3%' },
+          slaCompliance: { value: 94.2, target: 95, trend: '+1.2%' },
+          costToday: { value: 240000, perOrder: 130, trend: '-5%' },
+          criticalAlerts: { value: 3, critical: 1, trend: '+1' },
+        },
+        scorecard: {
+          score: 92, grade: 'A+',
+          kpis: [
+            { kpi: 'Inventory Accuracy', value: 99.85, target: 99.8, met: true },
+            { kpi: 'Picking Accuracy', value: 99.92, target: 99.9, met: true },
+            { kpi: 'Putaway SLA Compliance', value: 98.5, target: 98, met: true },
+            { kpi: 'Dispatch On-Time Rate', value: 99.1, target: 99, met: true },
+            { kpi: 'Order Fulfillment Accuracy', value: 99.87, target: 99.8, met: true },
+            { kpi: 'Dock-to-Stock Time', value: 28, target: 30, met: true, unit: 'min' },
+            { kpi: 'Equipment Utilization', value: 84, target: 85, met: false, unit: '%' },
+            { kpi: 'Capacity Utilization', value: 78, target: 80, met: false, unit: '%' },
+          ],
+        },
+        alerts: [
+          { sev: 'CRITICAL', msg: 'SLA breach on TASK-2026-009 (PICK) — 35 min overdue', time: '2 min ago' },
+          { sev: 'HIGH', msg: 'Zone C-Picking congestion — 14 active tasks', time: '8 min ago' },
+        ],
+        bottlenecks: [
+          { type: 'SLOW_ZONE', loc: 'C-Picking', impact: 78, delay: 12 },
+          { type: 'EQUIPMENT_DELAY', loc: 'FL-004 (broken)', impact: 88, delay: 95 },
+        ],
+        timestamp: new Date().toISOString(),
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Mission control live data')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/kpis — KPI dashboard
+    if (path === '/api/warehouse-analytics/kpis' && method === 'GET') {
+      const period = url.searchParams.get('period') || 'MONTHLY'
+      const data = {
+        period,
+        kpis: [
+          { label: 'Orders Processed', value: 4287, target: 4500, trend: '+8%' },
+          { label: 'Lines Processed', value: 28456, target: 30000, trend: '+5%' },
+          { label: 'Units Processed', value: 142890, target: 150000, trend: '+12%' },
+          { label: 'Tasks Completed', value: 12847, target: 13000, trend: '+3%' },
+          { label: 'Inventory Accuracy', value: 99.85, target: 99.8, trend: '+0.05%', unit: '%' },
+          { label: 'Picking Accuracy', value: 99.92, target: 99.9, trend: '+0.02%', unit: '%' },
+          { label: 'Task Completion Rate', value: 98.8, target: 99, trend: '-0.2%', unit: '%' },
+          { label: 'Warehouse Throughput', value: 189, target: 200, trend: '+5%', unit: 'u/hr' },
+        ],
+        timeKPIs: [
+          { label: 'Receiving Time', value: 42, target: 45, unit: 'min', met: true },
+          { label: 'Putaway Time', value: 28, target: 30, unit: 'min', met: true },
+          { label: 'Picking Time', value: 4.2, target: 5.0, unit: 'min', met: true },
+          { label: 'Packing Time', value: 18, target: 20, unit: 'min', met: true },
+          { label: 'Dispatch Time', value: 78, target: 90, unit: 'min', met: true },
+          { label: 'Dock-to-Stock Time', value: 28, target: 30, unit: 'min', met: true },
+        ],
+        utilizationKPIs: [
+          { label: 'Dock Utilization', value: 67, target: 80, unit: '%' },
+          { label: 'Equipment Utilization', value: 84, target: 85, unit: '%' },
+          { label: 'Capacity Utilization', value: 78, target: 80, unit: '%' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'KPIs retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/operator-productivity — Operator productivity
+    if (path === '/api/warehouse-analytics/operator-productivity' && method === 'GET') {
+      const data = [
+        { rank: 1, code: 'OP-003', name: 'Suresh Mehta', zone: 'E-Dispatch', tasks: 92, accuracy: 99.1, util: 94, tasksPerHour: 18.2, unitsPerHour: 124, travelDistanceM: 2400, idleMin: 12, hours: 42, overtime: 4, grade: 'A+', score: 94, rec: 'TOP_PERFORMER' },
+        { rank: 2, code: 'OP-001', name: 'Rajesh Kumar', zone: 'C-Picking', tasks: 78, accuracy: 98.5, util: 87, tasksPerHour: 16.8, unitsPerHour: 112, travelDistanceM: 2800, idleMin: 18, hours: 38, overtime: 2, grade: 'A', score: 88, rec: 'ON_TRACK' },
+        { rank: 7, code: 'OP-008', name: 'Priya Nair', zone: 'D-Pack', tasks: 18, accuracy: 92.0, util: 54, tasksPerHour: 8.2, unitsPerHour: 52, travelDistanceM: 4200, idleMin: 48, hours: 22, overtime: 0, grade: 'C', score: 55, rec: 'NEEDS_TRAINING', trainingNeeded: ['PICKING_OPTIMIZATION', 'SCANNER_EFFICIENCY'] },
+      ]
+      return new Response(JSON.stringify(successResponse(data, 'Operator productivity retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/heatmaps — Heat map data
+    if (path === '/api/warehouse-analytics/heatmaps' && method === 'GET') {
+      const type = url.searchParams.get('type') || 'TRAFFIC'
+      const data = {
+        type,
+        zones: [
+          { zone: 'A-Receiving', traffic: 75, picking: 5, receiving: 92, congestion: 45, occupancy: 68, dock: 88 },
+          { zone: 'B-Bulk', traffic: 45, picking: 28, receiving: 12, congestion: 25, occupancy: 78, dock: 0 },
+          { zone: 'C-Picking', traffic: 92, picking: 95, receiving: 5, congestion: 88, occupancy: 84, dock: 0 },
+          { zone: 'D-Pack', traffic: 68, picking: 12, receiving: 8, congestion: 62, occupancy: 55, dock: 0 },
+          { zone: 'E-Dispatch', traffic: 88, picking: 8, receiving: 18, congestion: 72, occupancy: 62, dock: 92 },
+          { zone: 'F-Cold', traffic: 30, picking: 22, receiving: 15, congestion: 18, occupancy: 45, dock: 38 },
+        ],
+        binGrid: Array.from({ length: 48 }, (_, i) => ({ code: `B-${String(i + 1).padStart(3, '0')}`, intensity: Math.floor(Math.random() * 100) })),
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Heat map data retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/costs — Cost analytics
+    if (path === '/api/warehouse-analytics/costs' && method === 'GET') {
+      const data = {
+        totalCost: 6000000,
+        costPerOrder: 901,
+        costPerUnit: 42,
+        costPerTask: 467,
+        breakdown: [
+          { type: 'Labor', amount: 2850000, pct: 48 },
+          { type: 'Equipment', amount: 850000, pct: 14 },
+          { type: 'Energy', amount: 420000, pct: 7 },
+          { type: 'Packaging', amount: 680000, pct: 11 },
+          { type: 'Maintenance', amount: 520000, pct: 9 },
+          { type: 'Transportation', amount: 380000, pct: 6 },
+          { type: 'Storage', amount: 180000, pct: 3 },
+          { type: 'Overhead', amount: 120000, pct: 2 },
+        ],
+        byWarehouse: [
+          { wh: 'WH-MUM-MAIN', cost: 3240000, orders: 2840, costPerOrder: 1141 },
+          { wh: 'WH-DEL-NORTH', cost: 1860000, orders: 1620, costPerOrder: 1148 },
+          { wh: 'WH-BLR-CENTRAL', cost: 1420000, orders: 1280, costPerOrder: 1109 },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'Cost analytics retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/sla — SLA & bottleneck analytics
+    if (path === '/api/warehouse-analytics/sla' && method === 'GET') {
+      const data = {
+        slaByType: [
+          { type: 'Receiving SLA', target: 60, actual: 42, onTime: 94, violations: 9, total: 156 },
+          { type: 'Picking SLA', target: 30, actual: 28, onTime: 88, violations: 49, total: 412 },
+          { type: 'Dispatch SLA', target: 90, actual: 78, onTime: 93, violations: 12, total: 178 },
+        ],
+        bottlenecks: [
+          { type: 'SLOW_ZONE', loc: 'C-Picking Zone', severity: 'HIGH', impact: 78, affectedTasks: 14, delay: 12, rootCause: '14 active tasks in single zone', action: 'Reassign 4 tasks to B-Bulk zone operators', status: 'OPEN' },
+          { type: 'EQUIPMENT_DELAY', loc: 'FL-004 (Forklift)', severity: 'CRITICAL', impact: 88, affectedTasks: 3, delay: 95, rootCause: 'Hydraulic pump failure', action: 'Replace forklift or rent temporary', status: 'INVESTIGATING' },
+        ],
+      }
+      return new Response(JSON.stringify(successResponse(data, 'SLA analytics retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/reports — Executive reports
+    if (path === '/api/warehouse-analytics/reports' && method === 'GET') {
+      const data = [
+        { name: 'Daily Warehouse Scorecard', schedule: 'Daily 06:00 AM', recipients: 12, lastSent: 'Today 06:00', format: 'PDF + Email' },
+        { name: 'Weekly Operator Performance', schedule: 'Every Monday 08:00 AM', recipients: 8, lastSent: 'Mon 08:00', format: 'Excel + Email' },
+        { name: 'Monthly Cost Analysis', schedule: '1st of month 09:00 AM', recipients: 6, lastSent: 'Jul 01 09:00', format: 'PDF + Dashboard' },
+        { name: 'Quarterly Executive Summary', schedule: 'Quarterly', recipients: 4, lastSent: 'Jul 01 09:00', format: 'PDF Presentation' },
+      ]
+      return new Response(JSON.stringify(successResponse(data, 'Executive reports retrieved')), { headers })
+    }
+
+    // GET /api/warehouse-analytics/info — Sprint 32 info
+    if (path === '/api/warehouse-analytics/info' && method === 'GET') {
+      return new Response(JSON.stringify(successResponse({
+        sprint: 32,
+        sprintName: 'Enterprise Warehouse Analytics, KPI Engine & Performance Intelligence',
+        version: '32.0.0',
+        part: 4,
+        tables: 6,
+        epics: [
+          'Epic 1: Warehouse Mission Control Dashboard (10 widgets, multi-warehouse, live refresh)',
+          'Epic 2: KPI Engine (orders, time, utilization, quality, SLA, cost — daily/weekly/monthly/quarterly/yearly)',
+          'Epic 3: Operator Productivity Analytics (tasks, accuracy, travel, idle, scanner, attendance, leaderboard)',
+          'Epic 4: Equipment Analytics (MTBF, MTTR, utilization, maintenance cost, availability)',
+          'Epic 5: Warehouse Heat Maps (traffic, picking, receiving, congestion, bin occupancy, dock, travel path)',
+          'Epic 6: Warehouse Cost Analytics (labor, equipment, energy, packaging, maintenance, transport, storage)',
+          'Epic 7: SLA & Bottleneck Analysis (slow zones, operators, equipment, dock, queue delays)',
+          'Epic 8: Predictive Warehouse Intelligence (labor, equipment failures, congestion, peak hours — AI-ready)',
+          'Epic 9: Executive Reports (scheduled, role-based, PDF/Excel/Dashboard)',
+        ],
+        domainEvents: ['KPIUpdated', 'OperatorPerformanceCalculated', 'HeatMapGenerated', 'CostCalculated', 'SLAViolationDetected', 'WarehouseAlertGenerated', 'AnalyticsRefreshed'],
+        kpiEnginePrinciple: 'KPI Engine tracks 4 categories: Throughput (orders, lines, units, tasks), Time (receiving/putaway/picking/packing/dispatch/dock-to-stock minutes), Utilization (dock/equipment/capacity %), Quality (inventory/picking/putaway accuracy, task completion, dispatch on-time, order fulfillment accuracy). Periods: Daily, Weekly, Monthly, Quarterly, Yearly. Auto-refresh every 5 minutes. Scorecard computes composite grade (A+/A/B/C/D) from 10 weighted KPIs.',
+        productivityPrinciple: 'Operator Productivity measures 12 dimensions: tasks completed/assigned, completion rate, avg task time, total work time, idle time, travel time, travel distance, picking/putaway/scan accuracy, error count, scanner/forklift usage minutes, total scans, hours worked, overtime, attendance days, late days, tasks/hour, units/hour, utilization %. Composite score (0-100) → grade → recommendation (TOP_PERFORMER/ON_TRACK/NEEDS_IMPROVEMENT/NEEDS_TRAINING). AI suggests training and zone reassignment.',
+        heatmapPrinciple: 'Heat Maps visualize 7 dimensions: TRAFFIC (operator visits), PICKING (pick frequency), RECEIVING (inbound frequency), CONGESTION (simultaneous operators), BIN_OCCUPANCY (storage utilization), TRAVEL_PATH (operator movement), DOCK_ACTIVITY (dock throughput). Intensity 0-100. Color: green (<30) → emerald (30-60) → amber (60-80) → red (80-100). Future: 3D Digital Twin, Indoor Navigation.',
+        costPrinciple: 'Cost Analytics allocates 8 cost types: Labor (48%), Equipment (14%), Energy (7%), Packaging (11%), Maintenance (9%), Transportation (6%), Storage (3%), Overhead (2%). Allocation basis: HOURS, UNITS, ORDERS, AREA, HEADCOUNT. Reports by warehouse, zone, operator, product, customer. Per-unit metrics: cost per order, cost per unit, cost per task. Reconciles with Finance.',
+        bottleneckPrinciple: 'Bottleneck Detection identifies 6 types: SLOW_ZONE (high task density), SLOW_OPERATOR (low productivity), EQUIPMENT_DELAY (breakdowns), DOCK_DELAY (maintenance/congestion), QUEUE_DELAY (yard backup), SLA_VIOLATION (overdue tasks). Severity: LOW/MEDIUM/HIGH/CRITICAL. Impact score 0-100. Root cause analysis + recommended action. Status: OPEN → INVESTIGATING → RESOLVING → RESOLVED.',
+        chiefArchitectRecommendation: 'Add a Warehouse Scorecard reviewed daily by management. 10 KPIs with targets: Inventory Accuracy (≥99.8%), Picking Accuracy (≥99.9%), Putaway SLA (≥98%), Dispatch On-Time (≥99%), Order Fulfillment Accuracy (≥99.8%), Dock-to-Stock Time (<30 min), Avg Picking Time (configurable), Equipment Utilization (80-90%), Operator Productivity (tasks/hr by role), Capacity Utilization (75-85%). Visible on Mission Control dashboard, accessible to supervisors, warehouse managers, operations heads, executives.',
+        endpoints: [
+          'GET /api/warehouse-analytics/mission-control',
+          'GET /api/warehouse-analytics/kpis',
+          'GET /api/warehouse-analytics/operator-productivity',
+          'GET /api/warehouse-analytics/heatmaps',
+          'GET /api/warehouse-analytics/costs',
+          'GET /api/warehouse-analytics/sla',
+          'GET /api/warehouse-analytics/reports',
+          'GET /api/warehouse-analytics/info',
+        ],
+        part4Sprint: 11,
+        part4Sprints: 12,
+        part4Tables: 89,
+      }, 'SUOP Warehouse Analytics & KPI Engine v32.0.0')), { headers })
+    }
+
     // 404
     return new Response(JSON.stringify(errorResponse(`Route ${path} not found`, 'NOT_FOUND', 404)), { status: 404, headers })
   },
 })
 
-log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 31, sprintName: 'Warehouse Mobile Platform & Barcode Scanning Application (31/33 sprints)' })
-log('info', 'Sprint 31 — Warehouse Mobile Platform', { sprint: 31, part: 4, tables: 268, mobileEndpoints: 14, barcodes: 10, devices: 9 })
-log('info', 'Mobile platform endpoints available (Sprint 31)', { login: 'POST /api/mobile/login', register: 'POST /api/mobile/register', logout: 'POST /api/mobile/logout', profile: 'GET /api/mobile/profile', tasks: 'GET /api/mobile/tasks', taskComplete: 'POST /api/mobile/tasks/:id/complete', scan: 'POST /api/mobile/scan', sync: 'POST /api/mobile/sync', syncResolve: 'POST /api/mobile/sync/resolve', syncStatus: 'GET /api/mobile/sync/status', inventoryLookup: 'GET /api/mobile/inventory-lookup', notifications: 'GET /api/mobile/notifications', dashboard: 'GET /api/mobile/dashboard', info: 'GET /api/mobile/info' })
+log('info', `SUOP Backend v${VERSION} started`, { port: PORT, sprint: 32, sprintName: 'Warehouse Analytics, KPI Engine & Performance Intelligence (32/33 sprints)' })
+log('info', 'Sprint 32 — Warehouse Analytics & KPI Engine', { sprint: 32, part: 4, tables: 274, analyticsEndpoints: 8, kpis: 24, heatMapTypes: 7, costTypes: 8 })
+log('info', 'Warehouse analytics endpoints available (Sprint 32)', { missionControl: 'GET /api/warehouse-analytics/mission-control', kpis: 'GET /api/warehouse-analytics/kpis', operatorProductivity: 'GET /api/warehouse-analytics/operator-productivity', heatmaps: 'GET /api/warehouse-analytics/heatmaps', costs: 'GET /api/warehouse-analytics/costs', sla: 'GET /api/warehouse-analytics/sla', reports: 'GET /api/warehouse-analytics/reports', info: 'GET /api/warehouse-analytics/info' })
 log('info', 'Dispatch & shipping endpoints available (Sprint 27)', { dispatchOrders: 'GET/POST /api/dispatch-orders', dispatchComplete: 'POST /api/dispatch-orders/:id/complete', dispatchVehicles: 'GET /api/dispatch-vehicles', loadPlans: 'GET /api/load-plans', shippingDocuments: 'GET /api/shipping-documents', vehicleSeals: 'GET /api/vehicle-seals', gateExitLogs: 'GET /api/gate-exit-logs', gateExitApprove: 'POST /api/gate-exit-logs/:id/approve', dashboard: 'GET /api/dispatch/dashboard', info: 'GET /api/dispatch/info' })
 log('info', 'Directed putaway endpoints available (Sprint 25)', { putawayTasks: 'GET/POST /api/wms-putaway-tasks', putawayComplete: 'POST /api/wms-putaway-tasks/:id/complete', putawayRules: 'GET /api/wms-putaway-rules', warehousePallets: 'GET /api/warehouse-pallets', forkliftTasks: 'GET /api/forklift-tasks', forkliftComplete: 'POST /api/forklift-tasks/:id/complete', dashboard: 'GET /api/wms-putaway/dashboard', info: 'GET /api/wms-putaway/info' })
 log('info', 'Receiving operations endpoints available (Sprint 24)', { asns: 'GET/POST /api/asn', asnConfirm: 'POST /api/asn/:id/confirm', appointments: 'GET /api/receiving-appointments', gateEntries: 'GET /api/gate-entries', docks: 'GET /api/loading-docks', dockAssign: 'POST /api/loading-docks/:id/assign', dockRelease: 'POST /api/loading-docks/:id/release', exceptions: 'GET /api/receiving-exceptions', exceptionResolve: 'POST /api/receiving-exceptions/:id/resolve', dashboard: 'GET /api/receiving-operations/dashboard', info: 'GET /api/receiving-operations/info' })

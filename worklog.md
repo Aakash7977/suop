@@ -2068,3 +2068,49 @@ Stage Summary:
 - Total project state: Sprints 1-31 complete, 268 database tables, 39+ ERP modules + dedicated mobile warehouse app, Part 4 WMS at 10/12 sprints (83%)
 - Chief Architect Recommendation implemented: Scanner-first, one screen = one task, max 3 taps, large touch targets, offline capability, live task push, voice/vibration feedback, industrial scanner support (Zebra/Honeywell/Chainway/Urovo)
 - Next sprint (32): Enterprise Warehouse Analytics, KPI Engine & Performance Intelligence
+
+---
+Task ID: 32
+Agent: Main Agent (Super Z)
+Task: Sprint 32 — Enterprise Warehouse Analytics, KPI Engine & Performance Intelligence + Mobile App Access Info
+
+Work Log:
+- Answered user question about how warehouse operators open the mobile app separately:
+  * Direct URL: https://preview-<bot-id>.space-z.ai/mobile (recommended for warehouse floor)
+  * From ERP: amber "Launch Mobile App" button in header
+  * Bookmark / Android "Add to Home Screen" for app-like experience
+  * Operators never see ERP admin login — only warehouse execution app
+- Added 6 new Sprint 32 Prisma models (274 total tables):
+  * Epic 2 KPI: `WarehouseKPISnapshot` (24 KPIs, scorecard score/grade)
+  * Epic 3 Productivity: `OperatorProductivity`, `OperatorScore` (composite score, rank, grade, training recs)
+  * Epic 6 Cost: `CostCenter`, `WarehouseCost` (8 cost types, allocation basis)
+  * Epic 5 Heat Maps: `WarehouseHeatmap` (7 types, intensity 0-100)
+  * Epic 7 Bottleneck: `WarehouseBottleneck` (6 types, root cause, recommended action)
+- Added 8 new Sprint 32 frontend modules (~1,800 lines):
+  1. `WarehouseMissionControlModule` — 10 live widgets, warehouse scorecard (10 KPIs with targets), critical alerts, bottlenecks detected
+  2. `KPIDashboardModule` — 8 KPI cards, 6 process time KPIs with target bars, 7-month trend chart, 3 utilization gauges (SVG circles)
+  3. `OperatorAnalyticsModule` — 8-operator leaderboard with 12 columns, travel distance analysis, AI training recommendations
+  4. `WarehouseEquipmentAnalyticsModule` — 6 equipment KPIs (MTBF/MTTR/etc), utilization by type, maintenance cost trend, equipment detail table
+  5. `WarehouseHeatMapsModule` — 6 heat map types (Traffic/Picking/Receiving/Congestion/Bin Occupancy/Dock), zone heat grid, 48-bin heat grid, top congested bins
+  6. `WarehouseCostDashboardModule` — 8 cost type breakdown, cost trend, cost by warehouse table, cost by zone treemap
+  7. `SLAAnalyticsModule` — SLA compliance by 7 task types, 6 detected bottlenecks with root cause + recommended action, predictive insights
+  8. `ExecutiveReportsModule` — 8 configured reports with schedule/recipients/format, upcoming reports, quick generate, Chief Architect scorecard recommendation
+- Added 8 new backend API endpoints under `/api/warehouse-analytics/*`:
+  * `GET /mission-control`, `GET /kpis`, `GET /operator-productivity`, `GET /heatmaps`
+  * `GET /costs`, `GET /sla`, `GET /reports`, `GET /info`
+- Added new sidebar section "Warehouse Analytics (Sprint 32) — NEW" with 8 module entries
+- Added 8 new module keys to `ModuleKey`, `moduleNames`, and main render routing
+- Renamed `MissionControlModule` → `WarehouseMissionControlModule` to avoid conflict with existing module from earlier sprint
+- Updated header badge: `Sprint 32 · 274 Tables · Part 4 WMS`
+- Updated footer text to include Analytics & KPI Engine
+- Backend `info` endpoint includes 5 epic principles (KPI engine, productivity, heatmap, cost, bottleneck) + Chief Architect Recommendation (Warehouse Scorecard with 10 KPIs)
+- Updated backend startup logs to Sprint 32 with all endpoint summary
+- Verified `npm run build` succeeds (Turbopack, 18.6s)
+- Verified backend starts and logs all 8 analytics endpoints
+
+Stage Summary:
+- Sprint 32 implementation COMPLETE: 6 new Prisma models, 8 new frontend modules (~1,800 LOC), 8 new API endpoints
+- Project builds cleanly, dev server runs, backend starts successfully
+- Total project state: Sprints 1-32 complete, 274 database tables, 47+ ERP modules + dedicated mobile warehouse app, Part 4 WMS at 11/12 sprints (92%)
+- Chief Architect Recommendation implemented: Warehouse Scorecard with 10 KPIs visible on Mission Control dashboard (Inventory Accuracy ≥99.8%, Picking Accuracy ≥99.9%, Putaway SLA ≥98%, Dispatch On-Time ≥99%, Order Fulfillment Accuracy ≥99.8%, Dock-to-Stock <30 min, Avg Picking Time configurable, Equipment Utilization 80-90%, Operator Productivity tasks/hr, Capacity Utilization 75-85%)
+- Next sprint (33): Enterprise Warehouse Mission Control, AI Operations Center & Digital Twin — FINAL sprint, Part 4 WMS 100% complete

@@ -52,6 +52,7 @@ type ModuleKey =
   | 'waveplanning' | 'taskqueue' | 'workforce' | 'equipment' | 'controltower' | 'sladashboard' | 'exceptioncenter' | 'workforceanalytics'
   | 'crossdock' | 'truckqueue' | 'dockschedule' | 'yardmap' | 'vehicletracker' | 'gateconsole' | 'yardtower' | 'crossdockanalytics'
   | 'equipmentmaster' | 'forkliftdashboard' | 'scannermgmt' | 'batterydashboard' | 'maintenanceplanner' | 'breakdownconsole' | 'certificationcenter' | 'equipmentanalytics'
+  | 'missioncontrol' | 'kpidashboard' | 'operatoranalytics' | 'wareheatanalytics' | 'heatmaps' | 'costdashboard' | 'slaanalytics' | 'execreports'
   | 'manufacturing' | 'quality'
   | 'procurement' | 'finance' | 'hr' | 'maintenance'
   | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
@@ -185,6 +186,19 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
       { name: 'Equipment Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'equipmentanalytics', available: true },
       { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
       { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
+    ]
+  },
+  {
+    section: 'Warehouse Analytics (Sprint 32) — NEW',
+    items: [
+      { name: 'Mission Control', icon: <Radar className="h-4 w-4" />, module: 'missioncontrol', available: true },
+      { name: 'KPI Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'kpidashboard', available: true },
+      { name: 'Operator Analytics', icon: <Users className="h-4 w-4" />, module: 'operatoranalytics', available: true },
+      { name: 'Equipment Analytics+', icon: <Activity className="h-4 w-4" />, module: 'wareheatanalytics', available: true },
+      { name: 'Heat Maps', icon: <Grid3x3 className="h-4 w-4" />, module: 'heatmaps', available: true },
+      { name: 'Cost Dashboard', icon: <IndianRupee className="h-4 w-4" />, module: 'costdashboard', available: true },
+      { name: 'SLA Analytics', icon: <Clock className="h-4 w-4" />, module: 'slaanalytics', available: true },
+      { name: 'Executive Reports', icon: <FileText className="h-4 w-4" />, module: 'execreports', available: true },
     ]
   },
   {
@@ -13268,6 +13282,937 @@ function EquipmentAnalyticsModule() {
   )
 }
 
+// ═════════════════════════════════════════════════════════
+// SPRINT 32 — WAREHOUSE ANALYTICS, KPI ENGINE & PERFORMANCE
+// Epic 1: Mission Control · Epic 2: KPI · Epic 3: Productivity
+// Epic 4: Equipment · Epic 5: Heat Maps · Epic 6: Cost · Epic 7: SLA
+// ═════════════════════════════════════════════════════════
+
+// ─── Epic 1: Warehouse Mission Control ──────────────────
+function WarehouseMissionControlModule() {
+  const [liveMode, setLiveMode] = useState(true)
+  const [wh, setWh] = useState('ALL')
+
+  const widgets = [
+    { label: 'Warehouse Health', value: 'A+', sub: 'Score 92/100', trend: '+2', color: 'from-emerald-500 to-emerald-600', icon: <Activity className="h-5 w-5" /> },
+    { label: 'Live Tasks', value: '47', sub: '12 in progress', trend: '+5', color: 'from-blue-500 to-blue-600', icon: <ListChecks className="h-5 w-5" /> },
+    { label: 'Orders Today', value: '184', sub: 'Target 200', trend: '+12%', color: 'from-purple-500 to-purple-600', icon: <Package className="h-5 w-5" /> },
+    { label: 'Dock Utilization', value: '67%', sub: '6/9 docks active', trend: '+5%', color: 'from-amber-500 to-amber-600', icon: <Truck className="h-5 w-5" /> },
+    { label: 'Equipment Status', value: '8/10', sub: '2 in maintenance', trend: '0', color: 'from-cyan-500 to-cyan-600', icon: <Wrench className="h-5 w-5" /> },
+    { label: 'Active Operators', value: '14', sub: '2 on break', trend: '+1', color: 'from-indigo-500 to-indigo-600', icon: <Users className="h-5 w-5" /> },
+    { label: 'Capacity Used', value: '78%', sub: 'Target 75-85%', trend: '+3%', color: 'from-pink-500 to-pink-600', icon: <Boxes className="h-5 w-5" /> },
+    { label: 'SLA Compliance', value: '94.2%', sub: 'Target 95%', trend: '+1.2%', color: 'from-orange-500 to-orange-600', icon: <Gauge className="h-5 w-5" /> },
+    { label: 'Cost Today', value: '₹2.4L', sub: '₹130/order', trend: '-5%', color: 'from-rose-500 to-rose-600', icon: <IndianRupee className="h-5 w-5" /> },
+    { label: 'Critical Alerts', value: '3', sub: '1 critical', trend: '+1', color: 'from-red-500 to-red-600', icon: <AlertOctagon className="h-5 w-5" /> },
+  ]
+
+  const scorecard = [
+    { kpi: 'Inventory Accuracy', value: 99.85, target: 99.8, unit: '%' },
+    { kpi: 'Picking Accuracy', value: 99.92, target: 99.9, unit: '%' },
+    { kpi: 'Putaway SLA Compliance', value: 98.5, target: 98, unit: '%' },
+    { kpi: 'Dispatch On-Time Rate', value: 99.1, target: 99, unit: '%' },
+    { kpi: 'Order Fulfillment Accuracy', value: 99.87, target: 99.8, unit: '%' },
+    { kpi: 'Dock-to-Stock Time', value: 28, target: 30, unit: 'min', invert: true },
+    { kpi: 'Avg Picking Time', value: 4.2, target: 5.0, unit: 'min', invert: true },
+    { kpi: 'Equipment Utilization', value: 84, target: 85, unit: '%' },
+    { kpi: 'Operator Productivity', value: 18, target: 15, unit: 'tasks/h' },
+    { kpi: 'Capacity Utilization', value: 78, target: 80, unit: '%' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Warehouse Mission Control</h2><p className="text-sm text-muted-foreground mt-1">Executive dashboard · live KPIs · multi-warehouse view · drill-down</p></div>
+        <div className="flex items-center gap-3">
+          <select value={wh} onChange={e => setWh(e.target.value)} className="px-3 py-1.5 text-sm border rounded-md">
+            <option value="ALL">All Warehouses</option><option>WH-MUM-MAIN</option><option>WH-DEL-NORTH</option><option>WH-BLR-CENTRAL</option>
+          </select>
+          <div className="flex items-center gap-2"><Switch checked={liveMode} onCheckedChange={setLiveMode} />{liveMode ? <span className="text-xs text-emerald-600 flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />LIVE</span> : <span className="text-xs text-muted-foreground">PAUSED</span>}</div>
+        </div>
+      </div>
+
+      {/* Widget Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {widgets.map(w => (
+          <Card key={w.label} className="p-3 overflow-hidden relative">
+            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${w.color}`} />
+            <div className="flex items-center justify-between mb-1">
+              <div className={`h-8 w-8 rounded-lg bg-gradient-to-br ${w.color} text-white flex items-center justify-center`}>{w.icon}</div>
+              <span className={`text-[10px] font-bold ${w.trend.startsWith('-') ? 'text-emerald-600' : w.trend === '0' ? 'text-slate-400' : 'text-amber-600'}`}>{w.trend}</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{w.label}</p>
+            <p className="text-xl font-bold">{w.value}</p>
+            <p className="text-[10px] text-muted-foreground">{w.sub}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Warehouse Scorecard (Chief Architect Recommendation) */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b bg-gradient-to-r from-emerald-50 to-teal-50">
+          <div className="flex items-center justify-between">
+            <div><h3 className="font-semibold flex items-center gap-2"><Award className="h-5 w-5 text-emerald-600" />Warehouse Scorecard — Daily Review</h3><p className="text-xs text-muted-foreground mt-0.5">Chief Architect Recommendation — visible to supervisors, managers, operations heads, executives</p></div>
+            <Badge className="bg-emerald-500">Grade A+ · Score 92/100</Badge>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">KPI</th><th className="text-left px-4 py-3 font-medium">Actual</th>
+              <th className="text-left px-4 py-3 font-medium">Target</th><th className="text-left px-4 py-3 font-medium">Status</th>
+              <th className="text-left px-4 py-3 font-medium">Compliance</th>
+            </tr></thead>
+            <tbody>
+              {scorecard.map(s => {
+                const met = s.invert ? s.value <= s.target : s.value >= s.target
+                const pct = s.invert ? Math.min(100, (s.target / s.value) * 100) : Math.min(100, (s.value / s.target) * 100)
+                return (
+                  <tr key={s.kpi} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 text-xs font-medium">{s.kpi}</td>
+                    <td className="px-4 py-3 font-mono font-bold">{s.value}{s.unit.includes('%') ? '%' : ` ${s.unit}`}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.target}{s.unit.includes('%') ? '%' : ` ${s.unit}`}</td>
+                    <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded ${met ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{met ? 'MET' : 'BELOW'}</span></td>
+                    <td className="px-4 py-3 min-w-[100px]"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${pct >= 100 ? 'bg-emerald-500' : pct >= 90 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${pct}%` }} /></div><span className="text-xs font-mono w-10">{pct.toFixed(0)}%</span></div></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Live Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="p-4 lg:col-span-2">
+          <h3 className="font-semibold mb-3">Critical Alerts</h3>
+          <div className="space-y-2">
+            {[
+              { sev: 'CRITICAL', msg: 'SLA breach on TASK-2026-009 (PICK) — 35 min overdue', time: '2 min ago' },
+              { sev: 'HIGH', msg: 'Zone C-Picking congestion detected — 14 active tasks in 1 zone', time: '8 min ago' },
+              { sev: 'WARNING', msg: 'Operator OP-007 marked absent — shift uncovered', time: '15 min ago' },
+              { sev: 'INFO', msg: 'WAVE-2026-001 reached 64% completion — on track', time: '30 min ago' },
+            ].map((a, i) => {
+              const cls = a.sev === 'CRITICAL' ? 'border-rose-300 bg-rose-50' : a.sev === 'HIGH' ? 'border-orange-300 bg-orange-50' : a.sev === 'WARNING' ? 'border-amber-300 bg-amber-50' : 'border-blue-300 bg-blue-50'
+              const txt = a.sev === 'CRITICAL' ? 'text-rose-700' : a.sev === 'HIGH' ? 'text-orange-700' : a.sev === 'WARNING' ? 'text-amber-700' : 'text-blue-700'
+              return <div key={i} className={`p-2 rounded border ${cls}`}><div className="flex justify-between"><span className={`text-[10px] font-bold ${txt}`}>{a.sev}</span><span className="text-[10px] text-muted-foreground">{a.time}</span></div><p className="text-xs mt-0.5">{a.msg}</p></div>
+            })}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Bottlenecks Detected</h3>
+          <div className="space-y-2">
+            {[
+              { type: 'SLOW_ZONE', loc: 'C-Picking', impact: 78, delay: 12 },
+              { type: 'DOCK_DELAY', loc: 'DOCK-04', impact: 65, delay: 45 },
+              { type: 'SLOW_OPERATOR', loc: 'OP-008 Priya N.', impact: 42, delay: 8 },
+              { type: 'EQUIPMENT_DELAY', loc: 'FL-004 (broken)', impact: 88, delay: 95 },
+            ].map((b, i) => (
+              <div key={i} className="p-2 border rounded">
+                <div className="flex justify-between mb-1"><span className="text-[10px] font-mono font-semibold text-blue-700">{b.type.replace(/_/g, ' ')}</span><span className={`text-[10px] px-1.5 py-0.5 rounded ${b.impact > 75 ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>{b.impact}/100</span></div>
+                <p className="text-xs font-medium">{b.loc}</p>
+                <p className="text-[10px] text-muted-foreground">Est. delay: {b.delay} min</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 2: KPI Dashboard ──────────────────────────────
+function KPIDashboardModule() {
+  const [period, setPeriod] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY')
+
+  const kpis = [
+    { label: 'Orders Processed', value: '4,287', target: '4,500', trend: '+8%', color: 'text-emerald-600', icon: <Package className="h-5 w-5" /> },
+    { label: 'Lines Processed', value: '28,456', target: '30,000', trend: '+5%', color: 'text-emerald-600', icon: <ListChecks className="h-5 w-5" /> },
+    { label: 'Units Processed', value: '142,890', target: '150,000', trend: '+12%', color: 'text-emerald-600', icon: <Boxes className="h-5 w-5" /> },
+    { label: 'Tasks Completed', value: '12,847', target: '13,000', trend: '+3%', color: 'text-emerald-600', icon: <CheckCircle2 className="h-5 w-5" /> },
+    { label: 'Inventory Accuracy', value: '99.85%', target: '99.8%', trend: '+0.05%', color: 'text-emerald-600', icon: <Target className="h-5 w-5" /> },
+    { label: 'Picking Accuracy', value: '99.92%', target: '99.9%', trend: '+0.02%', color: 'text-emerald-600', icon: <CheckCircle2 className="h-5 w-5" /> },
+    { label: 'Task Completion Rate', value: '98.8%', target: '99%', trend: '-0.2%', color: 'text-amber-600', icon: <Gauge className="h-5 w-5" /> },
+    { label: 'Warehouse Throughput', value: '189 u/hr', target: '200 u/hr', trend: '+5%', color: 'text-emerald-600', icon: <Activity className="h-5 w-5" /> },
+  ]
+
+  const timeKPIs = [
+    { label: 'Receiving Time', value: 42, target: 45, unit: 'min', invert: true },
+    { label: 'Putaway Time', value: 28, target: 30, unit: 'min', invert: true },
+    { label: 'Picking Time', value: 4.2, target: 5.0, unit: 'min', invert: true },
+    { label: 'Packing Time', value: 18, target: 20, unit: 'min', invert: true },
+    { label: 'Dispatch Time', value: 78, target: 90, unit: 'min', invert: true },
+    { label: 'Dock-to-Stock Time', value: 28, target: 30, unit: 'min', invert: true },
+  ]
+
+  const trend = [
+    { month: 'Jan', orders: 3842, units: 128456, accuracy: 99.7 },
+    { month: 'Feb', orders: 4128, units: 135892, accuracy: 99.75 },
+    { month: 'Mar', orders: 4456, units: 145234, accuracy: 99.8 },
+    { month: 'Apr', orders: 4287, units: 142890, accuracy: 99.85 },
+    { month: 'May', orders: 4612, units: 152458, accuracy: 99.82 },
+    { month: 'Jun', orders: 4856, units: 158924, accuracy: 99.88 },
+    { month: 'Jul', orders: 4287, units: 142890, accuracy: 99.85 },
+  ]
+  const maxOrders = Math.max(...trend.map(t => t.orders))
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">KPI Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Daily · Weekly · Monthly · Quarterly · Yearly — auto-refreshing KPIs</p></div>
+        <div className="flex rounded-md border overflow-hidden">
+          {(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'] as const).map(p => <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-xs font-medium ${period === p ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{p}</button>)}
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {kpis.map(k => (
+          <Card key={k.label} className="p-4">
+            <div className="flex items-center justify-between mb-2"><div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">{k.icon}</div><span className={`text-xs font-bold ${k.color}`}>{k.trend}</span></div>
+            <p className="text-xs text-muted-foreground">{k.label}</p>
+            <p className="text-2xl font-bold">{k.value}</p>
+            <p className="text-[10px] text-muted-foreground">Target: {k.target}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Trend Chart */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Orders & Accuracy Trend — 7 Months</h3>
+          <div className="flex items-end justify-between gap-3 h-48">
+            {trend.map(t => (
+              <div key={t.month} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-[10px] font-mono text-muted-foreground">{(t.orders / 1000).toFixed(1)}k</div>
+                <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end"><div className="w-full bg-gradient-to-t from-blue-600 to-blue-400" style={{ height: `${(t.orders / maxOrders) * 100}%` }} /></div>
+                <div className="text-xs">{t.month}</div>
+                <div className="text-[10px] text-emerald-600">{t.accuracy}%</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Time KPIs */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Process Time KPIs (minutes)</h3>
+          <div className="space-y-3">
+            {timeKPIs.map(t => {
+              const met = t.value <= t.target
+              const pct = (t.value / t.target) * 100
+              return (
+                <div key={t.label}>
+                  <div className="flex justify-between text-xs mb-1"><span>{t.label}</span><span className="font-mono font-bold">{t.value} {t.unit} <span className="text-muted-foreground">/ {t.target} {t.unit}</span></span></div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden relative">
+                    <div className={`h-full ${met ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                    <div className="absolute top-0 h-full w-0.5 bg-slate-900" style={{ left: '100%' }} title="Target" />
+                  </div>
+                  <div className="text-[10px] mt-0.5"><span className={met ? 'text-emerald-600' : 'text-rose-600'}>{met ? '✓ Within target' : '✗ Above target'}</span></div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+
+      {/* Utilization KPIs */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Utilization KPIs</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: 'Dock Utilization', value: 67, target: 80, color: 'bg-amber-500' },
+            { label: 'Equipment Utilization', value: 84, target: 85, color: 'bg-emerald-500' },
+            { label: 'Capacity Utilization', value: 78, target: 80, color: 'bg-emerald-500' },
+          ].map(u => (
+            <div key={u.label} className="text-center">
+              <p className="text-xs text-muted-foreground mb-2">{u.label}</p>
+              <div className="relative h-32 w-32 mx-auto">
+                <svg className="h-32 w-32 -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted" />
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" strokeDasharray={`${(u.value / 100) * 264} 264`} className={u.color.replace('bg-', 'text-')} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center"><span className="text-2xl font-bold">{u.value}%</span><span className="text-[10px] text-muted-foreground">Target {u.target}%</span></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 3: Operator Productivity Analytics ────────────
+function OperatorAnalyticsModule() {
+  const operators = [
+    { rank: 1, code: 'OP-003', name: 'Suresh Mehta', zone: 'E-Dispatch', tasks: 92, accuracy: 99.1, util: 94, idleMin: 12, travelMin: 38, travelDist: 2.4, tasksHr: 18.2, unitsHr: 124, hours: 42, overtime: 4, scans: 1842, grade: 'A+', score: 94, rec: 'TOP_PERFORMER', train: [] },
+    { rank: 2, code: 'OP-001', name: 'Rajesh Kumar', zone: 'C-Picking', tasks: 78, accuracy: 98.5, util: 87, idleMin: 18, travelMin: 42, travelDist: 2.8, tasksHr: 16.8, unitsHr: 112, hours: 38, overtime: 2, scans: 1654, grade: 'A', score: 88, rec: 'ON_TRACK', train: [] },
+    { rank: 3, code: 'OP-002', name: 'Anita Sharma', zone: 'B-Bulk', tasks: 65, accuracy: 97.2, util: 82, idleMin: 22, travelMin: 48, travelDist: 3.1, tasksHr: 14.5, unitsHr: 98, hours: 35, overtime: 0, scans: 1428, grade: 'A', score: 85, rec: 'ON_TRACK', train: [] },
+    { rank: 4, code: 'OP-005', name: 'Ramesh Patel', zone: 'B-Bulk', tasks: 52, accuracy: 95.5, util: 79, idleMin: 28, travelMin: 52, travelDist: 3.4, tasksHr: 13.2, unitsHr: 88, hours: 32, overtime: 0, scans: 1186, grade: 'B', score: 79, rec: 'ON_TRACK', train: ['REACH_TRUCK'] },
+    { rank: 5, code: 'OP-006', name: 'Mahesh Reddy', zone: 'A-Receiving', tasks: 38, accuracy: 97.8, util: 71, idleMin: 35, travelMin: 58, travelDist: 3.8, tasksHr: 11.4, unitsHr: 76, hours: 28, overtime: 0, scans: 982, grade: 'B', score: 81, rec: 'ON_TRACK', train: [] },
+    { rank: 6, code: 'OP-004', name: 'Lakshmi V.', zone: 'D-Pack', tasks: 41, accuracy: 96.0, util: 68, idleMin: 32, travelMin: 45, travelDist: 2.9, tasksHr: 12.8, unitsHr: 84, hours: 35, overtime: 0, scans: 1082, grade: 'B', score: 72, rec: 'NEEDS_IMPROVEMENT', train: ['PICKING_OPTIMIZATION'] },
+    { rank: 7, code: 'OP-008', name: 'Priya Nair', zone: 'D-Pack', tasks: 18, accuracy: 92.0, util: 54, idleMin: 48, travelMin: 65, travelDist: 4.2, tasksHr: 8.2, unitsHr: 52, hours: 22, overtime: 0, scans: 486, grade: 'C', score: 55, rec: 'NEEDS_TRAINING', train: ['PICKING_OPTIMIZATION', 'SCANNER_EFFICIENCY', 'ZONE_FAMILIARITY'] },
+    { rank: 8, code: 'OP-007', name: 'Anil Kumar', zone: 'A-Receiving', tasks: 22, accuracy: 94.3, util: 0, idleMin: 0, travelMin: 0, travelDist: 0, tasksHr: 0, unitsHr: 0, hours: 0, overtime: 0, scans: 0, grade: 'C', score: 68, rec: 'NEEDS_IMPROVEMENT', train: [] },
+  ]
+
+  const recColors: Record<string, string> = { TOP_PERFORMER: 'bg-emerald-100 text-emerald-700', ON_TRACK: 'bg-blue-100 text-blue-700', NEEDS_IMPROVEMENT: 'bg-amber-100 text-amber-700', NEEDS_TRAINING: 'bg-rose-100 text-rose-700' }
+  const gradeColors: Record<string, string> = { 'A+': 'bg-amber-500 text-white', 'A': 'bg-emerald-500 text-white', 'B': 'bg-blue-500 text-white', 'C': 'bg-amber-500 text-white', 'D': 'bg-rose-500 text-white' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Operator Productivity Analytics</h2><p className="text-sm text-muted-foreground mt-1">Tasks · accuracy · travel · idle time · scanner usage · attendance · leaderboard</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Avg Tasks/Operator', value: operators.reduce((a, o) => a + o.tasks, 0) / operators.length, color: 'text-blue-600' },
+          { label: 'Avg Accuracy', value: `${(operators.reduce((a, o) => a + o.accuracy, 0) / operators.length).toFixed(1)}%`, color: 'text-emerald-600' },
+          { label: 'Avg Utilization', value: `${(operators.reduce((a, o) => a + o.util, 0) / operators.length).toFixed(0)}%`, color: 'text-purple-600' },
+          { label: 'Top Performers (A+)', value: operators.filter(o => o.grade === 'A+').length, color: 'text-amber-600' },
+          { label: 'Needs Training', value: operators.filter(o => o.rec === 'NEEDS_TRAINING' || o.rec === 'NEEDS_IMPROVEMENT').length, color: 'text-rose-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{typeof s.value === 'number' ? s.value.toFixed(1) : s.value}</p></Card>)}
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b flex items-center justify-between"><h3 className="font-semibold">Operator Leaderboard — This Month</h3><Button size="sm" variant="outline"><Download className="mr-1 h-4 w-4" />Export</Button></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">Rank</th><th className="text-left px-4 py-3 font-medium">Operator</th>
+              <th className="text-left px-4 py-3 font-medium">Grade</th><th className="text-left px-4 py-3 font-medium">Score</th>
+              <th className="text-left px-4 py-3 font-medium">Tasks</th><th className="text-left px-4 py-3 font-medium">Tasks/hr</th>
+              <th className="text-left px-4 py-3 font-medium">Accuracy</th><th className="text-left px-4 py-3 font-medium">Utilization</th>
+              <th className="text-left px-4 py-3 font-medium">Idle</th><th className="text-left px-4 py-3 font-medium">Travel</th>
+              <th className="text-left px-4 py-3 font-medium">Hours</th><th className="text-left px-4 py-3 font-medium">Recommendation</th>
+            </tr></thead>
+            <tbody>
+              {operators.map(o => (
+                <tr key={o.code} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-3"><span className={`font-bold ${o.rank === 1 ? 'text-amber-600' : o.rank === 2 ? 'text-slate-500' : o.rank === 3 ? 'text-orange-700' : 'text-muted-foreground'}`}>#{o.rank}</span></td>
+                  <td className="px-4 py-3"><div className="font-medium">{o.name}</div><div className="text-[10px] text-muted-foreground font-mono">{o.code} · {o.zone}</div></td>
+                  <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded font-bold ${gradeColors[o.grade]}`}>{o.grade}</span></td>
+                  <td className="px-4 py-3 font-mono font-bold">{o.score}</td>
+                  <td className="px-4 py-3 font-mono">{o.tasks}</td>
+                  <td className="px-4 py-3 font-mono">{o.tasksHr}</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1"><span className="font-mono text-xs">{o.accuracy}%</span><div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${o.accuracy > 98 ? 'bg-emerald-500' : o.accuracy > 95 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${o.accuracy}%` }} /></div></div></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-1"><span className="font-mono text-xs">{o.util}%</span><div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden"><div className={`h-full ${o.util > 80 ? 'bg-emerald-500' : o.util > 60 ? 'bg-amber-500' : 'bg-slate-300'}`} style={{ width: `${o.util}%` }} /></div></div></td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.idleMin}m</td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.travelMin}m · {o.travelDist}km</td>
+                  <td className="px-4 py-3 font-mono text-xs">{o.hours}h{o.overtime > 0 && <span className="text-amber-600"> +{o.overtime}OT</span>}</td>
+                  <td className="px-4 py-3"><span className={`text-[10px] px-2 py-1 rounded ${recColors[o.rec]}`}>{o.rec.replace(/_/g, ' ')}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Travel Distance Analysis</h3>
+          <div className="space-y-2">
+            {operators.filter(o => o.travelDist > 0).sort((a, b) => b.travelDist - a.travelDist).map(o => (
+              <div key={o.code} className="flex items-center gap-2">
+                <div className="w-24 text-xs font-medium truncate">{o.name}</div>
+                <div className="flex-1 h-4 bg-muted rounded overflow-hidden"><div className={`h-full ${o.travelDist > 3.5 ? 'bg-rose-500' : o.travelDist > 3 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${(o.travelDist / 5) * 100}%` }} /></div>
+                <div className="w-12 text-right text-xs font-mono">{o.travelDist}km</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">High travel distance (&gt;3.5km) suggests zone reassignment could improve efficiency</p>
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm">AI Training Recommendations</h3>
+              <div className="mt-2 space-y-1.5 text-xs">
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Priya Nair (OP-008)</strong> — 48 min idle time, 8.2 tasks/hr. Recommend: Picking Optimization + Scanner Efficiency training. Cross-train on PICKER skill.</span></div>
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Ramesh Patel (OP-005)</strong> — 3.4km travel distance. Recommend: Reassign to Zone B-Bulk permanently to reduce travel by ~30%.</span></div>
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Lakshmi V. (OP-004)</strong> — 96% accuracy below 98% target. Recommend: Quality refresher training on scan-verify workflow.</span></div>
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Suresh Mehta (OP-003)</strong> — Top performer. Consider mentor role for new operators. Eligible for supervisor promotion.</span></div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 4: Warehouse Equipment Analytics ──────────────
+function WarehouseEquipmentAnalyticsModule() {
+  const equipmentKPIs = [
+    { label: 'Equipment Utilization', value: '74%', target: '85%', trend: '+3%', met: false },
+    { label: 'MTBF (Mean Time Between Failures)', value: '342h', target: '400h', trend: '+12h', met: false },
+    { label: 'MTTR (Mean Time To Repair)', value: '2.8h', target: '2.0h', trend: '+0.3h', met: false },
+    { label: 'Battery Health Avg', value: '86%', target: '90%', trend: '+1%', met: false },
+    { label: 'Maintenance Compliance', value: '92%', target: '95%', trend: '+2%', met: false },
+    { label: 'Equipment Availability', value: '88%', target: '92%', trend: '+1%', met: false },
+  ]
+
+  const equipment = [
+    { code: 'FL-001', type: 'Forklift', util: 87, downtime: 4, tasks: 342, mtbf: 412, mttr: 1.2, maintCost: 8500, status: 'IN_USE' },
+    { code: 'FL-002', type: 'Forklift', util: 79, downtime: 8, tasks: 287, mtbf: 385, mttr: 1.8, maintCost: 12400, status: 'IN_USE' },
+    { code: 'FL-003', type: 'Forklift', util: 32, downtime: 0, tasks: 124, mtbf: 580, mttr: 0, maintCost: 2100, status: 'AVAILABLE' },
+    { code: 'RT-001', type: 'Reach Truck', util: 91, downtime: 12, tasks: 412, mtbf: 298, mttr: 3.2, maintCost: 18500, status: 'IN_USE' },
+    { code: 'ST-001', type: 'Stacker', util: 68, downtime: 6, tasks: 198, mtbf: 342, mttr: 2.1, maintCost: 6800, status: 'CHARGING' },
+    { code: 'SC-001', type: 'Scanner', util: 84, downtime: 2, tasks: 12453, mtbf: 720, mttr: 0.5, maintCost: 1200, status: 'IN_USE' },
+    { code: 'SC-002', type: 'Scanner', util: 22, downtime: 0, tasks: 5421, mtbf: 720, mttr: 0, maintCost: 800, status: 'AVAILABLE' },
+    { code: 'FL-004', type: 'Forklift', util: 0, downtime: 95, tasks: 0, mtbf: 0, mttr: 0, maintCost: 18500, status: 'BREAKDOWN' },
+  ]
+
+  const typeUtil = [
+    { type: 'Forklift', avgUtil: 66, count: 4, color: 'bg-amber-500' },
+    { type: 'Reach Truck', avgUtil: 91, count: 1, color: 'bg-purple-500' },
+    { type: 'Stacker', avgUtil: 68, count: 1, color: 'bg-orange-500' },
+    { type: 'Scanner', avgUtil: 53, count: 2, color: 'bg-blue-500' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Equipment Analytics</h2><p className="text-sm text-muted-foreground mt-1">Utilization · MTBF · MTTR · maintenance cost · availability · repair frequency</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {equipmentKPIs.map(k => (
+          <Card key={k.label} className="p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{k.label}</p>
+            <p className="text-xl font-bold mt-1">{k.value}</p>
+            <div className="flex items-center justify-between mt-1"><span className={`text-[10px] ${k.trend.startsWith('-') || k.trend.startsWith('+0') ? 'text-amber-600' : 'text-emerald-600'}`}>{k.trend}</span><span className="text-[10px] text-muted-foreground">Target {k.target}</span></div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Utilization by Equipment Type</h3>
+          <div className="space-y-3">
+            {typeUtil.map(t => (
+              <div key={t.type}>
+                <div className="flex justify-between text-xs mb-1"><span>{t.type} ({t.count} units)</span><span className="font-mono font-bold">{t.avgUtil}%</span></div>
+                <div className="h-4 bg-muted rounded-full overflow-hidden"><div className={`h-full ${t.color}`} style={{ width: `${t.avgUtil}%` }} /></div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t grid grid-cols-3 gap-2 text-center text-xs">
+            <div><p className="text-muted-foreground">Target Range</p><p className="font-bold">80-90%</p></div>
+            <div><p className="text-muted-foreground">Under-utilized</p><p className="font-bold text-amber-600">&lt; 60%</p></div>
+            <div><p className="text-muted-foreground">Over-utilized</p><p className="font-bold text-rose-600">&gt; 90%</p></div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Maintenance Cost Trend (6 months)</h3>
+          <div className="flex items-end justify-between gap-2 h-48">
+            {[
+              { month: 'Feb', cost: 38500 }, { month: 'Mar', cost: 42800 }, { month: 'Apr', cost: 31200 },
+              { month: 'May', cost: 52400 }, { month: 'Jun', cost: 68200 }, { month: 'Jul', cost: 45800 },
+            ].map(m => (
+              <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-[10px] font-mono">₹{(m.cost / 1000).toFixed(0)}k</div>
+                <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end"><div className="w-full bg-gradient-to-t from-rose-600 to-amber-400" style={{ height: `${(m.cost / 70000) * 100}%` }} /></div>
+                <div className="text-xs">{m.month}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Equipment Utilization Detail</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-2 font-medium">Code</th><th className="text-left px-4 py-2 font-medium">Type</th>
+              <th className="text-left px-4 py-2 font-medium">Utilization</th><th className="text-left px-4 py-2 font-medium">Downtime</th>
+              <th className="text-left px-4 py-2 font-medium">Tasks</th><th className="text-left px-4 py-2 font-medium">MTBF</th>
+              <th className="text-left px-4 py-2 font-medium">MTTR</th><th className="text-left px-4 py-2 font-medium">Maint Cost</th>
+              <th className="text-left px-4 py-2 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {equipment.map(e => {
+                const b = s28BadgeForStatus(e.status)
+                return (
+                  <tr key={e.code} className={`border-b hover:bg-muted/30 ${e.status === 'BREAKDOWN' ? 'bg-rose-50/30' : ''}`}>
+                    <td className="px-4 py-2 font-mono text-xs font-semibold text-blue-700">{e.code}</td>
+                    <td className="px-4 py-2 text-xs">{e.type}</td>
+                    <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="w-20 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${e.util > 80 ? 'bg-emerald-500' : e.util > 60 ? 'bg-amber-500' : e.util > 30 ? 'bg-orange-500' : 'bg-slate-300'}`} style={{ width: `${e.util}%` }} /></div><span className="font-mono text-xs">{e.util}%</span></div></td>
+                    <td className="px-4 py-2 font-mono text-xs"><span className={e.downtime > 20 ? 'text-rose-600 font-bold' : e.downtime > 5 ? 'text-amber-600' : 'text-emerald-600'}>{e.downtime}h</span></td>
+                    <td className="px-4 py-2 font-mono text-xs">{e.tasks.toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-2 font-mono text-xs">{e.mtbf}h</td>
+                    <td className="px-4 py-2 font-mono text-xs">{e.mttr}h</td>
+                    <td className="px-4 py-2 font-mono text-xs">₹{e.maintCost.toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-2"><span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 5: Warehouse Heat Maps ────────────────────────
+function WarehouseHeatMapsModule() {
+  const [mapType, setMapType] = useState<'TRAFFIC' | 'PICKING' | 'RECEIVING' | 'CONGESTION' | 'BIN_OCCUPANCY' | 'DOCK_ACTIVITY'>('TRAFFIC')
+
+  const zones = [
+    { zone: 'A-Receiving', traffic: 75, picking: 5, receiving: 92, congestion: 45, occupancy: 68, dock: 88, color: 'bg-amber-500' },
+    { zone: 'B-Bulk', traffic: 45, picking: 28, receiving: 12, congestion: 25, occupancy: 78, dock: 0, color: 'bg-emerald-500' },
+    { zone: 'C-Picking', traffic: 92, picking: 95, receiving: 5, congestion: 88, occupancy: 84, dock: 0, color: 'bg-rose-500' },
+    { zone: 'D-Pack', traffic: 68, picking: 12, receiving: 8, congestion: 62, occupancy: 55, dock: 0, color: 'bg-amber-500' },
+    { zone: 'E-Dispatch', traffic: 88, picking: 8, receiving: 18, congestion: 72, occupancy: 62, dock: 92, color: 'bg-rose-500' },
+    { zone: 'F-Cold', traffic: 30, picking: 22, receiving: 15, congestion: 18, occupancy: 45, dock: 38, color: 'bg-emerald-500' },
+  ]
+
+  const binGrid = Array.from({ length: 48 }, (_, i) => ({
+    code: `B-${String(i + 1).padStart(3, '0')}`,
+    intensity: Math.floor(Math.random() * 100),
+    zone: ['A', 'B', 'C', 'D', 'E', 'F'][Math.floor(i / 8)],
+  }))
+
+  const getValue = (z: typeof zones[0]) => {
+    const map: Record<string, number> = { TRAFFIC: z.traffic, PICKING: z.picking, RECEIVING: z.receiving, CONGESTION: z.congestion, BIN_OCCUPANCY: z.occupancy, DOCK_ACTIVITY: z.dock }
+    return map[mapType]
+  }
+
+  const getColor = (v: number) => v > 80 ? 'bg-rose-500' : v > 60 ? 'bg-amber-500' : v > 30 ? 'bg-emerald-500' : 'bg-slate-300'
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Warehouse Heat Maps</h2><p className="text-sm text-muted-foreground mt-1">Traffic · picking · receiving · congestion · bin occupancy · dock activity</p></div>
+        <div className="flex flex-wrap gap-2">
+          {(['TRAFFIC', 'PICKING', 'RECEIVING', 'CONGESTION', 'BIN_OCCUPANCY', 'DOCK_ACTIVITY'] as const).map(t => (
+            <button key={t} onClick={() => setMapType(t)} className={`text-xs px-3 py-1 rounded-full border ${mapType === t ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}>{t.replace(/_/g, ' ')}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Zone Heat Map */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Zone Heat Map — {mapType.replace(/_/g, ' ')} Intensity</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {zones.map(z => {
+            const v = getValue(z)
+            return (
+              <div key={z.zone} className="p-4 rounded-lg border relative overflow-hidden">
+                <div className={`absolute inset-0 ${getColor(v)} opacity-20`} />
+                <div className="relative">
+                  <div className="text-xs font-semibold mb-1">{z.zone}</div>
+                  <div className="text-3xl font-bold">{v}%</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">{mapType.replace(/_/g, ' ')} intensity</div>
+                  <div className="mt-2 h-2 bg-white/40 rounded-full overflow-hidden"><div className={`h-full ${getColor(v)}`} style={{ width: `${v}%` }} /></div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* Bin-Level Heat Map */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Bin-Level Heat Map — 48 Bins</h3>
+        <div className="grid grid-cols-8 md:grid-cols-12 gap-1">
+          {binGrid.map(b => (
+            <div key={b.code} className={`aspect-square rounded ${getColor(b.intensity)} flex items-center justify-center text-[8px] font-mono text-white/80`} title={`${b.code}: ${b.intensity}%`}>
+              {b.intensity > 50 ? b.code.split('-')[1] : ''}
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="h-3 w-3 bg-slate-300 rounded" />Low (0-30%)</span>
+          <span className="flex items-center gap-1"><span className="h-3 w-3 bg-emerald-500 rounded" />Medium (30-60%)</span>
+          <span className="flex items-center gap-1"><span className="h-3 w-3 bg-amber-500 rounded" />High (60-80%)</span>
+          <span className="flex items-center gap-1"><span className="h-3 w-3 bg-rose-500 rounded" />Critical (80-100%)</span>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Top Congested Bins</h3>
+          <div className="space-y-2">
+            {binGrid.sort((a, b) => b.intensity - a.intensity).slice(0, 8).map(b => (
+              <div key={b.code} className="flex items-center gap-2">
+                <div className="w-16 font-mono text-xs font-semibold">{b.code}</div>
+                <div className="flex-1 h-4 bg-muted rounded overflow-hidden"><div className={`h-full ${getColor(b.intensity)}`} style={{ width: `${b.intensity}%` }} /></div>
+                <div className="w-10 text-right text-xs font-mono">{b.intensity}%</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+            <div>
+              <h3 className="font-semibold text-sm">Heat Map Insights</h3>
+              <div className="mt-2 space-y-1.5 text-xs">
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>C-Picking</strong> zone at 95% picking intensity — consider rebalancing to B-Bulk (28%).</span></div>
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>E-Dispatch</strong> has 88% traffic + 72% congestion — peak congestion window 14:00-17:00.</span></div>
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>F-Cold</strong> zone under-utilized (30%) — consolidate cold-chain inventory to free capacity.</span></div>
+                <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Future:</strong> 3D Digital Twin + Indoor Navigation planned for Sprint 33.</span></div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// ─── Epic 6: Warehouse Cost Dashboard ───────────────────
+function WarehouseCostDashboardModule() {
+  const [period, setPeriod] = useState<'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY')
+
+  const costBreakdown = [
+    { type: 'Labor', amount: 2850000, pct: 48, color: 'bg-blue-500', icon: <Users className="h-5 w-5" /> },
+    { type: 'Equipment', amount: 850000, pct: 14, color: 'bg-amber-500', icon: <Truck className="h-5 w-5" /> },
+    { type: 'Energy', amount: 420000, pct: 7, color: 'bg-yellow-500', icon: <Zap className="h-5 w-5" /> },
+    { type: 'Packaging', amount: 680000, pct: 11, color: 'bg-purple-500', icon: <Package className="h-5 w-5" /> },
+    { type: 'Maintenance', amount: 520000, pct: 9, color: 'bg-orange-500', icon: <Wrench className="h-5 w-5" /> },
+    { type: 'Transportation', amount: 380000, pct: 6, color: 'bg-cyan-500', icon: <Truck className="h-5 w-5" /> },
+    { type: 'Storage', amount: 180000, pct: 3, color: 'bg-emerald-500', icon: <Boxes className="h-5 w-5" /> },
+    { type: 'Overhead', amount: 120000, pct: 2, color: 'bg-slate-500', icon: <Server className="h-5 w-5" /> },
+  ]
+  const totalCost = costBreakdown.reduce((a, c) => a + c.amount, 0)
+
+  const byWarehouse = [
+    { wh: 'WH-MUM-MAIN', cost: 3240000, orders: 2840, costPerOrder: 1141, utilization: 82 },
+    { wh: 'WH-DEL-NORTH', cost: 1860000, orders: 1620, costPerOrder: 1148, utilization: 75 },
+    { wh: 'WH-BLR-CENTRAL', cost: 1420000, orders: 1280, costPerOrder: 1109, utilization: 78 },
+    { wh: 'WH-HYD-WEST', cost: 980000, orders: 920, costPerOrder: 1065, utilization: 68 },
+  ]
+
+  const byZone = [
+    { zone: 'C-Picking', cost: 1240000, pct: 21, costPerTask: 42 },
+    { zone: 'E-Dispatch', cost: 980000, pct: 17, costPerTask: 38 },
+    { zone: 'A-Receiving', cost: 820000, pct: 14, costPerTask: 45 },
+    { zone: 'D-Pack', cost: 760000, pct: 13, costPerTask: 32 },
+    { zone: 'B-Bulk', cost: 680000, pct: 12, costPerTask: 28 },
+    { zone: 'F-Cold', cost: 380000, pct: 6, costPerTask: 52 },
+    { zone: 'Yard & Docks', cost: 980000, pct: 17, costPerTask: 0 },
+  ]
+
+  const costTrend = [
+    { month: 'Feb', cost: 5.2 }, { month: 'Mar', cost: 5.8 }, { month: 'Apr', cost: 5.4 },
+    { month: 'May', cost: 6.1 }, { month: 'Jun', cost: 6.8 }, { month: 'Jul', cost: 5.9 },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Warehouse Cost Dashboard</h2><p className="text-sm text-muted-foreground mt-1">Labor · equipment · energy · packaging · maintenance · transportation · cost per order</p></div>
+        <div className="flex rounded-md border overflow-hidden">
+          {(['MONTHLY', 'QUARTERLY', 'YEARLY'] as const).map(p => <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-xs font-medium ${period === p ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>{p}</button>)}
+        </div>
+      </div>
+
+      {/* Top KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Cost', value: `₹${(totalCost / 100000).toFixed(1)}L`, trend: '+5%', color: 'text-rose-600' },
+          { label: 'Cost Per Order', value: `₹${(totalCost / 6660).toFixed(0)}`, trend: '-3%', color: 'text-emerald-600' },
+          { label: 'Cost Per Unit', value: `₹${(totalCost / 142890).toFixed(2)}`, trend: '-2%', color: 'text-emerald-600' },
+          { label: 'Cost Per Task', value: `₹${(totalCost / 12847).toFixed(0)}`, trend: '+1%', color: 'text-amber-600' },
+          { label: 'Labor Cost %', value: '48%', trend: '+1%', color: 'text-blue-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p><p className={`text-[10px] ${s.color}`}>{s.trend}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Cost Breakdown Pie */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Cost Breakdown by Type</h3>
+          <div className="space-y-2">
+            {costBreakdown.map(c => (
+              <div key={c.type} className="flex items-center gap-3">
+                <div className={`h-8 w-8 rounded-lg ${c.color} text-white flex items-center justify-center flex-shrink-0`}>{c.icon}</div>
+                <div className="flex-1">
+                  <div className="flex justify-between text-xs mb-1"><span className="font-medium">{c.type}</span><span className="font-mono">₹{(c.amount / 100000).toFixed(1)}L · {c.pct}%</span></div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${c.color}`} style={{ width: `${c.pct * 2}%` }} /></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 pt-3 border-t flex justify-between"><span className="text-sm font-semibold">Total</span><span className="font-mono font-bold">₹{(totalCost / 100000).toFixed(1)}L</span></div>
+        </Card>
+
+        {/* Cost Trend */}
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3">Cost Trend (6 months)</h3>
+          <div className="flex items-end justify-between gap-3 h-48">
+            {costTrend.map(m => (
+              <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-[10px] font-mono">₹{m.cost}L</div>
+                <div className="w-full bg-muted/40 rounded-t-md overflow-hidden flex-1 flex items-end"><div className="w-full bg-gradient-to-t from-rose-600 to-amber-400" style={{ height: `${(m.cost / 7) * 100}%` }} /></div>
+                <div className="text-xs">{m.month}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Cost by Warehouse */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Cost by Warehouse</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-2 font-medium">Warehouse</th><th className="text-left px-4 py-2 font-medium">Total Cost</th>
+              <th className="text-left px-4 py-2 font-medium">Orders</th><th className="text-left px-4 py-2 font-medium">Cost/Order</th>
+              <th className="text-left px-4 py-2 font-medium">Capacity Util</th><th className="text-left px-4 py-2 font-medium">Efficiency</th>
+            </tr></thead>
+            <tbody>
+              {byWarehouse.map(w => (
+                <tr key={w.wh} className="border-b hover:bg-muted/30">
+                  <td className="px-4 py-2 font-mono text-xs font-semibold">{w.wh}</td>
+                  <td className="px-4 py-2 font-mono font-bold">₹{(w.cost / 100000).toFixed(1)}L</td>
+                  <td className="px-4 py-2 font-mono">{w.orders.toLocaleString('en-IN')}</td>
+                  <td className="px-4 py-2 font-mono"><span className={w.costPerOrder > 1140 ? 'text-amber-600 font-bold' : 'text-emerald-600'}>₹{w.costPerOrder}</span></td>
+                  <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="w-20 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${w.utilization > 80 ? 'bg-emerald-500' : w.utilization > 70 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${w.utilization}%` }} /></div><span className="font-mono text-xs">{w.utilization}%</span></div></td>
+                  <td className="px-4 py-2"><span className={`text-xs px-2 py-1 rounded ${w.costPerOrder < 1100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{w.costPerOrder < 1100 ? 'EFFICIENT' : 'AVG'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Cost by Zone */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3">Cost by Zone (Treemap-style)</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {byZone.map(z => (
+            <div key={z.zone} className={`p-3 rounded-lg ${z.pct > 18 ? 'bg-rose-100 border-rose-300' : z.pct > 14 ? 'bg-amber-100 border-amber-300' : 'bg-emerald-100 border-emerald-300'} border`}>
+              <div className="text-xs font-semibold">{z.zone}</div>
+              <div className="text-lg font-bold">₹{(z.cost / 100000).toFixed(1)}L</div>
+              <div className="text-[10px] text-muted-foreground">{z.pct}% of total</div>
+              {z.costPerTask > 0 && <div className="text-[10px] mt-1">₹{z.costPerTask}/task</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 7: SLA & Bottleneck Analytics ─────────────────
+function SLAAnalyticsModule() {
+  const slaByType = [
+    { type: 'Receiving SLA', target: 60, actual: 42, onTime: 94, violations: 9, total: 156, color: 'bg-emerald-500' },
+    { type: 'Putaway SLA', target: 45, actual: 38, onTime: 91, violations: 21, total: 234, color: 'bg-amber-500' },
+    { type: 'Picking SLA', target: 30, actual: 28, onTime: 88, violations: 49, total: 412, color: 'bg-rose-500' },
+    { type: 'Packing SLA', target: 20, actual: 18, onTime: 96, violations: 11, total: 287, color: 'bg-emerald-500' },
+    { type: 'Dispatch SLA', target: 90, actual: 78, onTime: 93, violations: 12, total: 178, color: 'bg-emerald-500' },
+    { type: 'Transfer SLA', target: 60, actual: 52, onTime: 98, violations: 2, total: 89, color: 'bg-emerald-500' },
+    { type: 'Cycle Count SLA', target: 240, actual: 220, onTime: 99, violations: 1, total: 56, color: 'bg-emerald-500' },
+  ]
+
+  const bottlenecks = [
+    { type: 'SLOW_ZONE', loc: 'C-Picking Zone', severity: 'HIGH', impact: 78, affectedTasks: 14, delay: 12, rootCause: '14 active tasks in single zone — operator congestion', action: 'Reassign 4 tasks to B-Bulk zone operators', status: 'OPEN' },
+    { type: 'EQUIPMENT_DELAY', loc: 'FL-004 (Forklift)', severity: 'CRITICAL', impact: 88, affectedTasks: 3, delay: 95, rootCause: 'Hydraulic pump failure — beyond economic repair', action: 'Replace forklift (estimated ₹9.5L) or rent temporary', status: 'INVESTIGATING' },
+    { type: 'DOCK_DELAY', loc: 'DOCK-04', severity: 'HIGH', impact: 65, affectedTasks: 5, delay: 45, rootCause: 'Dock under maintenance — bay door stuck', action: 'Expedite maintenance, redirect to DOCK-03', status: 'RESOLVING' },
+    { type: 'SLOW_OPERATOR', loc: 'OP-008 Priya Nair', severity: 'MEDIUM', impact: 42, affectedTasks: 4, delay: 8, rootCause: 'Beginner skill level, 48 min idle time', action: 'Assign mentor, schedule picker training', status: 'OPEN' },
+    { type: 'QUEUE_DELAY', loc: 'Truck Queue (3 vehicles)', severity: 'MEDIUM', impact: 55, affectedTasks: 0, delay: 22, rootCause: 'DOCK-04 maintenance reducing throughput', action: 'Boost 2 vehicles to priority queue', status: 'OPEN' },
+    { type: 'SLA_VIOLATION', loc: 'TASK-2026-009 (PICK)', severity: 'CRITICAL', impact: 92, affectedTasks: 1, delay: 35, rootCause: 'No certified operator available within 200m', action: 'Manual operator reassignment required', status: 'OPEN' },
+  ]
+
+  const sevColors: Record<string, string> = { CRITICAL: 'border-rose-400 bg-rose-50', HIGH: 'border-orange-300 bg-orange-50', MEDIUM: 'border-amber-200 bg-amber-50', LOW: 'border-slate-200 bg-slate-50' }
+  const sevBadge: Record<string, string> = { CRITICAL: 'bg-rose-100 text-rose-700', HIGH: 'bg-orange-100 text-orange-700', MEDIUM: 'bg-amber-100 text-amber-700', LOW: 'bg-slate-100 text-slate-700' }
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">SLA & Bottleneck Analytics</h2><p className="text-sm text-muted-foreground mt-1">SLA compliance by task type · bottleneck detection · root cause · recommendations</p></div>
+
+      {/* SLA Compliance by Type */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">SLA Compliance by Task Type</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b"><tr>
+              <th className="text-left px-4 py-3 font-medium">SLA Type</th><th className="text-left px-4 py-3 font-medium">Target (min)</th>
+              <th className="text-left px-4 py-3 font-medium">Actual Avg (min)</th><th className="text-left px-4 py-3 font-medium">On-Time %</th>
+              <th className="text-left px-4 py-3 font-medium">Compliance</th><th className="text-left px-4 py-3 font-medium">Violations</th>
+              <th className="text-left px-4 py-3 font-medium">Total</th><th className="text-left px-4 py-3 font-medium">Status</th>
+            </tr></thead>
+            <tbody>
+              {slaByType.map(s => {
+                const met = s.onTime >= 95
+                return (
+                  <tr key={s.type} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 text-xs font-medium">{s.type}</td>
+                    <td className="px-4 py-3 font-mono">{s.target}</td>
+                    <td className="px-4 py-3 font-mono"><span className={s.actual <= s.target ? 'text-emerald-600' : 'text-rose-600'}>{s.actual}</span></td>
+                    <td className="px-4 py-3 font-mono font-bold">{s.onTime}%</td>
+                    <td className="px-4 py-3 min-w-[120px]"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={`h-full ${s.color}`} style={{ width: `${s.onTime}%` }} /></div></div></td>
+                    <td className="px-4 py-3 font-mono"><span className={s.violations > 20 ? 'text-rose-600 font-bold' : s.violations > 5 ? 'text-amber-600' : 'text-emerald-600'}>{s.violations}</span></td>
+                    <td className="px-4 py-3 font-mono">{s.total}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded ${met ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{met ? 'MET' : 'BELOW'}</span></td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Bottlenecks */}
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b flex items-center justify-between"><h3 className="font-semibold">Detected Bottlenecks</h3><Badge variant="destructive">{bottlenecks.filter(b => b.status === 'OPEN').length} OPEN · {bottlenecks.filter(b => b.severity === 'CRITICAL').length} CRITICAL</Badge></div>
+        <div className="p-4 space-y-2">
+          {bottlenecks.map((b, i) => (
+            <div key={i} className={`p-3 rounded border ${sevColors[b.severity]}`}>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="font-mono text-xs font-semibold text-blue-700">{b.type.replace(/_/g, ' ')}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${sevBadge[b.severity]}`}>{b.severity}</span>
+                    <span className="text-xs font-medium">{b.loc}</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] text-muted-foreground mt-2">
+                    <div>Impact: <span className="font-mono font-bold text-slate-900">{b.impact}/100</span></div>
+                    <div>Affected: <span className="font-mono font-bold text-slate-900">{b.affectedTasks} tasks</span></div>
+                    <div>Delay: <span className={`font-mono font-bold ${b.delay > 30 ? 'text-rose-600' : 'text-amber-600'}`}>{b.delay} min</span></div>
+                    <div>Status: <span className="font-bold text-slate-900">{b.status}</span></div>
+                  </div>
+                  <div className="mt-2 text-xs"><span className="text-muted-foreground">Root Cause:</span> {b.rootCause}</div>
+                  <div className="mt-1 text-xs"><span className="text-emerald-600 font-medium">Recommended Action:</span> {b.action}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center text-white"><Brain className="h-5 w-5" /></div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm">Predictive Bottleneck Insights</h3>
+            <div className="mt-2 space-y-1.5 text-xs">
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Picking SLA</strong> at 88% on-time is the weakest link — 49 violations this month. Recommend: zone rebalancing + 2 additional pickers for C-Picking zone.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>FL-004 breakdown</strong> caused 95 min downtime — predict 2 more forklift failures in next 30 days based on age (2104h). Proactive replacement recommended.</span></div>
+              <div className="flex items-start gap-2"><Sparkles className="h-3 w-3 text-purple-600 mt-0.5" /><span><strong>Friday 14:00-17:00</strong> is recurring congestion window. Pre-stage outbound vehicles 30 min earlier to reduce queue.</span></div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Epic 9: Executive Reports ──────────────────────────
+function ExecutiveReportsModule() {
+  const reports = [
+    { name: 'Daily Warehouse Scorecard', desc: 'KPI summary, scorecard grade, critical alerts', schedule: 'Daily 06:00 AM', recipients: 12, lastSent: 'Today 06:00', format: 'PDF + Email' },
+    { name: 'Weekly Operator Performance', desc: 'Leaderboard, productivity trends, training needs', schedule: 'Every Monday 08:00 AM', recipients: 8, lastSent: 'Mon 08:00', format: 'Excel + Email' },
+    { name: 'Monthly Cost Analysis', desc: 'Cost breakdown by warehouse/zone/operator', schedule: '1st of month 09:00 AM', recipients: 6, lastSent: 'Jul 01 09:00', format: 'PDF + Dashboard' },
+    { name: 'Monthly SLA Compliance', desc: 'SLA violations, bottleneck analysis, recommendations', schedule: '1st of month 09:00 AM', recipients: 10, lastSent: 'Jul 01 09:00', format: 'PDF + Email' },
+    { name: 'Quarterly Executive Summary', desc: 'All KPIs, trends, year-over-year comparison', schedule: 'Quarterly', recipients: 4, lastSent: 'Jul 01 09:00', format: 'PDF Presentation' },
+    { name: 'Equipment Utilization Report', desc: 'MTBF, MTTR, maintenance cost, replacement forecast', schedule: 'Monthly', recipients: 5, lastSent: 'Jul 01 09:00', format: 'Excel + Dashboard' },
+    { name: 'Heat Map Analysis', desc: 'Zone congestion, bin occupancy, travel patterns', schedule: 'Weekly', recipients: 7, lastSent: 'Mon 08:00', format: 'PNG + Dashboard' },
+    { name: 'Cross-Dock Performance', desc: 'Cross-dock rate, storage avoidance, cost savings', schedule: 'Weekly', recipients: 6, lastSent: 'Mon 08:00', format: 'Excel + Email' },
+  ]
+
+  const upcomingReports = [
+    { name: 'Daily Scorecard', time: 'Tomorrow 06:00 AM', status: 'SCHEDULED' },
+    { name: 'Weekly Operator Performance', time: 'Monday 08:00 AM', status: 'SCHEDULED' },
+    { name: 'Monthly Cost Analysis', time: 'Aug 01 09:00 AM', status: 'SCHEDULED' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Executive Reports</h2><p className="text-sm text-muted-foreground mt-1">Scheduled reports · role-based distribution · PDF/Excel/Dashboard formats</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Report</Button>
+      </div>
+
+      {/* Top Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Active Reports', value: reports.length, color: 'text-blue-600' },
+          { label: 'Daily Reports', value: reports.filter(r => r.schedule.includes('Daily')).length, color: 'text-emerald-600' },
+          { label: 'Weekly Reports', value: reports.filter(r => r.schedule.includes('Weekly') || r.schedule.includes('Monday')).length, color: 'text-amber-600' },
+          { label: 'Monthly Reports', value: reports.filter(r => r.schedule.includes('Monthly') || r.schedule.includes('1st')).length, color: 'text-purple-600' },
+          { label: 'Total Recipients', value: reports.reduce((a, r) => a + r.recipients, 0), color: 'text-cyan-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Reports List */}
+        <Card className="overflow-hidden lg:col-span-2">
+          <div className="p-4 border-b"><h3 className="font-semibold">Configured Reports</h3></div>
+          <div className="divide-y">
+            {reports.map(r => (
+              <div key={r.name} className="p-4 hover:bg-muted/30">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-blue-600" />
+                      <h4 className="font-semibold text-sm">{r.name}</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{r.desc}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" className="h-7 text-xs"><Download className="mr-1 h-3 w-3" />Generate</Button>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.schedule}</span>
+                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{r.recipients} recipients</span>
+                  <span className="flex items-center gap-1"><FileText className="h-3 w-3" />{r.format}</span>
+                  <span className="flex items-center gap-1 text-emerald-600"><CheckCircle2 className="h-3 w-3" />Last: {r.lastSent}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Upcoming & Quick Generate */}
+        <div className="space-y-4">
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 text-sm">Upcoming Reports</h3>
+            <div className="space-y-2">
+              {upcomingReports.map(r => (
+                <div key={r.name} className="p-2 border rounded">
+                  <div className="text-xs font-medium">{r.name}</div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-muted-foreground">{r.time}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">{r.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300">
+            <h3 className="font-semibold mb-2 text-sm">Quick Generate</h3>
+            <p className="text-xs text-muted-foreground mb-3">On-demand reports for immediate download</p>
+            <div className="space-y-2">
+              <Button size="sm" variant="outline" className="w-full justify-start"><FileText className="mr-2 h-4 w-4" />Today&apos;s Scorecard (PDF)</Button>
+              <Button size="sm" variant="outline" className="w-full justify-start"><Download className="mr-2 h-4 w-4" />Operator Leaderboard (Excel)</Button>
+              <Button size="sm" variant="outline" className="w-full justify-start"><Download className="mr-2 h-4 w-4" />Cost Analysis (Excel)</Button>
+              <Button size="sm" variant="outline" className="w-full justify-start"><Download className="mr-2 h-4 w-4" />SLA Compliance (PDF)</Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Chief Architect Recommendation */}
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-lg bg-amber-500 flex items-center justify-center text-white"><Award className="h-5 w-5" /></div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm">Chief Architect Recommendation — Daily Warehouse Scorecard</h3>
+            <p className="text-xs text-muted-foreground mt-1">Management should review the Warehouse Scorecard daily. The scorecard includes 10 KPIs with targets: Inventory Accuracy (≥99.8%), Picking Accuracy (≥99.9%), Putaway SLA (≥98%), Dispatch On-Time (≥99%), Order Fulfillment Accuracy (≥99.8%), Dock-to-Stock Time (&lt;30 min), Avg Picking Time (configurable), Equipment Utilization (80-90%), Operator Productivity (tasks/hr by role), Capacity Utilization (75-85%). Visible on Mission Control dashboard, accessible to supervisors, warehouse managers, operations heads, and executives.</p>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── Coming Soon Placeholder ────────────────────────────
 function ComingSoon({ name }: { name: string }) {
   return (
@@ -13325,6 +14270,7 @@ export default function Home() {
     waveplanning: 'Wave Planning', taskqueue: 'Task Queue', workforce: 'Workforce Management', equipment: 'Equipment Management', controltower: 'Warehouse Control Tower', sladashboard: 'SLA Dashboard', exceptioncenter: 'Exception Center', workforceanalytics: 'Workforce Analytics',
     crossdock: 'Cross-Dock Console', truckqueue: 'Truck Queue', dockschedule: 'Dock Schedule', yardmap: 'Yard Map', vehicletracker: 'Vehicle Tracker', gateconsole: 'Gate Console', yardtower: 'Yard Control Tower', crossdockanalytics: 'Cross-Dock Analytics',
     equipmentmaster: 'Equipment Master', forkliftdashboard: 'Forklift Dashboard', scannermgmt: 'Scanner Management', batterydashboard: 'Battery Dashboard', maintenanceplanner: 'Maintenance Planner', breakdownconsole: 'Breakdown Console', certificationcenter: 'Certification Center', equipmentanalytics: 'Equipment Analytics',
+    missioncontrol: 'Warehouse Mission Control', kpidashboard: 'KPI Dashboard', operatoranalytics: 'Operator Analytics', wareheatanalytics: 'Equipment Analytics+', heatmaps: 'Warehouse Heat Maps', costdashboard: 'Warehouse Cost Dashboard', slaanalytics: 'SLA Analytics', execreports: 'Executive Reports',
     manufacturing: 'Manufacturing',
     quality: 'Quality', procurement: 'Procurement', finance: 'Finance', hr: 'Workforce',
     maintenance: 'Maintenance', retail: 'Retail POS', restaurant: 'Restaurant POS',
@@ -13390,7 +14336,7 @@ export default function Home() {
               <span className="text-base leading-none">+</span>
             </Button>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 31 · 268 Tables · Part 4 WMS</Badge>
+          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 32 · 274 Tables · Part 4 WMS</Badge>
           {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
           <a href="/mobile" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
@@ -13460,11 +14406,19 @@ export default function Home() {
             {activeModule === 'breakdownconsole' && <BreakdownConsoleModule />}
             {activeModule === 'certificationcenter' && <CertificationCenterModule />}
             {activeModule === 'equipmentanalytics' && <EquipmentAnalyticsModule />}
+            {activeModule === 'missioncontrol' && <WarehouseMissionControlModule />}
+            {activeModule === 'kpidashboard' && <KPIDashboardModule />}
+            {activeModule === 'operatoranalytics' && <OperatorAnalyticsModule />}
+            {activeModule === 'wareheatanalytics' && <WarehouseEquipmentAnalyticsModule />}
+            {activeModule === 'heatmaps' && <WarehouseHeatMapsModule />}
+            {activeModule === 'costdashboard' && <WarehouseCostDashboardModule />}
+            {activeModule === 'slaanalytics' && <SLAAnalyticsModule />}
+            {activeModule === 'execreports' && <ExecutiveReportsModule />}
             {activeModule === 'settings' && <SettingsModule />}
             {(activeModule === 'manufacturing' || activeModule === 'quality' || activeModule === 'procurement' || activeModule === 'finance' || activeModule === 'hr' || activeModule === 'maintenance' || activeModule === 'retail' || activeModule === 'restaurant' || activeModule === 'ai') && <ComingSoon name={moduleNames[activeModule]} />}
             <div className="text-center text-xs text-muted-foreground py-8">
               <p>SUOP — Sudhastar Unified Operating Platform</p>
-              <p className="mt-1">Sprints 1-31 · Part 4 WMS (Warehouse Foundation → Mobile Platform & Barcode Scanning App) · 268 Database Tables · Launch Mobile App →</p>
+              <p className="mt-1">Sprints 1-32 · Part 4 WMS (Warehouse Foundation → Mobile Platform → Analytics & KPI Engine) · 274 Database Tables</p>
             </div>
           </main>
         </div>

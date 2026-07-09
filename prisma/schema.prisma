@@ -9459,3 +9459,277 @@ model ScanEvent {
   @@index([validationResult], map: "idx_se_validation")
   @@index([barcodeValue], map: "idx_se_barcode")
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPRINT 32 — WAREHOUSE ANALYTICS, KPI ENGINE & PERFORMANCE INTEL
+// Epic 1: Mission Control · Epic 2: KPI Engine · Epic 3: Productivity
+// Epic 4: Equipment · Epic 5: Heat Maps · Epic 6: Cost · Epic 7: SLA
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Epic 2: KPI Snapshot ───────────────────────────────
+model WarehouseKPISnapshot {
+  id                  String   @id @default(uuid()) @db.Uuid
+  snapshotCode        String   @unique @map("snapshot_code")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Throughput KPIs ───
+  ordersProcessed     Int      @default(0) @map("orders_processed")
+  linesProcessed      Int      @default(0) @map("lines_processed")
+  unitsProcessed      Int      @default(0) @map("units_processed")
+  tasksCompleted      Int      @default(0) @map("tasks_completed")
+  // ─── Time KPIs (minutes) ───
+  avgReceivingTimeMin Decimal? @db.Decimal(8, 2) @map("avg_receiving_time_min")
+  avgPutawayTimeMin   Decimal? @db.Decimal(8, 2) @map("avg_putaway_time_min")
+  avgPickingTimeMin   Decimal? @db.Decimal(8, 2) @map("avg_picking_time_min")
+  avgPackingTimeMin   Decimal? @db.Decimal(8, 2) @map("avg_packing_time_min")
+  avgDispatchTimeMin  Decimal? @db.Decimal(8, 2) @map("avg_dispatch_time_min")
+  dockToStockTimeMin  Decimal? @db.Decimal(8, 2) @map("dock_to_stock_time_min")
+  // ─── Utilization KPIs ───
+  dockUtilizationPct  Decimal? @db.Decimal(5, 2) @map("dock_utilization_pct")
+  equipmentUtilPct    Decimal? @db.Decimal(5, 2) @map("equipment_util_pct")
+  capacityUtilPct     Decimal? @db.Decimal(5, 2) @map("capacity_util_pct")
+  // ─── Quality KPIs ───
+  inventoryAccuracyPct Decimal? @db.Decimal(5, 2) @map("inventory_accuracy_pct")
+  pickingAccuracyPct  Decimal? @db.Decimal(5, 2) @map("picking_accuracy_pct")
+  putawayAccuracyPct  Decimal? @db.Decimal(5, 2) @map("putaway_accuracy_pct")
+  taskCompletionRatePct Decimal? @db.Decimal(5, 2) @map("task_completion_rate_pct")
+  dispatchOnTimePct   Decimal? @db.Decimal(5, 2) @map("dispatch_on_time_pct")
+  orderFulfillmentAccuracyPct Decimal? @db.Decimal(5, 2) @map("order_fulfillment_accuracy_pct")
+  // ─── SLA ───
+  slaCompliancePct    Decimal? @db.Decimal(5, 2) @map("sla_compliance_pct")
+  slaViolations       Int      @default(0) @map("sla_violations")
+  // ─── Cost ───
+  totalCost           Decimal? @db.Decimal(12, 2) @map("total_cost")
+  costPerOrder        Decimal? @db.Decimal(10, 2) @map("cost_per_order")
+  costPerUnit         Decimal? @db.Decimal(10, 2) @map("cost_per_unit")
+  // ─── Warehouse Scorecard (Chief Architect Recommendation) ───
+  scorecardScore      Int?     @map("scorecard_score") // 0-100
+  scorecardGrade      String?  @map("scorecard_grade") // A+, A, B, C, D
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("warehouse_kpi_snapshots")
+  @@index([warehouseId, periodType, periodStart], map: "idx_wks_wh_period")
+  @@index([periodStart], map: "idx_wks_period")
+}
+
+// ─── Epic 3: Operator Productivity ──────────────────────
+model OperatorProductivity {
+  id                  String   @id @default(uuid()) @db.Uuid
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Tasks ───
+  tasksCompleted      Int      @default(0) @map("tasks_completed")
+  tasksAssigned       Int      @default(0) @map("tasks_assigned")
+  taskCompletionRate  Decimal? @db.Decimal(5, 2) @map("task_completion_rate")
+  // ─── Time ───
+  avgTaskTimeMin      Decimal? @db.Decimal(8, 2) @map("avg_task_time_min")
+  totalWorkTimeMin    Int      @default(0) @map("total_work_time_min")
+  idleTimeMin         Int      @default(0) @map("idle_time_min")
+  travelTimeMin       Int      @default(0) @map("travel_time_min")
+  travelDistanceM     Decimal? @db.Decimal(10, 2) @map("travel_distance_m")
+  // ─── Accuracy ───
+  pickingAccuracyPct  Decimal? @db.Decimal(5, 2) @map("picking_accuracy_pct")
+  putawayAccuracyPct  Decimal? @db.Decimal(5, 2) @map("putaway_accuracy_pct")
+  scanAccuracyPct     Decimal? @db.Decimal(5, 2) @map("scan_accuracy_pct")
+  errorCount          Int      @default(0) @map("error_count")
+  // ─── Equipment ───
+  scannerUsageMin     Int      @default(0) @map("scanner_usage_min")
+  forkliftUsageMin    Int      @default(0) @map("forklift_usage_min")
+  totalScans          Int      @default(0) @map("total_scans")
+  // ─── Attendance ───
+  hoursWorked         Decimal? @db.Decimal(5, 2) @map("hours_worked")
+  overtimeHours       Decimal? @db.Decimal(5, 2) @map("overtime_hours")
+  attendanceDays      Int      @default(0) @map("attendance_days")
+  lateDays            Int      @default(0) @map("late_days")
+  // ─── Productivity ───
+  tasksPerHour        Decimal? @db.Decimal(5, 2) @map("tasks_per_hour")
+  unitsPerHour        Decimal? @db.Decimal(8, 2) @map("units_per_hour")
+  utilizationPct      Decimal? @db.Decimal(5, 2) @map("utilization_pct")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("operator_productivity")
+  @@index([operatorId, periodType, periodStart], map: "idx_op_op_period")
+  @@index([warehouseId, periodStart], map: "idx_op_wh_period")
+}
+
+model OperatorScore {
+  id                  String   @id @default(uuid()) @db.Uuid
+  operatorId          String   @db.Uuid @map("operator_id")
+  operatorCode        String   @map("operator_code")
+  operatorName        String   @map("operator_name")
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Period ───
+  periodType          String   @map("period_type")
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Composite Score (0-100) ───
+  overallScore        Int      @map("overall_score")
+  productivityScore   Int      @map("productivity_score")
+  accuracyScore       Int      @map("accuracy_score")
+  attendanceScore     Int      @map("attendance_score")
+  utilizationScore    Int      @map("utilization_score")
+  // ─── Rank ───
+  warehouseRank       Int?     @map("warehouse_rank")
+  zoneRank            Int?     @map("zone_rank")
+  // ─── Grade ───
+  grade               String   @map("grade") // A+, A, B, C, D
+  // ─── Training Recommendation ───
+  trainingNeeded      String[] @default([]) @map("training_needed")
+  recommendation      String?  @map("recommendation") // TOP_PERFORMER, ON_TRACK, NEEDS_IMPROVEMENT, NEEDS_TRAINING
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("operator_scores")
+  @@index([warehouseId, overallScore], map: "idx_os_wh_score")
+  @@index([periodStart], map: "idx_os_period")
+}
+
+// ─── Epic 6: Warehouse Cost Analytics ───────────────────
+model CostCenter {
+  id                  String   @id @default(uuid()) @db.Uuid
+  costCenterCode      String   @unique @map("cost_center_code")
+  costCenterName      String   @map("cost_center_name")
+  // ─── Type ───
+  costType            String   @map("cost_type") // LABOR, EQUIPMENT, ENERGY, PACKAGING, MAINTENANCE, TRANSPORTATION, STORAGE, OVERHEAD
+  // ─── Scope ───
+  warehouseId         String?  @db.Uuid @map("warehouse_id")
+  warehouseName       String?  @map("warehouse_name")
+  zoneId              String?  @db.Uuid @map("zone_id")
+  zoneName            String?  @map("zone_name")
+  // ─── Status ───
+  isActive            Boolean  @default(true) @map("is_active")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  costs               WarehouseCost[]
+
+  @@map("cost_centers")
+  @@index([warehouseId, costType], map: "idx_cc_wh_type")
+}
+
+model WarehouseCost {
+  id                  String   @id @default(uuid()) @db.Uuid
+  costCode            String   @unique @map("cost_code")
+  // ─── Cost Center ───
+  costCenterId        String?  @db.Uuid @map("cost_center_id")
+  costCenterCode      String   @map("cost_center_code")
+  costType            String   @map("cost_type")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  zoneId              String?  @db.Uuid @map("zone_id")
+  zoneName            String?  @map("zone_name")
+  // ─── Period ───
+  periodType          String   @map("period_type") // DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Amount ───
+  amount              Decimal  @db.Decimal(12, 2) @map("amount")
+  currency            String   @default("INR") @map("currency")
+  // ─── Allocation ───
+  allocationType      String?  @map("allocation_type") // DIRECT, ALLOCATED, APPORTIONED
+  allocationBasis     String?  @map("allocation_basis") // HOURS, UNITS, ORDERS, AREA, HEADCOUNT
+  allocationQty       Decimal? @db.Decimal(10, 2) @map("allocation_qty")
+  // ─── Per-Unit Metrics ───
+  costPerOrder        Decimal? @db.Decimal(10, 2) @map("cost_per_order")
+  costPerUnit         Decimal? @db.Decimal(10, 2) @map("cost_per_unit")
+  costPerTask         Decimal? @db.Decimal(10, 2) @map("cost_per_task")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  costCenter          CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  @@map("warehouse_costs")
+  @@index([warehouseId, costType, periodStart], map: "idx_wc_wh_type_period")
+  @@index([costType, periodStart], map: "idx_wc_type_period")
+}
+
+// ─── Epic 5: Heat Map Data ──────────────────────────────
+model WarehouseHeatmap {
+  id                  String   @id @default(uuid()) @db.Uuid
+  heatmapCode         String   @unique @map("heatmap_code")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Type ───
+  heatmapType         String   @map("heatmap_type") // TRAFFIC, PICKING, RECEIVING, CONGESTION, BIN_OCCUPANCY, TRAVEL_PATH, DOCK_ACTIVITY
+  // ─── Cell ───
+  zoneName            String?  @map("zone_name")
+  aisleCode           String?  @map("aisle_code")
+  rackCode            String?  @map("rack_code")
+  binCode             String?  @map("bin_code")
+  dockCode            String?  @map("dock_code")
+  // ─── Intensity (0-100) ───
+  intensity           Int      @map("intensity")
+  // ─── Metric ───
+  metricValue         Decimal? @db.Decimal(10, 2) @map("metric_value")
+  metricUnit          String?  @map("metric_unit") // VISITS, PICKS, RECEIVES, OCCUPANCY_PCT, TRAVEL_M
+  // ─── Period ───
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("warehouse_heatmaps")
+  @@index([warehouseId, heatmapType, periodStart], map: "idx_wh_hm_type_period")
+  @@index([heatmapType, intensity], map: "idx_wh_type_intensity")
+}
+
+// ─── Epic 7: Bottleneck Detection ───────────────────────
+model WarehouseBottleneck {
+  id                  String   @id @default(uuid()) @db.Uuid
+  bottleneckCode      String   @unique @map("bottleneck_code")
+  // ─── Scope ───
+  warehouseId         String   @db.Uuid @map("warehouse_id")
+  warehouseName       String   @map("warehouse_name")
+  // ─── Type ───
+  bottleneckType      String   @map("bottleneck_type") // SLOW_ZONE, SLOW_OPERATOR, EQUIPMENT_DELAY, DOCK_DELAY, QUEUE_DELAY, SLA_VIOLATION
+  // ─── Location ───
+  zoneName            String?  @map("zone_name")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  equipmentCode       String?  @map("equipment_code")
+  dockCode            String?  @map("dock_code")
+  // ─── Impact ───
+  severity            String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  impactScore         Int      @default(50) @map("impact_score") // 0-100
+  affectedTasks       Int      @default(0) @map("affected_tasks")
+  affectedOrders      Int      @default(0) @map("affected_orders")
+  estimatedDelayMin   Int      @default(0) @map("estimated_delay_min")
+  // ─── Root Cause ───
+  rootCause           String?  @map("root_cause")
+  detectedAt          DateTime @default(now()) @map("detected_at")
+  // ─── Recommendation ───
+  recommendedAction   String?  @map("recommended_action")
+  // ─── Status ───
+  status              String   @default("OPEN") // OPEN, INVESTIGATING, RESOLVING, RESOLVED, IGNORED
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouse_bottlenecks")
+  @@index([warehouseId, status, severity], map: "idx_wb_wh_status_sev")
+  @@index([bottleneckType, status], map: "idx_wb_type_status")
+}
