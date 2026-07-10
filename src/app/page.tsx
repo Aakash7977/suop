@@ -87,6 +87,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
   const [show, setShow] = useState(false)
   const [rem, setRem] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loginError, setLoginError] = useState('')
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-3 md:p-4">
@@ -102,7 +103,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
           </Badge>
         </div>
         <Card className="p-4 md:p-6 bg-slate-900/80 backdrop-blur border-slate-700">
-          <form onSubmit={async (e) => { e.preventDefault(); setLoading(true); await onLogin(email, password, rem); setLoading(false) }} className="space-y-4">
+          <form onSubmit={async (e) => { e.preventDefault(); setLoginError(''); setLoading(true); try { await onLogin(email, password, rem) } catch (err: any) { setLoginError(err?.message || 'Login failed. Try Demo Mode instead.') } setLoading(false) }} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-slate-200">Email Address</Label>
               <div className="relative">
@@ -122,6 +123,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
               <input id="rem" type="checkbox" checked={rem} onChange={(e) => setRem(e.target.checked)} className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-primary" />
               <Label htmlFor="rem" className="text-sm text-slate-300 cursor-pointer">Remember me for 30 days</Label>
             </div>
+            {loginError && <div className="text-xs text-rose-400 bg-rose-950/50 border border-rose-800 rounded p-2">{loginError}</div>}
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : <>Sign In<ArrowRight className="ml-2 h-4 w-4" /></>}
             </Button>
@@ -31317,7 +31319,7 @@ export default function Home() {
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={async (e, p, r) => { await login(e, p) }} onDemo={loginDemo} />
+    return <LoginScreen onLogin={async (e, p, r) => { const result = await login(e, p); if (!result.success && result.error) { /* error is set in store, login screen will show it */ } }} onDemo={loginDemo} />
   }
 
   const moduleNames: Record<ModuleKey, string> = {
