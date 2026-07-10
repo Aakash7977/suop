@@ -102,7 +102,7 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
             <p className="text-xs md:text-sm text-slate-400">Sudhastar Unified Operating Platform</p>
           </div>
           <Badge variant="outline" className="border-slate-600 text-slate-300 text-xs">
-            <Shield className="mr-1 h-3 w-3" /> Sprint 52 · Parts 1-6 · 473 Tables
+            <Shield className="mr-1 h-3 w-3" /> Sprint 55 · Parts 1-6 · 497 Tables
           </Badge>
         </div>
         <Card className="p-4 md:p-6 bg-slate-900/80 backdrop-blur border-slate-700">
@@ -35369,49 +35369,47 @@ export default function Home() {
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
-      {/* Sidebar */}
+      {/* Sidebar — always visible on desktop (md+), drawer on mobile */}
       <aside className={cn(
-        'flex flex-col border-r bg-sidebar transition-all duration-200 flex-shrink-0 z-40',
+        'flex flex-col border-r bg-sidebar flex-shrink-0 z-40 w-64',
         'fixed md:relative inset-y-0 left-0 h-full',
-        sidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full md:w-0 md:translate-x-0'
+        'transition-transform duration-200',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}>
-        {sidebarOpen && (
-          <>
-            <div className="flex h-16 items-center gap-3 border-b px-6">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">S</div>
-              <div><p className="font-bold text-sm leading-tight">SUOP</p><p className="text-xs text-muted-foreground leading-tight">Sudhastar Unified OS</p></div>
-            </div>
-            <div className="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden suop-sidebar-scroll">
-              <nav className="space-y-6">
-                {SIDEBAR_SECTIONS.map(section => (
-                  <div key={section.section}>
-                    <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.section}</p>
-                    <div className="space-y-1">
-                      {section.items.map(item => (
-                        <button key={item.name} disabled={!item.available}
-                          className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                            activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
-                          )}
-                          onClick={() => { if (item.available) { setActiveModule(item.module); setSidebarOpen(false) } }}
-                        >
-                          {item.icon}{item.name}
-                          {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </nav>
-            </div>
-            <div className="border-t p-4"><Button variant="ghost" size="sm" onClick={logout} className="w-full">Sign Out</Button></div>
-          </>
-        )}
+        {/* Always render sidebar content — visibility is controlled by transform above */}
+        <div className="flex h-16 items-center gap-3 border-b px-6">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">S</div>
+          <div><p className="font-bold text-sm leading-tight">SUOP</p><p className="text-xs text-muted-foreground leading-tight">Sudhastar Unified OS</p></div>
+        </div>
+        <div className="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden suop-sidebar-scroll">
+          <nav className="space-y-6">
+            {SIDEBAR_SECTIONS.map(section => (
+              <div key={section.section}>
+                <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.section}</p>
+                <div className="space-y-1">
+                  {section.items.map(item => (
+                    <button key={item.name} disabled={!item.available}
+                      className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                        activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
+                      )}
+                      onClick={() => { if (item.available) { setActiveModule(item.module); setSidebarOpen(false) } }}
+                    >
+                      {item.icon}{item.name}
+                      {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </div>
+        <div className="border-t p-4"><Button variant="ghost" size="sm" onClick={logout} className="w-full">Sign Out</Button></div>
       </aside>
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-2 md:gap-4 border-b px-3 md:px-6">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex-shrink-0">{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex-shrink-0 md:hidden">{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           <h1 className="text-sm md:text-lg font-semibold truncate flex-1">{moduleNames[activeModule]}</h1>
           <div className="hidden md:flex items-center gap-2">
             {/* Zoom Controls - desktop only */}
