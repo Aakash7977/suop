@@ -15259,3 +15259,363 @@ model ContinuousImprovement {
   @@index([improvementType], map: "idx_cim48_type")
   @@index([status], map: "idx_cim48_status")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 49 — ENTERPRISE QUALITY FOUNDATION & QUALITY MASTER ENGINE
+// Part 6: QMS · Sprint 1 of 15 · 14 new models · Epic 1-8 (departments, standards,
+// inspection types/templates/parameters, sampling plans, specifications, test methods,
+// quality calendar, configuration)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Quality Organization Master ────────────────────────────────
+model QualityDepartment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  departmentCode      String   @unique @map("department_code") // QD-THN-01
+  departmentName      String   @map("department_name")
+  // ─── Plant ───
+  plantId             String?  @db.Uuid @map("plant_id")
+  plantCode           String   @map("plant_code")
+  plantName           String   @map("plant_name")
+  // ─── Manager ───
+  managerId           String?  @db.Uuid @map("manager_id")
+  managerName         String?  @map("manager_name")
+  // ─── Lab ───
+  defaultLabCode      String?  @map("default_lab_code")
+  defaultLabName      String?  @map("default_lab_name")
+  // ─── Scope ───
+  inspectionScope     String   @default("ALL") @map("inspection_scope") // RAW_MATERIAL, IN_PROCESS, FINISHED_GOODS, PACKAGING, WAREHOUSE, DISPATCH, ALL
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, INACTIVE
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("quality_departments")
+  @@index([plantCode, status], map: "idx_qd49_plant_status")
+  @@index([inspectionScope], map: "idx_qd49_scope")
+}
+
+model QualityLocation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  locationCode        String   @unique @map("location_code") // QL-RAW-LAB-01
+  locationName        String   @map("location_name")
+  // ─── Links ───
+  qualityDepartmentId String?  @db.Uuid @map("quality_department_id")
+  departmentCode      String?  @map("department_code")
+  // ─── Type ───
+  locationType        String   @map("location_type") // LAB, INSPECTION_AREA, TEST_STATION, SAMPLING_POINT
+  // ─── Plant ───
+  plantCode           String   @map("plant_code")
+  // ─── Capacity ───
+  capacityPerDay      Int      @default(100) @map("capacity_per_day")
+  // ─── Equipment ───
+  equipmentCount      Int      @default(0) @map("equipment_count")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("quality_locations")
+  @@index([plantCode, locationType], map: "idx_ql49_plant_type")
+  @@index([departmentCode], map: "idx_ql49_dept")
+}
+
+model QualityRole {
+  id                  String   @id @default(uuid()) @db.Uuid
+  roleCode            String   @unique @map("role_code") // QR-QC-INSPECTOR
+  roleName            String   @map("role_name")
+  // ─── Permissions ───
+  canApproveResults   Boolean  @default(false) @map("can_approve_results")
+  canRejectBatches    Boolean  @default(false) @map("can_reject_batches")
+  canRaiseNCR         Boolean  @default(false) @map("can_raise_ncr")
+  canApproveCAPA      Boolean  @default(false) @map("can_approve_capa")
+  canSignCOA          Boolean  @default(false) @map("can_sign_coa")
+  canCalibrateEquipment Boolean @default(false) @map("can_calibrate_equipment")
+  // ─── Level ───
+  roleLevel           String   @default("INSPECTOR") @map("role_level") // INSPECTOR, SUPERVISOR, MANAGER, HEAD
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("quality_roles")
+  @@index([roleLevel, status], map: "idx_qr49_level_status")
+}
+
+// ─── Epic 2: Quality Standards Master ───────────────────────────────────
+model QualityStandard {
+  id                  String   @id @default(uuid()) @db.Uuid
+  standardCode        String   @unique @map("standard_code") // FSSAI-2018, ISO-22000
+  standardName        String   @map("standard_name")
+  // ─── Type ───
+  standardType        String   @map("standard_type") // FSSAI, ISO_22000, HACCP, BRCGS, INTERNAL, CUSTOMER_SPEC, EXPORT
+  // ─── Version ───
+  currentVersion      String   @map("current_version") // v1.0
+  // ─── Period ───
+  effectiveDate       DateTime @map("effective_date")
+  expiryDate          DateTime? @map("expiry_date")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Document ───
+  documentUrl         String?  @map("document_url")
+  description         String?
+  // ─── Status ───
+  status              String   @default("DRAFT") @map("status") // DRAFT, APPROVED, ACTIVE, SUPERSEDED, RETIRED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  versions            QualityStandardVersion[]
+
+  @@map("quality_standards")
+  @@index([standardType, status], map: "idx_qs49_type_status")
+  @@index([status], map: "idx_qs49_status")
+}
+
+model QualityStandardVersion {
+  id                  String   @id @default(uuid()) @db.Uuid
+  standardId          String   @db.Uuid @map("standard_id")
+  standardCode        String   @map("standard_code")
+  versionNumber       String   @map("version_number") // v1.0, v1.1, v2.0
+  // ─── Changes ───
+  changeDescription   String   @map("change_description")
+  // ─── Period ───
+  effectiveDate       DateTime @map("effective_date")
+  supersededAt        DateTime? @map("superseded_at")
+  supersededByVersion String?  @map("superseded_by_version")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  standard            QualityStandard @relation(fields: [standardId], references: [id], onDelete: Cascade)
+
+  @@map("quality_standard_versions")
+  @@index([standardId, versionNumber], map: "idx_qsv49_std_version")
+}
+
+// ─── Epic 3: Inspection Master ──────────────────────────────────────────
+model InspectionType {
+  id                  String   @id @default(uuid()) @db.Uuid
+  typeCode            String   @unique @map("type_code") // IT-VISUAL, IT-WEIGHT, IT-TEMP
+  typeName            String   @map("type_name")
+  // ─── Category ───
+  category            String   @map("category") // VISUAL, WEIGHT, TEMPERATURE, MOISTURE, TASTE, COLOR, TEXTURE, PACKAGING, METAL_DETECTION, MICROBIOLOGY, CHEMICAL
+  // ─── Method ───
+  measurementType     String   @default("QUALITATIVE") @map("measurement_type") // QUALITATIVE (pass/fail), QUANTITATIVE (numeric)
+  // ─── Unit ───
+  unitOfMeasure       String?  @map("unit_of_measure") // °C, KG, %, CFU/g
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  templates           InspectionTemplate[]
+
+  @@map("inspection_types")
+  @@index([category, status], map: "idx_it49_cat_status")
+}
+
+model InspectionTemplate {
+  id                  String   @id @default(uuid()) @db.Uuid
+  templateCode        String   @unique @map("template_code") // ITP-RAW-CASHEW-01
+  templateName        String   @map("template_name")
+  // ─── Links ───
+  inspectionTypeId    String   @db.Uuid @map("inspection_type_id")
+  // ─── Scope ───
+  applicableTo        String   @map("applicable_to") // RAW_MATERIAL, IN_PROCESS, FINISHED_GOODS, PACKAGING
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  // ─── Standard ───
+  qualityStandardId   String?  @db.Uuid @map("quality_standard_id")
+  qualityStandardCode String?  @map("quality_standard_code")
+  // ─── Sampling ───
+  samplingPlanId      String?  @db.Uuid @map("sampling_plan_id")
+  samplingPlanCode    String?  @map("sampling_plan_code")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Status ───
+  status              String   @default("DRAFT") @map("status") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  inspectionType      InspectionType @relation(fields: [inspectionTypeId], references: [id])
+  parameters          InspectionParameter[]
+
+  @@map("inspection_templates")
+  @@index([applicableTo, status], map: "idx_itp49_scope_status")
+  @@index([productSku], map: "idx_itp49_sku")
+}
+
+model InspectionParameter {
+  id                  String   @id @default(uuid()) @db.Uuid
+  templateId          String   @db.Uuid @map("template_id")
+  // ─── Parameter ───
+  parameterName       String   @map("parameter_name") // e.g., "Cashew moisture content"
+  parameterCode       String   @map("parameter_code")
+  // ─── Spec ───
+  minValue            Decimal? @db.Decimal(14, 4) @map("min_value")
+  maxValue            Decimal? @db.Decimal(14, 4) @map("max_value")
+  targetValue         Decimal? @db.Decimal(14, 4) @map("target_value")
+  tolerance           Decimal? @db.Decimal(10, 4) @map("tolerance")
+  criticalLimit       Decimal? @db.Decimal(14, 4) @map("critical_limit")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  // ─── Type ───
+  parameterType       String   @default("QUANTITATIVE") @map("parameter_type") // QUANTITATIVE, QUALITATIVE
+  // ─── Method ───
+  testMethodId        String?  @db.Uuid @map("test_method_id")
+  testMethodCode      String?  @map("test_method_code")
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // CRITICAL, MAJOR, MINOR
+  // ─── Mandatory ───
+  isMandatory         Boolean  @default(true) @map("is_mandatory")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  template            InspectionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("inspection_parameters")
+  @@index([templateId], map: "idx_ip49_template")
+}
+
+// ─── Epic 4: Sampling Plans ─────────────────────────────────────────────
+model SamplingPlan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planCode            String   @unique @map("plan_code") // SP-AQL-2.5
+  planName            String   @map("plan_name")
+  // ─── Type ───
+  samplingType        String   @map("sampling_type") // FULL_INSPECTION, RANDOM_SAMPLING, AQL_SAMPLING, BATCH_SAMPLING, RISK_BASED, CUSTOMER_SPECIFIC
+  // ─── AQL ───
+  aqlLevel            String?  @map("aql_level") // 0.65, 1.0, 2.5, 4.0
+  sampleSizeCode      String?  @map("sample_size_code") // A, B, C, D...
+  // ─── Parameters ───
+  lotSizeMin          Int?     @map("lot_size_min")
+  lotSizeMax          Int?     @map("lot_size_max")
+  sampleSize          Int?     @map("sample_size")
+  acceptanceNumber    Int?     @map("acceptance_number") // max defects allowed
+  rejectionNumber     Int?     @map("rejection_number")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("sampling_plans")
+  @@index([samplingType, status], map: "idx_sp49_type_status")
+}
+
+// ─── Epic 5: Quality Specifications ─────────────────────────────────────
+model QualitySpecification {
+  id                  String   @id @default(uuid()) @db.Uuid
+  specCode            String   @unique @map("spec_code") // QS-KK-500-V1
+  specName            String   @map("spec_name")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Standard ───
+  qualityStandardId   String?  @db.Uuid @map("quality_standard_id")
+  qualityStandardCode String?  @map("quality_standard_code")
+  // ─── Spec Data ───
+  specData            String   @map("spec_data") // JSON array of { parameter, min, max, target, unit, severity }
+  // ─── Version ───
+  version             String   @default("v1.0") @map("version")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Period ───
+  effectiveDate       DateTime @map("effective_date")
+  // ─── Status ───
+  status              String   @default("DRAFT") @map("status") // DRAFT, APPROVED, ACTIVE, SUPERSEDED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("quality_specifications")
+  @@index([productSku, status], map: "idx_qspec49_sku_status")
+  @@index([status], map: "idx_qspec49_status")
+}
+
+// ─── Epic 6: Test Methods ───────────────────────────────────────────────
+model TestMethod {
+  id                  String   @id @default(uuid()) @db.Uuid
+  methodCode          String   @unique @map("method_code") // TM-MOISTURE-OVEN
+  methodName          String   @map("method_name")
+  // ─── Type ───
+  methodType          String   @map("method_type") // MANUAL, LABORATORY, INSTRUMENT, DIGITAL, RAPID_TEST, MICROBIOLOGICAL, CHEMICAL_ANALYSIS
+  // ─── Description ───
+  description         String?
+  procedureUrl        String?  @map("procedure_url")
+  // ─── Duration ───
+  estimatedDurationMin Int     @default(30) @map("estimated_duration_min")
+  // ─── Standard ───
+  referenceStandard   String?  @map("reference_standard") // e.g., "IS 4333.2"
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  equipment           TestEquipment[]
+
+  @@map("test_methods")
+  @@index([methodType, status], map: "idx_tm49_type_status")
+}
+
+model TestEquipment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  equipmentCode       String   @unique @map("equipment_code") // TE-MOISTURE-METER-01
+  equipmentName       String   @map("equipment_name")
+  // ─── Links ───
+  testMethodId        String?  @db.Uuid @map("test_method_id")
+  // ─── Type ───
+  equipmentType       String   @map("equipment_type") // MOISTURE_METER, THERMOMETER, BALANCE, SPECTROMETER, MICROSCOPE, PH_METER, METAL_DETECTOR
+  // ─── Calibration ───
+  lastCalibratedAt    DateTime? @map("last_calibrated_at")
+  nextCalibrationDue  DateTime? @map("next_calibration_due")
+  calibrationFrequencyDays Int  @default(90) @map("calibration_frequency_days")
+  // ─── Location ───
+  plantCode           String   @map("plant_code")
+  locationCode        String?  @map("location_code")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, CALIBRATION_DUE, OUT_OF_SERVICE
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  testMethod          TestMethod? @relation(fields: [testMethodId], references: [id], onDelete: SetNull)
+
+  @@map("test_equipment")
+  @@index([plantCode, status], map: "idx_te49_plant_status")
+  @@index([nextCalibrationDue], map: "idx_te49_calibration")
+}
+
+// ─── Epic 7: Quality Calendar ───────────────────────────────────────────
+model QualityCalendar {
+  id                  String   @id @default(uuid()) @db.Uuid
+  calendarCode        String   @unique @map("calendar_code") // QCAL-2026-001
+  // ─── Event ───
+  eventType           String   @map("event_type") // EQUIPMENT_CALIBRATION, INTERNAL_AUDIT, ROUTINE_INSPECTION, CERTIFICATION_RENEWAL, TRAINING, REGULATORY_INSPECTION
+  eventTitle          String   @map("event_title")
+  eventDescription    String?  @map("event_description")
+  // ─── Schedule ───
+  scheduledDate       DateTime @map("scheduled_date")
+  scheduledEndDate    DateTime? @map("scheduled_end_date")
+  // ─── Frequency ───
+  frequency           String   @default("ONE_TIME") @map("frequency") // ONE_TIME, DAILY, WEEKLY, MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL
+  // ─── Links ───
+  equipmentCode       String?  @map("equipment_code")
+  standardCode        String?  @map("standard_code")
+  // ─── Assigned ───
+  assignedToId        String?  @db.Uuid @map("assigned_to_id")
+  assignedToName      String?  @map("assigned_to_name")
+  // ─── Status ───
+  status              String   @default("SCHEDULED") @map("status") // SCHEDULED, IN_PROGRESS, COMPLETED, OVERDUE, CANCELLED
+  completedAt         DateTime? @map("completed_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("quality_calendar")
+  @@index([scheduledDate, status], map: "idx_qcal49_date_status")
+  @@index([eventType, status], map: "idx_qcal49_type_status")
+}
