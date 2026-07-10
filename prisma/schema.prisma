@@ -15619,3 +15619,375 @@ model QualityCalendar {
   @@index([scheduledDate, status], map: "idx_qcal49_date_status")
   @@index([eventType, status], map: "idx_qcal49_type_status")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 50 — SUPPLIER QUALITY MANAGEMENT & INCOMING RAW MATERIAL INSPECTION
+// Part 6: QMS · Sprint 2 of 15 · 10 new models · Epic 1-7 (supplier qualification,
+// incoming inspection, quality hold, sampling/lab, acceptance/rejection, NCR, scorecard)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Supplier Qualification Management ──────────────────────────
+model SupplierQualification {
+  id                  String   @id @default(uuid()) @db.Uuid
+  supplierId          String   @db.Uuid @map("supplier_id")
+  supplierCode        String   @unique @map("supplier_code")
+  supplierName        String   @map("supplier_name")
+  // ─── Category ───
+  supplierCategory    String   @map("supplier_category") // RAW_MATERIAL, PACKAGING, SPICES, DRY_FRUITS, MILK_PRODUCTS, OILS_GHEE, CHEMICALS, CLEANING, LABELS, CONSUMABLES
+  // ─── Approval ───
+  approvalStatus      String   @default("PENDING") @map("approval_status") // PENDING, QUALIFIED, APPROVED, CONDITIONAL, SUSPENDED, BLACKLISTED
+  qualificationDate   DateTime? @map("qualification_date")
+  // ─── Risk ───
+  riskLevel           String   @default("MEDIUM") @map("risk_level") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Audit ───
+  auditFrequency      String   @default("ANNUAL") @map("audit_frequency") // QUARTERLY, SEMI_ANNUAL, ANNUAL, BIENNIAL
+  lastAuditDate       DateTime? @map("last_audit_date")
+  nextAuditDue        DateTime? @map("next_audit_due")
+  // ─── Preferred ───
+  isPreferredSupplier Boolean  @default(false) @map("is_preferred_supplier")
+  // ─── Products ───
+  approvedProducts    String?  @map("approved_products") // JSON array of approved product SKUs
+  // ─── Contact ───
+  qualityContactName  String?  @map("quality_contact_name")
+  qualityContactPhone String?  @map("quality_contact_phone")
+  qualityContactEmail String?  @map("quality_contact_email")
+  // ─── Audit ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, INACTIVE
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  certifications      SupplierCertification[]
+  audits              SupplierAudit[]
+
+  @@map("supplier_qualifications")
+  @@index([supplierCategory, approvalStatus], map: "idx_sq50_cat_status")
+  @@index([approvalStatus, riskLevel], map: "idx_sq50_status_risk")
+  @@index([isPreferredSupplier], map: "idx_sq50_preferred")
+}
+
+model SupplierCertification {
+  id                  String   @id @default(uuid()) @db.Uuid
+  supplierQualificationId String @db.Uuid @map("supplier_qualification_id")
+  supplierCode        String   @map("supplier_code")
+  // ─── Certification ───
+  certificationType   String   @map("certification_type") // FSSAI_LICENSE, ISO_22000, HACCP, BRCGS, GMP, HALAL, ORGANIC, FDA_REGISTRATION
+  certificationNumber String   @map("certification_number")
+  certificationBody   String?  @map("certification_body")
+  // ─── Validity ───
+  issuedDate          DateTime @map("issued_date")
+  expiryDate          DateTime @map("expiry_date")
+  documentUrl         String?  @map("document_url")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, EXPIRED, PENDING_RENEWAL
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  supplierQualification SupplierQualification @relation(fields: [supplierQualificationId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_certifications")
+  @@index([supplierCode, certificationType], map: "idx_sc50_supplier_type")
+  @@index([expiryDate], map: "idx_sc50_expiry")
+}
+
+model SupplierAudit {
+  id                  String   @id @default(uuid()) @db.Uuid
+  supplierQualificationId String @db.Uuid @map("supplier_qualification_id")
+  supplierCode        String   @map("supplier_code")
+  supplierName        String   @map("supplier_name")
+  // ─── Audit ───
+  auditType           String   @map("audit_type") // INITIAL_QUALIFICATION, ROUTINE_AUDIT, FOR_CAUSE_AUDIT, FOLLOW_UP_AUDIT
+  auditDate           DateTime @map("audit_date")
+  auditScope          String?  @map("audit_scope")
+  // ─── Auditor ───
+  auditorName         String?  @map("auditor_name")
+  auditorOrg          String?  @map("auditor_org")
+  // ─── Findings ───
+  totalFindings       Int      @default(0) @map("total_findings")
+  criticalFindings    Int      @default(0) @map("critical_findings")
+  majorFindings       Int      @default(0) @map("major_findings")
+  minorFindings       Int      @default(0) @map("minor_findings")
+  // ─── Score ───
+  auditScore          Decimal? @db.Decimal(5, 2) @map("audit_score") // 0-100
+  // ─── Status ───
+  status              String   @default("COMPLETED") @map("status") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  auditReportUrl      String?  @map("audit_report_url")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  supplierQualification SupplierQualification @relation(fields: [supplierQualificationId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_audits")
+  @@index([supplierCode, auditDate], map: "idx_sa50_supplier_date")
+  @@index([status], map: "idx_sa50_status")
+}
+
+// ─── Epic 2: Incoming Material Inspection (IQC) ─────────────────────────
+model IncomingInspection {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionCode      String   @unique @map("inspection_code") // IQC-2026-000001
+  // ─── Links ───
+  grnNumber           String   @map("grn_number")
+  purchaseOrderNumber String?  @map("purchase_order_number")
+  // ─── Supplier ───
+  supplierCode        String   @map("supplier_code")
+  supplierName        String   @map("supplier_name")
+  supplierBatchNo     String?  @map("supplier_batch_no")
+  // ─── Material ───
+  materialCode        String   @map("material_code")
+  materialName        String   @map("material_name")
+  materialCategory    String   @map("material_category") // RAW_MATERIAL, PACKAGING, SPICES, DRY_FRUITS, MILK_PRODUCTS, OILS_GHEE, CHEMICALS, CLEANING, LABELS, CONSUMABLES
+  // ─── Quantity ───
+  receivedQty         Decimal  @db.Decimal(14, 3) @map("received_qty")
+  sampledQty          Decimal  @db.Decimal(14, 3) @default(0) @map("sampled_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Inspection ───
+  inspectionTemplateCode String? @map("inspection_template_code")
+  samplingPlanCode    String?  @map("sampling_plan_code")
+  inspectionType      String   @default("ROUTINE") @map("inspection_type") // ROUTINE, URGENT, REINSPECTION, CUSTOMER_REQUESTED
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, SAMPLING, IN_INSPECTION, PASSED, FAILED, CONDITIONAL, ON_HOLD
+  // ─── Result ───
+  overallResult       String?  @map("overall_result") // PASS, FAIL, CONDITIONAL_PASS
+  resultSummary       String?  @map("result_summary")
+  // ─── Decision ───
+  decision            String?  @map("decision") // FULL_ACCEPTANCE, PARTIAL_ACCEPTANCE, CONDITIONAL_ACCEPTANCE, FULL_REJECTION
+  acceptedQty         Decimal  @db.Decimal(14, 3) @default(0) @map("accepted_qty")
+  rejectedQty         Decimal  @db.Decimal(14, 3) @default(0) @map("rejected_qty")
+  // ─── Inspector ───
+  inspectorId         String?  @db.Uuid @map("inspector_id")
+  inspectorName       String?  @map("inspector_name")
+  inspectedAt         DateTime? @map("inspected_at")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Time ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  samples             InspectionSample[]
+  results             InspectionResult[]
+
+  @@map("incoming_inspections")
+  @@index([grnNumber], map: "idx_ii50_grn")
+  @@index([supplierCode, status], map: "idx_ii50_supplier_status")
+  @@index([status], map: "idx_ii50_status")
+  @@index([materialCode], map: "idx_ii50_material")
+}
+
+model InspectionSample {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionId        String   @db.Uuid @map("inspection_id")
+  inspectionCode      String   @map("inspection_code")
+  // ─── Sample ───
+  sampleNumber        Int      @map("sample_number") // 1, 2, 3...
+  sampleCode          String   @map("sample_code") // S-IQC-001-01
+  sampleQty           Decimal  @db.Decimal(14, 3) @map("sample_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Collection ───
+  collectedById       String?  @db.Uuid @map("collected_by_id")
+  collectedByName     String?  @map("collected_by_name")
+  collectedAt         DateTime? @map("collected_at")
+  // ─── Status ───
+  status              String   @default("COLLECTED") @map("status") // COLLECTED, IN_LAB, TESTED, DISCARDED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  inspection          IncomingInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  results             InspectionResult[]
+
+  @@map("inspection_samples")
+  @@index([inspectionId], map: "idx_is50_inspection")
+}
+
+model InspectionResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionId        String   @db.Uuid @map("inspection_id")
+  sampleId            String?  @db.Uuid @map("sample_id")
+  // ─── Parameter ───
+  parameterName       String   @map("parameter_name")
+  parameterCode       String   @map("parameter_code")
+  // ─── Spec ───
+  minValue            Decimal? @db.Decimal(14, 4) @map("min_value")
+  maxValue            Decimal? @db.Decimal(14, 4) @map("max_value")
+  targetValue         Decimal? @db.Decimal(14, 4) @map("target_value")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  // ─── Result ───
+  measuredValue       String   @map("measured_value") // string to support both numeric and qualitative
+  result              String   @default("PASS") @map("result") // PASS, FAIL, MARGINAL, NA
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // CRITICAL, MAJOR, MINOR
+  // ─── Test Method ───
+  testMethodCode      String?  @map("test_method_code")
+  testMethodName      String?  @map("test_method_name")
+  // ─── Equipment ───
+  equipmentCode       String?  @map("equipment_code")
+  // ─── Notes ───
+  notes               String?
+  // ─── Inspector ───
+  testedById          String?  @db.Uuid @map("tested_by_id")
+  testedByName        String?  @map("tested_by_name")
+  testedAt            DateTime? @map("tested_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  inspection          IncomingInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  sample              InspectionSample? @relation(fields: [sampleId], references: [id], onDelete: SetNull)
+
+  @@map("inspection_results")
+  @@index([inspectionId], map: "idx_ires50_inspection")
+  @@index([sampleId], map: "idx_ires50_sample")
+  @@index([result], map: "idx_ires50_result")
+}
+
+// ─── Epic 3: Quality Hold Inventory ─────────────────────────────────────
+model QualityHoldInventory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  holdCode            String   @unique @map("hold_code") // QHI-2026-000001
+  // ─── Links ───
+  grnNumber           String   @map("grn_number")
+  inspectionCode      String?  @map("inspection_code")
+  // ─── Material ───
+  materialCode        String   @map("material_code")
+  materialName        String   @map("material_name")
+  // ─── Supplier ───
+  supplierCode        String   @map("supplier_code")
+  supplierName        String   @map("supplier_name")
+  supplierBatchNo     String?  @map("supplier_batch_no")
+  // ─── Quantity ───
+  heldQty             Decimal  @db.Decimal(14, 3) @map("held_qty")
+  releasedQty         Decimal  @db.Decimal(14, 3) @default(0) @map("released_qty")
+  rejectedQty         Decimal  @db.Decimal(14, 3) @default(0) @map("rejected_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Location ───
+  warehouseCode       String   @map("warehouse_code")
+  binCode             String   @map("bin_code") // Quality Hold bin
+  // ─── Status ───
+  inventoryStatus     String   @default("QUALITY_HOLD") @map("inventory_status") // QUALITY_HOLD, UNDER_INSPECTION, APPROVED, REJECTED, CONDITIONAL_RELEASE, BLOCKED
+  // ─── Time ───
+  heldAt              DateTime @default(now()) @map("held_at")
+  releasedAt          DateTime? @map("released_at")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("quality_hold_inventory")
+  @@index([grnNumber], map: "idx_qhi50_grn")
+  @@index([supplierCode, inventoryStatus], map: "idx_qhi50_supplier_status")
+  @@index([inventoryStatus], map: "idx_qhi50_status")
+}
+
+// ─── Epic 6: Supplier NCR ───────────────────────────────────────────────
+model SupplierNCR {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ncrNumber           String   @unique @map("ncr_number") // SNCR-2026-000001
+  // ─── Links ───
+  inspectionCode      String?  @map("inspection_code")
+  grnNumber           String?  @map("grn_number")
+  // ─── Supplier ───
+  supplierCode        String   @map("supplier_code")
+  supplierName        String   @map("supplier_name")
+  // ─── Material ───
+  materialCode        String   @map("material_code")
+  materialName        String   @map("material_name")
+  supplierBatchNo     String?  @map("supplier_batch_no")
+  // ─── NCR ───
+  ncrType             String   @map("ncr_type") // QUALITY_FAILURE, PACKAGING_DAMAGE, SHORTAGE, DOCUMENTATION, MISLABELING, CONTAMINATION, EXPIRY, SPECIFICATION_DEVIATION
+  defectDescription   String   @map("defect_description")
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // MINOR, MAJOR, CRITICAL
+  // ─── Root Cause ───
+  rootCause           String?  @map("root_cause")
+  rootCauseCategory   String?  @map("root_cause_category") // SUPPLIER_PROCESS, TRANSPORT, STORAGE, HANDLING, RAW_MATERIAL, DOCUMENTATION
+  // ─── Disposition ───
+  disposition         String?  @map("disposition") // RETURN_TO_SUPPLIER, REWORK, USE_AS_IS, SCRAP, CONDITIONAL_ACCEPTANCE
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, NOTIFIED, ACKNOWLEDGED, INVESTIGATING, CORRECTIVE_ACTION, VERIFIED, CLOSED
+  // ─── Supplier Response ───
+  supplierNotifiedAt  DateTime? @map("supplier_notified_at")
+  supplierResponseAt  DateTime? @map("supplier_response_at")
+  supplierResponse    String?  @map("supplier_response")
+  // ─── Closure ───
+  closedAt            DateTime? @map("closed_at")
+  closureNotes        String?  @map("closure_notes")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  correctiveActions   SupplierCorrectiveAction[]
+
+  @@map("supplier_ncrs")
+  @@index([supplierCode, status], map: "idx_sncr50_supplier_status")
+  @@index([severity, status], map: "idx_sncr50_sev_status")
+  @@index([status], map: "idx_sncr50_status")
+}
+
+model SupplierCorrectiveAction {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ncrId               String   @db.Uuid @map("ncr_id")
+  ncrNumber           String   @map("ncr_number")
+  // ─── Action ───
+  actionType          String   @map("action_type") // CORRECTIVE, PREVENTIVE, CONTAINMENT
+  actionDescription   String   @map("action_description")
+  // ─── Owner ───
+  assignedTo          String?  @map("assigned_to")
+  assignedBy          String?  @map("assigned_by")
+  // ─── Timeline ───
+  dueDate             DateTime @map("due_date")
+  completedDate       DateTime? @map("completed_date")
+  // ─── Verification ───
+  verificationMethod  String?  @map("verification_method")
+  verifiedBy          String?  @map("verified_by")
+  verifiedAt          DateTime? @map("verified_at")
+  verificationResult  String?  @map("verification_result") // EFFECTIVE, NOT_EFFECTIVE, PARTIALLY_EFFECTIVE
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, IN_PROGRESS, COMPLETED, VERIFIED, OVERDUE
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  ncr                 SupplierNCR @relation(fields: [ncrId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_corrective_actions")
+  @@index([ncrId], map: "idx_sca50_ncr")
+  @@index([status], map: "idx_sca50_status")
+}
+
+// ─── Epic 7: Vendor Performance Scorecard ───────────────────────────────
+model VendorScorecard {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scorecardCode       String   @unique @map("scorecard_code") // VSC-2026-000001
+  // ─── Supplier ───
+  supplierCode        String   @map("supplier_code")
+  supplierName        String   @map("supplier_name")
+  supplierCategory    String   @map("supplier_category")
+  // ─── Period ───
+  periodType          String   @map("period_type") // MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  // ─── Metrics ───
+  onTimeDeliveryPct   Decimal  @db.Decimal(6, 2) @default(0) @map("on_time_delivery_pct")
+  qualityPct          Decimal  @db.Decimal(6, 2) @default(0) @map("quality_pct")
+  acceptancePct       Decimal  @db.Decimal(6, 2) @default(0) @map("acceptance_pct")
+  rejectionPct        Decimal  @db.Decimal(6, 2) @default(0) @map("rejection_pct")
+  responseTimeHrs     Decimal  @db.Decimal(8, 2) @default(0) @map("response_time_hrs")
+  complaintRate       Decimal  @db.Decimal(6, 2) @default(0) @map("complaint_rate")
+  auditScore          Decimal  @db.Decimal(5, 2) @default(0) @map("audit_score") // 0-100
+  priceStabilityPct   Decimal  @db.Decimal(6, 2) @default(0) @map("price_stability_pct")
+  // ─── Overall ───
+  overallScore        Decimal  @db.Decimal(5, 2) @default(0) @map("overall_score") // 0-100
+  overallRating       String   @default("C") @map("overall_rating") // A_PLUS, A, B, C, D
+  // ─── Details ───
+  totalDeliveries     Int      @default(0) @map("total_deliveries")
+  totalInspections    Int      @default(0) @map("total_inspections")
+  totalNCRs           Int      @default(0) @map("total_ncrs")
+  totalAcceptedQty    Decimal  @db.Decimal(14, 3) @default(0) @map("total_accepted_qty")
+  totalRejectedQty    Decimal  @db.Decimal(14, 3) @default(0) @map("total_rejected_qty")
+  // ─── Audit ───
+  calculatedAt        DateTime @default(now()) @map("calculated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("vendor_scorecards")
+  @@index([supplierCode, periodStart], map: "idx_vsc50_supplier_period")
+  @@index([overallRating], map: "idx_vsc50_rating")
+}

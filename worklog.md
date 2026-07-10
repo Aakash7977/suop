@@ -2891,3 +2891,49 @@ Stage Summary:
 - **Chief Architect Recommendation**: Single centralized Quality Master reused across Procurement, Manufacturing, Packaging, Warehouse, Customer Quality — one shared specification eliminates conflicting standards
 - **Build Status**: ✅ Frontend + Backend both compile cleanly
 - **Next Sprint**: Sprint 50 — Enterprise Supplier Quality Management & Incoming Raw Material Inspection
+
+---
+
+Task ID: Sprint-50
+Agent: Main (Claude Sonnet) + Sub-agent for frontend modules
+Task: Sprint 50 — Enterprise Supplier Quality Management & Incoming Raw Material Inspection
+
+Work Log:
+- Added 10 new Prisma models: SupplierQualification, SupplierCertification, SupplierAudit, IncomingInspection, InspectionSample, InspectionResult, QualityHoldInventory, SupplierNCR, SupplierCorrectiveAction, VendorScorecard — schema now at 454 tables
+- Validated Prisma schema — passes (1 relation fix needed: added results relation to IncomingInspection)
+- Implemented 6 new backend endpoints under /api/quality/*: suppliers, incoming, hold, ncr, vendor-scorecard, incoming/info
+- Backend version bumped to 50.0.0; backend file grew from 13,140 to 13,280 lines
+- Created 6 new admin modules via sub-agent (~1,029 lines added):
+  - IQCDashboardModule (combined KPIs, Quality Gate workflow: PO→GRN→Hold→Inspection→Pass/Fail→Approved/Rejected→Mfg, today's summary, alerts)
+  - IQCSupplierModule (7 suppliers with approval status, risk level, rating A+/A/B/C/D, certifications, audit schedule, acceptance rate)
+  - IQCInspectionQueueModule (6 inspections with full workflow: PENDING→IN_INSPECTION→PASSED/FAILED/CONDITIONAL, NCR flag)
+  - IQCHoldModule (5 quality hold items with 3-status flow: Quality Hold→Approved→Available or Rejected, ₹ value tracking)
+  - IQCNCRRModule (4 supplier NCRs with severity CRITICAL/MAJOR/MINOR, root cause, disposition, corrective actions)
+  - IQCVendorScorecardModule (6 vendor scorecards with 8 metrics: on-time, quality, acceptance, rejection, response time, complaints, audit score, price stability)
+- No function name duplicates (all prefixed with IQC)
+- Added 1 missing lucide-react icon (PackageX)
+- Updated ModuleKey type with 6 new keys
+- Added Sprint 50 sidebar section "Part 6 — Supplier Quality (Sprint 50) — NEW" with 6 module entries
+- Wired all 6 new modules into main render area
+- Updated badge to "Sprint 50 · 454 Tables · Part 6 QMS"
+- Updated footer to reflect Sprint 50 theme
+- Verified `npm run build` passes (13.9s compilation)
+- Verified backend `bun build` passes
+
+Stage Summary:
+- **Sprint 50 Status**: ✅ COMPLETE
+- **PART 6 STATUS**: 🚧 2/15 sprints (13%)
+- **Database**: 10 new models (454 total project tables)
+- **Backend**: 6 new endpoints under /api/quality/* (v50.0.0)
+- **Frontend**: 6 new admin modules (~1,029 lines added)
+- **6 Supplier Approval Statuses**: Pending, Qualified, Approved, Conditional, Suspended, Blacklisted
+- **7 Inspection Statuses**: Pending, Sampling, In Inspection, Passed, Failed, Conditional, On Hold
+- **6 Inventory Statuses**: Quality Hold, Under Inspection, Approved, Rejected, Conditional Release, Blocked
+- **8 NCR Types**: Quality Failure, Packaging Damage, Shortage, Documentation, Mislabeling, Contamination, Expiry, Specification Deviation
+- **4 Material Decisions**: Full Acceptance, Partial Acceptance, Conditional Acceptance, Full Rejection
+- **5 Vendor Ratings**: A+, A, B, C, D
+- **8 Scorecard Metrics**: On-time delivery, Quality %, Acceptance %, Rejection %, Response time, Complaint rate, Audit score, Price stability
+- **Chief Architect Recommendation**: 3 inventory statuses — Quality Hold (NOT allowed), Approved (ALLOWED), Rejected/Blocked (NOT allowed). Strict gate ensures only approved ingredients enter production.
+- **Quality Gate Workflow**: PO → GRN → Quality Hold → Inspection → Pass/Fail → Approved Inventory → Manufacturing (MRP can consume)
+- **Build Status**: ✅ Frontend + Backend both compile cleanly
+- **Next Sprint**: Sprint 51 — In-Process Quality Control (IPQC), Process Validation & Real-Time Production Quality
