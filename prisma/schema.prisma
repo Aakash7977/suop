@@ -16313,3 +16313,311 @@ model ProductionQualityHold {
   @@index([holdReason, severity], map: "idx_pqh51_reason_sev")
   @@index([status], map: "idx_pqh51_status")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 52 — FINISHED GOODS QUALITY CONTROL (FGQC), BATCH RELEASE & CERTIFICATION
+// Part 6: QMS · Sprint 4 of 15 · 8 new models · Epic 1-7 (FGQC inspections,
+// shelf-life validation, packaging compliance, batch release, quality certificates)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Finished Goods Inspection ──────────────────────────────────
+model FGQCInspection {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionCode      String   @unique @map("inspection_code") // FGQC-2026-000001
+  // ─── Links ───
+  productionBatchNumber String   @map("production_batch_number")
+  productionOrderNumber String?  @map("production_order_number")
+  packagingOrderNumber String?  @map("packaging_order_number")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Batch ───
+  batchQuantity       Decimal  @db.Decimal(14, 3) @map("batch_quantity")
+  uom                 String   @default("KG") @map("uom")
+  manufacturingDate   DateTime @map("manufacturing_date")
+  expiryDate          DateTime @map("expiry_date")
+  bestBeforeDate      DateTime? @map("best_before_date")
+  // ─── Sampling ───
+  samplingPlanCode    String?  @map("sampling_plan_code")
+  sampleSize          Decimal? @db.Decimal(14, 3) @map("sample_size")
+  // ─── Inspection ───
+  inspectionTemplateCode String? @map("inspection_template_code")
+  checkpointCount     Int      @default(0) @map("checkpoint_count")
+  passedCount         Int      @default(0) @map("passed_count")
+  failedCount         Int      @default(0) @map("failed_count")
+  // ─── Result ───
+  overallResult       String?  @map("overall_result") // PASS, FAIL, CONDITIONAL_PASS
+  resultSummary       String?  @map("result_summary")
+  qualityGrade        String?  @map("quality_grade") // A, B, C, REJECT
+  // ─── Inspector ───
+  inspectorId         String?  @db.Uuid @map("inspector_id")
+  inspectorName       String?  @map("inspector_name")
+  inspectedAt         DateTime? @map("inspected_at")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  digitalSignature    String?  @map("digital_signature")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, IN_INSPECTION, PASSED, FAILED, CONDITIONAL_APPROVAL, REJECTED, RELEASED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  results             FGQCResult[]
+
+  @@map("fgqc_inspections")
+  @@index([productionBatchNumber], map: "idx_fgqc52_batch")
+  @@index([status], map: "idx_fgqc52_status")
+  @@index([productSku], map: "idx_fgqc52_sku")
+}
+
+model FGQCResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionId        String   @db.Uuid @map("inspection_id")
+  inspectionCode      String   @map("inspection_code")
+  // ─── Checkpoint ───
+  checkpointName      String   @map("checkpoint_name")
+  parameterName       String   @map("parameter_name")
+  // ─── Spec ───
+  minValue            Decimal? @db.Decimal(14, 4) @map("min_value")
+  maxValue            Decimal? @db.Decimal(14, 4) @map("max_value")
+  targetValue         Decimal? @db.Decimal(14, 4) @map("target_value")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  // ─── Result ───
+  measuredValue       String   @map("measured_value")
+  result              String   @default("PASS") @map("result") // PASS, FAIL, MARGINAL
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // CRITICAL, MAJOR, MINOR
+  // ─── Notes ───
+  notes               String?
+  photoUrl            String?  @map("photo_url")
+  // ─── Audit ───
+  testedAt            DateTime @default(now()) @map("tested_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  inspection          FGQCInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@map("fgqc_results")
+  @@index([inspectionId], map: "idx_fgqcr52_inspection")
+  @@index([result], map: "idx_fgqcr52_result")
+}
+
+// ─── Epic 3: Shelf-Life Verification ────────────────────────────────────
+model ShelfLifeValidation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  validationCode      String   @unique @map("validation_code") // SLV-2026-000001
+  // ─── Links ───
+  productionBatchNumber String   @map("production_batch_number")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Dates ───
+  manufacturingDate   DateTime @map("manufacturing_date")
+  expiryDate          DateTime @map("expiry_date")
+  bestBeforeDate      DateTime? @map("best_before_date")
+  // ─── Computed ───
+  totalShelfLifeDays  Int      @map("total_shelf_life_days")
+  remainingShelfLifeDays Int   @map("remaining_shelf_life_days")
+  shelfLifePercent    Decimal  @db.Decimal(5, 2) @map("shelf_life_percent")
+  // ─── Storage ───
+  storageConditions   String?  @map("storage_conditions")
+  storageTempMin      Decimal? @db.Decimal(5, 2) @map("storage_temp_min")
+  storageTempMax      Decimal? @db.Decimal(5, 2) @map("storage_temp_max")
+  actualStorageTemp   Decimal? @db.Decimal(5, 2) @map("actual_storage_temp")
+  storageCompliant    Boolean  @default(true) @map("storage_compliant")
+  // ─── Label Verification ───
+  labelMfgDateMatch   Boolean  @default(true) @map("label_mfg_date_match")
+  labelExpiryDateMatch Boolean @default(true) @map("label_expiry_date_match")
+  labelBatchMatch     Boolean  @default(true) @map("label_batch_match")
+  // ─── Alert ───
+  alertLevel          String   @default("HEALTHY") @map("alert_level") // HEALTHY, NEAR_EXPIRY, CRITICAL, EXPIRED, LABEL_MISMATCH, STORAGE_DEVIATION
+  // ─── Status ───
+  status              String   @default("VALIDATED") @map("status") // VALIDATED, ALERT, FAILED
+  // ─── Audit ───
+  validatedAt         DateTime @default(now()) @map("validated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  stabilityResults    StabilityResult[]
+
+  @@map("shelf_life_validations")
+  @@index([productionBatchNumber], map: "idx_slv52_batch")
+  @@index([alertLevel], map: "idx_slv52_alert")
+  @@index([productSku], map: "idx_slv52_sku")
+}
+
+model StabilityResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  validationId        String   @db.Uuid @map("validation_id")
+  // ─── Test ───
+  testInterval        String   @map("test_interval") // INITIAL, MONTH_1, MONTH_3, MONTH_6, MONTH_12
+  testDate            DateTime @map("test_date")
+  // ─── Results ───
+  appearance          String?  @map("appearance") // PASS, FAIL
+  color               String?  @map("color") // PASS, FAIL
+  taste               String?  @map("taste") // PASS, FAIL
+  aroma               String?  @map("aroma") // PASS, FAIL
+  texture             String?  @map("texture") // PASS, FAIL
+  microbiologyResult  String?  @map("microbiology_result") // PASS, FAIL
+  // ─── Overall ───
+  overallResult       String   @default("PASS") @map("overall_result") // PASS, FAIL, MARGINAL
+  notes               String?
+  // ─── Audit ───
+  testedAt            DateTime @default(now()) @map("tested_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  validation          ShelfLifeValidation @relation(fields: [validationId], references: [id], onDelete: Cascade)
+
+  @@map("stability_results")
+  @@index([validationId], map: "idx_sr52_validation")
+}
+
+// ─── Epic 5: Batch Release Workflow ─────────────────────────────────────
+model BatchRelease {
+  id                  String   @id @default(uuid()) @db.Uuid
+  releaseCode         String   @unique @map("release_code") // BREL-2026-000001
+  // ─── Links ───
+  productionBatchNumber String   @unique @map("production_batch_number")
+  fgqcInspectionCode  String?  @map("fgqc_inspection_code")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  batchQuantity       Decimal  @db.Decimal(14, 3) @map("batch_quantity")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Release ───
+  releaseType         String   @map("release_type") // FULL_RELEASE, PARTIAL_RELEASE, CONDITIONAL_RELEASE, BLOCKED_RELEASE
+  releasedQty         Decimal  @db.Decimal(14, 3) @default(0) @map("released_qty")
+  restrictedQty       Decimal  @db.Decimal(14, 3) @default(0) @map("restricted_qty")
+  // ─── Conditions ───
+  releaseConditions   String?  @map("release_conditions") // JSON array of conditions for conditional release
+  // ─── Approvals ───
+  qualityApproved     Boolean  @default(false) @map("quality_approved")
+  qualityApprovedBy   String?  @map("quality_approved_by")
+  qualityApprovedAt   DateTime? @map("quality_approved_at")
+  warehouseAuthorized Boolean  @default(false) @map("warehouse_authorized")
+  warehouseAuthorizedBy String? @map("warehouse_authorized_by")
+  warehouseAuthorizedAt DateTime? @map("warehouse_authorized_at")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, QUALITY_APPROVED, WAREHOUSE_AUTHORIZED, RELEASED, BLOCKED, CANCELLED
+  // ─── Warehouse ───
+  warehouseReceiptNumber String? @map("warehouse_receipt_number")
+  inventoryStatus     String   @default("QUALITY_HOLD") @map("inventory_status") // QUALITY_HOLD, APPROVED, AVAILABLE, BLOCKED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  approvals           ReleaseApproval[]
+
+  @@map("batch_releases")
+  @@index([productionBatchNumber], map: "idx_br52_batch")
+  @@index([status], map: "idx_br52_status")
+  @@index([productSku], map: "idx_br52_sku")
+}
+
+model ReleaseApproval {
+  id                  String   @id @default(uuid()) @db.Uuid
+  batchReleaseId      String   @db.Uuid @map("batch_release_id")
+  releaseCode         String   @map("release_code")
+  // ─── Approval ───
+  approvalType        String   @map("approval_type") // QUALITY_APPROVAL, WAREHOUSE_AUTHORIZATION, FINAL_RELEASE, CONDITIONAL_APPROVAL
+  approvalDecision    String   @map("approval_decision") // APPROVED, REJECTED, CONDITIONAL
+  // ─── Actor ───
+  approverId          String?  @db.Uuid @map("approver_id")
+  approverName        String   @map("approver_name")
+  approverRole        String?  @map("approver_role") // QUALITY_MANAGER, WAREHOUSE_MANAGER, PLANT_HEAD
+  digitalSignature    String?  @map("digital_signature")
+  // ─── Notes ───
+  approvalNotes       String?  @map("approval_notes")
+  conditions          String?  @map("conditions") // JSON for conditional approval
+  // ─── Audit ───
+  approvedAt          DateTime @default(now()) @map("approved_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  batchRelease        BatchRelease @relation(fields: [batchReleaseId], references: [id], onDelete: Cascade)
+
+  @@map("release_approvals")
+  @@index([batchReleaseId], map: "idx_ra52_release")
+  @@index([approvalType, approvalDecision], map: "idx_ra52_type_decision")
+}
+
+// ─── Epic 6: Quality Certification ──────────────────────────────────────
+model QualityCertificate {
+  id                  String   @id @default(uuid()) @db.Uuid
+  certificateCode     String   @unique @map("certificate_code") // QCERT-2026-000001
+  // ─── Links ───
+  productionBatchNumber String   @map("production_batch_number")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  batchReleaseCode    String?  @map("batch_release_code")
+  fgqcInspectionCode  String?  @map("fgqc_inspection_code")
+  // ─── Certificate ───
+  certificateType     String   @map("certificate_type") // BATCH_QUALITY_CERTIFICATE, RELEASE_CERTIFICATE, INSPECTION_REPORT, INTERNAL_COA, PACKAGING_COMPLIANCE_REPORT, QUALITY_SUMMARY
+  // ─── Content ───
+  certificateData     String   @map("certificate_data") // JSON with all quality data
+  // ─── Batch Info ───
+  manufacturingDate   DateTime @map("manufacturing_date")
+  expiryDate          DateTime @map("expiry_date")
+  batchQuantity       Decimal  @db.Decimal(14, 3) @map("batch_quantity")
+  uom                 String   @default("KG") @map("uom")
+  qualityGrade        String?  @map("quality_grade") // A, B, C
+  // ─── Digital ───
+  digitalSignature    String?  @map("digital_signature")
+  signedById          String?  @db.Uuid @map("signed_by_id")
+  signedByName        String?  @map("signed_by_name")
+  signedByRole        String?  @map("signed_by_role")
+  signedAt            DateTime? @map("signed_at")
+  // ─── Document ───
+  pdfUrl              String?  @map("pdf_url")
+  qrCode              String?  @map("qr_code")
+  // ─── Version ───
+  version             String   @default("v1.0") @map("version")
+  // ─── Status ───
+  status              String   @default("GENERATED") @map("status") // GENERATED, SIGNED, PUBLISHED, SUPERSEDED, REVOKED
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("quality_certificates")
+  @@index([productionBatchNumber], map: "idx_qcert52_batch")
+  @@index([certificateType, status], map: "idx_qcert52_type_status")
+  @@index([productSku], map: "idx_qcert52_sku")
+}
+
+// ─── Epic 4: Packaging Compliance ───────────────────────────────────────
+model PackagingComplianceCheck {
+  id                  String   @id @default(uuid()) @db.Uuid
+  checkCode           String   @unique @map("check_code") // PCC-2026-000001
+  // ─── Links ───
+  productionBatchNumber String?  @map("production_batch_number")
+  fgqcInspectionCode  String?  @map("fgqc_inspection_code")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── Checks ───
+  correctBox          Boolean  @default(true) @map("correct_box")
+  correctLabel        Boolean  @default(true) @map("correct_label")
+  barcodeReadable     Boolean  @default(true) @map("barcode_readable")
+  qrCodeReadable      Boolean  @default(true) @map("qr_code_readable")
+  mrpCorrect          Boolean  @default(true) @map("mrp_correct")
+  fssaiNumberPresent  Boolean  @default(true) @map("fssai_number_present")
+  netWeightCorrect    Boolean  @default(true) @map("net_weight_correct")
+  ingredientsListed   Boolean  @default(true) @map("ingredients_listed")
+  nutritionPanelPresent Boolean @default(true) @map("nutrition_panel_present")
+  allergenDeclaration Boolean  @default(true) @map("allergen_declaration")
+  mfgDateCorrect      Boolean  @default(true) @map("mfg_date_correct")
+  expiryDateCorrect   Boolean  @default(true) @map("expiry_date_correct")
+  // ─── Result ───
+  overallCompliance   String   @default("COMPLIANT") @map("overall_compliance") // COMPLIANT, NON_COMPLIANT, PARTIAL
+  nonComplianceDetails String? @map("non_compliance_details")
+  // ─── Method ───
+  verificationMethod  String   @default("VISUAL") @map("verification_method") // VISUAL, BARCODE_SCAN, QR_SCAN, OCR (future)
+  // ─── Status ───
+  status              String   @default("COMPLETED") @map("status") // PENDING, COMPLETED, FAILED
+  // ─── Audit ───
+  checkedById         String?  @db.Uuid @map("checked_by_id")
+  checkedByName       String?  @map("checked_by_name")
+  checkedAt           DateTime @default(now()) @map("checked_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("packaging_compliance_checks")
+  @@index([productionBatchNumber], map: "idx_pcc52_batch")
+  @@index([overallCompliance], map: "idx_pcc52_compliance")
+}
