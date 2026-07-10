@@ -1,0 +1,228 @@
+// ════════════════════════════════════════════════════════════════════════════
+// SUOP ERP v1.0 — Foundation Schema
+// ════════════════════════════════════════════════════════════════════════════
+// This schema defines ONLY the foundation tables needed by Phase 0.
+// Business module tables (Organization, Product, Supplier, PO, etc.) will be
+// added in Phase 1+ via separate migrations.
+//
+// All tables follow the reserved columns pattern:
+//   id (UUID v7), tenant_id, version, created_at/by, updated_at/by, deleted_at/by
+// ════════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Audit Logs (append-only, immutable) ────────────────────────────────────
+// Per Phase 0 Architecture §11: every mutation creates an immutable audit log.
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  timestamp     DateTime @default(now())
+  // Actor
+  actorType     String   @map("actor_type") // USER, SYSTEM, API_KEY, JOB
+  actorId       String?  @map("actor_id") @db.Uuid
+  actorName     String?  @map("actor_name")
+  actorRole     String?  @map("actor_role")
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  correlationId String   @map("correlation_id")
+  // Action
+  action        String // CREATE, UPDATE, DELETE, APPROVE, TRANSITION, LOGIN, etc.
+  severity      String   @default("INFO") // INFO, WARN, CRITICAL
+  // Entity
+  entityType    String   @map("entity_type")
+  entityId      String?  @map("entity_id") @db.Uuid
+  entityCode    String?  @map("entity_code")
+  // Change
+  before        Json?
+  after         Json?
+  diff          Json?
+  // Context
+  reason        String?
+  metadata      Json?
+  // Reserved columns
+  createdAt     DateTime @default(now()) @map("created_at")
+  createdBy     String?  @map("created_by") @db.Uuid
+
+  @@map("audit_logs")
+  @@index([tenantId, entityType, entityId], map: "idx_audit_tenant_entity")
+  @@index([tenantId, action], map: "idx_audit_tenant_action")
+  @@index([tenantId, severity], map: "idx_audit_tenant_severity")
+  @@index([correlationId], map: "idx_audit_correlation")
+  @@index([timestamp], map: "idx_audit_timestamp")
+}
+
+// ─── Event Outbox (durable domain event delivery) ───────────────────────────
+// Per Phase 0 Architecture §18: outbox pattern guarantees at-least-once
+// event delivery even if the event bus is temporarily unavailable.
+model EventOutbox {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  eventName    String   @map("event_name")
+  payload      Json
+  // Publishing state
+  status       String   @default("PENDING") // PENDING, PUBLISHED, FAILED
+  publishedAt  DateTime? @map("published_at")
+  retryCount   Int      @default(0) @map("retry_count")
+  lastError    String?  @map("last_error")
+  // Context
+  correlationId String  @map("correlation_id")
+  actorId      String?  @map("actor_id") @db.Uuid
+  // Metadata
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("event_outbox")
+  @@index([status, createdAt], map: "idx_outbox_status_created")
+  @@index([tenantId], map: "idx_outbox_tenant")
+}
+
+// ─── Notification Outbox (durable notification delivery) ────────────────────
+model NotificationOutbox {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  // Recipient
+  userId       String?  @map("user_id") @db.Uuid
+  recipientEmail String? @map("recipient_email")
+  recipientPhone String? @map("recipient_phone")
+  // Content
+  channel      String   // IN_APP, EMAIL, SMS, WHATSAPP
+  subject      String?
+  body         String
+  templateId   String?  @map("template_id")
+  templateData Json?
+  // Delivery
+  status       String   @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
+  sentAt      DateTime? @map("sent_at")
+  deliveredAt DateTime? @map("delivered_at")
+  retryCount   Int      @default(0) @map("retry_count")
+  lastError    String?  @map("last_error")
+  // Context
+  correlationId String  @map("correlation_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("notification_outbox")
+  @@index([status, createdAt], map: "idx_notif_status_created")
+  @@index([tenantId, userId], map: "idx_notif_tenant_user")
+}
+
+// ─── Refresh Tokens ─────────────────────────────────────────────────────────
+// Per Phase 0 Architecture §3.6: refresh tokens stored hashed in DB.
+model RefreshToken {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  // Token hash (SHA-256 of the raw token; raw token never stored)
+  tokenHash       String   @unique @map("token_hash")
+  // Device info
+  deviceFingerprint String? @map("device_fingerprint")
+  deviceName      String?  @map("device_name")
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  // Lifecycle
+  issuedAt        DateTime @default(now()) @map("issued_at")
+  expiresAt       DateTime @map("expires_at")
+  revokedAt       DateTime? @map("revoked_at")
+  revokedReason   String?  @map("revoked_reason")
+  // Rotation chain (for replay detection)
+  previousTokenHash String? @map("previous_token_hash")
+  // Audit
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+  @@index([userId], map: "idx_refresh_user")
+  @@index([tokenHash], map: "idx_refresh_token_hash")
+  @@index([expiresAt], map: "idx_refresh_expires")
+}
+
+// ─── Idempotency Keys ───────────────────────────────────────────────────────
+// Per API Standards §9: idempotency key store for safe retries.
+model IdempotencyKey {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  key           String
+  requestHash   String   @map("request_hash")
+  // Response
+  responseStatus Int
+  responseBody   Json     @map("response_body")
+  // Metadata
+  createdAt     DateTime @default(now()) @map("created_at")
+  expiresAt     DateTime @map("expires_at")
+
+  @@unique([tenantId, key], map: "uq_idempotency_tenant_key")
+  @@map("idempotency_keys")
+  @@index([expiresAt], map: "idx_idempotency_expires")
+}
+
+// ─── Feature Flags (per-tenant overrides; env vars are defaults) ────────────
+model FeatureFlag {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  flagName    String   @map("flag_name")
+  value       Json     // boolean or string[] (tenant allowlist)
+  description String?
+  // Audit
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([tenantId, flagName], map: "uq_feature_flag_tenant_name")
+  @@map("feature_flags")
+}
+
+// ─── Background Jobs ────────────────────────────────────────────────────────
+model BackgroundJob {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  jobName     String   @map("job_name")
+  payload     Json
+  // Scheduling
+  scheduledFor DateTime @default(now()) @map("scheduled_for")
+  // Execution
+  status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, DEAD_LETTER
+  attempts    Int      @default(0)
+  maxRetries  Int      @default(3) @map("max_retries")
+  // Result
+  result      Json?
+  lastError   String?  @map("last_error")
+  // Timestamps
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("background_jobs")
+  @@index([status, scheduledFor], map: "idx_jobs_status_scheduled")
+  @@index([tenantId, jobName], map: "idx_jobs_tenant_name")
+}
+
+// ─── File Uploads ───────────────────────────────────────────────────────────
+model FileUpload {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  filename        String
+  mimeType        String   @map("mime_type")
+  sizeBytes       Int      @map("size_bytes")
+  checksum        String
+  // Storage
+  storageKey      String   @map("storage_key")
+  storageDriver   String   @map("storage_driver") // local, s3
+  // Context
+  category        String   // COA, EVIDENCE, CALIBRATION_CERT, etc.
+  linkedEntityType String? @map("linked_entity_type")
+  linkedEntityId  String?  @map("linked_entity_id") @db.Uuid
+  // Audit
+  uploadedBy      String?  @map("uploaded_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@map("file_uploads")
+  @@index([tenantId, category], map: "idx_files_tenant_category")
+  @@index([tenantId, linkedEntityType, linkedEntityId], map: "idx_files_tenant_entity")
+}
