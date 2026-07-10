@@ -35392,7 +35392,7 @@ export default function Home() {
                           className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                             activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
                           )}
-                          onClick={() => { if (item.available) { setActiveModule(item.module); if (window.innerWidth < 768) setSidebarOpen(false) } }}
+                          onClick={() => { if (item.available) { setActiveModule(item.module); setSidebarOpen(false) } }}
                         >
                           {item.icon}{item.name}
                           {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
@@ -35447,10 +35447,6 @@ export default function Home() {
             style={{
               maxWidth: '1600px',
               zoom: `${zoom}%`,
-              // Firefox doesn't support zoom property — fall back to transform
-              ...(typeof window !== 'undefined' && navigator.userAgent.toLowerCase().includes('firefox')
-                ? { transform: `scale(${zoom / 100})`, transformOrigin: 'top center', zoom: 'normal' as unknown as string }
-                : {}),
             }}
           >
             {activeModule === 'dashboard' && <DashboardModule />}
