@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>01_DATA_ARCHITECTURE</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">01_DATA_ARCHITECTURE</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-enterprise-data-architecture"
+id="toc-suop-erp-v1.0-enterprise-data-architecture">SUOP ERP v1.0 —
+Enterprise Data Architecture</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">1. Purpose</a></li>
+<li><a href="#database-platform" id="toc-database-platform">2. Database
+Platform</a></li>
+<li><a href="#database-naming-conventions"
+id="toc-database-naming-conventions">3. Database Naming
+Conventions</a></li>
+<li><a href="#primary-key-strategy" id="toc-primary-key-strategy">4.
+Primary Key Strategy</a></li>
+<li><a href="#tenant-strategy" id="toc-tenant-strategy">5. Tenant
+Strategy</a></li>
+<li><a href="#index-strategy" id="toc-index-strategy">6. Index
+Strategy</a></li>
+<li><a href="#partition-strategy" id="toc-partition-strategy">7.
+Partition Strategy</a></li>
+<li><a href="#archiving-strategy" id="toc-archiving-strategy">8.
+Archiving Strategy</a></li>
+<li><a href="#backup-strategy" id="toc-backup-strategy">9. Backup
+Strategy</a></li>
+<li><a href="#restore-strategy" id="toc-restore-strategy">10. Restore
+Strategy</a></li>
+<li><a href="#readwrite-patterns" id="toc-readwrite-patterns">11.
+Read/Write Patterns</a></li>
+<li><a href="#data-lifecycle" id="toc-data-lifecycle">12. Data
+Lifecycle</a></li>
+<li><a href="#historical-data-policy"
+id="toc-historical-data-policy">13. Historical Data Policy</a></li>
+<li><a href="#master-data-policy" id="toc-master-data-policy">14. Master
+Data Policy</a></li>
+<li><a href="#transaction-data-policy"
+id="toc-transaction-data-policy">15. Transaction Data Policy</a></li>
+<li><a href="#reference-data-policy" id="toc-reference-data-policy">16.
+Reference Data Policy</a></li>
+<li><a href="#schema-migration-discipline"
+id="toc-schema-migration-discipline">17. Schema Migration
+Discipline</a></li>
+<li><a href="#database-access-discipline"
+id="toc-database-access-discipline">18. Database Access
+Discipline</a></li>
+<li><a href="#database-observability"
+id="toc-database-observability">19. Database Observability</a></li>
+<li><a href="#open-questions-for-approval"
+id="toc-open-questions-for-approval">20. Open Questions for
+Approval</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-enterprise-data-architecture">SUOP ERP v1.0 —
+Enterprise Data Architecture</h1>
+<table>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Supersedes</td>
+<td>All prior database decisions</td>
+</tr>
+<tr class="odd">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="purpose">1. Purpose</h2>
+<p>This document defines how data is structured, stored, accessed,
+protected, retired, and recovered in SUOP ERP v1.0. Every Prisma model,
+every migration, every query, and every archiving decision must conform
+to this document.</p>
+<p><strong>Hard rule:</strong> No Prisma schema change is permitted
+unless it conforms to the conventions defined here. Schema Review
+Reports must reference this document section by section.</p>
+<hr />
+<h2 id="database-platform">2. Database Platform</h2>
+<h3 id="primary-platform">2.1 Primary Platform</h3>
+<ul>
+<li><strong>Production:</strong> PostgreSQL 16+ (managed — Supabase,
+RDS, or Aurora)</li>
+<li><strong>Staging:</strong> PostgreSQL 16+ (managed, smaller
+instance)</li>
+<li><strong>Development:</strong> PostgreSQL 16+ in Docker (via
+<code>docker-compose</code>)</li>
+<li><strong>Test:</strong> PostgreSQL 16+ via Testcontainers (isolated
+per test run)</li>
+</ul>
+<p><strong>Justification:</strong> PostgreSQL is the only open-source
+database that meets all enterprise ERP requirements: ACID, row-level
+security, JSONB, full-text search, partitioning, logical replication,
+point-in-time recovery, extensions (pgcrypto, pg_trgm, uuid-ossp).</p>
+<p><strong>Forbidden:</strong> SQLite (no row-level security, no
+concurrent write performance), MySQL (weaker transaction isolation, no
+JSONB), MongoDB (not relational — ERP requires relational
+integrity).</p>
+<h3 id="connection-pooling">2.2 Connection Pooling</h3>
+<ul>
+<li><strong>Production:</strong> PgBouncer or Supabase’s built-in
+Supavisor (transaction-mode pooling, pool size 20-50)</li>
+<li><strong>Application:</strong> Prisma connection pool —
+<code>DATABASE_POOL_SIZE=10</code> per instance, scaled
+horizontally</li>
+<li><strong>Max connections:</strong> 100 (Postgres default) → 80
+application + 20 reserved for admin/migration</li>
+<li><strong>Connection lifecycle:</strong> Idle timeout 30s; max
+lifetime 5min; Prisma logs warnings on slow acquisitions (&gt;1s)</li>
+</ul>
+<h3 id="character-set-collation">2.3 Character Set &amp; Collation</h3>
+<ul>
+<li><strong>Encoding:</strong> <code>UTF8</code> (mandatory — supports
+all Indian languages + emoji)</li>
+<li><strong>Collation:</strong> <code>en_US.utf8</code> for default;
+per-column collation for case-insensitive search</li>
+<li><strong>Timezone:</strong> DB stored in <code>UTC</code>;
+application converts to tenant/user timezone for display</li>
+</ul>
+<hr />
+<h2 id="database-naming-conventions">3. Database Naming Conventions</h2>
+<h3 id="tables">3.1 Tables</h3>
+<ul>
+<li><strong>Format:</strong> <code>snake_case</code>, plural</li>
+<li><strong>Examples:</strong> <code>purchase_orders</code>,
+<code>goods_receipts</code>, <code>stock_ledger_entries</code>,
+<code>audit_logs</code></li>
+<li><strong>Join tables:</strong> <code>singular_singular</code> (e.g.,
+<code>user_role</code>, <code>role_permission</code>)</li>
+<li><strong>Prefix conventions:</strong>
+<ul>
+<li>No prefix for business tables (<code>purchase_orders</code>)</li>
+<li><code>_meta_</code> prefix for framework tables</li>
+<li><code>vw_</code> prefix for views</li>
+<li><code>fn_</code> prefix for functions</li>
+</ul></li>
+</ul>
+<h3 id="columns">3.2 Columns</h3>
+<ul>
+<li><strong>Format:</strong> <code>snake_case</code></li>
+<li><strong>Primary key:</strong> Always <code>id</code> (UUID v7)</li>
+<li><strong>Foreign keys:</strong> <code>&lt;entity&gt;_id</code> (e.g.,
+<code>supplier_id</code>, <code>purchase_order_id</code>)</li>
+<li><strong>Timestamps:</strong> <code>created_at</code>,
+<code>updated_at</code>, <code>deleted_at</code> (always)</li>
+<li><strong>Actor references:</strong> <code>created_by</code>,
+<code>updated_by</code>, <code>deleted_by</code></li>
+<li><strong>Status:</strong> <code>status</code> (string, never boolean
+— must support state machine)</li>
+<li><strong>Booleans:</strong> <code>is_&lt;adjective&gt;</code> (e.g.,
+<code>is_active</code>, <code>is_immutable</code>)</li>
+<li><strong>Amounts:</strong> Always <code>Decimal(14, 2)</code> for
+money, <code>Decimal(14, 3)</code> for quantities</li>
+<li><strong>Avoid abbreviations:</strong> <code>quantity</code> not
+<code>qty</code>, <code>purchase_order_id</code> not <code>po_id</code>
+in schema</li>
+</ul>
+<h3 id="indexes">3.3 Indexes</h3>
+<ul>
+<li><strong>Format:</strong>
+<code>idx_&lt;table&gt;_&lt;columns&gt;</code> (e.g.,
+<code>idx_purchase_orders_supplier_id_status</code>)</li>
+<li><strong>Unique indexes:</strong>
+<code>uq_&lt;table&gt;_&lt;columns&gt;</code></li>
+<li><strong>Composite indexes:</strong> Order columns by selectivity
+(most selective first)</li>
+<li><strong>Partial indexes:</strong>
+<code>WHERE deleted_at IS NULL</code> for soft-deleted tables</li>
+<li><strong>Foreign key indexes:</strong> Every FK gets an index
+automatically</li>
+<li><strong>GIN indexes:</strong> For JSONB columns queried with
+<code>@&gt;</code> operator</li>
+</ul>
+<h3 id="constraints">3.4 Constraints</h3>
+<ul>
+<li><strong>Check constraints:</strong> Named
+<code>ck_&lt;table&gt;_&lt;rule&gt;</code></li>
+<li><strong>Unique constraints:</strong> Named
+<code>uq_&lt;table&gt;_&lt;columns&gt;</code></li>
+<li><strong>Foreign key constraints:</strong> Named
+<code>fk_&lt;from_table&gt;_&lt;to_table&gt;</code></li>
+</ul>
+<h3 id="reserved-columns-every-business-table">3.5 Reserved Columns
+(every business table)</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">id</span>              UUID         <span class="kw">PRIMARY</span> <span class="kw">KEY</span> <span class="kw">DEFAULT</span> uuid_generate_v7()</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>tenant_id       UUID         <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>version         <span class="dt">INTEGER</span>      <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="dv">0</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>created_at      TIMESTAMPTZ  <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>created_by      UUID         <span class="kw">NULL</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>updated_at      TIMESTAMPTZ  <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> NOW()</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>updated_by      UUID         <span class="kw">NULL</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>deleted_at      TIMESTAMPTZ  <span class="kw">NULL</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>deleted_by      UUID         <span class="kw">NULL</span></span></code></pre></div>
+<hr />
+<h2 id="primary-key-strategy">4. Primary Key Strategy</h2>
+<h3 id="type-uuid-v7">4.1 Type: UUID v7</h3>
+<ul>
+<li><strong>Format:</strong> 128-bit UUID, time-ordered (RFC 9562)</li>
+<li><strong>Generation:</strong> PostgreSQL
+<code>uuid_generate_v7()</code> OR application-side generation via
+<code>uuidv7</code> npm package</li>
+<li><strong>Storage:</strong> <code>UUID</code> type (16 bytes — half
+the size of <code>TEXT</code>)</li>
+</ul>
+<h3 id="why-uuid-v7-not-v4-not-bigserial">4.2 Why UUID v7 (not v4, not
+BIGSERIAL)</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Property</th>
+<th>UUID v4</th>
+<th>BIGSERIAL</th>
+<th>UUID v7</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Globally unique</td>
+<td>Yes</td>
+<td>No (centralized)</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>Time-sortable</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>Insert-perf (random PK)</td>
+<td>No (B-tree fragmentation)</td>
+<td>Yes</td>
+<td>Yes (sequential-ish)</td>
+</tr>
+<tr class="even">
+<td>Predictable count</td>
+<td>No</td>
+<td>No (leaks scale)</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td>No coord needed</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td>URL-safe (no int overflow)</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Critical:</strong> UUID v7 is time-ordered — inserts are
+append-mostly at the B-tree leaf, avoiding fragmentation.</p>
+<h3 id="application-side-vs-db-side-generation">4.3 Application-Side vs
+DB-Side Generation</h3>
+<ul>
+<li><strong>Default:</strong> DB-side
+(<code>DEFAULT uuid_generate_v7()</code>) — single source of truth</li>
+<li><strong>Exception:</strong> Application-side when the application
+needs the ID before insert. Use <code>uuidv7()</code> npm package.</li>
+</ul>
+<h3 id="no-composite-primary-keys">4.4 No Composite Primary Keys</h3>
+<ul>
+<li>Every table has a single <code>id</code> UUID PK</li>
+<li>Composite uniqueness enforced via unique constraints</li>
+<li>Rationale: Simplifies ORM, simplifies foreign keys, simplifies audit
+log references</li>
+</ul>
+<hr />
+<h2 id="tenant-strategy">5. Tenant Strategy</h2>
+<h3 id="multi-tenancy-model">5.1 Multi-Tenancy Model</h3>
+<p><strong>Chosen model:</strong> <strong>Shared database, shared
+schema</strong> (with <code>tenant_id</code> discriminator)</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Model</th>
+<th>Pros</th>
+<th>Cons</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Database per tenant</td>
+<td>Strong isolation</td>
+<td>Expensive, hard analytics</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>Schema per tenant</td>
+<td>Some isolation</td>
+<td>Migration pain</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td>Shared DB, shared schema, <code>tenant_id</code></td>
+<td>Cheap, easy analytics</td>
+<td>Weaker isolation, app-enforced</td>
+<td><strong>Yes</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="tenant-isolation-enforcement-3-layers">5.2 Tenant Isolation
+Enforcement (3 layers)</h3>
+<p><strong>Layer 1 — Application (Prisma extension):</strong> -
+AsyncLocalStorage carries <code>tenantId</code> from the request -
+Prisma extension injects <code>WHERE tenant_id = $currentTenant</code>
+into every query - Cross-tenant queries require explicit
+<code>withTenant()</code> + <code>system:tenant:cross</code>
+permission</p>
+<p><strong>Layer 2 — Database (PostgreSQL Row-Level
+Security):</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> purchase_orders <span class="kw">ENABLE</span> <span class="kw">ROW</span> <span class="kw">LEVEL</span> SECURITY;</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> POLICY tenant_isolation <span class="kw">ON</span> purchase_orders</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">USING</span> (tenant_id <span class="op">=</span> current_setting(<span class="st">&#39;app.current_tenant_id&#39;</span>):<span class="ch">:uuid</span>);</span></code></pre></div>
+<ul>
+<li>Application sets <code>SET app.current_tenant_id = '...'</code> on
+every connection checkout</li>
+<li>Even if app has a bug, DB rejects cross-tenant reads/writes</li>
+<li>Superuser bypasses RLS (for migrations only — application role never
+superuser)</li>
+</ul>
+<p><strong>Layer 3 — Network/API:</strong> - JWT contains
+<code>tenantId</code> claim - TenantMiddleware validates token tenant
+matches request path tenant - Cross-tenant admin operations require
+permission AND audit log at <code>CRITICAL</code> severity</p>
+<h3 id="tenant-context">5.3 Tenant Context</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> TenantContext {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  tenantId<span class="op">:</span> TenantId</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  tenantName<span class="op">:</span> <span class="dt">string</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  tenantTimeZone<span class="op">:</span> <span class="dt">string</span>       <span class="co">// &#39;Asia/Kolkata&#39;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  tenantCurrency<span class="op">:</span> <span class="dt">string</span>       <span class="co">// &#39;INR&#39;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  tenantLocale<span class="op">:</span> <span class="dt">string</span>         <span class="co">// &#39;en-IN&#39;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  tenantFeatures<span class="op">:</span> <span class="dt">string</span>[]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="tenant-provisioning">5.4 Tenant Provisioning</h3>
+<ul>
+<li>New tenant creation is a system-level operation</li>
+<li>Creates <code>tenants</code> row + default admin user + default
+roles + permissions</li>
+<li>Audit logged at <code>CRITICAL</code> severity; alerts security
+team</li>
+</ul>
+<hr />
+<h2 id="index-strategy">6. Index Strategy</h2>
+<h3 id="indexing-principles">6.1 Indexing Principles</h3>
+<ol type="1">
+<li><strong>Every foreign key gets an index.</strong> Postgres does not
+auto-create FK indexes.</li>
+<li><strong>Every query path gets an index.</strong> EXPLAIN ANALYZE
+must show index usage. No seq scans on tables &gt;10k rows.</li>
+<li><strong>Partial indexes for soft-deleted tables.</strong>
+<code>WHERE deleted_at IS NULL</code>.</li>
+<li><strong>Composite indexes for filter+sort.</strong></li>
+<li><strong>No indexes on low-cardinality columns alone.</strong></li>
+<li><strong>Covering indexes for hot queries.</strong> Use
+<code>INCLUDE</code> for index-only scans.</li>
+</ol>
+<h3 id="standard-index-patterns">6.2 Standard Index Patterns</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Every business table</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_<span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span>_tenant_id <span class="kw">ON</span> <span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span> (tenant_id) <span class="kw">WHERE</span> deleted_at <span class="kw">IS</span> <span class="kw">NULL</span>;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_<span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span>_created_at <span class="kw">ON</span> <span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span> (created_at <span class="kw">DESC</span>);</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Lookup by business code</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">UNIQUE</span> <span class="kw">INDEX</span> uq_<span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span>_<span class="op">&lt;</span>code<span class="op">&gt;</span>_tenant <span class="kw">ON</span> <span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span> (tenant_id, <span class="op">&lt;</span>code<span class="op">&gt;</span>) <span class="kw">WHERE</span> deleted_at <span class="kw">IS</span> <span class="kw">NULL</span>;</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- Foreign keys</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_<span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span>_<span class="op">&lt;</span>fk_column<span class="op">&gt;</span> <span class="kw">ON</span> <span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span> (<span class="op">&lt;</span>fk_column<span class="op">&gt;</span>);</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">-- Status + tenant (common dashboard filter)</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_<span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span>_tenant_status <span class="kw">ON</span> <span class="op">&lt;</span><span class="kw">table</span><span class="op">&gt;</span> (tenant_id, status) <span class="kw">WHERE</span> deleted_at <span class="kw">IS</span> <span class="kw">NULL</span>;</span></code></pre></div>
+<h3 id="index-review-process">6.3 Index Review Process</h3>
+<ul>
+<li>Every Prisma model must declare indexes in the schema</li>
+<li>CI verifies every FK has an index</li>
+<li>Unused indexes (30 days, <code>idx_scan = 0</code>) removed</li>
+<li>Index bloat monitored; rebuilt with
+<code>REINDEX CONCURRENTLY</code></li>
+</ul>
+<h3 id="full-text-search">6.4 Full-Text Search</h3>
+<ul>
+<li>Postgres <code>tsvector</code> + GIN index for FTS</li>
+<li><code>pg_trgm</code> extension for fuzzy matching (Indian language
+support)</li>
+<li>No Elasticsearch in Phase 0 — Postgres FTS sufficient for
+ERP-scale</li>
+</ul>
+<hr />
+<h2 id="partition-strategy">7. Partition Strategy</h2>
+<h3 id="when-to-partition">7.1 When to Partition</h3>
+<p>Partition tables expected to exceed <strong>10 million rows</strong>
+or <strong>50GB</strong>.</p>
+<h3 id="partition-candidates-phase-0">7.2 Partition Candidates (Phase
+0)</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Table</th>
+<th>Expected Growth</th>
+<th>Partition Strategy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>audit_logs</code></td>
+<td>~1M/month</td>
+<td>Range partition by <code>created_at</code> (monthly)</td>
+</tr>
+<tr class="even">
+<td><code>stock_ledger_entries</code></td>
+<td>~500K/month</td>
+<td>Range partition by <code>posted_at</code> (monthly)</td>
+</tr>
+<tr class="odd">
+<td><code>event_outbox</code></td>
+<td>~2M/month</td>
+<td>Range partition by <code>created_at</code> (weekly) + retention</td>
+</tr>
+<tr class="even">
+<td><code>notification_outbox</code></td>
+<td>~500K/month</td>
+<td>Range partition by <code>created_at</code> (weekly) + retention</td>
+</tr>
+</tbody>
+</table>
+<h3 id="partition-type">7.3 Partition Type</h3>
+<ul>
+<li><strong>Range partitioning</strong> on timestamp columns (most
+common)</li>
+<li><strong>List partitioning</strong> only for tenant-isolated tables
+&gt;100GB (rare)</li>
+</ul>
+<h3 id="partition-maintenance">7.4 Partition Maintenance</h3>
+<ul>
+<li>Scheduled job creates next month’s partitions 1 week in advance</li>
+<li>Old partitions dropped via <code>DROP PARTITION</code> after
+retention (instant operation)</li>
+<li>Tool: <code>pg_partman</code> extension</li>
+</ul>
+<hr />
+<h2 id="archiving-strategy">8. Archiving Strategy</h2>
+<h3 id="data-categories">8.1 Data Categories</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Examples</th>
+<th>Hot</th>
+<th>Warm</th>
+<th>Cold</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Transactional</strong></td>
+<td>purchase_orders, grns, ledger</td>
+<td>0-2 years</td>
+<td>2-7 years</td>
+<td>7+ years</td>
+</tr>
+<tr class="even">
+<td><strong>Audit</strong></td>
+<td>audit_logs</td>
+<td>0-1 year</td>
+<td>1-3 years</td>
+<td>3-7+ years</td>
+</tr>
+<tr class="odd">
+<td><strong>Operational</strong></td>
+<td>notifications, outbox</td>
+<td>0-30 days</td>
+<td>—</td>
+<td>— (purged)</td>
+</tr>
+<tr class="even">
+<td><strong>Master</strong></td>
+<td>products, suppliers, users</td>
+<td>Always</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td><strong>Reference</strong></td>
+<td>currencies, countries</td>
+<td>Always</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td><strong>Documents</strong></td>
+<td>coa_documents, evidence</td>
+<td>0-3 years</td>
+<td>3-7 years</td>
+<td>7+ years (Glacier)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="archive-process">8.2 Archive Process</h3>
+<ol type="1">
+<li><strong>Identify:</strong> Daily job finds records past hot-window
+age → <code>archive_jobs</code> table</li>
+<li><strong>Export:</strong> Export to compressed JSONL in S3
+(<code>s3://suop-archive/&lt;tenant&gt;/&lt;table&gt;/&lt;yyyy-mm&gt;.jsonl.gz</code>)</li>
+<li><strong>Verify:</strong> Re-import to temp table, compare counts +
+checksums</li>
+<li><strong>Purge:</strong> Delete from primary in batches of 1000;
+audit log entry written</li>
+<li><strong>Cold Storage:</strong> 90 days in S3 Standard → Glacier; 7
+years → delete (or extend per legal hold)</li>
+</ol>
+<h3 id="restore-from-archive">8.3 Restore from Archive</h3>
+<ul>
+<li>Admin API: <code>POST /api/_internal/archive/restore</code></li>
+<li>Reads JSONL from S3, inserts back, resets
+<code>archived_at</code></li>
+<li>Audited at <code>CRITICAL</code> severity</li>
+<li>Slow (intentional) — discourages casual use</li>
+</ul>
+<hr />
+<h2 id="backup-strategy">9. Backup Strategy</h2>
+<h3 id="backup-layers">9.1 Backup Layers</h3>
+<p><strong>Layer 1 — Managed automated backups (Supabase/RDS):</strong>
+- Daily full backup (2 AM UTC) - PITR via WAL streaming — retention 14
+days - Cross-region replica for DR</p>
+<p><strong>Layer 2 — Logical backups (pg_dump):</strong> - Daily
+<code>pg_dump</code> to S3 (3 AM UTC) - Compressed, encrypted (S3
+SSE-KMS) - Retention: 30 days daily, 12 months weekly, 7 years monthly
+(compliance) - Verified by daily restore-test job</p>
+<p><strong>Layer 3 — File storage backups:</strong> - S3 versioning on
+all buckets - S3 cross-region replication to DR region - MinIO (dev)
+backed up via <code>mc mirror</code> to local NAS weekly</p>
+<h3 id="backup-encryption">9.2 Backup Encryption</h3>
+<ul>
+<li>All backups encrypted at rest (S3 SSE-KMS)</li>
+<li>Keys rotated annually</li>
+<li>Decryption keys in secrets manager (different region from
+backups)</li>
+</ul>
+<h3 id="backup-integrity">9.3 Backup Integrity</h3>
+<ul>
+<li><strong>Daily:</strong> Restore-test to isolated DB,
+<code>pg_checksums</code>, sample queries</li>
+<li><strong>Weekly:</strong> Full restore to staging, full E2E
+suite</li>
+<li><strong>Monthly:</strong> DR failover drill — promote replica, smoke
+tests, failback</li>
+</ul>
+<h3 id="backup-retention-policy">9.4 Backup Retention Policy</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Backup Type</th>
+<th>Retention</th>
+<th>Storage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PITR WAL</td>
+<td>14 days</td>
+<td>Supabase managed</td>
+</tr>
+<tr class="even">
+<td>Daily logical</td>
+<td>30 days</td>
+<td>S3 Standard</td>
+</tr>
+<tr class="odd">
+<td>Weekly logical</td>
+<td>12 months</td>
+<td>S3 Standard-IA</td>
+</tr>
+<tr class="even">
+<td>Monthly logical</td>
+<td>7 years</td>
+<td>S3 Glacier</td>
+</tr>
+<tr class="odd">
+<td>File storage</td>
+<td>7 years</td>
+<td>S3 Glacier</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="restore-strategy">10. Restore Strategy</h2>
+<h3 id="restore-scenarios">10.1 Restore Scenarios</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Scenario</th>
+<th>Method</th>
+<th>RTO Target</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Accidental row delete (within 14 days)</td>
+<td>PITR → extract row → insert</td>
+<td>1 hour</td>
+</tr>
+<tr class="even">
+<td>Accidental table drop (within 14 days)</td>
+<td>PITR → restore table</td>
+<td>2 hours</td>
+</tr>
+<tr class="odd">
+<td>Logical corruption (bad migration)</td>
+<td>Restore nightly logical backup</td>
+<td>4 hours</td>
+</tr>
+<tr class="even">
+<td>Region failure</td>
+<td>Promote cross-region replica</td>
+<td>30 minutes</td>
+</tr>
+<tr class="odd">
+<td>Catastrophic (no primary, no replica)</td>
+<td>Restore monthly Glacier backup</td>
+<td>24 hours</td>
+</tr>
+</tbody>
+</table>
+<h3 id="restore-procedure-logical-backup">10.2 Restore Procedure
+(Logical Backup)</h3>
+<ol type="1">
+<li>Provision new Postgres instance (same version)</li>
+<li>Download backup from S3, verify checksum</li>
+<li><code>pg_restore --clean --if-exists --jobs=4 &lt;backup&gt;</code></li>
+<li>Run <code>pg_checksums</code> for integrity</li>
+<li>Run smoke tests</li>
+<li>Switch application <code>DATABASE_URL</code></li>
+<li>Verify application functionality</li>
+<li>Decommission old instance after 7-day observation</li>
+</ol>
+<h3 id="restore-procedure-pitr">10.3 Restore Procedure (PITR)</h3>
+<ol type="1">
+<li>Use Supabase/RDS console to restore to timestamp T (within 14
+days)</li>
+<li>New instance provisioned with data up to T</li>
+<li>Application switched to new instance</li>
+<li>Lost data (T → current) re-entered or replayed from event
+outbox</li>
+</ol>
+<h3 id="restore-testing">10.4 Restore Testing</h3>
+<ul>
+<li>Monthly restore drill (full restore to staging)</li>
+<li>Quarterly DR failover drill (promote replica)</li>
+<li>Annual full disaster simulation (region loss, restore from
+Glacier)</li>
+</ul>
+<hr />
+<h2 id="readwrite-patterns">11. Read/Write Patterns</h2>
+<h3 id="read-patterns">11.1 Read Patterns</h3>
+<p><strong>Pattern A — Direct lookup by ID:</strong> PK index, instant
+<strong>Pattern B — Filtered list with pagination:</strong> Composite
+index <code>(tenant_id, created_at DESC)</code>; cursor pagination
+preferred <strong>Pattern C — Aggregation (dashboard):</strong> Partial
+index; result cached in Redis 5 min <strong>Pattern D — Join (master +
+transactional):</strong> FK index critical <strong>Pattern E — Full-text
+search:</strong> <code>pg_trgm</code> GIN index for fuzzy match</p>
+<h3 id="write-patterns">11.2 Write Patterns</h3>
+<p><strong>Pattern A — Single insert:</strong> ID pre-generated by app
+for child inserts in same transaction <strong>Pattern B — Update with
+optimistic locking:</strong></p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> purchase_orders</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> status <span class="op">=</span> $<span class="dv">1</span>, updated_at <span class="op">=</span> NOW(), updated_by <span class="op">=</span> $<span class="dv">2</span>, version <span class="op">=</span> version <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> <span class="kw">id</span> <span class="op">=</span> $<span class="dv">3</span> <span class="kw">AND</span> tenant_id <span class="op">=</span> $<span class="dv">4</span> <span class="kw">AND</span> version <span class="op">=</span> $<span class="dv">5</span> <span class="kw">AND</span> deleted_at <span class="kw">IS</span> <span class="kw">NULL</span>;</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- If 0 rows: either 404 or 409 (version mismatch)</span></span></code></pre></div>
+<p><strong>Pattern C — Transactional multi-table:</strong>
+All-or-nothing; uses transaction helper + outbox pattern <strong>Pattern
+D — Bulk insert:</strong> Batch size 500; Prisma
+<code>createMany</code>; transactional <strong>Pattern E — Soft
+delete:</strong> Sets <code>deleted_at</code>, <code>deleted_by</code>,
+increments version</p>
+<h3 id="forbidden-patterns">11.3 Forbidden Patterns</h3>
+<ul>
+<li>❌ <code>SELECT *</code> in production (explicit column list)</li>
+<li>❌ N+1 queries (use Prisma <code>include</code> or DataLoader)</li>
+<li>❌ <code>OFFSET</code> for deep pagination (cursor-based)</li>
+<li>❌ <code>DELETE</code> without <code>WHERE</code> (always soft
+delete)</li>
+<li>❌ Cross-tenant queries without explicit <code>withTenant()</code> +
+permission check</li>
+</ul>
+<hr />
+<h2 id="data-lifecycle">12. Data Lifecycle</h2>
+<h3 id="lifecycle-stages">12.1 Lifecycle Stages</h3>
+<pre><code>Create → Use → Update → Soft Delete → Archive → Cold Storage → Purge</code></pre>
+<h3 id="lifecycle-rules-per-category">12.2 Lifecycle Rules per
+Category</h3>
+<p><strong>Master Data (products, suppliers, users):</strong> - Never
+archived while referenced by transactional data - Soft delete blocks new
+references; existing preserved - Hard purge only after 7 years of zero
+references (compliance audit required)</p>
+<p><strong>Transactional Data (POs, GRNs, stock ledger):</strong> - Hot:
+2 years online - Warm: years 2-7 archived to S3 - Cold: years 7+ to
+Glacier - Purge: never (legal hold for audits)</p>
+<p><strong>Audit Logs:</strong> Hot 1y → Warm 1-3y → Cold 3-7+y → Purge:
+never without legal sign-off <strong>Operational Data (notifications,
+outbox):</strong> Hot 30d → Purge <strong>File Storage:</strong> Hot 3y
+→ Warm 3-7y → Cold 7+y → Purge: never without legal sign-off</p>
+<h3 id="lifecycle-automation">12.3 Lifecycle Automation</h3>
+<ul>
+<li>Daily: <code>archive-sweeper</code>, <code>outbox-purger</code></li>
+<li>Weekly: <code>glacier-transition</code></li>
+<li>Monthly: <code>archive-compressor</code></li>
+<li>All jobs audit-logged; failures alert ops</li>
+</ul>
+<hr />
+<h2 id="historical-data-policy">13. Historical Data Policy</h2>
+<h3 id="what-counts-as-historical">13.1 What Counts as “Historical”</h3>
+<ul>
+<li>Closed POs, GRNs, NCRs, CAPAs older than 2 years</li>
+<li>Stock ledger entries older than 2 years</li>
+<li>Audit logs older than 1 year</li>
+</ul>
+<h3 id="access-to-historical-data">13.2 Access to Historical Data</h3>
+<ul>
+<li>Read-only — no edits, no deletes (beyond archive purge)</li>
+<li>Requires <code>history:read</code> permission (separate from regular
+read)</li>
+<li>UI clearly labels with “Historical” badge</li>
+<li>Reports span historical + current via <code>UNION ALL</code></li>
+</ul>
+<h3 id="historical-snapshots">13.3 Historical Snapshots</h3>
+<p>For trend dashboards: - Pre-computed nightly into
+<code>snapshot_&lt;metric&gt;</code> tables - Immutable once written -
+Past months never recomputed</p>
+<h3 id="data-retention-compliance">13.4 Data Retention Compliance</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Regulation</th>
+<th>Data Type</th>
+<th>Retention</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FSSAI</td>
+<td>Manufacturing records, COAs</td>
+<td>2 years post-expiry</td>
+</tr>
+<tr class="even">
+<td>GST</td>
+<td>Invoices, GRNs</td>
+<td>6 years from filing</td>
+</tr>
+<tr class="odd">
+<td>Companies Act</td>
+<td>Financial records</td>
+<td>8 years</td>
+</tr>
+<tr class="even">
+<td>Internal</td>
+<td>Audit logs</td>
+<td>7 years</td>
+</tr>
+<tr class="odd">
+<td>Internal</td>
+<td>Customer complaints</td>
+<td>5 years</td>
+</tr>
+</tbody>
+</table>
+<p>Configurable per tenant; default to most-strict if not set.</p>
+<hr />
+<h2 id="master-data-policy">14. Master Data Policy</h2>
+<h3 id="what-is-master-data">14.1 What is Master Data</h3>
+<p>Products, Suppliers, Customers, Warehouses, Plants, Users, Roles,
+UOMs, Currencies, Tax codes — entities that change rarely and are
+referenced by many transactional records.</p>
+<h3 id="master-data-rules">14.2 Master Data Rules</h3>
+<ol type="1">
+<li><strong>Single source of truth per tenant</strong> — no duplicates;
+dedup runs nightly</li>
+<li><strong>Soft delete only</strong> — never hard delete</li>
+<li><strong>Versioning for changes</strong> — material changes create
+new versions; old preserved with <code>valid_to</code></li>
+<li><strong>Approval workflow for creation</strong> — configurable per
+master type</li>
+<li><strong>External ID support</strong> — multiple external IDs (GSTIN,
+TIN, customer-assigned)</li>
+<li><strong>Reference integrity</strong> — UUID FK enforced</li>
+<li><strong>Cache strategy</strong> — Redis TTL 5 min; invalidated on
+update</li>
+</ol>
+<h3 id="master-data-quality">14.3 Master Data Quality</h3>
+<ul>
+<li>Required fields at schema level (NOT NULL)</li>
+<li>Format validation at service level (GST regex, PAN regex)</li>
+<li>Duplicate detection — fuzzy match flagged for review</li>
+<li>Completeness score — % optional fields populated</li>
+<li>Staleness alerts — 12 months without update</li>
+</ul>
+<hr />
+<h2 id="transaction-data-policy">15. Transaction Data Policy</h2>
+<h3 id="what-is-transaction-data">15.1 What is Transaction Data</h3>
+<p>POs, GRNs, stock issues, transfers, stock ledger entries, NCRs,
+CAPAs, COAs, audit logs, event outbox.</p>
+<h3 id="transaction-data-rules">15.2 Transaction Data Rules</h3>
+<ol type="1">
+<li><strong>Immutable after closure</strong> — corrections via reversal
++ new transaction (double-entry)</li>
+<li><strong>Sequence numbers</strong> — tenant-unique sequence (e.g.,
+<code>PO-2026-000001</code>) via Postgres sequence</li>
+<li><strong>Status workflow</strong> — every transaction has state
+machine</li>
+<li><strong>Reference integrity</strong> — master record soft-delete
+blocked if transactions reference it</li>
+<li><strong>Posting to ledger</strong> — financial/stock transactions
+post in same DB transaction</li>
+<li><strong>Reversal pattern</strong> — counter-transaction with
+reference to original; both preserved</li>
+</ol>
+<h3 id="sequence-number-generation">15.3 Sequence Number Generation</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">SEQUENCE</span> po_sequence_<span class="op">&lt;</span>tenant_id<span class="op">&gt;</span> <span class="kw">START</span> <span class="dv">1</span>;</span></code></pre></div>
+<ul>
+<li>Format:
+<code>&lt;prefix&gt;-&lt;year&gt;-&lt;6-digit-sequence&gt;</code> (e.g.,
+<code>PO-2026-000001</code>)</li>
+<li>Resets yearly (separate sequence per year per tenant)</li>
+<li>Generated inside the creating transaction (atomic)</li>
+</ul>
+<hr />
+<h2 id="reference-data-policy">16. Reference Data Policy</h2>
+<h3 id="what-is-reference-data">16.1 What is Reference Data</h3>
+<p>System-wide constants shared across tenants: countries, currencies,
+UOMs, tax codes, languages, timezones, product categories.</p>
+<h3 id="reference-data-rules">16.2 Reference Data Rules</h3>
+<ol type="1">
+<li><strong>Stored in <code>reference_*</code> tables</strong> — no
+<code>tenant_id</code> column</li>
+<li><strong>Tenant overrides</strong> —
+<code>tenant_reference_overrides</code> table</li>
+<li><strong>Versioned</strong> — changes create new versions;
+effective-dated</li>
+<li><strong>Seeded via migrations</strong> — updates via migration only
+(not API)</li>
+<li><strong>Cache aggressively</strong> — Redis TTL 1 hour; invalidated
+via event</li>
+<li><strong>Read-only API</strong> —
+<code>GET /api/v1/reference/&lt;type&gt;</code>; no mutations</li>
+</ol>
+<h3 id="reference-data-updates">16.3 Reference Data Updates</h3>
+<ul>
+<li>Migration only (code-reviewed)</li>
+<li>Emergency updates (GST rate change) via admin API with
+<code>system:reference:update</code> permission</li>
+<li>Each update publishes <code>ReferenceDataUpdated</code> event</li>
+</ul>
+<hr />
+<h2 id="schema-migration-discipline">17. Schema Migration
+Discipline</h2>
+<h3 id="migration-workflow">17.1 Migration Workflow</h3>
+<ol type="1">
+<li>Modify <code>prisma/schema.prisma</code></li>
+<li><code>prisma migrate dev --name &lt;descriptive&gt;</code> creates
+migration SQL</li>
+<li>Review generated SQL — no destructive changes</li>
+<li>Run locally + test suite</li>
+<li>PR includes migration file</li>
+<li>CI runs migration against fresh DB + full test suite</li>
+<li>Staging auto-deploys on merge</li>
+<li>Production via CD pipeline with manual approval</li>
+</ol>
+<h3 id="migration-rules">17.2 Migration Rules</h3>
+<ul>
+<li><strong>Never destructive in one step</strong> — column drops
+require 2 migrations (deprecate, then drop after 1 release)</li>
+<li><strong>Never change column type in one step</strong> — add new,
+migrate data, drop old</li>
+<li><strong>Never rename columns</strong> — add new, dual-write, migrate
+reads, drop old</li>
+<li><strong>Never rely on application downtime</strong> — all migrations
+forward-compatible</li>
+<li><strong>Always include rollback SQL</strong> — paired with every
+migration; tested in CI</li>
+</ul>
+<h3 id="migration-review-checklist">17.3 Migration Review Checklist</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />No <code>DROP TABLE</code> without
+prior deprecation release</label></li>
+<li><label><input type="checkbox" />No <code>DROP COLUMN</code> without
+prior deprecation release</label></li>
+<li><label><input type="checkbox" />No <code>ALTER TYPE</code> requiring
+table rewrite</label></li>
+<li><label><input type="checkbox" />No <code>SET NOT NULL</code> without
+default for existing rows</label></li>
+<li><label><input type="checkbox" />New indexes created with
+<code>CONCURRENTLY</code></label></li>
+<li><label><input type="checkbox" />FK constraints added with
+<code>NOT VALID</code> then <code>VALIDATE</code></label></li>
+<li><label><input type="checkbox" />Migration tested against
+production-size data in staging</label></li>
+</ul>
+<hr />
+<h2 id="database-access-discipline">18. Database Access Discipline</h2>
+<h3 id="application-role">18.1 Application Role</h3>
+<ul>
+<li>Non-superuser role</li>
+<li>CRUD on business tables, SELECT on reference tables</li>
+<li>Cannot <code>TRUNCATE</code>, <code>DROP</code>, or
+<code>ALTER</code></li>
+<li><code>EXECUTE</code> on whitelisted stored functions</li>
+</ul>
+<h3 id="migration-role">18.2 Migration Role</h3>
+<ul>
+<li>Separate role for migrations</li>
+<li><code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>
+privileges</li>
+<li>CI/CD pipeline only; credentials in secrets manager</li>
+</ul>
+<h3 id="read-replica-role">18.3 Read Replica Role</h3>
+<ul>
+<li>Read-only for reporting/analytics</li>
+<li>Connects to read replica</li>
+<li>Dashboards use this role to offload primary</li>
+</ul>
+<h3 id="forbidden">18.4 Forbidden</h3>
+<ul>
+<li>❌ Application uses superuser role</li>
+<li>❌ Direct DB access from developer machines to production</li>
+<li>❌ Long-running queries without <code>statement_timeout</code></li>
+<li>❌ Manual schema changes outside migrations</li>
+</ul>
+<hr />
+<h2 id="database-observability">19. Database Observability</h2>
+<h3 id="metrics-prometheus">19.1 Metrics (Prometheus)</h3>
+<ul>
+<li>Connections: active, idle, waiting</li>
+<li>QPS by type (SELECT, INSERT, UPDATE, DELETE)</li>
+<li>Query latency p50, p95, p99</li>
+<li>Transaction duration p50, p95, p99</li>
+<li>Lock waits (count + duration)</li>
+<li>Cache hit ratio</li>
+<li>Index usage</li>
+<li>Table bloat</li>
+</ul>
+<h3 id="slow-query-log">19.2 Slow Query Log</h3>
+<ul>
+<li><code>log_min_duration_statement = 500ms</code></li>
+<li>Top 10 slowest queries reviewed weekly</li>
+<li>Added to optimization backlog</li>
+</ul>
+<h3 id="query-plan-analysis">19.3 Query Plan Analysis</h3>
+<ul>
+<li>Weekly <code>pg_stat_statements</code> sampling for top 20 expensive
+queries</li>
+<li>EXPLAIN ANALYZE run automatically; plan stored</li>
+<li>Seq scans on tables &gt;10k rows flagged</li>
+</ul>
+<h3 id="lock-monitoring">19.4 Lock Monitoring</h3>
+<ul>
+<li>Alert if any lock wait exceeds 5s</li>
+<li>Alert on deadlocks</li>
+<li>Long-running transactions (&gt;30s) alert ops</li>
+</ul>
+<hr />
+<h2 id="open-questions-for-approval">20. Open Questions for
+Approval</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q-D1</td>
+<td>Postgres hosting</td>
+<td>Supabase Pro</td>
+<td>AWS RDS, Aurora</td>
+</tr>
+<tr class="even">
+<td>Q-D2</td>
+<td>UUID generation</td>
+<td>DB-side <code>uuid_generate_v7()</code></td>
+<td>App-side</td>
+</tr>
+<tr class="odd">
+<td>Q-D3</td>
+<td>Partitioning tool</td>
+<td><code>pg_partman</code></td>
+<td>Custom cron</td>
+</tr>
+<tr class="even">
+<td>Q-D4</td>
+<td>Archive storage</td>
+<td>S3 Glacier</td>
+<td>Azure Blob Cool, GCS Archive</td>
+</tr>
+<tr class="odd">
+<td>Q-D5</td>
+<td>Backup verification</td>
+<td>Daily restore-test</td>
+<td>Weekly</td>
+</tr>
+<tr class="even">
+<td>Q-D6</td>
+<td>Reference data updates</td>
+<td>Migration-only</td>
+<td>Admin API for emergency</td>
+</tr>
+<tr class="odd">
+<td>Q-D7</td>
+<td>Read replica for dashboards</td>
+<td>Yes (Supabase)</td>
+<td>No (use primary)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><em>End of Enterprise Data Architecture Document</em></p>
+</body>
+</html>

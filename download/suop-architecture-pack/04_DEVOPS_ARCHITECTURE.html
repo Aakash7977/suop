@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>04_DEVOPS_ARCHITECTURE</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">04_DEVOPS_ARCHITECTURE</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-enterprise-devops-architecture"
+id="toc-suop-erp-v1.0-enterprise-devops-architecture">SUOP ERP v1.0 —
+Enterprise DevOps Architecture</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">1. Purpose</a></li>
+<li><a href="#environments" id="toc-environments">2.
+Environments</a></li>
+<li><a href="#docker" id="toc-docker">3. Docker</a></li>
+<li><a href="#cicd" id="toc-cicd">4. CI/CD</a></li>
+<li><a href="#git-strategy" id="toc-git-strategy">5. Git
+Strategy</a></li>
+<li><a href="#deployment" id="toc-deployment">6. Deployment</a></li>
+<li><a href="#secrets-management" id="toc-secrets-management">7. Secrets
+Management</a></li>
+<li><a href="#infrastructure-as-code" id="toc-infrastructure-as-code">8.
+Infrastructure as Code</a></li>
+<li><a href="#monitoring" id="toc-monitoring">9. Monitoring</a></li>
+<li><a href="#logging" id="toc-logging">10. Logging</a></li>
+<li><a href="#tracing" id="toc-tracing">11. Tracing</a></li>
+<li><a href="#alerting" id="toc-alerting">12. Alerting</a></li>
+<li><a href="#environment-configuration"
+id="toc-environment-configuration">13. Environment
+Configuration</a></li>
+<li><a href="#backup-recovery" id="toc-backup-recovery">14. Backup &amp;
+Recovery</a></li>
+<li><a href="#open-questions-for-approval"
+id="toc-open-questions-for-approval">15. Open Questions for
+Approval</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-enterprise-devops-architecture">SUOP ERP v1.0 —
+Enterprise DevOps Architecture</h1>
+<table>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="purpose">1. Purpose</h2>
+<p>This document defines the complete DevOps architecture for SUOP ERP
+v1.0: how code moves from developer laptop to production, how
+environments are managed, how deployments are released and rolled back,
+and how the system is monitored.</p>
+<p><strong>Hard rule:</strong> No code reaches production except via
+this pipeline. No manual SSH-and-edit. No “hotfix directly on the
+server.” Every change is a PR → CI → CD pipeline.</p>
+<hr />
+<h2 id="environments">2. Environments</h2>
+<h3 id="environment-catalog">2.1 Environment Catalog</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Environment</th>
+<th>Purpose</th>
+<th>Data</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Local</strong></td>
+<td>Developer machine</td>
+<td>Synthetic seed data</td>
+<td>Developer</td>
+</tr>
+<tr class="even">
+<td><strong>CI</strong></td>
+<td>Test runner</td>
+<td>Test fixtures</td>
+<td>CI system only</td>
+</tr>
+<tr class="odd">
+<td><strong>Staging</strong></td>
+<td>Pre-production testing</td>
+<td>Anonymized production snapshot</td>
+<td>All developers + QA</td>
+</tr>
+<tr class="even">
+<td><strong>Production</strong></td>
+<td>Live customer use</td>
+<td>Real data</td>
+<td>Operations team only</td>
+</tr>
+</tbody>
+</table>
+<h3 id="environment-parity">2.2 Environment Parity</h3>
+<p>Staging must match production as closely as possible: - Same Postgres
+version - Same Redis version - Same Node/Bun version - Same environment
+variables (different values) - Same infrastructure (smaller instance
+sizes for cost) - Same third-party integrations (test accounts)</p>
+<p><strong>Divergences allowed:</strong> - Instance size (staging
+smaller) - Backup frequency (staging less frequent) - Number of replicas
+(staging single instance) - External integrations use sandbox/test
+accounts</p>
+<h3 id="environment-promotion">2.3 Environment Promotion</h3>
+<pre><code>Local → CI (auto on PR) → Staging (auto on merge to develop) → Production (manual approval on merge to main)</code></pre>
+<ul>
+<li><strong>Local → CI:</strong> Automatic on PR creation</li>
+<li><strong>CI → Staging:</strong> Automatic on merge to
+<code>develop</code> branch</li>
+<li><strong>Staging → Production:</strong> Manual approval gate after
+merge to <code>main</code>; deploy during business hours (10 AM - 4 PM
+IST)</li>
+</ul>
+<h3 id="production-deploy-windows">2.4 Production Deploy Windows</h3>
+<ul>
+<li><strong>Standard:</strong> Tuesday + Thursday, 10 AM - 4 PM IST</li>
+<li><strong>Emergency hotfix:</strong> Anytime, requires SEV-1/SEV-2 +
+on-call approval</li>
+<li><strong>Blackout periods:</strong> Quarter-end (GST filing), audit
+periods, festival peaks (Diwali, etc.)</li>
+<li><strong>No Friday deploys</strong> (prevents weekend incident
+response)</li>
+</ul>
+<hr />
+<h2 id="docker">3. Docker</h2>
+<h3 id="container-strategy">3.1 Container Strategy</h3>
+<p>All three apps (web, backend, mobile-API) ship as Docker containers:
+- <strong>Reproducible</strong> — same image runs in staging and
+production - <strong>Isolated</strong> — dependencies bundled -
+<strong>Scalable</strong> — orchestrate via Kubernetes or container
+service - <strong>Secured</strong> — non-root user, read-only
+filesystem, scanned images</p>
+<h3 id="dockerfile-backend-dockerdockerfile.backend">3.2 Dockerfile —
+Backend (<code>docker/Dockerfile.backend</code>)</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Multi-stage build for smallest image</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> oven/bun:1.1-alpine <span class="kw">AS</span> base</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Install dependencies</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> base <span class="kw">AS</span> deps</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package.json bun.lockb ./</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> apps/backend/package.json ./apps/backend/</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> packages/shared/package.json ./packages/shared/</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> packages/prisma/package.json ./packages/prisma/</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">bun</span> install <span class="at">--frozen-lockfile</span> <span class="at">--production</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Build</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> base <span class="kw">AS</span> builder</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=deps</span> /app/node_modules ./node_modules</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">bun</span> run build:backend</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 3: Production image</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> oven/bun:1.1-alpine <span class="kw">AS</span> runner</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Non-root user</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">addgroup</span> <span class="at">-g</span> 1001 <span class="at">-S</span> nodejs <span class="kw">&amp;&amp;</span> <span class="ex">adduser</span> <span class="at">-S</span> suop <span class="at">-u</span> 1001</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> suop</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy built artifacts</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=suop:nodejs</span> /app/apps/backend/dist ./dist</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=suop:nodejs</span> /app/apps/backend/package.json ./package.json</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=suop:nodejs</span> /app/node_modules ./node_modules</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=suop:nodejs</span> /app/packages ./packages</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Read-only filesystem</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">mkdir</span> /tmp/suop <span class="kw">&amp;&amp;</span> <span class="fu">chown</span> suop:nodejs /tmp/suop</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> TMPDIR=/tmp/suop</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Health check</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="kw">HEALTHCHECK</span> <span class="op">--interval=30s</span> <span class="op">--timeout=3s</span> <span class="op">--retries=3</span> \</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="kw">CMD</span> <span class="fu">wget</span> <span class="at">-q</span> <span class="at">--spider</span> http://localhost:3030/api/v1/_internal/health <span class="kw">||</span> <span class="bu">exit</span> 1</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3030</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;bun&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;dist/main.js&quot;</span>]</span></code></pre></div>
+<h3 id="dockerfile-web-dockerdockerfile.web">3.3 Dockerfile — Web
+(<code>docker/Dockerfile.web</code>)</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> base</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apk</span> add <span class="at">--no-cache</span> libc6-compat</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Install</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> base <span class="kw">AS</span> deps</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package.json package-lock.json ./</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> apps/web/package.json ./apps/web/</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> packages/shared/package.json ./packages/shared/</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> packages/ui/package.json ./packages/ui/</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> ci</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Build</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> base <span class="kw">AS</span> builder</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=deps</span> /app/node_modules ./node_modules</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> NEXT_TELEMETRY_DISABLED=1</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> run build:web</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 3: Production (Next.js standalone)</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> runner</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> NODE_ENV=production</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> NEXT_TELEMETRY_DISABLED=1</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">addgroup</span> <span class="at">-g</span> 1001 <span class="at">-S</span> nodejs <span class="kw">&amp;&amp;</span> <span class="ex">adduser</span> <span class="at">-S</span> nextjs <span class="at">-u</span> 1001</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> nextjs</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=nextjs:nodejs</span> /app/apps/web/.next/standalone ./</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=nextjs:nodejs</span> /app/apps/web/.next/static ./apps/web/.next/static</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> <span class="op">--chown=nextjs:nodejs</span> /app/apps/web/public ./apps/web/public</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 3000</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> PORT=3000</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;apps/web/server.js&quot;</span>]</span></code></pre></div>
+<h3 id="docker-compose-development">3.4 Docker Compose
+(Development)</h3>
+<p><code>docker/docker-compose.yml</code>:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.9&#39;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:16-alpine</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_DB</span><span class="kw">:</span><span class="at"> suop</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> suop</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> suop_dev_only</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;5432:5432&#39;</span><span class="kw">]</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> pgdata:/var/lib/postgresql/data</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;CMD-SHELL&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;pg_isready -U suop&#39;</span><span class="kw">]</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">redis</span><span class="kw">:</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:7-alpine</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;6379:6379&#39;</span><span class="kw">]</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> redis-server --requirepass suop_dev_only</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minio</span><span class="kw">:</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> minio/minio</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;9000:9000&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;9001:9001&#39;</span><span class="kw">]</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MINIO_ROOT_USER</span><span class="kw">:</span><span class="at"> suop</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MINIO_ROOT_PASSWORD</span><span class="kw">:</span><span class="at"> suop_dev_only</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> server /data --console-address &quot;:9001&quot;</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> miniodata:/data</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mailhog</span><span class="kw">:</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mailhog/mailhog</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;1025:1025&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;8025:8025&#39;</span><span class="kw">]</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">context</span><span class="kw">:</span><span class="at"> ..</span></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">dockerfile</span><span class="kw">:</span><span class="at"> docker/Dockerfile.backend</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;3030:3030&#39;</span><span class="kw">]</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DATABASE_URL</span><span class="kw">:</span><span class="at"> postgresql://suop:suop_dev_only@postgres:5432/suop</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">REDIS_URL</span><span class="kw">:</span><span class="at"> redis://:suop_dev_only@redis:6379</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a><span class="co">      # ... (other env vars)</span></span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">redis</span><span class="kw">:</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_started</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ../apps/backend/src:/app/apps/backend/src</span><span class="co">  # hot reload in dev</span></span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> bun run dev</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">context</span><span class="kw">:</span><span class="at"> ..</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">dockerfile</span><span class="kw">:</span><span class="at"> docker/Dockerfile.web</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;3000:3000&#39;</span><span class="kw">]</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">NEXT_PUBLIC_API_URL</span><span class="kw">:</span><span class="at"> http://localhost:3030</span></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> backend</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pgdata</span><span class="kw">:</span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">miniodata</span><span class="kw">:</span></span></code></pre></div>
+<h3 id="image-scanning">3.5 Image Scanning</h3>
+<ul>
+<li><strong>Trivy</strong> scans every image build in CI</li>
+<li><strong>High/critical vulnerabilities</strong> block deploy</li>
+<li><strong>Base images</strong> updated monthly
+(<code>npm run update:base-images</code>)</li>
+<li><strong>SBOM</strong> (Software Bill of Materials) generated via
+<code>syft</code> and stored with image</li>
+</ul>
+<hr />
+<h2 id="cicd">4. CI/CD</h2>
+<h3 id="pipeline-overview">4.1 Pipeline Overview</h3>
+<pre><code>PR Created
+   ↓
+[CI Pipeline]
+   ├── Lint (ESLint + Prettier)
+   ├── Type Check (tsc --noEmit)
+   ├── Unit Tests (Vitest)
+   ├── Integration Tests (Testcontainers)
+   ├── SAST Security Scan (SonarQube)
+   ├── Dependency Scan (npm audit + Snyk)
+   ├── Secret Scan (git-secrets)
+   ├── Build (Next.js + Bun)
+   ├── E2E Tests (Playwright — only on staging deploy)
+   └── Coverage Gate (≥70% business, ≥90% foundation)
+   ↓
+PR Merged to develop
+   ↓
+[CD Staging Pipeline]
+   ├── Build production images
+   ├── Push to container registry
+   ├── Run migrations (with rollback SQL tested)
+   ├── Deploy to staging
+   ├── Smoke tests
+   └── Notify Slack
+   ↓
+PR Merged to main
+   ↓
+[CD Production Pipeline — Manual Approval]
+   ├── Build production images (re-use staging images if same commit)
+   ├── Push to container registry
+   ├── Deploy to production (blue-green)
+   ├── Run migrations (in maintenance window if destructive)
+   ├── Smoke tests
+   ├── Notify Slack + email
+   └── Rollback if smoke tests fail</code></pre>
+<h3 id="github-actions-ci">4.2 GitHub Actions — CI</h3>
+<p><code>.github/workflows/ci.yml</code>:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> CI</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> develop</span><span class="kw">]</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">lint</span><span class="kw">:</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> oven-sh/setup-bun@v1</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun install --frozen-lockfile</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run lint</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run typecheck</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">unit-tests</span><span class="kw">:</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> oven-sh/setup-bun@v1</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun install --frozen-lockfile</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run test:unit --coverage</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> codecov/codecov-action@v4</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Coverage gate</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>          FOUNDATION_COV=$(bun run scripts/read-coverage.ts core)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>          BUSINESS_COV=$(bun run scripts/read-coverage.ts modules)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>          if [ &quot;$FOUNDATION_COV&quot; -lt 90 ]; then exit 1; fi</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>          if [ &quot;$BUSINESS_COV&quot; -lt 70 ]; then exit 1; fi</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">integration-tests</span><span class="kw">:</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:16-alpine</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> test</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;5432:5432&#39;</span><span class="kw">]</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="fu">        options</span><span class="kw">: </span><span class="ch">&gt;-</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>          --health-cmd pg_isready</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>          --health-interval 5s</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>          --health-retries 5</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">redis</span><span class="kw">:</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:7-alpine</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;6379:6379&#39;</span><span class="kw">]</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> oven-sh/setup-bun@v1</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun install --frozen-lockfile</span></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run test:integration</span></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">security-scan</span><span class="kw">:</span></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> snyk/actions/node@master</span></span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">command</span><span class="kw">:</span><span class="at"> test</span></span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">args</span><span class="kw">:</span><span class="at"> --severity-threshold=high</span></span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">SNYK_TOKEN</span><span class="kw">:</span><span class="at"> ${{ secrets.SNYK_TOKEN }}</span></span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> github/codeql-action/init@v3</span></span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">languages</span><span class="kw">:</span><span class="at"> javascript-typescript</span></span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> github/codeql-action/analyze@v3</span></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">lint</span><span class="kw">,</span><span class="at"> unit-tests</span><span class="kw">,</span><span class="at"> integration-tests</span><span class="kw">,</span><span class="at"> security-scan</span><span class="kw">]</span></span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> oven-sh/setup-bun@v1</span></span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun install --frozen-lockfile</span></span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run build</span></span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/upload-artifact@v4</span></span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> build-artifacts</span></span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a><span class="fu">          path</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>            apps/web/.next</span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>            apps/backend/dist</span></code></pre></div>
+<h3 id="github-actions-cd-staging">4.3 GitHub Actions — CD Staging</h3>
+<p><code>.github/workflows/cd-staging.yml</code>:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> CD Staging</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">develop</span><span class="kw">]</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">deploy-staging</span><span class="kw">:</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span><span class="at"> staging</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build &amp; push images</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>          docker build -f docker/Dockerfile.backend -t suop/backend:staging-${{ github.sha }} .</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>          docker build -f docker/Dockerfile.web -t suop/web:staging-${{ github.sha }} .</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>          docker push suop/backend:staging-${{ github.sha }}</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>          docker push suop/web:staging-${{ github.sha }}</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Run migrations</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run prisma migrate deploy</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">DATABASE_URL</span><span class="kw">:</span><span class="at"> ${{ secrets.STAGING_DATABASE_URL }}</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Deploy to staging</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./scripts/deploy-staging.sh ${{ github.sha }}</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Smoke tests</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run test:smoke --env staging</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Notify Slack</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> always()</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> slackapi/slack-github-action@v1</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">slack-message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Staging deploy ${{ github.sha }}: ${{ job.status }}&quot;</span></span></code></pre></div>
+<h3 id="github-actions-cd-production">4.4 GitHub Actions — CD
+Production</h3>
+<p><code>.github/workflows/cd-production.yml</code>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> CD Production</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">]</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">deploy-production</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> production</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">url</span><span class="kw">:</span><span class="at"> https://app.sudhamrit.com</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Manual approval gate</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> trstringer/manual-approval@v1</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">approvers</span><span class="kw">:</span><span class="at"> ops-lead,security-lead</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">minimum-approvals</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">issue-title</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Production deploy: ${{ github.sha }}&quot;</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Run migrations</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run prisma migrate deploy</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">DATABASE_URL</span><span class="kw">:</span><span class="at"> ${{ secrets.PROD_DATABASE_URL }}</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Deploy (blue-green)</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./scripts/deploy-production.sh ${{ github.sha }}</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Smoke tests</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> bun run test:smoke --env production</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Rollback if smoke fails</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> failure()</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./scripts/rollback-production.sh</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Notify Slack + email</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> always()</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> ./scripts/notify-deploy.sh ${{ job.status }}</span></span></code></pre></div>
+<h3 id="pipeline-gates">4.5 Pipeline Gates</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Gate</th>
+<th>Trigger on Fail</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Lint fails</td>
+<td>Block merge</td>
+</tr>
+<tr class="even">
+<td>Type check fails</td>
+<td>Block merge</td>
+</tr>
+<tr class="odd">
+<td>Unit tests fail</td>
+<td>Block merge</td>
+</tr>
+<tr class="even">
+<td>Coverage &lt; threshold</td>
+<td>Block merge</td>
+</tr>
+<tr class="odd">
+<td>Integration tests fail</td>
+<td>Block merge</td>
+</tr>
+<tr class="even">
+<td>Security scan finds high/critical</td>
+<td>Block merge</td>
+</tr>
+<tr class="odd">
+<td>Build fails</td>
+<td>Block merge</td>
+</tr>
+<tr class="even">
+<td>Smoke tests fail (staging)</td>
+<td>Alert, don’t block production (staging only)</td>
+</tr>
+<tr class="odd">
+<td>Smoke tests fail (production)</td>
+<td>Auto-rollback</td>
+</tr>
+<tr class="even">
+<td>Manual approval pending</td>
+<td>Wait for human</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="git-strategy">5. Git Strategy</h2>
+<h3 id="branching-model-github-flow-develop">5.1 Branching Model —
+GitHub Flow + Develop</h3>
+<pre><code>main (production)
+  ↑
+develop (integration)
+  ↑
+feature/&lt;scope&gt;-&lt;description&gt; (short-lived)
+  ↑
+hotfix/&lt;scope&gt;-&lt;description&gt; (branched from main)</code></pre>
+<h3 id="branch-lifetimes">5.2 Branch Lifetimes</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Branch Type</th>
+<th>Lifetime</th>
+<th>Owner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>main</code></td>
+<td>Permanent</td>
+<td>Operations</td>
+</tr>
+<tr class="even">
+<td><code>develop</code></td>
+<td>Permanent</td>
+<td>Engineering</td>
+</tr>
+<tr class="odd">
+<td><code>feature/*</code></td>
+<td>&lt;2 weeks</td>
+<td>Feature developer</td>
+</tr>
+<tr class="even">
+<td><code>fix/*</code></td>
+<td>&lt;1 week</td>
+<td>Bug fixer</td>
+</tr>
+<tr class="odd">
+<td><code>hotfix/*</code></td>
+<td>&lt;24 hours</td>
+<td>On-call</td>
+</tr>
+<tr class="even">
+<td><code>release/*</code></td>
+<td>&lt;1 week</td>
+<td>Release manager</td>
+</tr>
+</tbody>
+</table>
+<h3 id="branch-naming">5.3 Branch Naming</h3>
+<ul>
+<li><code>feature/&lt;scope&gt;-&lt;description&gt;</code> —
+<code>feature/purchase-order-approval-workflow</code></li>
+<li><code>fix/&lt;scope&gt;-&lt;description&gt;</code> —
+<code>fix/stock-ledger-fefo-edge-case</code></li>
+<li><code>hotfix/&lt;scope&gt;-&lt;description&gt;</code> —
+<code>hotfix/auth-jwt-validation-bypass</code></li>
+<li><code>chore/&lt;description&gt;</code> —
+<code>chore/upgrade-prisma-6.12</code></li>
+<li><code>docs/&lt;description&gt;</code> —
+<code>docs/api-standards-update</code></li>
+</ul>
+<h3 id="commit-conventions-conventional-commits">5.4 Commit Conventions
+(Conventional Commits)</h3>
+<pre><code>&lt;type&gt;(&lt;scope&gt;): &lt;subject&gt;
+
+&lt;body&gt;
+
+&lt;footer&gt;</code></pre>
+<p>Types: <code>feat</code>, <code>fix</code>, <code>refactor</code>,
+<code>test</code>, <code>docs</code>, <code>chore</code>,
+<code>perf</code>, <code>ci</code>, <code>build</code></p>
+<p>Scope: module name (<code>purchase-order</code>, <code>auth</code>,
+<code>core-workflow</code>)</p>
+<p>Examples:</p>
+<pre><code>feat(purchase-order): implement PO submission workflow
+fix(stock-ledger): correct FEFO batch selection edge case
+refactor(core-audit): extract audit logger from middleware
+test(iqc): add integration tests for fail disposition
+docs(architecture): add Phase 0 foundation document
+chore(deps): upgrade Prisma to 6.12
+ci(cd-production): add manual approval gate</code></pre>
+<h3 id="pr-standards">5.5 PR Standards</h3>
+<ul>
+<li><strong>Title:</strong> Conventional commit format</li>
+<li><strong>Description:</strong> What, Why, How, Testing Done,
+Screenshots (if UI)</li>
+<li><strong>Size:</strong> Max 500 lines changed (split larger
+work)</li>
+<li><strong>Reviewers:</strong> 1 for code; 2 for security-sensitive
+(auth, RBAC, crypto)</li>
+<li><strong>CI:</strong> All checks green</li>
+<li><strong>No <code>console.log</code></strong> in merged code</li>
+<li><strong>Squash &amp; merge</strong> to keep history clean</li>
+</ul>
+<h3 id="protected-branches">5.6 Protected Branches</h3>
+<ul>
+<li><code>main</code> and <code>develop</code> are protected</li>
+<li>No force pushes (<code>git push --force</code> blocked)</li>
+<li>No direct commits (must be via PR)</li>
+<li>Code owners required for specific paths
+(<code>packages/prisma/schema.prisma</code>,
+<code>apps/backend/src/core/</code>)</li>
+</ul>
+<hr />
+<h2 id="deployment">6. Deployment</h2>
+<h3 id="deployment-strategy-blue-green">6.1 Deployment Strategy —
+Blue-Green</h3>
+<p><strong>Production uses blue-green deployment:</strong> - Two
+identical environments: <code>blue</code> (current production) and
+<code>green</code> (next production) - Deploy new version to
+<code>green</code> - Run smoke tests on <code>green</code> - Switch load
+balancer from <code>blue</code> → <code>green</code> - Keep
+<code>blue</code> running for 1 hour (fast rollback) - After 1 hour,
+decommission old <code>blue</code>; promote <code>green</code> to
+<code>blue</code> for next deploy</p>
+<p><strong>Why blue-green:</strong> - Zero-downtime deploys - Instant
+rollback (switch back to <code>blue</code>) - Full smoke test on
+production-equivalent infra before cutover</p>
+<h3 id="database-migrations-in-deploy">6.2 Database Migrations in
+Deploy</h3>
+<p>Migrations are <strong>forward-only</strong> during deploy: 1. Run
+migration on <code>green</code> environment DB (separate from
+<code>blue</code>) 2. If migration succeeds → continue deploy 3. If
+migration fails → <code>green</code> rolled back; <code>blue</code>
+untouched</p>
+<p>For destructive migrations (drop column, change type): 1.
+<strong>Phase 1 release:</strong> Add new column, dual-write to old +
+new 2. <strong>Phase 2 release:</strong> Migrate data, read from new
+column 3. <strong>Phase 3 release:</strong> Stop writing to old column
+(still in schema) 4. <strong>Phase 4 release (1+ month later):</strong>
+Drop old column</p>
+<h3 id="rollback-strategy">6.3 Rollback Strategy</h3>
+<p><strong>Application rollback:</strong> - Switch load balancer from
+<code>green</code> back to <code>blue</code> - Instant (&lt; 30 seconds)
+- No data loss (DB is shared between blue/green)</p>
+<p><strong>Database rollback:</strong> - Migrations are forward-only —
+no automatic rollback - Rollback SQL paired with every migration; run
+manually if needed - For schema changes: rollback migration creates the
+inverse operation - For data changes: rollback requires data restore
+from backup (rare; avoided by careful migration design)</p>
+<h3 id="smoke-tests-post-deploy">6.4 Smoke Tests Post-Deploy</h3>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">// tests/smoke/smoke.test.ts</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(<span class="st">&#39;Post-deploy smoke tests&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;responds to health check&#39;</span><span class="op">,</span> <span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> res <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="vs">`</span><span class="sc">${</span>BASE_URL<span class="sc">}</span><span class="vs">/api/v1/_internal/health`</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(res<span class="op">.</span><span class="at">status</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="dv">200</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;login works&#39;</span><span class="op">,</span> <span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> res <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="vs">`</span><span class="sc">${</span>BASE_URL<span class="sc">}</span><span class="vs">/api/v1/auth/login`</span><span class="op">,</span> { method<span class="op">:</span> <span class="st">&#39;POST&#39;</span><span class="op">,</span> body<span class="op">:</span> <span class="op">...</span> })</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(res<span class="op">.</span><span class="at">status</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="dv">200</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">it</span>(<span class="st">&#39;can list products&#39;</span><span class="op">,</span> <span class="kw">async</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> res <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="vs">`</span><span class="sc">${</span>BASE_URL<span class="sc">}</span><span class="vs">/api/v1/products`</span><span class="op">,</span> { headers<span class="op">:</span> { Authorization<span class="op">:</span> <span class="vs">`Bearer </span><span class="sc">${</span>token<span class="sc">}</span><span class="vs">`</span> }})</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>(res<span class="op">.</span><span class="at">status</span>)<span class="op">.</span><span class="fu">toBe</span>(<span class="dv">200</span>)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect</span>((<span class="cf">await</span> res<span class="op">.</span><span class="fu">json</span>())<span class="op">.</span><span class="at">data</span><span class="op">.</span><span class="at">length</span>)<span class="op">.</span><span class="fu">toBeGreaterThan</span>(<span class="dv">0</span>)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="co">// 20-30 critical-path smoke tests</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<ul>
+<li>20-30 tests covering critical paths</li>
+<li>Runs in &lt;2 minutes</li>
+<li>Failure triggers auto-rollback</li>
+</ul>
+<h3 id="mobile-app-deployment">6.5 Mobile App Deployment</h3>
+<ul>
+<li><strong>Mobile:</strong> React Native + Expo</li>
+<li><strong>Build:</strong> EAS Build (Expo Application Services)</li>
+<li><strong>Distribution:</strong> EAS Submit to App Store + Play
+Store</li>
+<li><strong>Phased rollout:</strong> 10% → 50% → 100% over 7 days</li>
+<li><strong>Rollback:</strong> Cannot rollback mobile apps — must ship
+new version (Phase 0: forced-update capability)</li>
+</ul>
+<hr />
+<h2 id="secrets-management">7. Secrets Management</h2>
+<p>(see Security Architecture §10)</p>
+<h3 id="cicd-secrets">7.1 CI/CD Secrets</h3>
+<ul>
+<li>Stored in GitHub Actions secrets</li>
+<li>Injected as environment variables in workflow</li>
+<li>Never logged (auto-redacted by GitHub)</li>
+<li>Scoped to environment (<code>staging</code> secrets vs
+<code>production</code> secrets)</li>
+</ul>
+<h3 id="runtime-secrets">7.2 Runtime Secrets</h3>
+<ul>
+<li>Application reads secrets from secrets manager at boot</li>
+<li>Cached in memory for 5 minutes; refreshed periodically</li>
+<li>Secret rotation does not require app restart (cached value expires;
+new value fetched)</li>
+</ul>
+<hr />
+<h2 id="infrastructure-as-code">8. Infrastructure as Code</h2>
+<h3 id="terraform">8.1 Terraform</h3>
+<p>All infrastructure defined in Terraform: - VPC, subnets, security
+groups - RDS Postgres instance - ElastiCache Redis - S3 buckets - ECS
+cluster (or EKS) - Load balancers, target groups - CloudWatch alarms -
+Route53 DNS records - ACM certificates</p>
+<h3 id="terraform-layout">8.2 Terraform Layout</h3>
+<pre><code>infra/
+├── modules/
+│   ├── vpc/
+│   ├── rds/
+│   ├── redis/
+│   ├── s3/
+│   ├── ecs/
+│   └── alb/
+├── environments/
+│   ├── staging/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── terraform.tfvars
+│   └── production/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── terraform.tfvars
+└── README.md</code></pre>
+<h3 id="terraform-workflow">8.3 Terraform Workflow</h3>
+<ol type="1">
+<li>Edit <code>.tf</code> files</li>
+<li><code>terraform plan</code> locally to preview changes</li>
+<li>PR with plan output in description</li>
+<li>CI runs <code>terraform validate</code> +
+<code>terraform plan</code></li>
+<li>Reviewer approves</li>
+<li>Merge triggers <code>terraform apply</code> in CI (with manual
+approval for production)</li>
+</ol>
+<h3 id="state-management">8.4 State Management</h3>
+<ul>
+<li>State stored in S3 backend with DynamoDB lock</li>
+<li>State file encrypted (S3 SSE-KMS)</li>
+<li>State contains sensitive outputs (DB endpoint, etc.) — never logged
+in CI</li>
+</ul>
+<h3 id="drift-detection">8.5 Drift Detection</h3>
+<ul>
+<li>Daily job runs <code>terraform plan</code> against production</li>
+<li>If drift detected → alert ops</li>
+<li>Drift caused by manual changes (forbidden) → investigate +
+revert</li>
+</ul>
+<hr />
+<h2 id="monitoring">9. Monitoring</h2>
+<h3 id="monitoring-stack">9.1 Monitoring Stack</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Metrics</strong></td>
+<td>Prometheus + Grafana</td>
+<td>Time-series metrics, dashboards, alerting</td>
+</tr>
+<tr class="even">
+<td><strong>Logs</strong></td>
+<td>Loki (or ELK)</td>
+<td>Structured log aggregation</td>
+</tr>
+<tr class="odd">
+<td><strong>Traces</strong></td>
+<td>Tempo (or Jaeger)</td>
+<td>Distributed tracing</td>
+</tr>
+<tr class="even">
+<td><strong>Errors</strong></td>
+<td>Sentry</td>
+<td>Error tracking + stack traces</td>
+</tr>
+<tr class="odd">
+<td><strong>Uptime</strong></td>
+<td>Pingdom / UptimeRobot</td>
+<td>External uptime monitoring</td>
+</tr>
+<tr class="even">
+<td><strong>Synthetic</strong></td>
+<td>Checkly</td>
+<td>Synthetic transaction monitoring</td>
+</tr>
+<tr class="odd">
+<td><strong>Real User</strong></td>
+<td>Sentry Performance / Datadog RUM</td>
+<td>Frontend performance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="metrics-prometheus">9.2 Metrics (Prometheus)</h3>
+<p>Exported by backend at <code>GET /api/v1/_internal/metrics</code>: -
+<code>http_requests_total{method, route, status}</code> — request count
+- <code>http_request_duration_seconds{method, route}</code> — histogram
+- <code>http_requests_in_flight</code> — gauge -
+<code>db_connections_active</code>, <code>db_connections_idle</code> -
+<code>db_query_duration_seconds{operation}</code> — histogram -
+<code>redis_operations_total{operation, status}</code> -
+<code>workflow_transitions_total{entity, from, to}</code> -
+<code>audit_log_writes_total</code> -
+<code>notification_delivery_total{channel, status}</code> -
+<code>job_duration_seconds{job_name}</code> -
+<code>event_bus_subscribers_total{event_name}</code> -
+<code>cache_hits_total</code>, <code>cache_misses_total</code></p>
+<h3 id="dashboards-grafana">9.3 Dashboards (Grafana)</h3>
+<ul>
+<li><strong>System Overview:</strong> Request rate, error rate, latency,
+CPU, memory, disk</li>
+<li><strong>Database:</strong> Connections, query latency, slow queries,
+lock waits, cache hit ratio</li>
+<li><strong>Business:</strong> POs created/day, GRNs posted/day, NCRs
+opened/day, COAs generated/day</li>
+<li><strong>Per-module:</strong> Each major module has its own
+dashboard</li>
+<li><strong>Real-time:</strong> Live request rate, error rate, current
+in-flight requests</li>
+</ul>
+<h3 id="alerting-rules">9.4 Alerting Rules</h3>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Critical alerts (PageDuty / phone call)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> HighErrorRate</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> rate(http_requests_total{status=~&quot;5..&quot;}[5m]) / rate(http_requests_total[5m]) &gt; 0.05</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 5m</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Error rate &gt; 5% for 5 min&quot;</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> ServiceDown</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> up{job=&quot;backend&quot;} == 0</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 1m</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Backend service down&quot;</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> DatabaseDown</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> pg_up == 0</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 30s</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;PostgreSQL down&quot;</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Warning alerts (Slack)</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> HighLatency</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> histogram_quantile(0.95, http_request_duration_seconds_bucket) &gt; 1</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 10m</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;p95 latency &gt; 1s for 10 min&quot;</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> DbConnectionsHigh</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> pg_stat_database_numbackends &gt; 80</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 5m</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;DB connections &gt; 80&quot;</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> DiskSpaceLow</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> 100 - (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 &gt; 80</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 5m</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Disk &gt; 80% full&quot;</span></span></code></pre></div>
+<hr />
+<h2 id="logging">10. Logging</h2>
+<h3 id="logging-stack">10.1 Logging Stack</h3>
+<pre><code>Application (Pino) → stdout → Docker → Fluent Bit → Loki → Grafana</code></pre>
+<h3 id="log-levels">10.2 Log Levels</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Level</th>
+<th>Use</th>
+<th>Volume</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>fatal</code></td>
+<td>App cannot start / continue</td>
+<td>Rare</td>
+</tr>
+<tr class="even">
+<td><code>error</code></td>
+<td>Unhandled errors, 5xx</td>
+<td>Moderate</td>
+</tr>
+<tr class="odd">
+<td><code>warn</code></td>
+<td>4xx errors, deprecation warnings, slow ops</td>
+<td>Moderate</td>
+</tr>
+<tr class="even">
+<td><code>info</code></td>
+<td>Normal operations (login, CRUD, workflow transitions)</td>
+<td>High</td>
+</tr>
+<tr class="odd">
+<td><code>debug</code></td>
+<td>Detailed flow (SQL queries, cache hits)</td>
+<td>High (dev only)</td>
+</tr>
+<tr class="even">
+<td><code>trace</code></td>
+<td>Function-level tracing</td>
+<td>Very high (dev only)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="structured-logging">10.3 Structured Logging</h3>
+<p>Every log line is JSON:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;level&quot;</span><span class="fu">:</span> <span class="st">&quot;info&quot;</span><span class="fu">,</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;time&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-07-11T14:30:00.000Z&quot;</span><span class="fu">,</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;correlationId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span><span class="fu">,</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;userId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span><span class="fu">,</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;tenantId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span><span class="fu">,</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;msg&quot;</span><span class="fu">:</span> <span class="st">&quot;Purchase order created&quot;</span><span class="fu">,</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;poId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span><span class="fu">,</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;poNumber&quot;</span><span class="fu">:</span> <span class="st">&quot;PO-2026-000001&quot;</span><span class="fu">,</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;supplierId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span><span class="fu">,</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;totalValue&quot;</span><span class="fu">:</span> <span class="dv">12500</span><span class="fu">,</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;durationMs&quot;</span><span class="fu">:</span> <span class="dv">145</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="sensitive-data-redaction">10.4 Sensitive Data Redaction</h3>
+<ul>
+<li>Fields matching
+<code>/password|token|secret|key|auth|credit|aadhaar|pan/i</code>
+redacted</li>
+<li>PII fields (email, phone) hashed for correlation without
+exposure</li>
+<li>Redaction config in <code>logging/redaction-config.ts</code></li>
+</ul>
+<h3 id="log-retention">10.5 Log Retention</h3>
+<ul>
+<li>Hot (Loki): 30 days</li>
+<li>Warm (S3): 90 days</li>
+<li>Cold (Glacier): 1 year</li>
+<li>Audit logs: see Data Architecture §13</li>
+</ul>
+<hr />
+<h2 id="tracing">11. Tracing</h2>
+<h3 id="distributed-tracing">11.1 Distributed Tracing</h3>
+<ul>
+<li>OpenTelemetry instrumentation on backend</li>
+<li>Every HTTP request creates a span</li>
+<li>DB queries, Redis ops, external calls create child spans</li>
+<li>Spans export to Tempo (or Jaeger)</li>
+<li>Correlation ID propagated via <code>traceparent</code> header</li>
+</ul>
+<h3 id="trace-sampling">11.2 Trace Sampling</h3>
+<ul>
+<li>100% of error traces</li>
+<li>10% of normal traces (random sampling)</li>
+<li>100% of slow traces (&gt;1s)</li>
+</ul>
+<h3 id="use-cases">11.3 Use Cases</h3>
+<ul>
+<li>“Why is this request slow?” → trace shows which DB query / external
+call is the bottleneck</li>
+<li>“Why did this fail?” → trace shows error span with stack trace +
+context</li>
+<li>“What’s the impact of this service?” → trace heatmaps show
+dependencies</li>
+</ul>
+<hr />
+<h2 id="alerting">12. Alerting</h2>
+<h3 id="alert-routing">12.1 Alert Routing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Severity</th>
+<th>Channel</th>
+<th>Response Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Critical</td>
+<td>PagerDuty → phone call</td>
+<td>5 min</td>
+</tr>
+<tr class="even">
+<td>High</td>
+<td>PagerDuty → Slack</td>
+<td>30 min</td>
+</tr>
+<tr class="odd">
+<td>Medium</td>
+<td>Slack</td>
+<td>4 hours</td>
+</tr>
+<tr class="even">
+<td>Low</td>
+<td>Daily digest email</td>
+<td>24 hours</td>
+</tr>
+</tbody>
+</table>
+<h3 id="alert-definitions">12.2 Alert Definitions</h3>
+<p><strong>System alerts:</strong> - Service down - High error rate
+(&gt;5% for 5 min) - High latency (p95 &gt; 1s for 10 min) - DB
+connections high - Disk space low - Memory high - CPU sustained high</p>
+<p><strong>Business alerts:</strong> - NCR severity CRITICAL created →
+notify quality head - Recall initiated → notify all stakeholders - CAPA
+overdue → notify owner + escalation - Stock below reorder → notify
+procurement - Compliance certificate expiring in 30 days → notify
+quality</p>
+<p><strong>Security alerts:</strong> - Failed login attempts spike -
+Permission denied attempts spike - Cross-tenant access attempts - New
+device login - API key abuse (unusual usage pattern)</p>
+<h3 id="alert-fatigue-prevention">12.3 Alert Fatigue Prevention</h3>
+<ul>
+<li><strong>Grouping:</strong> Similar alerts grouped (e.g., 100 5xx
+errors in 5 min = 1 alert)</li>
+<li><strong>Inhibition:</strong> Critical alert suppresses warning
+alerts for same service</li>
+<li><strong>Silencing:</strong> Maintenance windows silence non-critical
+alerts</li>
+<li><strong>Auto-resolution:</strong> Alert auto-resolves when metric
+returns to normal</li>
+<li><strong>Weekly review:</strong> On-call reviews alert volume; tunes
+noise down</li>
+</ul>
+<hr />
+<h2 id="environment-configuration">13. Environment Configuration</h2>
+<h3 id="configuration-sources">13.1 Configuration Sources</h3>
+<ol type="1">
+<li><strong>Environment variables</strong> (highest priority) — for
+secrets + deployment-specific</li>
+<li><strong><code>.env</code> file</strong> (local dev only) —
+gitignored</li>
+<li><strong>Database</strong> — feature flags, per-tenant config</li>
+<li><strong>Default values</strong> (lowest priority) — in code</li>
+</ol>
+<h3 id="environment-variable-catalog">13.2 Environment Variable
+Catalog</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NODE_ENV</code></td>
+<td>Yes</td>
+<td><code>development</code> / <code>staging</code> /
+<code>production</code></td>
+<td><code>production</code></td>
+</tr>
+<tr class="even">
+<td><code>PORT</code></td>
+<td>Yes</td>
+<td>Backend port</td>
+<td><code>3030</code></td>
+</tr>
+<tr class="odd">
+<td><code>DATABASE_URL</code></td>
+<td>Yes</td>
+<td>Postgres connection string</td>
+<td><code>postgresql://...</code></td>
+</tr>
+<tr class="even">
+<td><code>DATABASE_POOL_SIZE</code></td>
+<td>No</td>
+<td>Prisma pool size</td>
+<td><code>10</code></td>
+</tr>
+<tr class="odd">
+<td><code>REDIS_URL</code></td>
+<td>Yes</td>
+<td>Redis connection string</td>
+<td><code>redis://...</code></td>
+</tr>
+<tr class="even">
+<td><code>JWT_SECRET</code></td>
+<td>Yes</td>
+<td>JWT signing key</td>
+<td>(32+ chars random)</td>
+</tr>
+<tr class="odd">
+<td><code>JWT_ISSUER</code></td>
+<td>No</td>
+<td>JWT issuer</td>
+<td><code>suop-erp</code></td>
+</tr>
+<tr class="even">
+<td><code>S3_ENDPOINT</code></td>
+<td>Yes</td>
+<td>S3 / MinIO endpoint</td>
+<td><code>https://s3.ap-south-1.amazonaws.com</code></td>
+</tr>
+<tr class="odd">
+<td><code>S3_BUCKET</code></td>
+<td>Yes</td>
+<td>S3 bucket name</td>
+<td><code>suop-prod</code></td>
+</tr>
+<tr class="even">
+<td><code>S3_ACCESS_KEY</code></td>
+<td>Yes</td>
+<td>S3 access key</td>
+<td><code>AKIA...</code></td>
+</tr>
+<tr class="odd">
+<td><code>S3_SECRET_KEY</code></td>
+<td>Yes</td>
+<td>S3 secret key</td>
+<td>(secret)</td>
+</tr>
+<tr class="even">
+<td><code>SMTP_HOST</code></td>
+<td>Yes</td>
+<td>SMTP server</td>
+<td><code>smtp.sendgrid.net</code></td>
+</tr>
+<tr class="odd">
+<td><code>SMTP_PORT</code></td>
+<td>Yes</td>
+<td>SMTP port</td>
+<td><code>587</code></td>
+</tr>
+<tr class="even">
+<td><code>SMTP_USER</code></td>
+<td>Yes</td>
+<td>SMTP username</td>
+<td><code>apikey</code></td>
+</tr>
+<tr class="odd">
+<td><code>SMTP_PASS</code></td>
+<td>Yes</td>
+<td>SMTP password</td>
+<td>(secret)</td>
+</tr>
+<tr class="even">
+<td><code>SENTRY_DSN</code></td>
+<td>No</td>
+<td>Sentry DSN</td>
+<td><code>https://...</code></td>
+</tr>
+<tr class="odd">
+<td><code>TWILIO_ACCOUNT_SID</code></td>
+<td>No</td>
+<td>Twilio SID</td>
+<td><code>AC...</code></td>
+</tr>
+<tr class="even">
+<td><code>TWILIO_AUTH_TOKEN</code></td>
+<td>No</td>
+<td>Twilio token</td>
+<td>(secret)</td>
+</tr>
+<tr class="odd">
+<td><code>NEXT_PUBLIC_API_URL</code></td>
+<td>Yes</td>
+<td>Frontend API URL</td>
+<td><code>https://api.sudhamrit.com</code></td>
+</tr>
+<tr class="even">
+<td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+<td>No</td>
+<td>Supabase URL</td>
+<td><code>https://...supabase.co</code></td>
+</tr>
+<tr class="odd">
+<td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+<td>No</td>
+<td>Supabase anon key</td>
+<td><code>eyJ...</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="environment-validation">13.3 Environment Validation</h3>
+<p>All env vars validated at boot via zod:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> envSchema <span class="op">=</span> z<span class="op">.</span><span class="fu">object</span>({</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  NODE_ENV<span class="op">:</span> z<span class="op">.</span><span class="fu">enum</span>([<span class="st">&#39;development&#39;</span><span class="op">,</span> <span class="st">&#39;staging&#39;</span><span class="op">,</span> <span class="st">&#39;production&#39;</span>])<span class="op">,</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">const</span> env <span class="op">=</span> envSchema<span class="op">.</span><span class="fu">parse</span>(<span class="bu">process</span><span class="op">.</span><span class="at">env</span>)</span></code></pre></div>
+<p>App refuses to start if validation fails — fail fast.</p>
+<hr />
+<h2 id="backup-recovery">14. Backup &amp; Recovery</h2>
+<p>(see Disaster Recovery document for full details)</p>
+<h3 id="devops-responsibilities">14.1 DevOps Responsibilities</h3>
+<ul>
+<li>Backup scripts in <code>infra/scripts/backup/</code></li>
+<li>Restore scripts in <code>infra/scripts/restore/</code></li>
+<li>Daily restore-test job</li>
+<li>Monthly DR drill</li>
+<li>Annual full disaster simulation</li>
+</ul>
+<hr />
+<h2 id="open-questions-for-approval">15. Open Questions for
+Approval</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q-DV1</td>
+<td>Container orchestration</td>
+<td>AWS ECS Fargate</td>
+<td>Kubernetes (EKS)</td>
+</tr>
+<tr class="even">
+<td>Q-DV2</td>
+<td>Blue-green vs canary</td>
+<td>Blue-green</td>
+<td>Canary</td>
+</tr>
+<tr class="odd">
+<td>Q-DV3</td>
+<td>Deploy frequency</td>
+<td>Twice weekly</td>
+<td>Daily, weekly</td>
+</tr>
+<tr class="even">
+<td>Q-DV4</td>
+<td>IaC tool</td>
+<td>Terraform</td>
+<td>Pulumi, CloudFormation</td>
+</tr>
+<tr class="odd">
+<td>Q-DV5</td>
+<td>Monitoring stack</td>
+<td>Prometheus + Grafana + Loki + Tempo</td>
+<td>Datadog (all-in-one)</td>
+</tr>
+<tr class="even">
+<td>Q-DV6</td>
+<td>Error tracking</td>
+<td>Sentry</td>
+<td>Rollbar, Datadog</td>
+</tr>
+<tr class="odd">
+<td>Q-DV7</td>
+<td>Alert routing</td>
+<td>PagerDuty + Slack</td>
+<td>OpsGenie</td>
+</tr>
+<tr class="even">
+<td>Q-DV8</td>
+<td>Image registry</td>
+<td>AWS ECR</td>
+<td>Docker Hub, GitHub Container Registry</td>
+</tr>
+<tr class="odd">
+<td>Q-DV9</td>
+<td>CI/CD platform</td>
+<td>GitHub Actions</td>
+<td>GitLab CI, CircleCI</td>
+</tr>
+<tr class="even">
+<td>Q-DV10</td>
+<td>Mobile deploy</td>
+<td>EAS (Expo)</td>
+<td>Fastlane + manual</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><em>End of Enterprise DevOps Architecture Document</em></p>
+</body>
+</html>

@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>06_DISASTER_RECOVERY</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">06_DISASTER_RECOVERY</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-enterprise-disaster-recovery"
+id="toc-suop-erp-v1.0-enterprise-disaster-recovery">SUOP ERP v1.0 —
+Enterprise Disaster Recovery</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">1. Purpose</a></li>
+<li><a href="#disaster-recovery-objectives"
+id="toc-disaster-recovery-objectives">2. Disaster Recovery
+Objectives</a></li>
+<li><a href="#backup-strategy-comprehensive"
+id="toc-backup-strategy-comprehensive">3. Backup Strategy
+(Comprehensive)</a></li>
+<li><a href="#recovery-procedures" id="toc-recovery-procedures">4.
+Recovery Procedures</a></li>
+<li><a href="#business-continuity-plan-bcp"
+id="toc-business-continuity-plan-bcp">5. Business Continuity Plan
+(BCP)</a></li>
+<li><a href="#high-availability" id="toc-high-availability">6. High
+Availability</a></li>
+<li><a href="#database-recovery" id="toc-database-recovery">7. Database
+Recovery</a></li>
+<li><a href="#file-recovery" id="toc-file-recovery">8. File
+Recovery</a></li>
+<li><a href="#cyberattack-recovery" id="toc-cyberattack-recovery">9.
+Cyberattack Recovery</a></li>
+<li><a href="#dr-testing" id="toc-dr-testing">10. DR Testing</a></li>
+<li><a href="#dr-roles-and-responsibilities"
+id="toc-dr-roles-and-responsibilities">11. DR Roles and
+Responsibilities</a></li>
+<li><a href="#dr-communication" id="toc-dr-communication">12. DR
+Communication</a></li>
+<li><a href="#dr-runbooks" id="toc-dr-runbooks">13. DR Runbooks</a></li>
+<li><a href="#dr-budget-and-resources"
+id="toc-dr-budget-and-resources">14. DR Budget and Resources</a></li>
+<li><a href="#open-questions-for-approval"
+id="toc-open-questions-for-approval">15. Open Questions for
+Approval</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-enterprise-disaster-recovery">SUOP ERP v1.0 —
+Enterprise Disaster Recovery</h1>
+<table>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+<tr class="odd">
+<td>Compliance</td>
+<td>ISO 22301 (Business Continuity), FSSAI Cybersecurity</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="purpose">1. Purpose</h2>
+<p>This document defines how SUOP ERP v1.0 prevents, survives, and
+recovers from disasters. A “disaster” is any event that disrupts normal
+operation: hardware failure, region outage, cyberattack, data
+corruption, human error, or natural disaster.</p>
+<p><strong>Hard rule:</strong> Every recovery procedure in this document
+must be tested at least annually. Untested recovery plans are wishful
+thinking, not recovery plans.</p>
+<hr />
+<h2 id="disaster-recovery-objectives">2. Disaster Recovery
+Objectives</h2>
+<h3 id="rpo-and-rto-targets">2.1 RPO and RTO Targets</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Scenario</th>
+<th>RPO (Data Loss)</th>
+<th>RTO (Downtime)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Single-row accidental delete</strong></td>
+<td>0 (recoverable from PITR)</td>
+<td>1 hour</td>
+</tr>
+<tr class="even">
+<td><strong>Single-table accidental drop</strong></td>
+<td>0 (recoverable from PITR)</td>
+<td>2 hours</td>
+</tr>
+<tr class="odd">
+<td><strong>Logical corruption (bad migration)</strong></td>
+<td>Up to 24 hours</td>
+<td>4 hours</td>
+</tr>
+<tr class="even">
+<td><strong>Application bug (data overwrite)</strong></td>
+<td>Up to 1 hour</td>
+<td>2 hours</td>
+</tr>
+<tr class="odd">
+<td><strong>Database instance failure</strong></td>
+<td>0 (replica promotion)</td>
+<td>30 minutes</td>
+</tr>
+<tr class="even">
+<td><strong>Availability zone failure</strong></td>
+<td>0 (multi-AZ)</td>
+<td>5 minutes</td>
+</tr>
+<tr class="odd">
+<td><strong>Region failure</strong></td>
+<td>Up to 1 minute (async replication)</td>
+<td>30 minutes</td>
+</tr>
+<tr class="even">
+<td><strong>Ransomware / cyberattack</strong></td>
+<td>Up to 24 hours (last clean backup)</td>
+<td>24 hours</td>
+</tr>
+<tr class="odd">
+<td><strong>Total system loss (catastrophic)</strong></td>
+<td>Up to 24 hours (Glacier restore)</td>
+<td>72 hours</td>
+</tr>
+</tbody>
+</table>
+<h3 id="definitions">2.2 Definitions</h3>
+<ul>
+<li><strong>RPO (Recovery Point Objective):</strong> Maximum acceptable
+data loss measured in time. “RPO of 1 hour” means at most 1 hour of data
+can be lost.</li>
+<li><strong>RTO (Recovery Time Objective):</strong> Maximum acceptable
+downtime. “RTO of 4 hours” means system must be back online within 4
+hours of disaster declaration.</li>
+<li><strong>DR (Disaster Recovery):</strong> The process of restoring
+service after a disaster.</li>
+<li><strong>BCP (Business Continuity Plan):</strong> The broader plan
+for keeping business running during disruption (including manual
+workarounds).</li>
+</ul>
+<h3 id="dr-tier-classification">2.3 DR Tier Classification</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tier</th>
+<th>Description</th>
+<th>RTO</th>
+<th>RPO</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Tier 1 (Critical)</strong></td>
+<td>Always-on, zero data loss</td>
+<td>&lt;5 min</td>
+<td>0</td>
+<td>High</td>
+</tr>
+<tr class="even">
+<td><strong>Tier 2 (Important)</strong></td>
+<td>Quick recovery, minimal loss</td>
+<td>&lt;1 hour</td>
+<td>&lt;15 min</td>
+<td>Medium</td>
+</tr>
+<tr class="odd">
+<td><strong>Tier 3 (Standard)</strong></td>
+<td>Hours of recovery acceptable</td>
+<td>&lt;8 hours</td>
+<td>&lt;24 hours</td>
+<td>Low</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SUOP components by tier:</strong> - <strong>Tier 1:</strong>
+Auth service, audit log (cannot lose audit data) - <strong>Tier
+2:</strong> Backend API, database (transactional), Redis (cache) -
+<strong>Tier 3:</strong> File storage, search index (rebuildable)</p>
+<hr />
+<h2 id="backup-strategy-comprehensive">3. Backup Strategy
+(Comprehensive)</h2>
+<h3 id="backup-layers">3.1 Backup Layers</h3>
+<p><strong>Layer 1 — Managed Automated Backups (Supabase/RDS):</strong>
+- <strong>Frequency:</strong> Continuous (WAL streaming) -
+<strong>Retention:</strong> 14 days - <strong>Capability:</strong>
+Point-in-time recovery (PITR) to any second in last 14 days -
+<strong>Cross-region:</strong> Automated backup replication to DR region
+- <strong>Encryption:</strong> At rest (KMS-managed keys)</p>
+<p><strong>Layer 2 — Logical Backups (pg_dump):</strong> -
+<strong>Frequency:</strong> Daily (3 AM UTC — off-peak) -
+<strong>Retention:</strong> 30 days daily, 12 months weekly, 7 years
+monthly (compliance) - <strong>Storage:</strong> S3 with SSE-KMS
+encryption - <strong>Verification:</strong> Daily restore-test job
+(restores to isolated DB, runs integrity checks) -
+<strong>Format:</strong> Custom format (<code>-Fc</code>) with
+compression</p>
+<p><strong>Layer 3 — File Storage Backups:</strong> - <strong>S3
+versioning:</strong> Enabled on all buckets (recoverable from accidental
+delete) - <strong>Cross-region replication:</strong> All objects
+replicated to DR region - <strong>Lifecycle:</strong> Standard (3 years)
+→ Standard-IA (3-7 years) → Glacier (7+ years) - <strong>MinIO
+(dev):</strong> Weekly <code>mc mirror</code> to local NAS</p>
+<p><strong>Layer 4 — Configuration Backups:</strong> - <strong>Terraform
+state:</strong> S3 backend with versioning - <strong>Secrets:</strong>
+Backed up via secrets manager export (encrypted) — quarterly -
+<strong>GitHub:</strong> Repo mirrored to Bitbucket (or AWS CodeCommit)
+weekly</p>
+<h3 id="backup-encryption">3.2 Backup Encryption</h3>
+<ul>
+<li>All backups encrypted at rest (S3 SSE-KMS or pg_dump
+<code>--encrypt</code>)</li>
+<li>Encryption keys in KMS, separate from data</li>
+<li>Decryption keys in secrets manager, different region from
+backups</li>
+<li>Key rotation: annually</li>
+<li>Key access: audited</li>
+</ul>
+<h3 id="backup-integrity">3.3 Backup Integrity</h3>
+<ul>
+<li><strong>Daily:</strong> Restore-test job restores latest logical
+backup to isolated DB
+<ul>
+<li>Runs <code>pg_checksums</code> for physical integrity</li>
+<li>Runs sample query suite (counts on key tables, sample row
+validation)</li>
+<li>Alerts if any check fails</li>
+</ul></li>
+<li><strong>Weekly:</strong> Full restore to staging environment
+<ul>
+<li>Runs full E2E test suite against restored data</li>
+<li>Validates data consistency (row counts match production)</li>
+</ul></li>
+<li><strong>Monthly:</strong> DR failover drill
+<ul>
+<li>Promote cross-region replica</li>
+<li>Run smoke tests</li>
+<li>Failback</li>
+</ul></li>
+<li><strong>Annual:</strong> Full disaster simulation
+<ul>
+<li>Simulate region loss</li>
+<li>Restore from Glacier backup</li>
+<li>Document actual RTO and RPO</li>
+</ul></li>
+</ul>
+<h3 id="backup-retention-policy">3.4 Backup Retention Policy</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Backup Type</th>
+<th>Retention</th>
+<th>Storage</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>PITR WAL</td>
+<td>14 days</td>
+<td>Supabase managed</td>
+<td>Recovery to any second</td>
+</tr>
+<tr class="even">
+<td>Daily logical</td>
+<td>30 days</td>
+<td>S3 Standard</td>
+<td>Quick restore for accidental delete</td>
+</tr>
+<tr class="odd">
+<td>Weekly logical</td>
+<td>12 months</td>
+<td>S3 Standard-IA</td>
+<td>Mid-term recovery</td>
+</tr>
+<tr class="even">
+<td>Monthly logical</td>
+<td>7 years</td>
+<td>S3 Glacier</td>
+<td>Compliance (FSSAI, GST, audit)</td>
+</tr>
+<tr class="odd">
+<td>File storage</td>
+<td>7 years</td>
+<td>S3 Glacier</td>
+<td>Compliance</td>
+</tr>
+<tr class="even">
+<td>Terraform state</td>
+<td>Indefinite</td>
+<td>S3 versioned</td>
+<td>Infrastructure recovery</td>
+</tr>
+<tr class="odd">
+<td>Secrets</td>
+<td>1 year</td>
+<td>Secrets manager</td>
+<td>Secret recovery</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recovery-procedures">4. Recovery Procedures</h2>
+<h3 id="recovery-scenario-catalog">4.1 Recovery Scenario Catalog</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Scenario</th>
+<th>Trigger</th>
+<th>Method</th>
+<th>RTO</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R1</td>
+<td>Accidental row delete (within 14 days)</td>
+<td>User report</td>
+<td>PITR → extract row → insert back</td>
+<td>1 hour</td>
+</tr>
+<tr class="even">
+<td>R2</td>
+<td>Accidental table drop (within 14 days)</td>
+<td>User report</td>
+<td>PITR → restore table</td>
+<td>2 hours</td>
+</tr>
+<tr class="odd">
+<td>R3</td>
+<td>Logical corruption (bad migration)</td>
+<td>Failed deploy</td>
+<td>Restore from nightly logical backup</td>
+<td>4 hours</td>
+</tr>
+<tr class="even">
+<td>R4</td>
+<td>Application bug (data overwrite)</td>
+<td>User report</td>
+<td>PITR → extract correct data → restore</td>
+<td>2 hours</td>
+</tr>
+<tr class="odd">
+<td>R5</td>
+<td>Database instance failure</td>
+<td>Monitoring alert</td>
+<td>Promote read replica</td>
+<td>30 minutes</td>
+</tr>
+<tr class="even">
+<td>R6</td>
+<td>Availability zone failure</td>
+<td>Cloud provider</td>
+<td>Auto-failover to standby AZ</td>
+<td>5 minutes</td>
+</tr>
+<tr class="odd">
+<td>R7</td>
+<td>Region failure</td>
+<td>Cloud provider</td>
+<td>Promote cross-region replica</td>
+<td>30 minutes</td>
+</tr>
+<tr class="even">
+<td>R8</td>
+<td>Ransomware / cyberattack</td>
+<td>Security team</td>
+<td>Restore from last clean backup (offline)</td>
+<td>24 hours</td>
+</tr>
+<tr class="odd">
+<td>R9</td>
+<td>Total system loss</td>
+<td>Catastrophic event</td>
+<td>Restore from Glacier monthly backup</td>
+<td>72 hours</td>
+</tr>
+<tr class="even">
+<td>R10</td>
+<td>File storage loss</td>
+<td>S3 outage / corruption</td>
+<td>Cross-region replica promotion</td>
+<td>1 hour</td>
+</tr>
+<tr class="odd">
+<td>R11</td>
+<td>Redis loss</td>
+<td>Redis outage</td>
+<td>Rebuild from DB (cache is disposable)</td>
+<td>15 minutes</td>
+</tr>
+<tr class="even">
+<td>R12</td>
+<td>Configuration drift</td>
+<td>Manual change detection</td>
+<td>Terraform apply (idempotent)</td>
+<td>30 minutes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recovery-procedure-logical-backup-r3">4.2 Recovery Procedure —
+Logical Backup (R3)</h3>
+<p><strong>Trigger:</strong> Failed deploy, corrupted data, bad
+migration</p>
+<p><strong>Steps:</strong> 1. Declare incident (Slack
+<code>#incidents</code> channel, page on-call) 2. Stop application
+writes (maintenance mode — return <code>503</code> from LB) 3. Provision
+new Postgres instance (same version as backup source) 4. Download latest
+clean logical backup from S3, verify checksum 5.
+<code>pg_restore --clean --if-exists --jobs=4 &lt;backup&gt;</code> to
+new instance 6. Run <code>pg_checksums</code> to verify data integrity
+7. Run smoke tests (count of key tables, sample queries) 8. Switch
+application <code>DATABASE_URL</code> to new instance (via secrets
+manager update) 9. Restart application 10. Verify application
+functionality (full smoke test suite) 11. Document incident +
+post-mortem within 7 days 12. Decommission old instance after 7-day
+observation</p>
+<p><strong>Estimated time:</strong> 4 hours (RTO target met)</p>
+<h3 id="recovery-procedure-pitr-r1-r2-r4">4.3 Recovery Procedure — PITR
+(R1, R2, R4)</h3>
+<p><strong>Trigger:</strong> Accidental delete/drop, data overwrite</p>
+<p><strong>Steps:</strong> 1. Identify recovery timestamp T (just before
+incident) 2. Use Supabase/RDS console to restore to timestamp T (creates
+new instance) 3. New instance provisioned with data up to timestamp T 4.
+Connect to new instance, extract lost row(s) via SQL 5. Connect to
+production DB, insert lost row(s) via SQL (within transaction) 6. Verify
+data integrity 7. Decommission PITR instance 8. Audit log entry
+documenting recovery</p>
+<p><strong>Estimated time:</strong> 1-2 hours (RTO target met)</p>
+<h3 id="recovery-procedure-region-failover-r7">4.4 Recovery Procedure —
+Region Failover (R7)</h3>
+<p><strong>Trigger:</strong> Cloud provider region outage</p>
+<p><strong>Steps:</strong> 1. Confirm region outage (Cloud status page,
+monitoring alerts) 2. Declare SEV-1 disaster 3. Promote cross-region
+replica to primary (Supabase/RDS console) 4. Update DNS to point to DR
+region (Route53 weighted policy — 100% to DR) 5. Update application
+<code>DATABASE_URL</code> to DR region 6. Restart application in DR
+region 7. Run smoke tests 8. Notify users (status page, email) 9. When
+primary region recovers: re-establish replication (DR → primary) 10.
+Failback to primary during maintenance window 11. Document incident +
+post-mortem</p>
+<p><strong>Estimated time:</strong> 30 minutes (RTO target met)
+<strong>RPO:</strong> Up to 1 minute (async replication lag)</p>
+<h3 id="recovery-procedure-ransomware-r8">4.5 Recovery Procedure —
+Ransomware (R8)</h3>
+<p><strong>Trigger:</strong> Security team detects ransomware
+encryption</p>
+<p><strong>Steps:</strong> 1. <strong>ISOLATE</strong> — Disconnect all
+systems from internet (prevent further encryption) 2.
+<strong>IDENTIFY</strong> — Determine extent of compromise (which
+systems, which data) 3. <strong>PRESERVE</strong> — Take disk images of
+compromised systems (forensics) 4. <strong>ERADICATE</strong> — Wipe
+compromised systems (cannot trust them) 5. <strong>RESTORE</strong> —
+Restore from last clean backup (verify backup integrity first) - Verify
+backup was taken BEFORE attack - Restore to fresh infrastructure (not
+compromised systems) 6. <strong>VERIFY</strong> — Run security scan on
+restored systems (no malware in DB) 7. <strong>ROTATE</strong> — Rotate
+all credentials (assume all compromised) 8. <strong>RESUME</strong> —
+Bring systems online progressively 9. <strong>NOTIFY</strong> — Notify
+stakeholders, regulators (FSSAI, CERT-In within 72 hours per DPDP) 10.
+<strong>POST-MORTEM</strong> — Within 7 days; root cause, action
+items</p>
+<p><strong>Estimated time:</strong> 24 hours (RTO target met)
+<strong>RPO:</strong> Up to 24 hours (last clean backup)</p>
+<h3 id="recovery-procedure-total-system-loss-r9">4.6 Recovery Procedure
+— Total System Loss (R9)</h3>
+<p><strong>Trigger:</strong> Catastrophic event destroys primary region
++ DR region (rare)</p>
+<p><strong>Steps:</strong> 1. Provision new infrastructure via Terraform
+(different cloud provider if needed) 2. Restore monthly Glacier backup
+(24-hour retrieval time) 3. Restore file storage from Glacier 4. Restore
+secrets from secrets manager backup 5. Restore configuration from
+Terraform state 6. Apply pending migrations 7. Run smoke tests 8. Bring
+systems online 9. Notify stakeholders</p>
+<p><strong>Estimated time:</strong> 72 hours (RTO target met)
+<strong>RPO:</strong> Up to 1 month (Glacier monthly backup)</p>
+<h3 id="recovery-procedure-redis-loss-r11">4.7 Recovery Procedure —
+Redis Loss (R11)</h3>
+<p><strong>Trigger:</strong> Redis outage, cache corruption</p>
+<p><strong>Steps:</strong> 1. Redis is disposable — no data loss concern
+(cache only) 2. Application continues to function (cache miss → DB
+query) 3. Provision new Redis instance 4. Update application
+<code>REDIS_URL</code> 5. Application reconnects automatically 6. Cache
+warms over time as requests come in 7. Optional: trigger cache warming
+job for hot data</p>
+<p><strong>Estimated time:</strong> 15 minutes (RTO target met)
+<strong>RPO:</strong> N/A (cache is rebuildable)</p>
+<hr />
+<h2 id="business-continuity-plan-bcp">5. Business Continuity Plan
+(BCP)</h2>
+<h3 id="bcp-scope">5.1 BCP Scope</h3>
+<p>When systems are down, business operations must continue (manually if
+necessary) until systems recover.</p>
+<h3 id="manual-workarounds">5.2 Manual Workarounds</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Operation</th>
+<th>Manual Workaround</th>
+<th>Responsible</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Goods receipt</strong></td>
+<td>Paper GRN form; enter into system when recovered</td>
+<td>Warehouse manager</td>
+</tr>
+<tr class="even">
+<td><strong>Production order</strong></td>
+<td>Paper traveler; system updated post-recovery</td>
+<td>Production supervisor</td>
+</tr>
+<tr class="odd">
+<td><strong>Quality inspection</strong></td>
+<td>Paper checklist; system updated post-recovery</td>
+<td>Quality inspector</td>
+</tr>
+<tr class="even">
+<td><strong>Stock issue</strong></td>
+<td>Paper issue slip; system updated post-recovery</td>
+<td>Warehouse operator</td>
+</tr>
+<tr class="odd">
+<td><strong>Dispatch</strong></td>
+<td>Paper delivery challan; system updated post-recovery</td>
+<td>Dispatch supervisor</td>
+</tr>
+<tr class="even">
+<td><strong>Customer complaint</strong></td>
+<td>Email log; system updated post-recovery</td>
+<td>Customer service</td>
+</tr>
+<tr class="odd">
+<td><strong>NCR creation</strong></td>
+<td>Paper NCR form; system updated post-recovery</td>
+<td>Quality inspector</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bcp-roles">5.3 BCP Roles</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Role</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Incident Commander</strong></td>
+<td>Coordinates response, makes go/no-go decisions</td>
+</tr>
+<tr class="even">
+<td><strong>Operations Lead</strong></td>
+<td>Manages manual workarounds</td>
+</tr>
+<tr class="odd">
+<td><strong>Communications Lead</strong></td>
+<td>Notifies stakeholders, customers</td>
+</tr>
+<tr class="even">
+<td><strong>Technical Lead</strong></td>
+<td>Executes recovery procedures</td>
+</tr>
+<tr class="odd">
+<td><strong>Safety Lead</strong></td>
+<td>Ensures food safety during outage</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bcp-communication-plan">5.4 BCP Communication Plan</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Audience</th>
+<th>Channel</th>
+<th>Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Internal team</td>
+<td>Slack <code>#incidents</code></td>
+<td>Real-time updates</td>
+</tr>
+<tr class="even">
+<td>Employees</td>
+<td>Email + Slack <code>#announcements</code></td>
+<td>Hourly</td>
+</tr>
+<tr class="odd">
+<td>Customers</td>
+<td>Status page + email</td>
+<td>Hourly</td>
+</tr>
+<tr class="even">
+<td>Regulators (FSSAI, CERT-In)</td>
+<td>Phone + email</td>
+<td>Within 72 hours (DPDP)</td>
+</tr>
+<tr class="odd">
+<td>Public</td>
+<td>Status page + blog post</td>
+<td>After containment</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bcp-testing">5.5 BCP Testing</h3>
+<ul>
+<li><strong>Quarterly:</strong> Tabletop exercise (walk-through of
+BCP)</li>
+<li><strong>Semi-annually:</strong> Partial BCP test (one operation
+manual for 4 hours)</li>
+<li><strong>Annually:</strong> Full BCP test (all operations manual for
+8 hours)</li>
+</ul>
+<hr />
+<h2 id="high-availability">6. High Availability</h2>
+<h3 id="ha-architecture">6.1 HA Architecture</h3>
+<pre><code>                    Internet
+                       │
+                       ▼
+                ┌──────────────┐
+                │  Cloudflare  │  (DDoS protection, CDN, failover)
+                │      CDN     │
+                └──────┬───────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │ Load Balancer│  (Multi-AZ)
+                │   (ALB)      │
+                └──────┬───────┘
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+   ┌─────────┐   ┌─────────┐   ┌─────────┐
+   │ Backend │   │ Backend │   │ Backend │  (Multi-AZ, auto-scaled)
+   │  AZ-1   │   │  AZ-2   │   │  AZ-3   │
+   └────┬────┘   └────┬────┘   └────┬────┘
+        │              │              │
+        └──────────────┼──────────────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │  PostgreSQL  │  (Multi-AZ, primary + 2 replicas)
+                │  Primary     │
+                └──────┬───────┘
+                       │
+                ┌──────┴───────┐
+                ▼              ▼
+           ┌─────────┐   ┌─────────┐
+           │ Replica │   │ Replica │  (Cross-AZ)
+           │  AZ-2   │   │  AZ-3   │
+           └─────────┘   └─────────┘
+                       │
+                       ▼
+                ┌──────────────┐
+                │ Cross-Region │  (Async replication for DR)
+                │   Replica    │
+                └──────────────┘</code></pre>
+<h3 id="ha-configuration">6.2 HA Configuration</h3>
+<ul>
+<li><strong>Multi-AZ:</strong> Primary in AZ-1, synchronous replicas in
+AZ-2 and AZ-3</li>
+<li><strong>Auto-failover:</strong> Primary failure → replica promoted
+automatically (RDS Multi-AZ)</li>
+<li><strong>Read replicas:</strong> 2 read replicas for read-heavy
+workloads (dashboards, reports)</li>
+<li><strong>Cross-region:</strong> Async replica in DR region (RPO ~1
+min)</li>
+<li><strong>Load balancer:</strong> Multi-AZ ALB; health checks route to
+healthy instances only</li>
+<li><strong>Backend:</strong> ECS tasks across 3 AZs; min 2 tasks for
+HA</li>
+<li><strong>Redis:</strong> Single instance (cache is disposable);
+future: Redis Cluster for HA</li>
+</ul>
+<h3 id="failure-modes">6.3 Failure Modes</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Failure</th>
+<th>Detection</th>
+<th>Recovery</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Single backend task crash</td>
+<td>ALB health check</td>
+<td>ALB routes to healthy; ECS starts new task</td>
+</tr>
+<tr class="even">
+<td>Single AZ failure</td>
+<td>ALB health check</td>
+<td>ALB routes to healthy AZs; auto-scaling adds tasks</td>
+</tr>
+<tr class="odd">
+<td>Primary DB failure</td>
+<td>RDS health check</td>
+<td>Auto-promote standby replica (&lt;30s)</td>
+</tr>
+<tr class="even">
+<td>Redis failure</td>
+<td>App health check</td>
+<td>App degrades gracefully (cache miss → DB)</td>
+</tr>
+<tr class="odd">
+<td>Load balancer failure</td>
+<td>Cloudflare health check</td>
+<td>Cloudflare routes to standby LB</td>
+</tr>
+<tr class="even">
+<td>Region failure</td>
+<td>External uptime monitor</td>
+<td>Manual failover to DR region</td>
+</tr>
+</tbody>
+</table>
+<h3 id="no-single-point-of-failure">6.4 No Single Point of Failure</h3>
+<ul>
+<li><strong>Application:</strong> Multiple instances across AZs</li>
+<li><strong>Database:</strong> Multi-AZ with auto-failover</li>
+<li><strong>Load balancer:</strong> Managed service (AWS handles
+HA)</li>
+<li><strong>DNS:</strong> Route53 with health checks + failover
+routing</li>
+<li><strong>CDN:</strong> Cloudflare (globally distributed)</li>
+<li><strong>Redis:</strong> Single instance today (acceptable — cache);
+cluster future</li>
+</ul>
+<hr />
+<h2 id="database-recovery">7. Database Recovery</h2>
+<h3 id="recovery-methods">7.1 Recovery Methods</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>When</th>
+<th>Speed</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>PITR (Point-in-Time Recovery)</strong></td>
+<td>Within 14 days of incident</td>
+<td>Minutes to hours</td>
+<td>Second-level</td>
+</tr>
+<tr class="even">
+<td><strong>Logical backup restore</strong></td>
+<td>Beyond 14 days</td>
+<td>Hours to days</td>
+<td>Day-level</td>
+</tr>
+<tr class="odd">
+<td><strong>Replica promotion</strong></td>
+<td>Primary failure</td>
+<td>Seconds to minutes</td>
+<td>Real-time</td>
+</tr>
+<tr class="even">
+<td><strong>Cross-region failover</strong></td>
+<td>Region failure</td>
+<td>Minutes</td>
+<td>Up to 1 min lag</td>
+</tr>
+<tr class="odd">
+<td><strong>Glacier restore</strong></td>
+<td>Catastrophic loss</td>
+<td>24+ hours</td>
+<td>Month-level</td>
+</tr>
+</tbody>
+</table>
+<h3 id="database-recovery-steps-general">7.2 Database Recovery Steps
+(General)</h3>
+<ol type="1">
+<li><strong>Identify</strong> — What was lost? When? How?</li>
+<li><strong>Isolate</strong> — Stop writes to prevent further loss</li>
+<li><strong>Choose method</strong> — PITR vs logical vs replica</li>
+<li><strong>Restore</strong> — Execute recovery procedure</li>
+<li><strong>Verify</strong> — Run integrity checks + smoke tests</li>
+<li><strong>Switch</strong> — Point application to restored DB</li>
+<li><strong>Audit</strong> — Log recovery in audit trail</li>
+<li><strong>Post-mortem</strong> — Document + prevent recurrence</li>
+</ol>
+<h3 id="database-integrity-verification">7.3 Database Integrity
+Verification</h3>
+<p>After recovery: - <code>pg_checksums</code> — physical integrity -
+<code>pg_stat_user_tables</code> — row counts match expectations -
+Foreign key validation:
+<code>SELECT * FROM child WHERE parent_id NOT IN (SELECT id FROM parent)</code>
+- Audit log integrity: re-compute hash chain; verify no tampering -
+Business rule validation: spot-check critical entities (POs, GRNs,
+ledger entries)</p>
+<hr />
+<h2 id="file-recovery">8. File Recovery</h2>
+<h3 id="file-storage-recovery">8.1 File Storage Recovery</h3>
+<p><strong>S3 versioning:</strong> Every object has all versions;
+accidental delete = remove delete marker</p>
+<p><strong>Cross-region replication:</strong> All objects replicated to
+DR region</p>
+<p><strong>Glacier archive:</strong> 7+ year old files in Glacier;
+restore takes 1-5 hours (Expedited), 3-5 hours (Standard), 5-12 hours
+(Bulk)</p>
+<h3 id="file-recovery-steps">8.2 File Recovery Steps</h3>
+<ol type="1">
+<li>Identify lost file (file ID, S3 key)</li>
+<li>Check S3 versioning — restore previous version (instant)</li>
+<li>If version unavailable — check DR region replica (instant)</li>
+<li>If replica unavailable — restore from Glacier (hours)</li>
+<li>Verify file integrity (checksum)</li>
+<li>Update application metadata if file ID changed</li>
+</ol>
+<h3 id="file-recovery-slas">8.3 File Recovery SLAs</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Scenario</th>
+<th>RTO</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Accidental delete (S3 versioning)</td>
+<td>&lt;5 min</td>
+</tr>
+<tr class="even">
+<td>S3 bucket loss (cross-region replica)</td>
+<td>&lt;30 min</td>
+</tr>
+<tr class="odd">
+<td>Region loss (Glacier restore)</td>
+<td>&lt;12 hours</td>
+</tr>
+<tr class="even">
+<td>Total file storage loss</td>
+<td>&lt;24 hours (Expedited Glacier)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="cyberattack-recovery">9. Cyberattack Recovery</h2>
+<h3 id="cyberattack-scenarios">9.1 Cyberattack Scenarios</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Attack</th>
+<th>Impact</th>
+<th>Recovery</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Ransomware</strong></td>
+<td>Data encrypted</td>
+<td>Restore from clean backup; rotate all credentials</td>
+</tr>
+<tr class="even">
+<td><strong>Data breach (exfiltration)</strong></td>
+<td>Data stolen</td>
+<td>Notify regulators (72h), customers; forensics; patch
+vulnerability</td>
+</tr>
+<tr class="odd">
+<td><strong>Account takeover</strong></td>
+<td>Unauthorized access</td>
+<td>Revoke sessions; reset passwords; audit log review</td>
+</tr>
+<tr class="even">
+<td><strong>DDoS</strong></td>
+<td>Service unavailable</td>
+<td>Cloudflare absorbs; rate limit; auto-scale</td>
+</tr>
+<tr class="odd">
+<td><strong>SQL injection</strong></td>
+<td>Data leaked/modified</td>
+<td>Patch vulnerability; audit affected data; restore if modified</td>
+</tr>
+<tr class="even">
+<td><strong>Insider threat</strong></td>
+<td>Data deleted/leaked</td>
+<td>Revoke access; forensics; legal action; restore from backup</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cyberattack-recovery-procedure">9.2 Cyberattack Recovery
+Procedure</h3>
+<ol type="1">
+<li><strong>Detect</strong> — Monitoring alert, user report, security
+researcher</li>
+<li><strong>Isolate</strong> — Disconnect affected systems (without
+destroying evidence)</li>
+<li><strong>Investigate</strong> — Logs, audit trail, forensics</li>
+<li><strong>Contain</strong> — Block attacker (revoke tokens, block IPs,
+rotate credentials)</li>
+<li><strong>Eradicate</strong> — Apply fix, remove malware, close
+vulnerability</li>
+<li><strong>Restore</strong> — From clean backup if data corrupted</li>
+<li><strong>Verify</strong> — Security scan of restored systems</li>
+<li><strong>Resume</strong> — Bring systems online progressively</li>
+<li><strong>Notify</strong> — Regulators (72h), customers, public</li>
+<li><strong>Post-mortem</strong> — Root cause, action items, lessons
+learned</li>
+</ol>
+<h3 id="cyberattack-recovery-tools">9.3 Cyberattack Recovery Tools</h3>
+<ul>
+<li><strong>Forensics:</strong> AWS GuardDuty, Detective</li>
+<li><strong>Backup verification:</strong> Checksums, restore-test</li>
+<li><strong>Credential rotation:</strong> Secrets manager bulk
+rotation</li>
+<li><strong>Communication:</strong> Pre-drafted templates (breach
+notification, customer email)</li>
+</ul>
+<hr />
+<h2 id="dr-testing">10. DR Testing</h2>
+<h3 id="dr-test-schedule">10.1 DR Test Schedule</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Test</th>
+<th>Frequency</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Backup restore-test</strong></td>
+<td>Daily</td>
+<td>Latest logical backup to isolated DB</td>
+</tr>
+<tr class="even">
+<td><strong>Full restore-test</strong></td>
+<td>Weekly</td>
+<td>Full restore to staging + E2E suite</td>
+</tr>
+<tr class="odd">
+<td><strong>DR failover drill</strong></td>
+<td>Monthly</td>
+<td>Promote cross-region replica</td>
+</tr>
+<tr class="even">
+<td><strong>Tabletop exercise</strong></td>
+<td>Quarterly</td>
+<td>Walk-through of DR procedures</td>
+</tr>
+<tr class="odd">
+<td><strong>Partial BCP test</strong></td>
+<td>Semi-annual</td>
+<td>One operation manual for 4 hours</td>
+</tr>
+<tr class="even">
+<td><strong>Full BCP test</strong></td>
+<td>Annually</td>
+<td>All operations manual for 8 hours</td>
+</tr>
+<tr class="odd">
+<td><strong>Full disaster simulation</strong></td>
+<td>Annually</td>
+<td>Region loss, restore from Glacier</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dr-test-documentation">10.2 DR Test Documentation</h3>
+<p>Each test produces a report: - Test scenario - Date + participants -
+Steps executed - Actual RTO achieved - Actual RPO achieved - Issues
+encountered - Action items - Lessons learned</p>
+<h3 id="dr-test-failures">10.3 DR Test Failures</h3>
+<p>If DR test fails: - Declare SEV-2 incident - Stop deploying to
+production until DR capability restored - Root-cause analysis within 7
+days - Fix verified before resuming deploys</p>
+<hr />
+<h2 id="dr-roles-and-responsibilities">11. DR Roles and
+Responsibilities</h2>
+<h3 id="dr-team">11.1 DR Team</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Role</th>
+<th>Responsibility</th>
+<th>Backup</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Incident Commander</strong></td>
+<td>Coordinates response, go/no-go decisions</td>
+<td>Operations Lead</td>
+</tr>
+<tr class="even">
+<td><strong>Operations Lead</strong></td>
+<td>Executes recovery procedures</td>
+<td>Senior Engineer</td>
+</tr>
+<tr class="odd">
+<td><strong>Communications Lead</strong></td>
+<td>Notifies stakeholders</td>
+<td>Marketing Lead</td>
+</tr>
+<tr class="even">
+<td><strong>Technical Lead</strong></td>
+<td>Deep technical recovery</td>
+<td>Senior Engineer</td>
+</tr>
+<tr class="odd">
+<td><strong>Safety Lead</strong></td>
+<td>Food safety during outage</td>
+<td>Quality Manager</td>
+</tr>
+<tr class="even">
+<td><strong>Legal Lead</strong></td>
+<td>Regulatory notifications</td>
+<td>External counsel</td>
+</tr>
+<tr class="odd">
+<td><strong>Customer Liaison</strong></td>
+<td>Customer communication</td>
+<td>Customer Success</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dr-contact-tree">11.2 DR Contact Tree</h3>
+<pre><code>On-call Engineer (24/7)
+   ↓
+Incident Commander
+   ↓
+   ├── Operations Lead → Engineering team
+   ├── Communications Lead → Status page, Slack, email
+   ├── Technical Lead → Recovery execution
+   ├── Safety Lead → Food safety decisions
+   ├── Legal Lead → Regulatory notification
+   └── Customer Liaison → Customer communication</code></pre>
+<h3 id="dr-activation">11.3 DR Activation</h3>
+<p>Any team member can declare a disaster by: - Paging PagerDuty with
+“DISASTER” keyword - Creating incident in <code>#incidents</code> Slack
+channel - Calling DR hotline (forwarded to on-call)</p>
+<p>Once declared, Incident Commander takes over coordination.</p>
+<hr />
+<h2 id="dr-communication">12. DR Communication</h2>
+<h3 id="internal-communication">12.1 Internal Communication</h3>
+<ul>
+<li><strong>Slack <code>#incidents</code>:</strong> Real-time updates
+during incident</li>
+<li><strong>Slack <code>#announcements</code>:</strong> Hourly employee
+updates</li>
+<li><strong>Status page (internal):</strong> Current incident
+status</li>
+<li><strong>Phone bridge:</strong> Open conference call for DR team</li>
+</ul>
+<h3 id="external-communication">12.2 External Communication</h3>
+<ul>
+<li><strong>Status page (public):</strong>
+<code>status.sudhamrit.com</code></li>
+<li><strong>Customer email:</strong> Within 1 hour of incident
+declaration</li>
+<li><strong>Customer update:</strong> Hourly until resolved</li>
+<li><strong>Resolution email:</strong> Within 1 hour of resolution</li>
+<li><strong>Post-mortem blog:</strong> Within 7 days (transparency)</li>
+</ul>
+<h3 id="regulatory-notification">12.3 Regulatory Notification</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Regulator</th>
+<th>Trigger</th>
+<th>Deadline</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>FSSAI</strong></td>
+<td>Food safety data compromised</td>
+<td>72 hours</td>
+</tr>
+<tr class="even">
+<td><strong>CERT-In</strong></td>
+<td>Cybersecurity incident</td>
+<td>6 hours (new 2022 mandate)</td>
+</tr>
+<tr class="odd">
+<td><strong>DPDP (Data Protection)</strong></td>
+<td>Personal data breach</td>
+<td>72 hours</td>
+</tr>
+<tr class="even">
+<td><strong>GST authorities</strong></td>
+<td>Invoice data compromised</td>
+<td>24 hours</td>
+</tr>
+<tr class="odd">
+<td><strong>Local police</strong></td>
+<td>Cybercrime (ransomware, hack)</td>
+<td>24 hours</td>
+</tr>
+</tbody>
+</table>
+<h3 id="communication-templates">12.4 Communication Templates</h3>
+<p>Pre-drafted templates for: - Customer incident notification -
+Customer resolution notification - Regulator notification - Public blog
+post - Internal employee update - Media statement</p>
+<p>Templates in <code>docs/runbooks/communication-templates/</code>.</p>
+<hr />
+<h2 id="dr-runbooks">13. DR Runbooks</h2>
+<p>Each recovery scenario has a detailed runbook:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Runbook</th>
+<th>Scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>RB-01-row-recovery.md</code></td>
+<td>Single row accidental delete</td>
+</tr>
+<tr class="even">
+<td><code>RB-02-table-recovery.md</code></td>
+<td>Single table accidental drop</td>
+</tr>
+<tr class="odd">
+<td><code>RB-03-logical-restore.md</code></td>
+<td>Logical corruption / bad migration</td>
+</tr>
+<tr class="even">
+<td><code>RB-04-pitr-restore.md</code></td>
+<td>PITR recovery</td>
+</tr>
+<tr class="odd">
+<td><code>RB-05-db-failover.md</code></td>
+<td>DB instance failure</td>
+</tr>
+<tr class="even">
+<td><code>RB-06-az-failover.md</code></td>
+<td>Availability zone failure</td>
+</tr>
+<tr class="odd">
+<td><code>RB-07-region-failover.md</code></td>
+<td>Region failure</td>
+</tr>
+<tr class="even">
+<td><code>RB-08-ransomware.md</code></td>
+<td>Ransomware recovery</td>
+</tr>
+<tr class="odd">
+<td><code>RB-09-catastrophic.md</code></td>
+<td>Total system loss</td>
+</tr>
+<tr class="even">
+<td><code>RB-10-file-recovery.md</code></td>
+<td>File storage loss</td>
+</tr>
+<tr class="odd">
+<td><code>RB-11-redis-loss.md</code></td>
+<td>Redis loss</td>
+</tr>
+<tr class="even">
+<td><code>RB-12-config-drift.md</code></td>
+<td>Configuration drift</td>
+</tr>
+<tr class="odd">
+<td><code>RB-13-ddos.md</code></td>
+<td>DDoS attack</td>
+</tr>
+<tr class="even">
+<td><code>RB-14-data-breach.md</code></td>
+<td>Data breach</td>
+</tr>
+<tr class="odd">
+<td><code>RB-15-insider-threat.md</code></td>
+<td>Insider threat</td>
+</tr>
+</tbody>
+</table>
+<p>Each runbook includes: - Trigger criteria - Step-by-step procedure -
+Required tools + access - Verification steps - Rollback (if recovery
+fails) - Communication templates - Post-recovery tasks</p>
+<hr />
+<h2 id="dr-budget-and-resources">14. DR Budget and Resources</h2>
+<h3 id="dr-infrastructure-cost">14.1 DR Infrastructure Cost</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Resource</th>
+<th>Purpose</th>
+<th>Monthly Cost (Est.)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cross-region DB replica</td>
+<td>DR region standby</td>
+<td>$200-500</td>
+</tr>
+<tr class="even">
+<td>Cross-region S3 replication</td>
+<td>File storage DR</td>
+<td>$50-100</td>
+</tr>
+<tr class="odd">
+<td>Glacier storage (7-year archive)</td>
+<td>Long-term retention</td>
+<td>$20-50</td>
+</tr>
+<tr class="even">
+<td>PagerDuty (DR team)</td>
+<td>Incident alerting</td>
+<td>$50-100</td>
+</tr>
+<tr class="odd">
+<td>Status page (public)</td>
+<td>Customer communication</td>
+<td>$30-50</td>
+</tr>
+<tr class="even">
+<td>DR test infrastructure</td>
+<td>Monthly drill</td>
+<td>$100-200</td>
+</tr>
+<tr class="odd">
+<td><strong>Total</strong></td>
+<td></td>
+<td><strong>$450-1000/month</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="dr-time-investment">14.2 DR Time Investment</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Activity</th>
+<th>Frequency</th>
+<th>Time per Session</th>
+<th>Annual Hours</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tabletop exercise</td>
+<td>Quarterly</td>
+<td>2 hours</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>DR failover drill</td>
+<td>Monthly</td>
+<td>1 hour</td>
+<td>12</td>
+</tr>
+<tr class="odd">
+<td>Full restore test</td>
+<td>Weekly</td>
+<td>30 min</td>
+<td>26</td>
+</tr>
+<tr class="even">
+<td>Full BCP test</td>
+<td>Annually</td>
+<td>8 hours</td>
+<td>8</td>
+</tr>
+<tr class="odd">
+<td>Full disaster simulation</td>
+<td>Annually</td>
+<td>16 hours</td>
+<td>16</td>
+</tr>
+<tr class="even">
+<td><strong>Total</strong></td>
+<td></td>
+<td></td>
+<td><strong>70 hours/year</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="open-questions-for-approval">15. Open Questions for
+Approval</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q-DR1</td>
+<td>RPO for region failure</td>
+<td>1 minute (async replication)</td>
+<td>0 (sync — expensive)</td>
+</tr>
+<tr class="even">
+<td>Q-DR2</td>
+<td>RTO for ransomware</td>
+<td>24 hours</td>
+<td>8 hours (more strict)</td>
+</tr>
+<tr class="odd">
+<td>Q-DR3</td>
+<td>DR region</td>
+<td>AWS ap-south-1 (Mumbai) primary; ap-south-2 (Hyderabad) DR</td>
+<td>Different cloud (Azure)</td>
+</tr>
+<tr class="even">
+<td>Q-DR4</td>
+<td>DR test frequency</td>
+<td>Monthly failover, annual full</td>
+<td>Quarterly (less strict)</td>
+</tr>
+<tr class="odd">
+<td>Q-DR5</td>
+<td>Glacier retrieval tier</td>
+<td>Standard (3-5 hours)</td>
+<td>Expedited (1-5 min, higher cost)</td>
+</tr>
+<tr class="even">
+<td>Q-DR6</td>
+<td>Customer notification SLA</td>
+<td>1 hour</td>
+<td>30 min (more strict)</td>
+</tr>
+<tr class="odd">
+<td>Q-DR7</td>
+<td>Regulator notification (CERT-In)</td>
+<td>6 hours (per 2022 mandate)</td>
+<td>N/A (mandated)</td>
+</tr>
+<tr class="even">
+<td>Q-DR8</td>
+<td>DR infrastructure</td>
+<td>Always-on cross-region replica</td>
+<td>Pilot light (start on demand)</td>
+</tr>
+<tr class="odd">
+<td>Q-DR9</td>
+<td>BCP manual workaround scope</td>
+<td>Critical operations only</td>
+<td>All operations</td>
+</tr>
+<tr class="even">
+<td>Q-DR10</td>
+<td>DR team size</td>
+<td>7 roles</td>
+<td>Larger (more redundancy)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><em>End of Enterprise Disaster Recovery Document</em></p>
+</body>
+</html>

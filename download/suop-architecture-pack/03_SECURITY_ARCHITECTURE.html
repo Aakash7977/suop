@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>03_SECURITY_ARCHITECTURE</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">03_SECURITY_ARCHITECTURE</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-enterprise-security-architecture"
+id="toc-suop-erp-v1.0-enterprise-security-architecture">SUOP ERP v1.0 —
+Enterprise Security Architecture</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">1. Purpose</a></li>
+<li><a href="#threat-model" id="toc-threat-model">2. Threat
+Model</a></li>
+<li><a href="#authentication" id="toc-authentication">3.
+Authentication</a></li>
+<li><a href="#authorization" id="toc-authorization">4.
+Authorization</a></li>
+<li><a href="#jwt-strategy" id="toc-jwt-strategy">5. JWT
+Strategy</a></li>
+<li><a href="#refresh-token-strategy" id="toc-refresh-token-strategy">6.
+Refresh Token Strategy</a></li>
+<li><a href="#password-policy-1" id="toc-password-policy-1">7. Password
+Policy</a></li>
+<li><a href="#mfa-see-3.7" id="toc-mfa-see-3.7">8. MFA (see
+§3.7)</a></li>
+<li><a href="#encryption" id="toc-encryption">9. Encryption</a></li>
+<li><a href="#secrets-management" id="toc-secrets-management">10.
+Secrets Management</a></li>
+<li><a href="#owasp-top-10-coverage" id="toc-owasp-top-10-coverage">11.
+OWASP Top 10 Coverage</a></li>
+<li><a href="#sql-injection-prevention"
+id="toc-sql-injection-prevention">12. SQL Injection Prevention</a></li>
+<li><a href="#xss-cross-site-scripting"
+id="toc-xss-cross-site-scripting">13. XSS (Cross-Site
+Scripting)</a></li>
+<li><a href="#csrf-cross-site-request-forgery"
+id="toc-csrf-cross-site-request-forgery">14. CSRF (Cross-Site Request
+Forgery)</a></li>
+<li><a href="#ssrf-server-side-request-forgery"
+id="toc-ssrf-server-side-request-forgery">15. SSRF (Server-Side Request
+Forgery)</a></li>
+<li><a href="#audit-security" id="toc-audit-security">16. Audit
+Security</a></li>
+<li><a href="#api-security" id="toc-api-security">17. API
+Security</a></li>
+<li><a href="#infrastructure-security"
+id="toc-infrastructure-security">18. Infrastructure Security</a></li>
+<li><a href="#developer-security" id="toc-developer-security">19.
+Developer Security</a></li>
+<li><a href="#incident-response" id="toc-incident-response">20. Incident
+Response</a></li>
+<li><a href="#compliance" id="toc-compliance">21. Compliance</a></li>
+<li><a href="#open-questions-for-approval"
+id="toc-open-questions-for-approval">22. Open Questions for
+Approval</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-enterprise-security-architecture">SUOP ERP v1.0 —
+Enterprise Security Architecture</h1>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+<tr class="odd">
+<td>Compliance Frameworks</td>
+<td>OWASP Top 10, ISO 27001, SOC 2, FSSAI Cybersecurity</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="purpose">1. Purpose</h2>
+<p>This document defines the complete security architecture for SUOP ERP
+v1.0. It is informed by OWASP Top 10 (2021), ISO 27001 controls, SOC 2
+Trust Services Criteria, and FSSAI cybersecurity guidelines for food
+businesses.</p>
+<p><strong>Hard rule:</strong> No code ships without passing security
+review against this document. CI runs SAST (Static Application Security
+Testing), dependency scanning, and secret detection on every PR.</p>
+<hr />
+<h2 id="threat-model">2. Threat Model</h2>
+<h3 id="assets-to-protect">2.1 Assets to Protect</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Asset</th>
+<th>Sensitivity</th>
+<th>Impact of Breach</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>User credentials (passwords, tokens)</td>
+<td>Critical</td>
+<td>Account takeover, data exfiltration</td>
+</tr>
+<tr class="even">
+<td>PII (employee, customer data)</td>
+<td>High</td>
+<td>Legal, regulatory, reputational</td>
+</tr>
+<tr class="odd">
+<td>Financial data (prices, costs, invoices)</td>
+<td>High</td>
+<td>Competitive harm, fraud</td>
+</tr>
+<tr class="even">
+<td>Recipe/formula data</td>
+<td>Critical</td>
+<td>IP theft, competitive loss</td>
+</tr>
+<tr class="odd">
+<td>Quality data (NCRs, COAs, audit logs)</td>
+<td>High</td>
+<td>Regulatory non-compliance</td>
+</tr>
+<tr class="even">
+<td>Batch genealogy / recall data</td>
+<td>Critical</td>
+<td>Food safety liability</td>
+</tr>
+<tr class="odd">
+<td>Supplier contracts / pricing</td>
+<td>High</td>
+<td>Competitive harm</td>
+</tr>
+<tr class="even">
+<td>Audit logs</td>
+<td>High</td>
+<td>Loss of legal evidence</td>
+</tr>
+</tbody>
+</table>
+<h3 id="threat-actors">2.2 Threat Actors</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Actor</th>
+<th>Capability</th>
+<th>Motivation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>External attacker</td>
+<td>Internet-facing exploit, phishing</td>
+<td>Financial, ransomware</td>
+</tr>
+<tr class="even">
+<td>Malicious insider</td>
+<td>Authenticated access, knows system</td>
+<td>Sabotage, data theft</td>
+</tr>
+<tr class="odd">
+<td>Negligent insider</td>
+<td>Authenticated access</td>
+<td>Accidental disclosure</td>
+</tr>
+<tr class="even">
+<td>Compromised supplier</td>
+<td>Limited tenant access</td>
+<td>Pivot attack</td>
+</tr>
+<tr class="odd">
+<td>Script kiddie</td>
+<td>Automated scans</td>
+<td>Notoriety</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attack-surfaces">2.3 Attack Surfaces</h3>
+<ol type="1">
+<li><strong>Public API</strong> — <code>/api/v1/*</code> (auth required
+except login)</li>
+<li><strong>Frontend</strong> — Next.js app (XSS, CSRF)</li>
+<li><strong>Database</strong> — Direct (should be impossible from
+internet)</li>
+<li><strong>File storage</strong> — S3/MinIO (signed URLs, bucket
+policy)</li>
+<li><strong>Admin endpoints</strong> — <code>/api/v1/_internal/*</code>
+(API key required)</li>
+<li><strong>CI/CD pipeline</strong> — Compromise deploys malicious
+code</li>
+<li><strong>Developer machines</strong> — Source code, secrets</li>
+<li><strong>Third-party integrations</strong> — Email, SMS, payment
+providers</li>
+</ol>
+<hr />
+<h2 id="authentication">3. Authentication</h2>
+<h3 id="password-policy">3.1 Password Policy</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Rule</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Minimum length</td>
+<td>12 characters</td>
+</tr>
+<tr class="even">
+<td>Maximum length</td>
+<td>128 characters (prevents DoS via long hash)</td>
+</tr>
+<tr class="odd">
+<td>Complexity</td>
+<td>At least 3 of: uppercase, lowercase, digit, special</td>
+</tr>
+<tr class="even">
+<td>Common password check</td>
+<td>Reject top 10,000 common passwords (HaveIBeenPwned API + local
+list)</td>
+</tr>
+<tr class="odd">
+<td>History</td>
+<td>Cannot reuse last 10 passwords</td>
+</tr>
+<tr class="even">
+<td>Expiry</td>
+<td>90 days (configurable per tenant; disabled if MFA enabled)</td>
+</tr>
+<tr class="odd">
+<td>Lockout</td>
+<td>5 failed attempts → 30-min lockout; 3 lockouts in 24h → admin unlock
+required</td>
+</tr>
+<tr class="even">
+<td>Reset</td>
+<td>Token-based, single-use, expires in 30 min</td>
+</tr>
+</tbody>
+</table>
+<h3 id="password-storage">3.2 Password Storage</h3>
+<ul>
+<li><strong>Algorithm:</strong> Argon2id (winner of Password Hashing
+Competition)</li>
+<li><strong>Parameters:</strong> <code>memoryCost=19456</code> (19 MB),
+<code>timeCost=2</code>, <code>parallelism=1</code></li>
+<li><strong>Tuning target:</strong> ~250ms per hash on production
+hardware</li>
+<li><strong>Salt:</strong> 16-byte random salt per password (Argon2
+handles internally)</li>
+<li><strong>Format:</strong>
+<code>$argon2id$v=19$m=19456,t=2,p=1$&lt;salt&gt;$&lt;hash&gt;</code></li>
+</ul>
+<p><strong>Forbidden:</strong> MD5, SHA-1, SHA-256 (without
+salt+pepper), bcrypt with cost &lt; 12, PBKDF2 with &lt; 100k
+iterations.</p>
+<h3 id="password-pepper">3.3 Password Pepper</h3>
+<ul>
+<li>Argon2id hash further encrypted with a server-side pepper (32-byte
+random)</li>
+<li>Pepper stored in secrets manager (not in DB, not in code)</li>
+<li>Compromise of DB alone does not reveal passwords</li>
+<li>Pepper rotation requires password reset for all users (rare;
+documented procedure)</li>
+</ul>
+<h3 id="login-flow">3.4 Login Flow</h3>
+<ol type="1">
+<li>Client sends <code>POST /api/v1/auth/login</code> with
+<code>{email, password}</code></li>
+<li>Server loads user by email (rate-limited: 10/min/IP,
+5/min/email)</li>
+<li>Server verifies password with Argon2id
+(<code>argon2.verify</code>)</li>
+<li>If MFA enabled: return
+<code>{ status: 'MFA_REQUIRED', mfaSessionToken }</code> (5-min
+TTL)</li>
+<li>Client sends <code>POST /api/v1/auth/mfa/verify</code> with
+<code>{mfaSessionToken, code}</code></li>
+<li>Server verifies TOTP, issues access token (15 min) + refresh token
+cookie (30 days)</li>
+<li>Login audit logged; suspicious login (new IP, new device) triggers
+email alert</li>
+</ol>
+<h3 id="failed-login-protection">3.5 Failed Login Protection</h3>
+<ul>
+<li>5 failed attempts per user → 30-min lockout</li>
+<li>10 failed attempts per IP → 1-hour IP block</li>
+<li>Failed attempts logged; 10+ failures in 1 hour trigger security
+alert</li>
+<li>Account lockout requires password reset (forces user to verify
+identity via email)</li>
+</ul>
+<h3 id="session-management">3.6 Session Management</h3>
+<ul>
+<li><strong>Access token:</strong> JWT, 15 min TTL, in-memory in
+frontend (not localStorage — XSS protection)</li>
+<li><strong>Refresh token:</strong> Random 64-byte token, 30-day TTL,
+httpOnly secure cookie</li>
+<li><strong>Refresh token rotation:</strong> Every refresh issues a new
+refresh token; old one invalidated</li>
+<li><strong>Refresh token replay detection:</strong> Reuse of
+invalidated refresh token revokes entire session</li>
+<li><strong>Device tracking:</strong> Each session tied to a device
+fingerprint; new device triggers email alert</li>
+</ul>
+<h3 id="multi-factor-authentication-mfa">3.7 Multi-Factor Authentication
+(MFA)</h3>
+<ul>
+<li><strong>TOTP-based</strong> (RFC 6238) — Google Authenticator,
+Authy, 1Password</li>
+<li><strong>Required for:</strong>
+<ul>
+<li>All admin roles (<code>tenant:admin</code>,
+<code>system:*</code>)</li>
+<li>Finance roles (<code>finance:*</code>)</li>
+<li>Quality roles with <code>ncr:approve</code>, <code>coa:sign</code>,
+<code>recall:initiate</code></li>
+</ul></li>
+<li><strong>Optional for:</strong> Other users (configurable per
+tenant)</li>
+<li><strong>Backup codes:</strong> 10 single-use codes generated at
+enrollment; hashed in DB</li>
+<li><strong>Enrollment:</strong> User scans QR code → enters code to
+confirm → backup codes displayed once</li>
+<li><strong>Reset:</strong> Admin can reset MFA (audited at
+<code>CRITICAL</code>); user must re-enroll</li>
+</ul>
+<h3 id="single-sign-on-future">3.8 Single Sign-On (Future)</h3>
+<ul>
+<li>SAML 2.0 (Microsoft Entra, Google Workspace) — Phase X</li>
+<li>OIDC (OAuth 2.0 extension) — Phase X</li>
+<li>Out of scope for Phase 0; architecture allows addition without
+rewrite</li>
+</ul>
+<hr />
+<h2 id="authorization">4. Authorization</h2>
+<h3 id="rbac-model">4.1 RBAC Model</h3>
+<pre><code>User → Role → Permission → Resource:Action</code></pre>
+<ul>
+<li><strong>User:</strong> authenticated identity</li>
+<li><strong>Role:</strong> collection of permissions (e.g.,
+<code>quality_manager</code>, <code>procurement_officer</code>)</li>
+<li><strong>Permission:</strong> specific action on resource
+(<code>po:approve</code>, <code>product:create</code>)</li>
+<li><strong>Resource:</strong> entity type (<code>purchase_order</code>,
+<code>product</code>, <code>user</code>)</li>
+</ul>
+<h3 id="permission-catalog">4.2 Permission Catalog</h3>
+<p>All permissions catalogued in
+<code>packages/shared/src/enums/permission.enum.ts</code>. Examples:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">enum</span> Permission {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Organization</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  ORG_READ <span class="op">=</span> <span class="st">&#39;org:read&#39;</span><span class="op">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  ORG_CREATE <span class="op">=</span> <span class="st">&#39;org:create&#39;</span><span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  ORG_UPDATE <span class="op">=</span> <span class="st">&#39;org:update&#39;</span><span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  ORG_DELETE <span class="op">=</span> <span class="st">&#39;org:delete&#39;</span><span class="op">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Auth</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  AUTH_MANAGE_USERS <span class="op">=</span> <span class="st">&#39;auth:manage_users&#39;</span><span class="op">,</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  AUTH_MANAGE_ROLES <span class="op">=</span> <span class="st">&#39;auth:manage_roles&#39;</span><span class="op">,</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  AUTH_RESET_PASSWORD <span class="op">=</span> <span class="st">&#39;auth:reset_password&#39;</span><span class="op">,</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Product</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  PRODUCT_READ <span class="op">=</span> <span class="st">&#39;product:read&#39;</span><span class="op">,</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  PRODUCT_CREATE <span class="op">=</span> <span class="st">&#39;product:create&#39;</span><span class="op">,</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  PRODUCT_UPDATE <span class="op">=</span> <span class="st">&#39;product:update&#39;</span><span class="op">,</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  PRODUCT_DELETE <span class="op">=</span> <span class="st">&#39;product:delete&#39;</span><span class="op">,</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Purchase Order</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  PO_READ <span class="op">=</span> <span class="st">&#39;po:read&#39;</span><span class="op">,</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  PO_CREATE <span class="op">=</span> <span class="st">&#39;po:create&#39;</span><span class="op">,</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  PO_APPROVE <span class="op">=</span> <span class="st">&#39;po:approve&#39;</span><span class="op">,</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  PO_APPROVE_ANY <span class="op">=</span> <span class="st">&#39;po:approve:any&#39;</span><span class="op">,</span>  <span class="co">// approve any PO, not just assigned</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  PO_CANCEL <span class="op">=</span> <span class="st">&#39;po:cancel&#39;</span><span class="op">,</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Quality</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  NCR_CREATE <span class="op">=</span> <span class="st">&#39;ncr:create&#39;</span><span class="op">,</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  NCR_APPROVE <span class="op">=</span> <span class="st">&#39;ncr:approve&#39;</span><span class="op">,</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  COA_SIGN <span class="op">=</span> <span class="st">&#39;coa:sign&#39;</span><span class="op">,</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  RECALL_INITIATE <span class="op">=</span> <span class="st">&#39;recall:initiate&#39;</span><span class="op">,</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="co">// System</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  SYSTEM_TENANT_CROSS <span class="op">=</span> <span class="st">&#39;system:tenant:cross&#39;</span><span class="op">,</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  SYSTEM_REFERENCE_UPDATE <span class="op">=</span> <span class="st">&#39;system:reference:update&#39;</span><span class="op">,</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  AUDIT_READ <span class="op">=</span> <span class="st">&#39;audit:read&#39;</span><span class="op">,</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  AUDIT_READ_CRITICAL <span class="op">=</span> <span class="st">&#39;audit:read:critical&#39;</span><span class="op">,</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="permission-enforcement-3-layers-see-api-standards-13">4.3
+Permission Enforcement (3 layers — see API Standards §13)</h3>
+<ol type="1">
+<li><strong>Route-level middleware:</strong>
+<code>requirePermission('po:create')</code> blocks unauthorized users
+before controller</li>
+<li><strong>Service-level row checks:</strong> Verify user can access
+specific record (e.g., PO assigned to them)</li>
+<li><strong>Field-level response shaping:</strong> Strip fields user
+lacks permission to see (e.g., <code>costPrice</code>)</li>
+</ol>
+<h3 id="default-roles">4.4 Default Roles</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Role</th>
+<th>Permissions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tenant_admin</code></td>
+<td>All <code>*:read/create/update/delete</code> within tenant</td>
+</tr>
+<tr class="even">
+<td><code>quality_manager</code></td>
+<td><code>quality:*</code>, <code>ncr:*</code>, <code>capa:*</code>,
+<code>coa:*</code>, <code>audit:read</code></td>
+</tr>
+<tr class="odd">
+<td><code>quality_inspector</code></td>
+<td><code>quality:read</code>, <code>iqc:inspect</code>,
+<code>ncr:create</code>, <code>coa:read</code></td>
+</tr>
+<tr class="even">
+<td><code>procurement_officer</code></td>
+<td><code>po:read/create</code>, <code>supplier:read</code>,
+<code>grn:read</code></td>
+</tr>
+<tr class="odd">
+<td><code>procurement_manager</code></td>
+<td><code>po:*</code>, <code>supplier:*</code>,
+<code>grn:create</code></td>
+</tr>
+<tr class="even">
+<td><code>warehouse_operator</code></td>
+<td><code>inventory:read</code>, <code>grn:post</code>,
+<code>putaway:execute</code></td>
+</tr>
+<tr class="odd">
+<td><code>warehouse_manager</code></td>
+<td><code>warehouse:*</code>, <code>inventory:*</code>,
+<code>grn:*</code></td>
+</tr>
+<tr class="even">
+<td><code>production_manager</code></td>
+<td><code>production:*</code>, <code>recipe:read</code>,
+<code>bom:read</code></td>
+</tr>
+<tr class="odd">
+<td><code>plant_head</code></td>
+<td>All within plant scope</td>
+</tr>
+<tr class="even">
+<td><code>finance_manager</code></td>
+<td><code>finance:*</code>, <code>cost:*</code>,
+<code>invoice:*</code></td>
+</tr>
+<tr class="odd">
+<td><code>auditor</code></td>
+<td><code>*:read</code>, <code>audit:read:critical</code>
+(read-only)</td>
+</tr>
+<tr class="even">
+<td><code>system_admin</code></td>
+<td><code>system:*</code> (platform team only)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="permission-inheritance">4.5 Permission Inheritance</h3>
+<ul>
+<li>Roles are flat (no inheritance) — simpler, more predictable</li>
+<li>Users can have multiple roles; permissions union</li>
+<li>Tenant admin role granted via separate UI (audited at
+<code>CRITICAL</code>)</li>
+</ul>
+<h3 id="permission-changes-audit">4.6 Permission Changes Audit</h3>
+<ul>
+<li>Every role assignment / revocation audit-logged</li>
+<li>Every permission change audit-logged</li>
+<li>High-severity changes (<code>system:*</code>,
+<code>tenant_admin</code> grant) trigger security alert</li>
+</ul>
+<hr />
+<h2 id="jwt-strategy">5. JWT Strategy</h2>
+<h3 id="token-structure-see-api-standards-12.2">5.1 Token Structure (see
+API Standards §12.2)</h3>
+<h3 id="signing-key-management">5.2 Signing Key Management</h3>
+<ul>
+<li><strong>Phase 0:</strong> Single HMAC-SHA256 key in secrets
+manager</li>
+<li><strong>Key rotation:</strong> Every 90 days; old key valid for 7
+days after rotation (overlap)</li>
+<li><strong>Multi-key support:</strong> JWT header includes
+<code>kid</code> (key ID) to identify signing key</li>
+<li><strong>Future (RS256):</strong> Private key in HSM/KMS; public key
+distributed to verifiers</li>
+</ul>
+<h3 id="token-validation">5.3 Token Validation</h3>
+<p>On every request: 1. Extract
+<code>Authorization: Bearer &lt;token&gt;</code> header 2. Verify
+signature (correct key, correct algorithm — reject
+<code>alg: none</code> attacks) 3. Verify <code>exp</code> not expired
+4. Verify <code>iss</code> matches <code>suop-erp</code> 5. Verify
+<code>aud</code> matches <code>suop-frontend</code> (or
+<code>suop-mobile</code> for mobile) 6. Check <code>jti</code> not in
+Redis blocklist 7. Load user from DB (cached 60s) — verify
+<code>status === 'ACTIVE''</code> 8. Set
+<code>RequestContext.user</code> and
+<code>RequestContext.tenant</code></p>
+<h3 id="token-compromise-response">5.4 Token Compromise Response</h3>
+<p>If a token is compromised: 1. Add <code>jti</code> to Redis blocklist
+(TTL = remaining token TTL) 2. Revoke all user’s refresh tokens (force
+re-login) 3. Audit log at <code>CRITICAL</code> severity 4. Notify user
+via email + in-app 5. Optional: Force password reset</p>
+<hr />
+<h2 id="refresh-token-strategy">6. Refresh Token Strategy</h2>
+<h3 id="storage">6.1 Storage</h3>
+<ul>
+<li><strong>Client:</strong> httpOnly secure cookie
+(<code>refresh_token=&lt;random&gt;</code>; SameSite=Strict; Secure;
+HttpOnly)</li>
+<li><strong>Server:</strong> Hashed (SHA-256) in
+<code>refresh_tokens</code> table with <code>userId</code>,
+<code>expiresAt</code>, <code>deviceFingerprint</code>,
+<code>revokedAt</code></li>
+</ul>
+<h3 id="refresh-flow">6.2 Refresh Flow</h3>
+<ol type="1">
+<li>Access token expired → client receives <code>401</code></li>
+<li>Client calls <code>POST /api/v1/auth/refresh</code> (no body;
+refresh cookie sent automatically)</li>
+<li>Server validates cookie token against DB:
+<ul>
+<li>Exists in DB? (not revoked)</li>
+<li>Not expired?</li>
+<li>Device fingerprint matches?</li>
+</ul></li>
+<li>Issue new access token + new refresh token</li>
+<li><strong>Old refresh token immediately revoked</strong> (replay
+detection)</li>
+<li>New refresh token in cookie</li>
+</ol>
+<h3 id="refresh-token-replay-detection">6.3 Refresh Token Replay
+Detection</h3>
+<p>If a revoked refresh token is used: 1. Server detects reuse (token in
+DB but <code>revokedAt</code> set) 2. <strong>Revoke entire
+session</strong> (all refresh tokens for this user) 3. Force re-login 4.
+Audit log at <code>CRITICAL</code> severity 5. Alert security team</p>
+<p>This protects against refresh token theft — attacker using stolen
+token alerts legitimate user.</p>
+<h3 id="refresh-token-revocation">6.4 Refresh Token Revocation</h3>
+<ul>
+<li><strong>User logout:</strong> <code>POST /api/v1/auth/logout</code>
+revokes current refresh token</li>
+<li><strong>Admin force-logout:</strong>
+<code>POST /api/v1/_internal/users/{id}/revoke-sessions</code> revokes
+all sessions</li>
+<li><strong>Password change:</strong> All refresh tokens revoked (force
+re-login everywhere)</li>
+<li><strong>Account lockout:</strong> All refresh tokens revoked</li>
+</ul>
+<hr />
+<h2 id="password-policy-1">7. Password Policy</h2>
+<p>(See §3.1 for full policy)</p>
+<h3 id="password-strength-estimation">7.1 Password Strength
+Estimation</h3>
+<p>In addition to character rules, use <code>zxcvbn</code> to estimate
+password strength: - Score 0-2: Reject (too weak) - Score 3: Acceptable
+(warning shown) - Score 4: Strong - Score 5: Excellent</p>
+<h3 id="password-reset-flow">7.2 Password Reset Flow</h3>
+<ol type="1">
+<li>User clicks “Forgot password” → enters email</li>
+<li>Server generates single-use reset token (UUID v7, 30-min TTL)</li>
+<li>Token stored hashed in <code>password_reset_tokens</code> table</li>
+<li>Email sent with link
+<code>https://app.sudhamrit.com/reset-password?token=...</code></li>
+<li>User clicks link, enters new password</li>
+<li>Server validates token (exists, not expired, not used)</li>
+<li>Server updates password (Argon2id hash), invalidates token</li>
+<li><strong>All existing sessions revoked</strong> (force re-login
+everywhere)</li>
+<li>Audit log entry; email notification to user</li>
+</ol>
+<h3 id="password-reset-protection">7.3 Password Reset Protection</h3>
+<ul>
+<li>Rate limited: 3 reset requests per email per hour (prevents email
+bombing)</li>
+<li>Token single-use (reuse → rejected)</li>
+<li>Token expires 30 min after issue</li>
+<li>Reset invalidates all sessions (prevents attacker maintaining access
+after legitimate reset)</li>
+</ul>
+<hr />
+<h2 id="mfa-see-3.7">8. MFA (see §3.7)</h2>
+<hr />
+<h2 id="encryption">9. Encryption</h2>
+<h3 id="encryption-layers">9.1 Encryption Layers</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>Algorithm</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Transport (HTTPS)</td>
+<td>TLS 1.3</td>
+<td>Data in transit</td>
+</tr>
+<tr class="even">
+<td>Database connection</td>
+<td>TLS 1.3</td>
+<td>App ↔︎ DB</td>
+</tr>
+<tr class="odd">
+<td>Database at rest</td>
+<td>AES-256 (Supabase/RDS managed)</td>
+<td>DB files on disk</td>
+</tr>
+<tr class="even">
+<td>File storage at rest</td>
+<td>AES-256 (S3 SSE-KMS)</td>
+<td>S3 objects</td>
+</tr>
+<tr class="odd">
+<td>Backup encryption</td>
+<td>AES-256 (pg_dump <code>--encrypt</code> or S3 SSE)</td>
+<td>Backups</td>
+</tr>
+<tr class="even">
+<td>Secrets at rest</td>
+<td>KMS-managed</td>
+<td>Secrets in secrets manager</td>
+</tr>
+<tr class="odd">
+<td>Sensitive column encryption</td>
+<td>pgcrypto (AES-256-GCM)</td>
+<td>PII columns</td>
+</tr>
+<tr class="even">
+<td>JWT signing</td>
+<td>HS256 (HMAC-SHA256)</td>
+<td>Token integrity</td>
+</tr>
+<tr class="odd">
+<td>Password hashing</td>
+<td>Argon2id</td>
+<td>Password storage</td>
+</tr>
+<tr class="even">
+<td>TOTP secret storage</td>
+<td>AES-256-GCM (pgcrypto)</td>
+<td>MFA secrets</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tls-configuration">9.2 TLS Configuration</h3>
+<ul>
+<li><strong>Minimum version:</strong> TLS 1.3 (TLS 1.2 only for legacy
+clients; disabled by 2027)</li>
+<li><strong>Cipher suites:</strong> TLS_AES_256_GCM_SHA384,
+TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256</li>
+<li><strong>HSTS:</strong>
+<code>Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</code></li>
+<li><strong>Certificate:</strong> Let’s Encrypt (auto-renewed) or
+managed cert (Supabase/AWS)</li>
+<li><strong>Certificate pinning:</strong> Not used (CA-based trust
+sufficient; pinning causes client breakage on rotation)</li>
+</ul>
+<h3 id="sensitive-column-encryption">9.3 Sensitive Column
+Encryption</h3>
+<p>For PII / regulated data:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Aadhaar number stored encrypted</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> users <span class="kw">ADD</span> <span class="kw">COLUMN</span> aadhaar_encrypted BYTEA;</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Encrypt on insert</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> users (<span class="op">..</span>., aadhaar_encrypted) <span class="kw">VALUES</span> (<span class="op">..</span>., pgp_sym_encrypt($aadhaar, $key));</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Decrypt on read</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> pgp_sym_decrypt(aadhaar_encrypted, $key) <span class="kw">AS</span> aadhaar <span class="kw">FROM</span> users <span class="kw">WHERE</span> <span class="kw">id</span> <span class="op">=</span> $<span class="dv">1</span>;</span></code></pre></div>
+<ul>
+<li>Encryption key in secrets manager (not in DB)</li>
+<li>Key rotation requires re-encrypting all rows (documented procedure;
+tested in DR drill)</li>
+</ul>
+<h3 id="application-level-encryption">9.4 Application-Level
+Encryption</h3>
+<p>For especially sensitive data (recipe formulas, supplier contracts):
+- Encrypt in application code before storing - Decryption key in secrets
+manager - Key access audited (every decryption logged)</p>
+<hr />
+<h2 id="secrets-management">10. Secrets Management</h2>
+<h3 id="secret-hierarchy">10.1 Secret Hierarchy</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Storage</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Application secrets</td>
+<td><code>.env</code> (dev) / secrets manager (prod)</td>
+<td>DB URL, JWT secret, API keys</td>
+</tr>
+<tr class="even">
+<td>Infrastructure secrets</td>
+<td>Secrets manager only</td>
+<td>DB password, S3 access keys</td>
+</tr>
+<tr class="odd">
+<td>User secrets</td>
+<td>DB (hashed)</td>
+<td>Passwords, MFA secrets</td>
+</tr>
+<tr class="even">
+<td>Certificates</td>
+<td>Secrets manager + filesystem</td>
+<td>TLS certs, signing keys</td>
+</tr>
+</tbody>
+</table>
+<h3 id="secrets-manager">10.2 Secrets Manager</h3>
+<ul>
+<li><strong>Production:</strong> AWS Secrets Manager or HashiCorp
+Vault</li>
+<li><strong>Staging:</strong> Same as production (separate
+instance)</li>
+<li><strong>Development:</strong> <code>.env</code> file (gitignored,
+.env.example committed)</li>
+<li><strong>CI/CD:</strong> GitHub Actions secrets</li>
+</ul>
+<h3 id="secret-rotation">10.3 Secret Rotation</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Secret</th>
+<th>Rotation Frequency</th>
+<th>Method</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>JWT signing key</td>
+<td>90 days</td>
+<td>Multi-key overlap (old valid 7 days)</td>
+</tr>
+<tr class="even">
+<td>DB password</td>
+<td>90 days</td>
+<td>Rotate via secrets manager; app reconnects</td>
+</tr>
+<tr class="odd">
+<td>S3 access keys</td>
+<td>90 days</td>
+<td>IAM role preferred (no key rotation)</td>
+</tr>
+<tr class="even">
+<td>SMTP password</td>
+<td>180 days</td>
+<td>Manual</td>
+</tr>
+<tr class="odd">
+<td>Encryption keys</td>
+<td>365 days</td>
+<td>Re-encrypt all data (tested in DR drill)</td>
+</tr>
+<tr class="even">
+<td>API keys (integrations)</td>
+<td>365 days</td>
+<td>Issue new + revoke old</td>
+</tr>
+</tbody>
+</table>
+<h3 id="secret-access-audit">10.4 Secret Access Audit</h3>
+<ul>
+<li>Every secret read from secrets manager logged</li>
+<li>Unusual access patterns alert security (e.g., secret read from new
+IP)</li>
+<li>Production secret access requires MFA (for humans)</li>
+</ul>
+<h3 id="forbidden">10.5 Forbidden</h3>
+<ul>
+<li>❌ Secrets in code (even commented out)</li>
+<li>❌ Secrets in git (commit hooks block via
+<code>git-secrets</code>)</li>
+<li>❌ Secrets in CI logs (auto-redacted)</li>
+<li>❌ Secrets in error messages</li>
+<li>❌ Secrets in URLs (URLs logged everywhere)</li>
+</ul>
+<hr />
+<h2 id="owasp-top-10-coverage">11. OWASP Top 10 Coverage</h2>
+<h3 id="a01-broken-access-control">11.1 A01: Broken Access Control</h3>
+<ul>
+<li><strong>Mitigation:</strong> 3-layer authorization (route, service,
+field) — see §4</li>
+<li><strong>Tests:</strong> Integration tests verify cross-tenant access
+blocked, missing permission blocked</li>
+<li><strong>Audit:</strong> Failed authorization attempts logged at
+WARN</li>
+</ul>
+<h3 id="a02-cryptographic-failures">11.2 A02: Cryptographic
+Failures</h3>
+<ul>
+<li><strong>Mitigation:</strong> TLS 1.3, AES-256 at rest, Argon2id
+passwords, no MD5/SHA-1</li>
+<li><strong>Tests:</strong> SAST scans for weak crypto; CI fails on
+use</li>
+<li><strong>Audit:</strong> Annual crypto review</li>
+</ul>
+<h3 id="a03-injection">11.3 A03: Injection</h3>
+<ul>
+<li><strong>Mitigation:</strong> Prisma parameterized queries
+everywhere; no <code>$queryRawUnsafe</code></li>
+<li><strong>Tests:</strong> SAST scans for raw SQL; integration tests
+for injection patterns</li>
+<li><strong>Audit:</strong> Code review checklist item</li>
+</ul>
+<h3 id="a04-insecure-design">11.4 A04: Insecure Design</h3>
+<ul>
+<li><strong>Mitigation:</strong> Threat modeling per feature; security
+design review for new modules</li>
+<li><strong>Tests:</strong> Architecture review board for new
+modules</li>
+<li><strong>Audit:</strong> Quarterly architecture review</li>
+</ul>
+<h3 id="a05-security-misconfiguration">11.5 A05: Security
+Misconfiguration</h3>
+<ul>
+<li><strong>Mitigation:</strong> Infrastructure as Code (Terraform);
+config validation at boot (zod); no default credentials</li>
+<li><strong>Tests:</strong> CIS benchmark scanning; automated config
+drift detection</li>
+<li><strong>Audit:</strong> Monthly config audit</li>
+</ul>
+<h3 id="a06-vulnerable-outdated-components">11.6 A06: Vulnerable &amp;
+Outdated Components</h3>
+<ul>
+<li><strong>Mitigation:</strong> <code>npm audit</code> on every PR;
+Dependabot for auto-PRs; Snyk for deep scanning</li>
+<li><strong>Tests:</strong> CI fails on high/critical
+vulnerabilities</li>
+<li><strong>Audit:</strong> Weekly dependency review</li>
+</ul>
+<h3 id="a07-identification-authentication-failures">11.7 A07:
+Identification &amp; Authentication Failures</h3>
+<ul>
+<li><strong>Mitigation:</strong> Argon2id, MFA, account lockout, session
+rotation</li>
+<li><strong>Tests:</strong> Penetration tests for auth flows</li>
+<li><strong>Audit:</strong> Annual pen test</li>
+</ul>
+<h3 id="a08-software-data-integrity-failures">11.8 A08: Software &amp;
+Data Integrity Failures</h3>
+<ul>
+<li><strong>Mitigation:</strong> Signed commits; signed container
+images; SBOM (Software Bill of Materials); subresource integrity for
+frontend assets</li>
+<li><strong>Tests:</strong> CI verifies signatures before deploy</li>
+<li><strong>Audit:</strong> Continuous SBOM monitoring</li>
+</ul>
+<h3 id="a09-security-logging-monitoring-failures">11.9 A09: Security
+Logging &amp; Monitoring Failures</h3>
+<ul>
+<li><strong>Mitigation:</strong> Audit framework (see Phase 0 §11);
+Sentry for errors; Loki for logs; Prometheus for metrics</li>
+<li><strong>Tests:</strong> Audit log integrity tests</li>
+<li><strong>Audit:</strong> Log review automation alerts on
+anomalies</li>
+</ul>
+<h3 id="a10-server-side-request-forgery-ssrf">11.10 A10: Server-Side
+Request Forgery (SSRF)</h3>
+<ul>
+<li><strong>Mitigation:</strong> No user-controlled URLs in outbound
+HTTP calls; URL whitelist for outbound integrations</li>
+<li><strong>Tests:</strong> Integration tests with SSRF payloads</li>
+<li><strong>Audit:</strong> Code review checklist item</li>
+</ul>
+<hr />
+<h2 id="sql-injection-prevention">12. SQL Injection Prevention</h2>
+<h3 id="parameterized-queries">12.1 Parameterized Queries</h3>
+<ul>
+<li>All DB access via Prisma — parameterized by default</li>
+<li>Raw queries use <code>Prisma.sql</code> template literal
+(parameterized):</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// ✅ SAFE</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> result <span class="op">=</span> <span class="cf">await</span> prisma<span class="op">.</span><span class="fu">$queryRaw</span><span class="vs">`SELECT * FROM users WHERE email = </span><span class="sc">${</span>email<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">// ❌ FORBIDDEN — string interpolation</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> result <span class="op">=</span> <span class="cf">await</span> prisma<span class="op">.</span><span class="fu">$queryRawUnsafe</span>(<span class="vs">`SELECT * FROM users WHERE email = &#39;</span><span class="sc">${</span>email<span class="sc">}</span><span class="vs">&#39;`</span>)</span></code></pre></div>
+<h3 id="ci-enforcement">12.2 CI Enforcement</h3>
+<ul>
+<li>ESLint rule <code>@suop/eslint-config/no-queryRawUnsafe</code>
+blocks <code>$queryRawUnsafe</code></li>
+<li>Code review checklist item</li>
+<li>SAST scan (SonarQube) flags raw SQL</li>
+</ul>
+<h3 id="dynamic-identifier-escaping">12.3 Dynamic Identifier
+Escaping</h3>
+<p>For dynamic table/column names (rare — usually a code smell): - Use
+Prisma’s <code>Prisma.raw</code> with explicit allowlist - Never
+interpolate user input into identifiers - Example:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> allowedColumns <span class="op">=</span> [<span class="st">&#39;name&#39;</span><span class="op">,</span> <span class="st">&#39;sku&#39;</span><span class="op">,</span> <span class="st">&#39;status&#39;</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="op">!</span>allowedColumns<span class="op">.</span><span class="fu">includes</span>(sortColumn)) <span class="cf">throw</span> <span class="kw">new</span> <span class="fu">ValidationError</span>(<span class="st">&#39;Invalid sort column&#39;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> result <span class="op">=</span> <span class="cf">await</span> prisma<span class="op">.</span><span class="fu">$queryRaw</span><span class="vs">`SELECT </span><span class="sc">${</span>Prisma<span class="op">.</span><span class="fu">raw</span>(sortColumn)<span class="sc">}</span><span class="vs"> FROM products`</span></span></code></pre></div>
+<hr />
+<h2 id="xss-cross-site-scripting">13. XSS (Cross-Site Scripting)</h2>
+<h3 id="output-encoding">13.1 Output Encoding</h3>
+<ul>
+<li>React auto-encodes all interpolated values
+(<code>{userInput}</code>) — no raw HTML by default</li>
+<li><code>dangerouslySetInnerHTML</code> forbidden; if needed (rare),
+sanitize with <code>DOMPurify</code> first</li>
+<li>CI scans for <code>dangerouslySetInnerHTML</code> usage; requires
+code review approval</li>
+</ul>
+<h3 id="content-security-policy">13.2 Content Security Policy</h3>
+<pre><code>Content-Security-Policy:
+  default-src &#39;self&#39;;
+  script-src &#39;self&#39; &#39;wasm-unsafe-eval&#39;;
+  style-src &#39;self&#39; &#39;unsafe-inline&#39;;
+  img-src &#39;self&#39; data: https:;  # allow images from S3
+  font-src &#39;self&#39; data:;
+  connect-src &#39;self&#39; https://api.sudhamrit.com;
+  frame-ancestors &#39;none&#39;;
+  form-action &#39;self&#39;;
+  base-uri &#39;self&#39;;
+  object-src &#39;none&#39;;
+  upgrade-insecure-requests;</code></pre>
+<ul>
+<li>No <code>unsafe-inline</code> for scripts (strict)</li>
+<li><code>unsafe-inline</code> for styles (Tailwind requires; acceptable
+risk)</li>
+<li>No <code>unsafe-eval</code> for scripts (no <code>eval()</code>
+anywhere)</li>
+</ul>
+<h3 id="other-security-headers">13.3 Other Security Headers</h3>
+<pre><code>X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+Cross-Origin-Resource-Policy: same-origin</code></pre>
+<h3 id="cookie-security">13.4 Cookie Security</h3>
+<ul>
+<li>All cookies: <code>Secure; HttpOnly; SameSite=Strict</code> (or
+<code>Lax</code> for navigation cookies)</li>
+<li>No sensitive data in cookies other than refresh token</li>
+<li>Cookie prefix: <code>__Host-</code> for refresh token cookie (extra
+protection)</li>
+</ul>
+<hr />
+<h2 id="csrf-cross-site-request-forgery">14. CSRF (Cross-Site Request
+Forgery)</h2>
+<h3 id="protection-strategy">14.1 Protection Strategy</h3>
+<ul>
+<li><strong>API:</strong> CSRF not vulnerable — API uses
+<code>Authorization: Bearer</code> header (not cookies), so CSRF cannot
+forge requests</li>
+<li><strong>Refresh token endpoint:</strong> Uses cookie, but
+<code>SameSite=Strict</code> prevents CSRF</li>
+<li><strong>Server-side form submissions:</strong> None (SPA + API
+architecture)</li>
+</ul>
+<h3 id="double-submit-cookie-future-if-needed">14.2 Double-Submit Cookie
+(Future, if Needed)</h3>
+<p>If server-side rendering with cookies is added: - Issue CSRF token in
+cookie + require in header for mutating requests - Verify match on
+server</p>
+<hr />
+<h2 id="ssrf-server-side-request-forgery">15. SSRF (Server-Side Request
+Forgery)</h2>
+<h3 id="outbound-http-calls">15.1 Outbound HTTP Calls</h3>
+<ul>
+<li>All outbound URLs validated against allowlist of domains</li>
+<li>Example: email service = <code>smtp.sendgrid.net</code>, file
+storage = <code>s3.amazonaws.com</code></li>
+<li>User input never used as URL for outbound requests</li>
+</ul>
+<h3 id="url-validation">15.2 URL Validation</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ALLOWED_OUTBOUND_DOMAINS <span class="op">=</span> [</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&#39;api.sendgrid.com&#39;</span><span class="op">,</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&#39;s3.ap-south-1.amazonaws.com&#39;</span><span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&#39;s3.amazonaws.com&#39;</span><span class="op">,</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&#39;minio.local&#39;</span><span class="op">,</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">validateOutboundUrl</span>(url<span class="op">:</span> <span class="dt">string</span>)<span class="op">:</span> <span class="dt">void</span> {</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> parsed <span class="op">=</span> <span class="kw">new</span> <span class="fu">URL</span>(url)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>ALLOWED_OUTBOUND_DOMAINS<span class="op">.</span><span class="fu">includes</span>(parsed<span class="op">.</span><span class="at">hostname</span>)) {</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="fu">SecurityError</span>(<span class="vs">`Outbound requests to </span><span class="sc">${</span>parsed<span class="op">.</span><span class="at">hostname</span><span class="sc">}</span><span class="vs"> not allowed`</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Block internal IPs (prevent SSRF to metadata service)</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">isInternalIp</span>(parsed<span class="op">.</span><span class="at">hostname</span>)) {</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="fu">SecurityError</span>(<span class="vs">`Outbound requests to internal IPs forbidden`</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="internal-ip-blocking">15.3 Internal IP Blocking</h3>
+<ul>
+<li>Block outbound requests to <code>127.0.0.0/8</code>,
+<code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>,
+<code>192.168.0.0/16</code>, <code>169.254.0.0/16</code> (AWS metadata
+service)</li>
+<li>Prevents SSRF attack from compromising cloud credentials</li>
+</ul>
+<hr />
+<h2 id="audit-security">16. Audit Security</h2>
+<h3 id="audit-log-integrity">16.1 Audit Log Integrity</h3>
+<ul>
+<li>Audit log table is <strong>append-only</strong> (no UPDATE, no
+DELETE) — enforced by PostgreSQL RLS</li>
+<li>Daily hash chain: each day’s audit logs hashed; hash published to
+external system (S3 with object lock)</li>
+<li>Tampering detected by re-computing hash chain</li>
+</ul>
+<h3 id="audit-log-access">16.2 Audit Log Access</h3>
+<ul>
+<li><code>audit:read</code> permission required for normal audit
+logs</li>
+<li><code>audit:read:critical</code> required for high-severity logs
+(security events, permission changes)</li>
+<li>All audit log reads are themselves audit-logged (meta-audit)</li>
+<li>Audit logs never exported without approval</li>
+</ul>
+<h3 id="audit-log-retention">16.3 Audit Log Retention</h3>
+<ul>
+<li>Hot: 1 year (online queryable)</li>
+<li>Warm: 1-3 years (archived, restorable)</li>
+<li>Cold: 3-7+ years (Glacier, compliance)</li>
+<li>Never deleted without legal sign-off</li>
+</ul>
+<hr />
+<h2 id="api-security">17. API Security</h2>
+<p>(see API Standards §18 for full details)</p>
+<h3 id="key-controls">17.1 Key Controls</h3>
+<ul>
+<li>All endpoints require authentication (except login, register,
+health, reference data)</li>
+<li>All endpoints rate-limited</li>
+<li>All inputs validated by zod schema</li>
+<li>All mutations require idempotency key</li>
+<li>All mutations audit-logged</li>
+<li>Sensitive endpoints (delete, blacklist, recall) require MFA
+re-authentication</li>
+</ul>
+<h3 id="sensitive-endpoint-re-authentication">17.2 Sensitive Endpoint
+Re-Authentication</h3>
+<p>For especially destructive actions: -
+<code>DELETE /api/v1/products/{id}</code> (hard delete — admin only) -
+<code>POST /api/v1/suppliers/{id}/blacklist</code> -
+<code>POST /api/v1/recalls</code> (initiate recall) -
+<code>POST /api/v1/_internal/users/{id}/revoke-sessions</code> -
+<code>POST /api/v1/_internal/tenants/{id}/purge</code> (purge tenant
+data)</p>
+<p>Server requires: 1. Recent authentication (within last 5 minutes) 2.
+MFA code re-entered 3. Audit log at <code>CRITICAL</code> severity 4.
+Optional: 2-person rule (another admin approves)</p>
+<hr />
+<h2 id="infrastructure-security">18. Infrastructure Security</h2>
+<h3 id="network">18.1 Network</h3>
+<ul>
+<li><strong>VPC:</strong> All resources in private VPC; only load
+balancer has public IP</li>
+<li><strong>Subnets:</strong> App in private subnet; DB in isolated
+subnet (no internet egress)</li>
+<li><strong>Security groups:</strong> Least privilege — app can reach DB
+only on port 5432; DB cannot reach anything</li>
+<li><strong>NAT gateway:</strong> App egress to internet via NAT (for
+outbound integrations)</li>
+<li><strong>VPC endpoints:</strong> S3, Secrets Manager via VPC endpoint
+(no public internet)</li>
+</ul>
+<h3 id="database">18.2 Database</h3>
+<ul>
+<li><strong>No public IP</strong> — only accessible from app subnet</li>
+<li><strong>TLS required</strong> for all connections</li>
+<li><strong>Row-Level Security</strong> for tenant isolation</li>
+<li><strong>Application role</strong> has limited privileges (no
+DDL)</li>
+<li><strong>Migration role</strong> separate, used only by CI/CD</li>
+</ul>
+<h3 id="redis">18.3 Redis</h3>
+<ul>
+<li><strong>Auth required</strong> (<code>requirepass</code> or
+ACL)</li>
+<li><strong>TLS enabled</strong></li>
+<li><strong>No public IP</strong> — only accessible from app subnet</li>
+<li><strong>Maxmemory policy:</strong> <code>allkeys-lru</code> (cache
+mode; if lost, app rebuilds)</li>
+</ul>
+<h3 id="file-storage-s3-minio">18.4 File Storage (S3 / MinIO)</h3>
+<ul>
+<li><strong>Bucket private</strong> — no public access</li>
+<li><strong>Access via signed URLs only</strong> (15-min TTL)</li>
+<li><strong>Bucket policy</strong> denies non-TLS requests</li>
+<li><strong>Versioning enabled</strong> (recoverable from accidental
+delete)</li>
+<li><strong>Cross-region replication</strong> for DR</li>
+</ul>
+<h3 id="container-security">18.5 Container Security</h3>
+<ul>
+<li><strong>Non-root user</strong> in container
+(<code>USER 1001</code>)</li>
+<li><strong>Read-only filesystem</strong> (except
+<code>/tmp</code>)</li>
+<li><strong>No new privileges</strong> flag
+(<code>--security-opt=no-new-privileges</code>)</li>
+<li><strong>Resource limits</strong> (CPU, memory)</li>
+<li><strong>Image scanning</strong> via Trivy before deploy</li>
+<li><strong>Base image:</strong> <code>node:20-alpine</code> (small
+attack surface)</li>
+</ul>
+<h3 id="kubernetes-production">18.6 Kubernetes (Production)</h3>
+<p>If deploying via K8s: - <strong>Network policies</strong> restrict
+pod-to-pod communication - <strong>Pod security standards</strong>
+(restricted) - <strong>RBAC</strong> for K8s API - <strong>Admission
+controllers</strong> (OPA Gatekeeper) enforce policies -
+<strong>Secrets</strong> via external-secrets operator (sync from
+secrets manager)</p>
+<hr />
+<h2 id="developer-security">19. Developer Security</h2>
+<h3 id="developer-machines">19.1 Developer Machines</h3>
+<ul>
+<li><strong>Disk encryption</strong> mandatory (FileVault for Mac,
+BitLocker for Windows)</li>
+<li><strong>Screen lock</strong> after 5 min idle</li>
+<li><strong>Antivirus</strong> (corporate standard)</li>
+<li><strong>No production data on dev machines</strong> — use sanitized
+staging data</li>
+</ul>
+<h3 id="source-code-security">19.2 Source Code Security</h3>
+<ul>
+<li><strong>Signed commits</strong> required (GPG or SSH signing)</li>
+<li><strong>Branch protection</strong> on <code>main</code> and
+<code>develop</code></li>
+<li><strong>PR review</strong> required (1 reviewer for code, 2 for
+security-sensitive changes)</li>
+<li><strong>Secret scanning</strong> via GitHub Advanced Security (or
+git-secrets locally)</li>
+<li><strong>Dependency scanning</strong> via Dependabot</li>
+</ul>
+<h3 id="access-management">19.3 Access Management</h3>
+<ul>
+<li><strong>Production access:</strong> MFA required; JIT (just-in-time)
+access via approval workflow</li>
+<li><strong>Staging access:</strong> All developers</li>
+<li><strong>DB access:</strong> Via bastion host + SSH key only; no
+direct DB access from dev machines</li>
+<li><strong>Cloud console:</strong> SSO + MFA; role-based access; audit
+logged</li>
+</ul>
+<hr />
+<h2 id="incident-response">20. Incident Response</h2>
+<h3 id="incident-severity">20.1 Incident Severity</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Severity</th>
+<th>Definition</th>
+<th>Response Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SEV-1</td>
+<td>Active breach, data loss, ransomware</td>
+<td>15 min</td>
+</tr>
+<tr class="even">
+<td>SEV-2</td>
+<td>Vulnerability being exploited, limited impact</td>
+<td>1 hour</td>
+</tr>
+<tr class="odd">
+<td>SEV-3</td>
+<td>Vulnerability discovered, not exploited</td>
+<td>4 hours</td>
+</tr>
+<tr class="even">
+<td>SEV-4</td>
+<td>Hardening opportunity, no active threat</td>
+<td>1 week</td>
+</tr>
+</tbody>
+</table>
+<h3 id="incident-response-plan">20.2 Incident Response Plan</h3>
+<ol type="1">
+<li><strong>Detect</strong> (monitoring alert, user report, security
+researcher)</li>
+<li><strong>Triage</strong> (on-call engineer assesses severity)</li>
+<li><strong>Contain</strong> (revoke tokens, block IPs, isolate
+systems)</li>
+<li><strong>Investigate</strong> (logs, audit trail, forensics)</li>
+<li><strong>Eradicate</strong> (apply fix, rotate credentials)</li>
+<li><strong>Recover</strong> (restore service, verify integrity)</li>
+<li><strong>Post-mortem</strong> (within 7 days; root cause, action
+items)</li>
+</ol>
+<h3 id="communication">20.3 Communication</h3>
+<ul>
+<li><strong>Internal:</strong> Slack incident channel; status page for
+employees</li>
+<li><strong>Customer:</strong> Email notification within 72 hours of
+confirmed breach (GDPR / DPDP requirement)</li>
+<li><strong>Regulatory:</strong> Notify FSSAI / CERT-In within 72 hours
+for applicable incidents</li>
+<li><strong>Public:</strong> Blog post after containment
+(transparency)</li>
+</ul>
+<hr />
+<h2 id="compliance">21. Compliance</h2>
+<h3 id="frameworks">21.1 Frameworks</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Framework</th>
+<th>Applicability</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>OWASP Top 10</td>
+<td>All</td>
+<td>Compliant (this document)</td>
+</tr>
+<tr class="even">
+<td>ISO 27001</td>
+<td>Future (after v1.0)</td>
+<td>Architecture ready</td>
+</tr>
+<tr class="odd">
+<td>SOC 2 Type II</td>
+<td>Future (after v1.0)</td>
+<td>Architecture ready</td>
+</tr>
+<tr class="even">
+<td>FSSAI Cybersecurity</td>
+<td>Food business</td>
+<td>Compliant</td>
+</tr>
+<tr class="odd">
+<td>DPDP Act 2023 (India)</td>
+<td>Personal data</td>
+<td>Compliant</td>
+</tr>
+<tr class="even">
+<td>GST</td>
+<td>Invoice data</td>
+<td>Compliant (retention)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-subject-access-requests-dpdp">21.2 Data Subject Access
+Requests (DPDP)</h3>
+<ul>
+<li>User can request all their data:
+<code>GET /api/v1/_internal/users/me/data-export</code></li>
+<li>User can request deletion:
+<code>DELETE /api/v1/_internal/users/me</code> (soft delete + audit;
+data retained per compliance)</li>
+<li>Response within 30 days</li>
+</ul>
+<hr />
+<h2 id="open-questions-for-approval">22. Open Questions for
+Approval</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q-S1</td>
+<td>Password policy</td>
+<td>12+ chars, 3 of 4 categories</td>
+<td>16+ chars (more strict)</td>
+</tr>
+<tr class="even">
+<td>Q-S2</td>
+<td>MFA requirement</td>
+<td>Admin/finance/recall roles</td>
+<td>All users</td>
+</tr>
+<tr class="odd">
+<td>Q-S3</td>
+<td>JWT algorithm</td>
+<td>HS256 now → RS256 later</td>
+<td>RS256 from start</td>
+</tr>
+<tr class="even">
+<td>Q-S4</td>
+<td>Column encryption</td>
+<td>pgcrypto for PII</td>
+<td>Application-level only</td>
+</tr>
+<tr class="odd">
+<td>Q-S5</td>
+<td>Secrets manager</td>
+<td>AWS Secrets Manager</td>
+<td>HashiCorp Vault</td>
+</tr>
+<tr class="even">
+<td>Q-S6</td>
+<td>Pen test frequency</td>
+<td>Annual + after major changes</td>
+<td>Quarterly</td>
+</tr>
+<tr class="odd">
+<td>Q-S7</td>
+<td>CSP strictness</td>
+<td>Strict (no unsafe-inline scripts)</td>
+<td>Permissive</td>
+</tr>
+<tr class="even">
+<td>Q-S8</td>
+<td>Sensitive endpoint re-auth</td>
+<td>MFA within 5 min</td>
+<td>Password re-entry</td>
+</tr>
+<tr class="odd">
+<td>Q-S9</td>
+<td>Incident response</td>
+<td>72-hour notification</td>
+<td>24-hour (GDPR-style)</td>
+</tr>
+<tr class="even">
+<td>Q-S10</td>
+<td>Production access</td>
+<td>JIT (just-in-time)</td>
+<td>Standing access</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><em>End of Enterprise Security Architecture Document</em></p>
+</body>
+</html>

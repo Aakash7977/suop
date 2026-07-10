@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>05_PERFORMANCE_STANDARDS</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">05_PERFORMANCE_STANDARDS</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-enterprise-performance-standards"
+id="toc-suop-erp-v1.0-enterprise-performance-standards">SUOP ERP v1.0 —
+Enterprise Performance Standards</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">1. Purpose</a></li>
+<li><a href="#response-time-targets" id="toc-response-time-targets">2.
+Response Time Targets</a></li>
+<li><a href="#database-performance" id="toc-database-performance">3.
+Database Performance</a></li>
+<li><a href="#api-performance" id="toc-api-performance">4. API
+Performance</a></li>
+<li><a href="#frontend-performance" id="toc-frontend-performance">5.
+Frontend Performance</a></li>
+<li><a href="#caching-strategy" id="toc-caching-strategy">6. Caching
+Strategy</a></li>
+<li><a href="#redis-strategy" id="toc-redis-strategy">7. Redis
+Strategy</a></li>
+<li><a href="#cdn-strategy" id="toc-cdn-strategy">8. CDN
+Strategy</a></li>
+<li><a href="#load-testing" id="toc-load-testing">9. Load
+Testing</a></li>
+<li><a href="#stress-testing" id="toc-stress-testing">10. Stress
+Testing</a></li>
+<li><a href="#capacity-planning" id="toc-capacity-planning">11. Capacity
+Planning</a></li>
+<li><a href="#frontend-performance-monitoring"
+id="toc-frontend-performance-monitoring">12. Frontend Performance
+Monitoring</a></li>
+<li><a href="#database-performance-monitoring"
+id="toc-database-performance-monitoring">13. Database Performance
+Monitoring</a></li>
+<li><a href="#performance-regression-testing"
+id="toc-performance-regression-testing">14. Performance Regression
+Testing</a></li>
+<li><a href="#open-questions-for-approval"
+id="toc-open-questions-for-approval">15. Open Questions for
+Approval</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-enterprise-performance-standards">SUOP ERP v1.0 —
+Enterprise Performance Standards</h1>
+<table>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="purpose">1. Purpose</h2>
+<p>This document defines performance standards for every layer of SUOP
+ERP v1.0. Every endpoint, every database query, every frontend page, and
+every background job must meet these standards. Performance is a feature
+— slow ERP = unusable ERP.</p>
+<p><strong>Hard rule:</strong> No endpoint ships without meeting its
+performance target. CI runs performance regression tests on every
+PR.</p>
+<hr />
+<h2 id="response-time-targets">2. Response Time Targets</h2>
+<h3 id="api-response-time-targets">2.1 API Response Time Targets</h3>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Endpoint Type</th>
+<th>p50</th>
+<th>p95</th>
+<th>p99</th>
+<th>Hard Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Single record GET</strong>
+(<code>/products/{id}</code>)</td>
+<td>50ms</td>
+<td>200ms</td>
+<td>500ms</td>
+<td>2s</td>
+</tr>
+<tr class="even">
+<td><strong>List GET</strong>
+(<code>/products?page=1&amp;pageSize=25</code>)</td>
+<td>100ms</td>
+<td>400ms</td>
+<td>1s</td>
+<td>3s</td>
+</tr>
+<tr class="odd">
+<td><strong>Filtered/aggregated list</strong> (dashboards)</td>
+<td>200ms</td>
+<td>800ms</td>
+<td>2s</td>
+<td>5s</td>
+</tr>
+<tr class="even">
+<td><strong>Simple POST</strong> (<code>/products</code> create)</td>
+<td>100ms</td>
+<td>400ms</td>
+<td>1s</td>
+<td>3s</td>
+</tr>
+<tr class="odd">
+<td><strong>Complex POST</strong> (PO create with 50 lines)</td>
+<td>300ms</td>
+<td>1s</td>
+<td>2s</td>
+<td>5s</td>
+</tr>
+<tr class="even">
+<td><strong>Workflow transition</strong>
+(<code>/pos/{id}/approve</code>)</td>
+<td>200ms</td>
+<td>800ms</td>
+<td>2s</td>
+<td>5s</td>
+</tr>
+<tr class="odd">
+<td><strong>Bulk operations</strong> (100 items)</td>
+<td>500ms</td>
+<td>2s</td>
+<td>5s</td>
+<td>15s</td>
+</tr>
+<tr class="even">
+<td><strong>Long-running async</strong> (COA generation, recall)</td>
+<td>200ms (return job ID)</td>
+<td>500ms</td>
+<td>1s</td>
+<td>2s</td>
+</tr>
+<tr class="odd">
+<td><strong>Export to CSV</strong> (async)</td>
+<td>200ms (return job ID)</td>
+<td>500ms</td>
+<td>1s</td>
+<td>2s</td>
+</tr>
+<tr class="even">
+<td><strong>Search</strong> (full-text)</td>
+<td>200ms</td>
+<td>800ms</td>
+<td>2s</td>
+<td>5s</td>
+</tr>
+<tr class="odd">
+<td><strong>Audit log query</strong></td>
+<td>200ms</td>
+<td>800ms</td>
+<td>2s</td>
+<td>5s</td>
+</tr>
+<tr class="even">
+<td><strong>Health check</strong></td>
+<td>5ms</td>
+<td>20ms</td>
+<td>50ms</td>
+<td>100ms</td>
+</tr>
+<tr class="odd">
+<td><strong>Reference data GET</strong></td>
+<td>10ms</td>
+<td>30ms</td>
+<td>50ms</td>
+<td>200ms (cached)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="frontend-performance-targets">2.2 Frontend Performance
+Targets</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th>Target</th>
+<th>Measurement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Largest Contentful Paint (LCP)</strong></td>
+<td>&lt;2.5s</td>
+<td>Lighthouse on production</td>
+</tr>
+<tr class="even">
+<td><strong>First Input Delay (FID)</strong></td>
+<td>&lt;100ms</td>
+<td>Lighthouse</td>
+</tr>
+<tr class="odd">
+<td><strong>Cumulative Layout Shift (CLS)</strong></td>
+<td>&lt;0.1</td>
+<td>Lighthouse</td>
+</tr>
+<tr class="even">
+<td><strong>Time to First Byte (TTFB)</strong></td>
+<td>&lt;600ms</td>
+<td>Lighthouse</td>
+</tr>
+<tr class="odd">
+<td><strong>Total Blocking Time (TBT)</strong></td>
+<td>&lt;300ms</td>
+<td>Lighthouse</td>
+</tr>
+<tr class="even">
+<td><strong>First Contentful Paint (FCP)</strong></td>
+<td>&lt;1.8s</td>
+<td>Lighthouse</td>
+</tr>
+<tr class="odd">
+<td><strong>Lighthouse Performance Score</strong></td>
+<td>≥90</td>
+<td>Lighthouse</td>
+</tr>
+<tr class="even">
+<td><strong>Page transition (SPA)</strong></td>
+<td>&lt;300ms</td>
+<td>Custom</td>
+</tr>
+<tr class="odd">
+<td><strong>API call to render</strong></td>
+<td>&lt;500ms</td>
+<td>Custom</td>
+</tr>
+<tr class="even">
+<td><strong>Bundle size (initial)</strong></td>
+<td>&lt;300KB gzipped</td>
+<td>webpack-bundle-analyzer</td>
+</tr>
+<tr class="odd">
+<td><strong>Bundle size (per route)</strong></td>
+<td>&lt;100KB gzipped</td>
+<td>Per-route code splitting</td>
+</tr>
+</tbody>
+</table>
+<h3 id="database-targets">2.3 Database Targets</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Operation</th>
+<th>Target</th>
+<th>Hard Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Single row lookup by PK</strong></td>
+<td>&lt;5ms</td>
+<td>&lt;50ms</td>
+</tr>
+<tr class="even">
+<td><strong>Indexed range scan (1000 rows)</strong></td>
+<td>&lt;20ms</td>
+<td>&lt;200ms</td>
+</tr>
+<tr class="odd">
+<td><strong>Filtered list (25 rows from 100k)</strong></td>
+<td>&lt;50ms</td>
+<td>&lt;500ms</td>
+</tr>
+<tr class="even">
+<td><strong>Filtered list (25 rows from 1M)</strong></td>
+<td>&lt;100ms</td>
+<td>&lt;500ms</td>
+</tr>
+<tr class="odd">
+<td><strong>Join query (3 tables)</strong></td>
+<td>&lt;50ms</td>
+<td>&lt;500ms</td>
+</tr>
+<tr class="even">
+<td><strong>Aggregation (COUNT, SUM)</strong></td>
+<td>&lt;100ms</td>
+<td>&lt;1s</td>
+</tr>
+<tr class="odd">
+<td><strong>Complex dashboard query</strong></td>
+<td>&lt;500ms</td>
+<td>&lt;2s</td>
+</tr>
+<tr class="even">
+<td><strong>Full-text search</strong></td>
+<td>&lt;200ms</td>
+<td>&lt;1s</td>
+</tr>
+<tr class="odd">
+<td><strong>Bulk insert (500 rows)</strong></td>
+<td>&lt;500ms</td>
+<td>&lt;2s</td>
+</tr>
+<tr class="even">
+<td><strong>Bulk update (500 rows)</strong></td>
+<td>&lt;1s</td>
+<td>&lt;5s</td>
+</tr>
+<tr class="odd">
+<td><strong>Migration (small)</strong></td>
+<td>&lt;1s</td>
+<td>&lt;30s</td>
+</tr>
+<tr class="even">
+<td><strong>Migration (large, with backfill)</strong></td>
+<td>&lt;5 min</td>
+<td>&lt;30 min (zero-downtime required)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="background-job-targets">2.4 Background Job Targets</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Job Type</th>
+<th>Target Duration</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Notification dispatch (single)</strong></td>
+<td>&lt;2s</td>
+</tr>
+<tr class="even">
+<td><strong>Audit log archival (10k records)</strong></td>
+<td>&lt;5 min</td>
+</tr>
+<tr class="odd">
+<td><strong>Dashboard snapshot computation</strong></td>
+<td>&lt;30s</td>
+</tr>
+<tr class="even">
+<td><strong>Stock reorder check (full scan)</strong></td>
+<td>&lt;2 min</td>
+</tr>
+<tr class="odd">
+<td><strong>Backup verification</strong></td>
+<td>&lt;10 min</td>
+</tr>
+<tr class="even">
+<td><strong>Mock recall drill</strong></td>
+<td>&lt;60s (recall identification: &lt;5s per acceptance criteria)</td>
+</tr>
+<tr class="odd">
+<td><strong>COA generation (single)</strong></td>
+<td>&lt;3s per acceptance criteria</td>
+</tr>
+<tr class="even">
+<td><strong>Compliance dashboard load</strong></td>
+<td>&lt;2s per acceptance criteria</td>
+</tr>
+</tbody>
+</table>
+<h3 id="real-time-update-targets">2.5 Real-Time Update Targets</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Operation</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Notification delivery (in-app, polling)</strong></td>
+<td>&lt;30s (poll interval)</td>
+</tr>
+<tr class="even">
+<td><strong>Notification delivery (future: WebSocket)</strong></td>
+<td>&lt;2s</td>
+</tr>
+<tr class="odd">
+<td><strong>Audit log visibility after action</strong></td>
+<td>&lt;1s (same request)</td>
+</tr>
+<tr class="even">
+<td><strong>Workflow state update propagation</strong></td>
+<td>&lt;1s (same request)</td>
+</tr>
+<tr class="odd">
+<td><strong>Stock balance update after GRN post</strong></td>
+<td>&lt;1s (same transaction)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="database-performance">3. Database Performance</h2>
+<h3 id="index-strategy-see-data-architecture-6">3.1 Index Strategy (see
+Data Architecture §6)</h3>
+<ul>
+<li>Every FK indexed</li>
+<li>Every query path indexed (verified via EXPLAIN ANALYZE in CI)</li>
+<li>Composite indexes for filter+sort patterns</li>
+<li>Partial indexes for soft-deleted tables</li>
+<li>Covering indexes (<code>INCLUDE</code>) for hot queries</li>
+</ul>
+<h3 id="query-performance">3.2 Query Performance</h3>
+<ul>
+<li><strong>N+1 prevention:</strong> Prisma <code>include</code> for
+eager loading, DataLoader for batch loading</li>
+<li><strong>No <code>SELECT *</code> in production</strong> (Prisma
+handles by default; raw queries must specify columns)</li>
+<li><strong>Cursor pagination for &gt;100k row tables</strong> (offset
+pagination slow at high offsets)</li>
+<li><strong>Pagination limit: max 200 rows per page</strong> (prevents
+memory pressure)</li>
+</ul>
+<h3 id="connection-pooling">3.3 Connection Pooling</h3>
+<ul>
+<li>PgBouncer (transaction mode) between app and Postgres</li>
+<li>Pool size: 20-50 per app instance (tuned per workload)</li>
+<li>Connection lifecycle: idle timeout 30s, max lifetime 5 min</li>
+<li>Health check: pool utilization alarm at 80%</li>
+</ul>
+<h3 id="slow-query-detection">3.4 Slow Query Detection</h3>
+<ul>
+<li><code>log_min_duration_statement = 500ms</code> — logs slow
+queries</li>
+<li>Daily report of top 10 slowest queries</li>
+<li>Each query added to optimization backlog</li>
+<li>EXPLAIN ANALYZE auto-run on slow queries; plan stored</li>
+</ul>
+<h3 id="query-plan-review">3.5 Query Plan Review</h3>
+<ul>
+<li>Weekly job samples <code>pg_stat_statements</code> for top 20
+expensive queries</li>
+<li>EXPLAIN ANALYZE plan stored</li>
+<li>Seq scans on tables &gt;10k rows flagged</li>
+<li>Optimization PRs created from backlog</li>
+</ul>
+<h3 id="table-maintenance">3.6 Table Maintenance</h3>
+<ul>
+<li><strong>VACUUM:</strong> Auto-vacuum tuned per table; manual
+<code>VACUUM ANALYZE</code> weekly on hot tables</li>
+<li><strong>ANALYZE:</strong> After large data loads; ensures planner
+statistics current</li>
+<li><strong>REINDEX:</strong> Monthly on high-write tables (using
+<code>REINDEX CONCURRENTLY</code> — no lock)</li>
+<li><strong>Bloat monitoring:</strong> <code>pgstattuple</code> monthly;
+bloat &gt;30% triggers REINDEX</li>
+</ul>
+<h3 id="partitioning-see-data-architecture-7">3.7 Partitioning (see Data
+Architecture §7)</h3>
+<ul>
+<li>Large tables partitioned by month</li>
+<li>Old partitions dropped (instant) instead of DELETE</li>
+<li><code>pg_partman</code> for automatic partition management</li>
+</ul>
+<hr />
+<h2 id="api-performance">4. API Performance</h2>
+<h3 id="response-caching">4.1 Response Caching</h3>
+<p><strong>Cache layers:</strong> 1. <strong>HTTP cache (CDN):</strong>
+Static assets, reference data (1 hour TTL) 2. <strong>Application cache
+(Redis):</strong> Reference data, dashboard aggregations (5 min TTL) 3.
+<strong>Database cache:</strong> Postgres shared buffers (tuned by
+<code>shared_buffers</code>)</p>
+<p><strong>What to cache:</strong> - Reference data (countries,
+currencies, UOMs) — TTL 1 hour - Dashboard aggregations — TTL 5 min
+(stale-while-revalidate) - User permissions — TTL 60s - Product/supplier
+master data — TTL 5 min - Static assets — TTL 1 year (with hash-based
+filenames)</p>
+<p><strong>What NOT to cache:</strong> - Real-time data (stock balances,
+audit logs) - User-specific data (notifications, tasks) - Sensitive data
+(financial, PII)</p>
+<h3 id="etag-and-conditional-requests">4.2 ETag and Conditional
+Requests</h3>
+<ul>
+<li>All GET responses include <code>ETag</code> (hash of response
+body)</li>
+<li>Clients send <code>If-None-Match: &lt;etag&gt;</code> on subsequent
+requests</li>
+<li>Server returns <code>304 Not Modified</code> if unchanged (no body —
+saves bandwidth)</li>
+<li>Reduces load for repeated polling (dashboards, notification
+checks)</li>
+</ul>
+<h3 id="compression">4.3 Compression</h3>
+<ul>
+<li><strong>gzip</strong> for responses &gt;1KB</li>
+<li><strong>Brotli</strong> (preferred) for browsers that support
+it</li>
+<li>Disabled for already-compressed content (images, PDFs, videos)</li>
+<li>Content-Type whitelist: <code>application/json</code>,
+<code>text/html</code>, <code>text/css</code>,
+<code>application/javascript</code></li>
+</ul>
+<h3 id="request-batching">4.4 Request Batching</h3>
+<ul>
+<li>Frontend batches independent API calls via
+<code>Promise.all</code></li>
+<li>Backend does not support batch endpoints for unrelated resources
+(REST principles)</li>
+<li>Bulk endpoints exist for related bulk operations (bulk create, bulk
+update)</li>
+</ul>
+<h3 id="idempotency-cache">4.5 Idempotency Cache</h3>
+<ul>
+<li>Idempotency keys stored in Redis (24h TTL) instead of DB</li>
+<li>Repeat requests served from cache (&lt;5ms response)</li>
+<li>Reduces DB load for retry storms (client retrying on network
+error)</li>
+</ul>
+<hr />
+<h2 id="frontend-performance">5. Frontend Performance</h2>
+<h3 id="bundle-size-budgets">5.1 Bundle Size Budgets</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// apps/web/budgets.config.js</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>module<span class="op">.</span><span class="at">exports</span> <span class="op">=</span> {</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">bundle</span><span class="op">:</span> {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;initial&#39;</span><span class="op">:</span> { <span class="dt">max</span><span class="op">:</span> <span class="dv">300</span> }<span class="op">,</span>        <span class="co">// KB gzipped</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;per-route&#39;</span><span class="op">:</span> { <span class="dt">max</span><span class="op">:</span> <span class="dv">100</span> }<span class="op">,</span>       <span class="co">// KB gzipped</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;vendor&#39;</span><span class="op">:</span> { <span class="dt">max</span><span class="op">:</span> <span class="dv">200</span> }<span class="op">,</span>          <span class="co">// KB gzipped</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<ul>
+<li>CI fails if bundle exceeds budget</li>
+<li>Bundle analyzed via <code>webpack-bundle-analyzer</code> in CI</li>
+<li>Tree-shaking verified for unused exports</li>
+</ul>
+<h3 id="code-splitting">5.2 Code Splitting</h3>
+<ul>
+<li><strong>Route-level:</strong> Each route lazy-loaded
+(<code>dynamic(() =&gt; import(...))</code>)</li>
+<li><strong>Component-level:</strong> Heavy components (data tables,
+charts) lazy-loaded</li>
+<li><strong>Library-level:</strong> Large libs (<code>chart.js</code>,
+<code>moment</code> replaced with <code>date-fns</code>) code-split</li>
+<li><strong>Vendor-level:</strong> React, React-DOM in vendor chunk
+(long-term cache)</li>
+</ul>
+<h3 id="image-optimization">5.3 Image Optimization</h3>
+<ul>
+<li><strong>Next.js Image component</strong> for all images</li>
+<li><strong>WebP/AVIF</strong> format (smaller than JPEG/PNG)</li>
+<li><strong>Responsive srcset</strong> for different screen sizes</li>
+<li><strong>Lazy loading</strong> for below-the-fold images</li>
+<li><strong>Blur placeholder</strong> for above-the-fold images</li>
+</ul>
+<h3 id="font-loading">5.4 Font Loading</h3>
+<ul>
+<li><strong>Subset fonts</strong> (Latin + Devanagari only)</li>
+<li><strong>Preload critical fonts</strong>
+(<code>&lt;link rel="preload"&gt;</code>)</li>
+<li><strong>Font-display: swap</strong> (text visible during font
+load)</li>
+<li><strong>Self-host fonts</strong> (no Google Fonts request — privacy
++ perf)</li>
+</ul>
+<h3 id="react-performance">5.5 React Performance</h3>
+<ul>
+<li><strong><code>useMemo</code> / <code>useCallback</code></strong> for
+expensive computations and stable references</li>
+<li><strong><code>React.memo</code></strong> for pure components that
+re-render unnecessarily</li>
+<li><strong>Virtual scrolling</strong> for long lists (&gt;100 items)
+via <code>@tanstack/react-virtual</code></li>
+<li><strong>Debounced inputs</strong> for search boxes (300ms
+debounce)</li>
+<li><strong>Optimistic updates</strong> for mutations (UI updates before
+API response)</li>
+</ul>
+<h3 id="react-query-performance">5.6 React Query Performance</h3>
+<ul>
+<li><strong>Stale time:</strong> 30s for transactional data, 5 min for
+master data, 1 hour for reference data</li>
+<li><strong>Cache time:</strong> 5 min (garbage collected if not
+used)</li>
+<li><strong>Refetch on focus:</strong> Yes (for transactional data), No
+(for reference data)</li>
+<li><strong>Refetch interval:</strong> 30s for notifications, 5 min for
+dashboards</li>
+<li><strong>Pagination:</strong> <code>useInfiniteQuery</code> for
+infinite scroll; prefetch next page</li>
+<li><strong>Optimistic updates:</strong> <code>onMutate</code> rolls
+back on error</li>
+</ul>
+<h3 id="ssr-vs-csr">5.7 SSR vs CSR</h3>
+<ul>
+<li><strong>SSR (Server-Side Rendering):</strong> Public pages (login,
+marketing), SEO-required pages</li>
+<li><strong>SSG (Static Site Generation):</strong> Reference data pages,
+documentation</li>
+<li><strong>CSR (Client-Side Rendering):</strong> Authenticated
+dashboard pages (data is user-specific)</li>
+<li><strong>ISR (Incremental Static Regeneration):</strong> Help
+articles, changelog (revalidate every hour)</li>
+</ul>
+<hr />
+<h2 id="caching-strategy">6. Caching Strategy</h2>
+<h3 id="cache-layers">6.1 Cache Layers</h3>
+<pre><code>Browser Cache (HTTP) → CDN Cache → App Cache (Redis) → DB Cache (Postgres shared buffers) → DB</code></pre>
+<h3 id="cache-invalidation-patterns">6.2 Cache Invalidation
+Patterns</h3>
+<p><strong>TTL-based (time):</strong> - Reference data: 1 hour - Master
+data: 5 min - Dashboard aggregations: 5 min (stale-while-revalidate) -
+User permissions: 60s</p>
+<p><strong>Event-based (write invalidates cache):</strong> - Product
+updated → invalidate <code>product:{id}</code>,
+<code>products:list</code> - Supplier updated → invalidate
+<code>supplier:{id}</code>, <code>suppliers:list</code> - Permission
+changed → invalidate <code>user:{id}:permissions</code></p>
+<p><strong>Version-based:</strong> - Reference data updates bump
+version; clients refetch</p>
+<h3 id="cache-aside-pattern">6.3 Cache-Aside Pattern</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">getProduct</span>(id<span class="op">:</span> <span class="dt">string</span>)<span class="op">:</span> <span class="bu">Promise</span><span class="op">&lt;</span>Product<span class="op">&gt;</span> {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> cacheKey <span class="op">=</span> <span class="vs">`product:</span><span class="sc">${</span>id<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Try cache</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> cached <span class="op">=</span> <span class="cf">await</span> redis<span class="op">.</span><span class="fu">get</span>(cacheKey)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (cached) <span class="cf">return</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(cached)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Cache miss → DB</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> product <span class="op">=</span> <span class="cf">await</span> prisma<span class="op">.</span><span class="at">product</span><span class="op">.</span><span class="fu">findUnique</span>({ where<span class="op">:</span> { id } })</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>product) <span class="cf">throw</span> <span class="kw">new</span> <span class="fu">NotFoundError</span>()</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Cache for 5 min</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">await</span> redis<span class="op">.</span><span class="fu">setex</span>(cacheKey<span class="op">,</span> <span class="dv">300</span><span class="op">,</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>(product))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> product</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="cache-stampede-prevention">6.4 Cache Stampede Prevention</h3>
+<ul>
+<li><strong>Probabilistic early expiration:</strong> Refresh cache
+before TTL expires (5% chance per request in last 10% of TTL)</li>
+<li><strong>Lock-based:</strong> Only one request refreshes cache;
+others wait</li>
+<li><strong>Single-flight:</strong> <code>Promise</code> shared across
+concurrent requests for same key</li>
+</ul>
+<h3 id="cache-warming">6.5 Cache Warming</h3>
+<ul>
+<li>On deploy, warm cache for hot endpoints (reference data, top 100
+products, top 100 suppliers)</li>
+<li>Background job every 5 min refreshes dashboard aggregations</li>
+<li>Reduces cold-start latency</li>
+</ul>
+<hr />
+<h2 id="redis-strategy">7. Redis Strategy</h2>
+<h3 id="redis-use-cases">7.1 Redis Use Cases</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Use Case</th>
+<th>Data Type</th>
+<th>TTL</th>
+<th>Memory Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Application cache</strong> (objects)</td>
+<td>String (JSON)</td>
+<td>5 min - 1 hour</td>
+<td>High</td>
+</tr>
+<tr class="even">
+<td><strong>Session cache</strong> (user permissions)</td>
+<td>String (JSON)</td>
+<td>60s</td>
+<td>Medium</td>
+</tr>
+<tr class="odd">
+<td><strong>Rate limiting counters</strong></td>
+<td>String (int)</td>
+<td>60s</td>
+<td>Low</td>
+</tr>
+<tr class="even">
+<td><strong>Idempotency keys</strong></td>
+<td>String (JSON)</td>
+<td>24 hour</td>
+<td>Medium</td>
+</tr>
+<tr class="odd">
+<td><strong>JWT blocklist</strong></td>
+<td>String</td>
+<td>Token TTL</td>
+<td>Low</td>
+</tr>
+<tr class="even">
+<td><strong>Distributed locks</strong></td>
+<td>String + NX</td>
+<td>30s</td>
+<td>Low</td>
+</tr>
+<tr class="odd">
+<td><strong>Job queue</strong> (BullMQ)</td>
+<td>List + Hash</td>
+<td>Persistent</td>
+<td>Medium</td>
+</tr>
+<tr class="even">
+<td><strong>Pub/Sub</strong> (future: WebSocket)</td>
+<td>Pub/Sub</td>
+<td>—</td>
+<td>Low</td>
+</tr>
+<tr class="odd">
+<td><strong>Leaderboards</strong> (future: gamification)</td>
+<td>Sorted Set</td>
+<td>Persistent</td>
+<td>Low</td>
+</tr>
+</tbody>
+</table>
+<h3 id="redis-configuration">7.2 Redis Configuration</h3>
+<ul>
+<li><strong>Maxmemory policy:</strong> <code>allkeys-lru</code> (cache
+mode — old keys evicted)</li>
+<li><strong>Persistence:</strong> RDB snapshot every 5 min + AOF
+(append-only file) for durability</li>
+<li><strong>Replication:</strong> Single replica for read scaling
+(future)</li>
+<li><strong>TLS:</strong> Required in production</li>
+<li><strong>Auth:</strong> ACL-based (separate users for cache vs job
+queue)</li>
+</ul>
+<h3 id="memory-management">7.3 Memory Management</h3>
+<ul>
+<li><strong>Max memory:</strong> 2GB per instance (sufficient for cache
++ queues)</li>
+<li><strong>Eviction policy:</strong> LRU (least recently used)</li>
+<li><strong>Monitoring:</strong> Memory usage, eviction rate, hit
+rate</li>
+<li><strong>Alert:</strong> Memory &gt;80% → scale up; &gt;95% →
+critical</li>
+</ul>
+<h3 id="cache-hit-rate-target">7.4 Cache Hit Rate Target</h3>
+<ul>
+<li><strong>Reference data:</strong> &gt;99% (very stable, long
+TTL)</li>
+<li><strong>Master data:</strong> &gt;95% (5 min TTL, frequent
+reads)</li>
+<li><strong>Dashboard aggregations:</strong> &gt;90% (5 min TTL,
+periodic refresh)</li>
+<li><strong>User permissions:</strong> &gt;85% (60s TTL, periodic
+refresh)</li>
+</ul>
+<p>Hit rate &lt;80% triggers review (cache key strategy, TTL
+tuning).</p>
+<hr />
+<h2 id="cdn-strategy">8. CDN Strategy</h2>
+<h3 id="cdn-use">8.1 CDN Use</h3>
+<ul>
+<li><strong>Static assets:</strong> JS, CSS, images, fonts (1 year
+cache, hash-based filenames)</li>
+<li><strong>Reference data API:</strong> Cached at edge (1 hour
+TTL)</li>
+<li><strong>Public pages:</strong> Login, marketing, documentation</li>
+<li><strong>Not cached:</strong> Authenticated API responses,
+user-specific data</li>
+</ul>
+<h3 id="cdn-provider">8.2 CDN Provider</h3>
+<ul>
+<li><strong>Cloudflare</strong> (default) — generous free tier, global
+PoPs, includes DDoS protection</li>
+<li><strong>Alternative:</strong> AWS CloudFront (deeper AWS
+integration)</li>
+</ul>
+<h3 id="cdn-configuration">8.3 CDN Configuration</h3>
+<ul>
+<li><strong>Cache key:</strong> URL + Accept-Encoding (ignore query
+params for static assets)</li>
+<li><strong>Cache behavior:</strong> Cache on GET/HEAD only; bypass for
+POST/PUT/DELETE</li>
+<li><strong>TTL:</strong> 1 year for static assets with hash filenames;
+1 hour for reference API</li>
+<li><strong>Purge:</strong> API-driven purge on reference data
+updates</li>
+<li><strong>Compression:</strong> Brotli (preferred) or gzip</li>
+<li><strong>Image optimization:</strong> Cloudflare Images or Polish
+(resize, convert to WebP)</li>
+</ul>
+<h3 id="cache-invalidation">8.4 Cache Invalidation</h3>
+<ul>
+<li>Hash-based filenames auto-invalidate on content change</li>
+<li>Reference data updates trigger programmatic purge via CDN API</li>
+<li>Full purge only for emergency (rare; affects all users)</li>
+</ul>
+<hr />
+<h2 id="load-testing">9. Load Testing</h2>
+<h3 id="load-testing-tool">9.1 Load Testing Tool</h3>
+<ul>
+<li><strong>k6</strong> (Grafana Labs) — scriptable in JavaScript,
+integrates with Grafana</li>
+<li><strong>Alternative:</strong> Locust (Python), JMeter (heavy)</li>
+</ul>
+<h3 id="load-test-scenarios">9.2 Load Test Scenarios</h3>
+<p><strong>Scenario 1 — Normal Load:</strong> - 100 concurrent users -
+Read-heavy (90% GET, 10% POST) - Run for 10 min - Pass criteria: p95
+&lt;400ms, error rate &lt;0.1%</p>
+<p><strong>Scenario 2 — Peak Load:</strong> - 500 concurrent users -
+Mix: 80% GET, 15% POST, 5% PATCH - Run for 30 min - Pass criteria: p95
+&lt;1s, error rate &lt;1%</p>
+<p><strong>Scenario 3 — Stress Test:</strong> - Ramp from 100 → 2000
+concurrent users over 30 min - Find breaking point - Document max
+throughput + latency at saturation</p>
+<p><strong>Scenario 4 — Spike Test:</strong> - 100 users baseline → 1000
+users spike for 1 min → back to 100 - Verify auto-scaling responds -
+Verify no error storm</p>
+<p><strong>Scenario 5 — Soak Test:</strong> - 200 concurrent users for 8
+hours - Detect memory leaks, connection leaks - Verify stable
+performance over time</p>
+<h3 id="load-test-targets">9.3 Load Test Targets</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Endpoint</th>
+<th>Target Throughput</th>
+<th>Target p95</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GET /products</code> (list)</td>
+<td>500 req/s</td>
+<td>&lt;400ms</td>
+</tr>
+<tr class="even">
+<td><code>GET /products/{id}</code></td>
+<td>1000 req/s</td>
+<td>&lt;200ms</td>
+</tr>
+<tr class="odd">
+<td><code>POST /products</code></td>
+<td>50 req/s</td>
+<td>&lt;400ms</td>
+</tr>
+<tr class="even">
+<td><code>GET /audit-logs</code> (cursor)</td>
+<td>200 req/s</td>
+<td>&lt;800ms</td>
+</tr>
+<tr class="odd">
+<td><code>POST /purchase-orders</code> (50 lines)</td>
+<td>10 req/s</td>
+<td>&lt;1s</td>
+</tr>
+<tr class="even">
+<td><code>POST /auth/login</code></td>
+<td>50 req/s</td>
+<td>&lt;500ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="load-test-schedule">9.4 Load Test Schedule</h3>
+<ul>
+<li><strong>Every PR:</strong> Smoke load test (50 users, 1 min)</li>
+<li><strong>Nightly on staging:</strong> Peak load test (500 users, 30
+min)</li>
+<li><strong>Weekly:</strong> Stress test to find breaking point</li>
+<li><strong>Monthly:</strong> Soak test (8 hours)</li>
+<li><strong>Quarterly:</strong> Full load test suite + capacity
+review</li>
+</ul>
+<hr />
+<h2 id="stress-testing">10. Stress Testing</h2>
+<h3 id="stress-test-goals">10.1 Stress Test Goals</h3>
+<ul>
+<li>Find system breaking point</li>
+<li>Identify bottlenecks (CPU, memory, DB, Redis, network)</li>
+<li>Verify graceful degradation (not crash)</li>
+<li>Verify auto-scaling responds</li>
+<li>Document max capacity for capacity planning</li>
+</ul>
+<h3 id="stress-test-procedure">10.2 Stress Test Procedure</h3>
+<ol type="1">
+<li>Start with normal load (100 users)</li>
+<li>Ramp +100 users every 5 min</li>
+<li>Monitor: latency, error rate, CPU, memory, DB connections, Redis
+memory</li>
+<li>Continue until error rate &gt;5% or latency p95 &gt;5s</li>
+<li>Document breaking point + bottleneck</li>
+<li>Scale bottleneck + retest</li>
+</ol>
+<h3 id="graceful-degradation">10.3 Graceful Degradation</h3>
+<p>When overloaded, system should: - Return
+<code>503 Service Unavailable</code> (not crash) - Maintain
+functionality for authenticated users (rate limit unauthenticated) -
+Shed load via rate limiting (429) before running out of resources - Not
+corrupt data (transactions either complete or roll back)</p>
+<hr />
+<h2 id="capacity-planning">11. Capacity Planning</h2>
+<h3 id="capacity-metrics">11.1 Capacity Metrics</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Resource</th>
+<th>Current Utilization</th>
+<th>Headroom</th>
+<th>Scale Trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>CPU</strong> (backend)</td>
+<td>&lt;50%</td>
+<td>2x</td>
+<td>&gt;70% sustained 5 min → scale up</td>
+</tr>
+<tr class="even">
+<td><strong>Memory</strong> (backend)</td>
+<td>&lt;60%</td>
+<td>1.5x</td>
+<td>&gt;80% sustained 5 min → scale up</td>
+</tr>
+<tr class="odd">
+<td><strong>DB connections</strong></td>
+<td>&lt;50%</td>
+<td>2x</td>
+<td>&gt;70% → add app instances or increase pool</td>
+</tr>
+<tr class="even">
+<td><strong>DB CPU</strong></td>
+<td>&lt;50%</td>
+<td>2x</td>
+<td>&gt;70% → scale up DB instance</td>
+</tr>
+<tr class="odd">
+<td><strong>DB storage</strong></td>
+<td>&lt;70%</td>
+<td>1.5x</td>
+<td>&gt;80% → provision more storage</td>
+</tr>
+<tr class="even">
+<td><strong>Redis memory</strong></td>
+<td>&lt;50%</td>
+<td>2x</td>
+<td>&gt;70% → scale up or evict more</td>
+</tr>
+<tr class="odd">
+<td><strong>Redis CPU</strong></td>
+<td>&lt;50%</td>
+<td>2x</td>
+<td>&gt;70% → scale up or read replica</td>
+</tr>
+</tbody>
+</table>
+<h3 id="growth-assumptions">11.2 Growth Assumptions</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th>Current (Year 1)</th>
+<th>Year 2</th>
+<th>Year 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tenants</td>
+<td>5</td>
+<td>20</td>
+<td>50</td>
+</tr>
+<tr class="even">
+<td>Users per tenant</td>
+<td>50</td>
+<td>100</td>
+<td>200</td>
+</tr>
+<tr class="odd">
+<td>Total users</td>
+<td>250</td>
+<td>2,000</td>
+<td>10,000</td>
+</tr>
+<tr class="even">
+<td>Transactions/day</td>
+<td>10k</td>
+<td>50k</td>
+<td>200k</td>
+</tr>
+<tr class="odd">
+<td>Audit logs/month</td>
+<td>100k</td>
+<td>500k</td>
+<td>2M</td>
+</tr>
+<tr class="even">
+<td>DB size</td>
+<td>5 GB</td>
+<td>25 GB</td>
+<td>100 GB</td>
+</tr>
+<tr class="odd">
+<td>File storage</td>
+<td>10 GB</td>
+<td>50 GB</td>
+<td>200 GB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scaling-strategy">11.3 Scaling Strategy</h3>
+<p><strong>Vertical scaling (bigger instance):</strong> - DB: Scale up
+to larger RDS instance (CPU + memory) - Redis: Scale up to larger
+ElastiCache instance - App: Scale up to larger ECS task (more CPU +
+memory)</p>
+<p><strong>Horizontal scaling (more instances):</strong> - App: Add ECS
+tasks behind ALB (stateless — easy) - DB: Read replica for read-heavy
+workloads (reports, dashboards) - Redis: Read replica for cache
+(future)</p>
+<p><strong>When to scale:</strong> - CPU &gt;70% sustained → scale
+horizontally (app) or vertically (DB) - Memory &gt;80% sustained → scale
+vertically - DB connections &gt;70% → scale horizontally (app) with
+PgBouncer - Storage &gt;80% → provision more (automatic with managed
+services)</p>
+<h3 id="auto-scaling-rules">11.4 Auto-Scaling Rules</h3>
+<p><strong>Backend (ECS):</strong> - Scale out: CPU &gt;70% for 5 min
+(add 1 task) - Scale in: CPU &lt;30% for 15 min (remove 1 task) - Min: 2
+tasks (HA) - Max: 10 tasks (cost control)</p>
+<p><strong>Database (RDS):</strong> - Manual scaling only (vertical) —
+auto-scaling not recommended for DBs - Alert at 70% CPU; ops reviews
+weekly</p>
+<p><strong>Redis (ElastiCache):</strong> - Manual scaling only - Alert
+at 70% memory</p>
+<hr />
+<h2 id="frontend-performance-monitoring">12. Frontend Performance
+Monitoring</h2>
+<h3 id="real-user-monitoring-rum">12.1 Real User Monitoring (RUM)</h3>
+<ul>
+<li><strong>Sentry Performance</strong> (or Datadog RUM) on production
+frontend</li>
+<li>Captures: page load time, route transitions, API call duration,
+errors</li>
+<li>Aggregated by: route, browser, country, device</li>
+<li>Alerts on regression: LCP &gt;4s for 5% of users</li>
+</ul>
+<h3 id="synthetic-monitoring">12.2 Synthetic Monitoring</h3>
+<ul>
+<li><strong>Checkly</strong> runs synthetic transactions every 5 min:
+<ul>
+<li>Login → dashboard load → create PO → logout</li>
+<li>Login → NCR dashboard → create NCR → logout</li>
+<li>10 critical paths monitored</li>
+</ul></li>
+<li>Alerts on failure or slowdown</li>
+</ul>
+<h3 id="lighthouse-ci">12.3 Lighthouse CI</h3>
+<ul>
+<li>Lighthouse runs on every PR (against preview deployment)</li>
+<li>Performance score &lt;80 blocks merge</li>
+<li>Lighthouse runs weekly on production</li>
+<li>Trends tracked over time</li>
+</ul>
+<hr />
+<h2 id="database-performance-monitoring">13. Database Performance
+Monitoring</h2>
+<h3 id="postgresql-metrics">13.1 PostgreSQL Metrics</h3>
+<ul>
+<li><strong>Connections:</strong> active, idle, waiting</li>
+<li><strong>Queries per second</strong> by type</li>
+<li><strong>Query latency</strong> p50, p95, p99</li>
+<li><strong>Transaction duration</strong> p50, p95, p99</li>
+<li><strong>Lock waits</strong> (count + duration)</li>
+<li><strong>Cache hit ratio</strong>
+(<code>blks_hit / (blks_hit + blks_read)</code>)</li>
+<li><strong>Index usage</strong>
+(<code>pg_stat_user_indexes</code>)</li>
+<li><strong>Table bloat</strong> (<code>pgstattuple</code>)</li>
+<li><strong>Slow queries</strong> (&gt;500ms logged)</li>
+<li><strong>Deadlocks</strong></li>
+<li><strong>Replication lag</strong> (if replica exists)</li>
+</ul>
+<h3 id="query-performance-1">13.2 Query Performance</h3>
+<ul>
+<li><code>pg_stat_statements</code> extension enabled</li>
+<li>Weekly report: top 20 queries by total time, by mean time, by
+calls</li>
+<li>Slow queries added to optimization backlog</li>
+<li>EXPLAIN ANALYZE plans stored for review</li>
+</ul>
+<h3 id="index-maintenance">13.3 Index Maintenance</h3>
+<ul>
+<li>Monthly: <code>pg_stat_user_indexes</code> review</li>
+<li>Unused indexes (idx_scan = 0 over 30 days) → candidates for
+removal</li>
+<li>Bloat &gt;30% → <code>REINDEX CONCURRENTLY</code></li>
+<li>New indexes verified via EXPLAIN ANALYZE in CI</li>
+</ul>
+<hr />
+<h2 id="performance-regression-testing">14. Performance Regression
+Testing</h2>
+<h3 id="regression-test-suite">14.1 Regression Test Suite</h3>
+<ul>
+<li>50 critical endpoints with target latency</li>
+<li>Run on every PR (smoke — 5 endpoints)</li>
+<li>Run nightly on staging (full — 50 endpoints)</li>
+<li>Run weekly on production-equivalent environment (full)</li>
+</ul>
+<h3 id="regression-detection">14.2 Regression Detection</h3>
+<ul>
+<li>Latency &gt;20% slower than baseline → fail</li>
+<li>Throughput &gt;20% lower than baseline → fail</li>
+<li>Baseline updated monthly (intentional updates documented)</li>
+</ul>
+<h3 id="performance-budget-enforcement">14.3 Performance Budget
+Enforcement</h3>
+<ul>
+<li>Bundle size budget per route (CI fails if exceeded)</li>
+<li>Database query count budget per endpoint (CI fails if exceeded)</li>
+<li>Memory usage budget per endpoint (CI fails if exceeded)</li>
+</ul>
+<hr />
+<h2 id="open-questions-for-approval">15. Open Questions for
+Approval</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q-P1</td>
+<td>API p95 target for list endpoints</td>
+<td>400ms</td>
+<td>200ms (more strict), 800ms (lenient)</td>
+</tr>
+<tr class="even">
+<td>Q-P2</td>
+<td>Lighthouse performance score</td>
+<td>≥90</td>
+<td>≥80, ≥95</td>
+</tr>
+<tr class="odd">
+<td>Q-P3</td>
+<td>Bundle size budget (initial)</td>
+<td>300KB gzipped</td>
+<td>200KB, 500KB</td>
+</tr>
+<tr class="even">
+<td>Q-P4</td>
+<td>Cache TTL for master data</td>
+<td>5 min</td>
+<td>1 min, 15 min</td>
+</tr>
+<tr class="odd">
+<td>Q-P5</td>
+<td>Load test frequency</td>
+<td>Nightly on staging</td>
+<td>Weekly</td>
+</tr>
+<tr class="even">
+<td>Q-P6</td>
+<td>Stress test frequency</td>
+<td>Weekly</td>
+<td>Monthly</td>
+</tr>
+<tr class="odd">
+<td>Q-P7</td>
+<td>Auto-scaling for backend</td>
+<td>Yes (ECS)</td>
+<td>Manual scaling</td>
+</tr>
+<tr class="even">
+<td>Q-P8</td>
+<td>RUM tool</td>
+<td>Sentry Performance</td>
+<td>Datadog RUM</td>
+</tr>
+<tr class="odd">
+<td>Q-P9</td>
+<td>Synthetic monitoring</td>
+<td>Checkly</td>
+<td>Pingdom</td>
+</tr>
+<tr class="even">
+<td>Q-P10</td>
+<td>Performance regression threshold</td>
+<td>20% slower</td>
+<td>10%, 30%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><em>End of Enterprise Performance Standards Document</em></p>
+</body>
+</html>

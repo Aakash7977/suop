@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>02_API_STANDARDS</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">02_API_STANDARDS</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-enterprise-api-standards"
+id="toc-suop-erp-v1.0-enterprise-api-standards">SUOP ERP v1.0 —
+Enterprise API Standards</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">1. Purpose</a></li>
+<li><a href="#rest-conventions" id="toc-rest-conventions">2. REST
+Conventions</a></li>
+<li><a href="#url-naming" id="toc-url-naming">3. URL Naming</a></li>
+<li><a href="#versioning" id="toc-versioning">4. Versioning</a></li>
+<li><a href="#pagination" id="toc-pagination">5. Pagination</a></li>
+<li><a href="#filtering" id="toc-filtering">6. Filtering</a></li>
+<li><a href="#sorting" id="toc-sorting">7. Sorting</a></li>
+<li><a href="#bulk-apis" id="toc-bulk-apis">8. Bulk APIs</a></li>
+<li><a href="#idempotency" id="toc-idempotency">9. Idempotency</a></li>
+<li><a href="#error-codes" id="toc-error-codes">10. Error Codes</a></li>
+<li><a href="#response-standards" id="toc-response-standards">11.
+Response Standards</a></li>
+<li><a href="#authentication" id="toc-authentication">12.
+Authentication</a></li>
+<li><a href="#authorization" id="toc-authorization">13.
+Authorization</a></li>
+<li><a href="#rate-limiting" id="toc-rate-limiting">14. Rate
+Limiting</a></li>
+<li><a href="#api-documentation-strategy"
+id="toc-api-documentation-strategy">15. API Documentation
+Strategy</a></li>
+<li><a href="#requestresponse-logging"
+id="toc-requestresponse-logging">16. Request/Response Logging</a></li>
+<li><a href="#cors" id="toc-cors">17. CORS</a></li>
+<li><a href="#api-security" id="toc-api-security">18. API
+Security</a></li>
+<li><a href="#open-questions-for-approval"
+id="toc-open-questions-for-approval">19. Open Questions for
+Approval</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-enterprise-api-standards">SUOP ERP v1.0 —
+Enterprise API Standards</h1>
+<table>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="purpose">1. Purpose</h2>
+<p>Every API endpoint in SUOP ERP — internal or external, present or
+future — must conform to this document. The standards ensure that any
+developer (internal or third-party) can predict how an endpoint behaves
+without reading its implementation.</p>
+<p><strong>Hard rule:</strong> No endpoint ships without conforming to
+these standards. PR review enforces this. CI runs contract tests against
+every endpoint.</p>
+<hr />
+<h2 id="rest-conventions">2. REST Conventions</h2>
+<h3 id="http-methods">2.1 HTTP Methods</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Intent</th>
+<th>Idempotent</th>
+<th>Safe</th>
+<th>Body</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GET</code></td>
+<td>Read resource(s)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td><code>POST</code></td>
+<td>Create resource / trigger action</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td><code>PUT</code></td>
+<td>Replace entire resource</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="even">
+<td><code>PATCH</code></td>
+<td>Partial update</td>
+<td>No</td>
+<td>No</td>
+<td>Yes (JSON Patch or partial)</td>
+</tr>
+<tr class="odd">
+<td><code>DELETE</code></td>
+<td>Soft delete resource</td>
+<td>Yes</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td><code>HEAD</code></td>
+<td>Check existence (no body)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td><code>OPTIONS</code></td>
+<td>CORS preflight</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rules:</strong> - <code>GET</code> must never mutate state.
+No side effects. No <code>?action=delete</code> query params. -
+<code>POST</code> returns <code>201 Created</code> with
+<code>Location</code> header pointing to the new resource. -
+<code>PUT</code> replaces the entire resource — omitted fields reset to
+defaults (or rejected if required). - <code>PATCH</code> accepts partial
+updates — only provided fields change. - <code>DELETE</code> is always
+soft delete (sets <code>deleted_at</code>). Returns
+<code>204 No Content</code>. Hard delete is admin-only via separate
+endpoint.</p>
+<h3 id="http-status-codes">2.2 HTTP Status Codes</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Code</th>
+<th>Meaning</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>200 OK</code></td>
+<td>Success</td>
+<td>GET, PATCH, PUT, action endpoints</td>
+</tr>
+<tr class="even">
+<td><code>201 Created</code></td>
+<td>Resource created</td>
+<td>POST that creates new resource</td>
+</tr>
+<tr class="odd">
+<td><code>202 Accepted</code></td>
+<td>Request accepted, processing async</td>
+<td>Long-running operations (e.g., generate COA PDF)</td>
+</tr>
+<tr class="even">
+<td><code>204 No Content</code></td>
+<td>Success, no body</td>
+<td>DELETE, action with no return value</td>
+</tr>
+<tr class="odd">
+<td><code>400 Bad Request</code></td>
+<td>Client error — malformed request</td>
+<td>Invalid JSON, missing required field</td>
+</tr>
+<tr class="even">
+<td><code>401 Unauthorized</code></td>
+<td>Not authenticated</td>
+<td>Missing/invalid JWT</td>
+</tr>
+<tr class="odd">
+<td><code>403 Forbidden</code></td>
+<td>Authenticated but not authorized</td>
+<td>Missing permission</td>
+</tr>
+<tr class="even">
+<td><code>404 Not Found</code></td>
+<td>Resource does not exist</td>
+<td>Invalid ID, soft-deleted record</td>
+</tr>
+<tr class="odd">
+<td><code>405 Method Not Allowed</code></td>
+<td>HTTP method not supported</td>
+<td>POST to a GET-only endpoint</td>
+</tr>
+<tr class="even">
+<td><code>409 Conflict</code></td>
+<td>State conflict</td>
+<td>Optimistic lock version mismatch, duplicate unique</td>
+</tr>
+<tr class="odd">
+<td><code>410 Gone</code></td>
+<td>Resource permanently removed</td>
+<td>Hard-deleted record</td>
+</tr>
+<tr class="even">
+<td><code>412 Precondition Failed</code></td>
+<td>ETag/If-Match failed</td>
+<td>Conditional request failed</td>
+</tr>
+<tr class="odd">
+<td><code>422 Unprocessable Entity</code></td>
+<td>Valid JSON, business rule violation</td>
+<td>Supplier not active, budget exceeded</td>
+</tr>
+<tr class="even">
+<td><code>429 Too Many Requests</code></td>
+<td>Rate limited</td>
+<td>Returned with <code>Retry-After</code> header</td>
+</tr>
+<tr class="odd">
+<td><code>500 Internal Server Error</code></td>
+<td>Server error</td>
+<td>Unhandled exception</td>
+</tr>
+<tr class="even">
+<td><code>502 Bad Gateway</code></td>
+<td>Upstream service failed</td>
+<td>S3 down, email service down</td>
+</tr>
+<tr class="odd">
+<td><code>503 Service Unavailable</code></td>
+<td>Temporary outage</td>
+<td>Maintenance mode, deploys</td>
+</tr>
+<tr class="even">
+<td><code>504 Gateway Timeout</code></td>
+<td>Upstream timeout</td>
+<td>External service timeout</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Forbidden:</strong> <code>200 OK</code> for errors. Always
+use the correct 4xx/5xx code.</p>
+<h3 id="safe-methods-caching">2.3 Safe Methods &amp; Caching</h3>
+<ul>
+<li><code>GET</code> and <code>HEAD</code> are cacheable</li>
+<li>Responses include <code>ETag</code> (hash of response body) and
+<code>Last-Modified</code> headers</li>
+<li>Clients may send <code>If-None-Match</code> /
+<code>If-Modified-Since</code> → server returns
+<code>304 Not Modified</code> if unchanged</li>
+<li><code>Cache-Control: private, max-age=60</code> for short-lived
+caches (list endpoints)</li>
+<li><code>Cache-Control: no-store</code> for sensitive data (audit logs,
+user lists)</li>
+</ul>
+<hr />
+<h2 id="url-naming">3. URL Naming</h2>
+<h3 id="url-structure">3.1 URL Structure</h3>
+<pre><code>/api/v1/&lt;resource&gt;/&lt;id&gt;/&lt;sub-resource&gt;/&lt;sub-id&gt;?&lt;query-params&gt;</code></pre>
+<ul>
+<li><strong><code>/api</code></strong> — fixed prefix for all API
+routes</li>
+<li><strong><code>/v1</code></strong> — version (see §4)</li>
+<li><strong><code>&lt;resource&gt;</code></strong> — plural kebab-case
+noun (e.g., <code>purchase-orders</code>,
+<code>goods-receipts</code>)</li>
+<li><strong><code>&lt;id&gt;</code></strong> — UUID v7</li>
+<li><strong><code>&lt;sub-resource&gt;</code></strong> — plural
+kebab-case (e.g., <code>/purchase-orders/{id}/lines</code>)</li>
+<li><strong><code>&lt;query-params&gt;</code></strong> — filtering,
+sorting, pagination (see §§6-8)</li>
+</ul>
+<h3 id="resource-naming-rules">3.2 Resource Naming Rules</h3>
+<ul>
+<li><strong>Always plural nouns:</strong> <code>/purchase-orders</code>
+not <code>/purchase-order</code></li>
+<li><strong>Always kebab-case:</strong> <code>/goods-receipts</code> not
+<code>/goodsReceipts</code> or <code>/goods_receipts</code></li>
+<li><strong>Never verbs in URL:</strong> Use HTTP method to express
+action. <code>/purchase-orders/{id}/cancel</code> is forbidden — use
+<code>POST /purchase-orders/{id}/transitions</code> with
+<code>{target: 'CANCELLED'}</code>.
+<ul>
+<li><strong>Exception:</strong> Workflow transitions and business
+actions that don’t fit CRUD use a sub-resource verb:
+<code>POST /purchase-orders/{id}/submit</code>,
+<code>POST /purchase-orders/{id}/approve</code>. These are explicit and
+documented.</li>
+</ul></li>
+<li><strong>Never expose DB internals:</strong> No
+<code>/tables/users</code> or <code>/queries/run-q-123</code>. URLs
+reflect business domain, not schema.</li>
+<li><strong>ID format:</strong> UUID v7 only. No sequential IDs in URLs
+(security + scale).</li>
+</ul>
+<h3 id="url-examples">3.3 URL Examples</h3>
+<pre><code>GET    /api/v1/products
+GET    /api/v1/products/{id}
+POST   /api/v1/products
+PATCH  /api/v1/products/{id}
+DELETE /api/v1/products/{id}
+
+GET    /api/v1/products/{id}/barcodes
+POST   /api/v1/products/{id}/barcodes
+
+GET    /api/v1/purchase-orders/{id}/lines
+POST   /api/v1/purchase-orders/{id}/lines
+PATCH  /api/v1/purchase-orders/{id}/lines/{lineId}
+
+POST   /api/v1/purchase-orders/{id}/submit
+POST   /api/v1/purchase-orders/{id}/approve
+POST   /api/v1/purchase-orders/{id}/reject
+POST   /api/v1/purchase-orders/{id}/cancel
+
+GET    /api/v1/products/{id}/audit-trail
+GET    /api/v1/products/{id}/workflows/available-transitions</code></pre>
+<h3 id="special-endpoints">3.4 Special Endpoints</h3>
+<ul>
+<li><code>GET /api/v1/_internal/health</code> — health check (no
+auth)</li>
+<li><code>GET /api/v1/_internal/ready</code> — readiness check (no auth,
+checks DB/Redis)</li>
+<li><code>GET /api/v1/_internal/metrics</code> — Prometheus metrics
+(auth: API key)</li>
+<li><code>GET /api/v1/_internal/schemas/{name}</code> — fetch zod schema
+for codegen</li>
+<li><code>GET /api/v1/_internal/jobs</code> — admin job inspection</li>
+<li><code>GET /api/v1/reference/{type}</code> — reference data (no auth,
+cached)</li>
+</ul>
+<p>The <code>_internal</code> prefix is reserved for platform endpoints,
+never business resources.</p>
+<hr />
+<h2 id="versioning">4. Versioning</h2>
+<h3 id="version-in-url">4.1 Version in URL</h3>
+<pre><code>/api/v1/purchase-orders
+/api/v2/purchase-orders  (future, if breaking change needed)</code></pre>
+<ul>
+<li>Version is a major version only (v1, v2 — never v1.5)</li>
+<li>Minor changes (additive — new field, new endpoint) do NOT bump
+version</li>
+<li>Major changes (breaking — removed field, changed type, changed
+semantics) bump version</li>
+</ul>
+<h3 id="backward-compatibility">4.2 Backward Compatibility</h3>
+<ul>
+<li>Old version maintained for <strong>6 months</strong> after new
+version ships</li>
+<li>Deprecation notice in response header:
+<code>Sunset: Sat, 31 Jan 2027 00:00:00 GMT</code></li>
+<li>Deprecation notice in API docs and migration guide</li>
+<li>After 6 months, old version returns <code>410 Gone</code> with
+migration instructions</li>
+</ul>
+<h3 id="what-counts-as-breaking">4.3 What Counts as Breaking</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Change</th>
+<th>Breaking?</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Add new endpoint</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>Add new optional field to request body</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td>Add new field to response body</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>Remove field from response body</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="odd">
+<td>Change field type</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="even">
+<td>Change field semantics (e.g., <code>status</code> enum value
+meaning)</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="odd">
+<td>Change default value of optional field</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="even">
+<td>Change error response shape</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="odd">
+<td>Change authentication scheme</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr class="even">
+<td>Add new required field to request body</td>
+<td><strong>Yes</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="no-version-in-header">4.4 No Version in Header</h3>
+<p>URL versioning chosen over header versioning
+(<code>Accept: application/vnd.suop.v1+json</code>): - URL versioning is
+visible in logs, monitoring, debugging - Easier to route at CDN/load
+balancer - Easier to test in browser/Postman without setting headers -
+Trade-off: URL changes are visible to users — acceptable</p>
+<hr />
+<h2 id="pagination">5. Pagination</h2>
+<h3 id="two-pagination-styles">5.1 Two Pagination Styles</h3>
+<p><strong>Style 1 — Offset pagination</strong> (for admin tables,
+simple lists):</p>
+<pre><code>GET /api/v1/products?page=1&amp;pageSize=25</code></pre>
+<ul>
+<li>Use for: small result sets, jump-to-page UI</li>
+<li>Limit: <code>pageSize</code> max 200; <code>page</code> max 1000
+(use cursor for deeper)</li>
+<li>Response includes <code>meta.total</code>,
+<code>meta.totalPages</code>, <code>meta.hasNext</code>,
+<code>meta.hasPrev</code></li>
+</ul>
+<p><strong>Style 2 — Cursor pagination</strong> (for infinite scroll,
+large datasets, audit logs):</p>
+<pre><code>GET /api/v1/audit-logs?cursor=eyJpZCI6IjAxMjM...&amp;pageSize=25</code></pre>
+<ul>
+<li>Cursor is base64-encoded JSON of the last row’s sort key (e.g.,
+<code>{id: '...', createdAt: '...'}</code>)</li>
+<li>Use for: tables &gt;100k rows, infinite scroll UI, append-mostly
+data (audit logs, stock ledger)</li>
+<li>Response includes <code>meta.nextCursor</code> (null if no more
+pages)</li>
+<li>Cannot jump to arbitrary page — only next/prev</li>
+</ul>
+<h3 id="default-page-size">5.2 Default Page Size</h3>
+<ul>
+<li>Default: <code>pageSize=25</code></li>
+<li>Max: <code>pageSize=200</code> (returns <code>400</code> if
+exceeded)</li>
+<li>Min: <code>pageSize=1</code> (returns <code>400</code> if
+<code>pageSize=0</code>)</li>
+</ul>
+<h3 id="pagination-response-shape">5.3 Pagination Response Shape</h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;success&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;meta&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;page&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;pageSize&quot;</span><span class="fu">:</span> <span class="dv">25</span><span class="fu">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;total&quot;</span><span class="fu">:</span> <span class="dv">482</span><span class="fu">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalPages&quot;</span><span class="fu">:</span> <span class="dv">20</span><span class="fu">,</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;hasNext&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;hasPrev&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;correlationId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>For cursor pagination:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;success&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;meta&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;pageSize&quot;</span><span class="fu">:</span> <span class="dv">25</span><span class="fu">,</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;nextCursor&quot;</span><span class="fu">:</span> <span class="st">&quot;eyJpZCI6IjAx...&quot;</span><span class="fu">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;hasNext&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;correlationId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<hr />
+<h2 id="filtering">6. Filtering</h2>
+<h3 id="filter-syntax">6.1 Filter Syntax</h3>
+<p>Filters are query parameters with operator suffixes:</p>
+<pre><code>GET /api/v1/purchase-orders?status=APPROVED&amp;supplierId=abc-123&amp;totalValue.gte=10000</code></pre>
+<h3 id="operators">6.2 Operators</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Operator</th>
+<th>Suffix</th>
+<th>Example</th>
+<th>SQL equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Equals</td>
+<td>(none)</td>
+<td><code>status=APPROVED</code></td>
+<td><code>status = 'APPROVED'</code></td>
+</tr>
+<tr class="even">
+<td>Not equals</td>
+<td><code>.ne</code></td>
+<td><code>status.ne=DRAFT</code></td>
+<td><code>status != 'DRAFT'</code></td>
+</tr>
+<tr class="odd">
+<td>In</td>
+<td><code>.in</code></td>
+<td><code>status.in=APPROVED,ORDERED</code></td>
+<td><code>status IN ('APPROVED', 'ORDERED')</code></td>
+</tr>
+<tr class="even">
+<td>Not in</td>
+<td><code>.nin</code></td>
+<td><code>status.nin=DRAFT,CANCELLED</code></td>
+<td><code>status NOT IN (...)</code></td>
+</tr>
+<tr class="odd">
+<td>Greater than</td>
+<td><code>.gt</code></td>
+<td><code>totalValue.gt=1000</code></td>
+<td><code>total_value &gt; 1000</code></td>
+</tr>
+<tr class="even">
+<td>Greater/equal</td>
+<td><code>.gte</code></td>
+<td><code>totalValue.gte=1000</code></td>
+<td><code>total_value &gt;= 1000</code></td>
+</tr>
+<tr class="odd">
+<td>Less than</td>
+<td><code>.lt</code></td>
+<td><code>totalValue.lt=10000</code></td>
+<td><code>total_value &lt; 10000</code></td>
+</tr>
+<tr class="even">
+<td>Less/equal</td>
+<td><code>.lte</code></td>
+<td><code>totalValue.lte=10000</code></td>
+<td><code>total_value &lt;= 10000</code></td>
+</tr>
+<tr class="odd">
+<td>Between</td>
+<td><code>.between</code></td>
+<td><code>createdBetween=2026-01-01,2026-06-30</code></td>
+<td><code>BETWEEN</code></td>
+</tr>
+<tr class="even">
+<td>Contains</td>
+<td><code>.contains</code></td>
+<td><code>name.contains=kaju</code></td>
+<td><code>ILIKE '%kaju%'</code></td>
+</tr>
+<tr class="odd">
+<td>Starts with</td>
+<td><code>.startsWith</code></td>
+<td><code>sku.startsWith=KK-</code></td>
+<td><code>ILIKE 'KK-%'</code></td>
+</tr>
+<tr class="even">
+<td>Ends with</td>
+<td><code>.endsWith</code></td>
+<td><code>sku.endsWith=-250</code></td>
+<td><code>ILIKE '%-250'</code></td>
+</tr>
+<tr class="odd">
+<td>Is null</td>
+<td><code>.isNull</code></td>
+<td><code>deletedAt.isNull=true</code></td>
+<td><code>deleted_at IS NULL</code></td>
+</tr>
+<tr class="even">
+<td>Is not null</td>
+<td><code>.isNotNull</code></td>
+<td><code>approvedAt.isNotNull=true</code></td>
+<td><code>approved_at IS NOT NULL</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="multiple-filters-and">6.3 Multiple Filters (AND)</h3>
+<p>Multiple filter params are AND-ed:</p>
+<pre><code>GET /api/v1/products?status=ACTIVE&amp;category=SWEETS&amp;stock.lt=100
+→ status = &#39;ACTIVE&#39; AND category = &#39;SWEETS&#39; AND stock &lt; 100</code></pre>
+<h3 id="or-filters">6.4 OR Filters</h3>
+<p>For OR conditions, use the <code>filter</code> parameter with a
+JSON-encoded filter object (advanced):</p>
+<pre><code>GET /api/v1/products?filter={&quot;OR&quot;:[{&quot;status&quot;:&quot;ACTIVE&quot;},{&quot;status&quot;:&quot;DRAFT&quot;}]}</code></pre>
+<p>This is URL-encoded in practice. Most use cases use AND via simple
+query params.</p>
+<h3 id="date-filters">6.5 Date Filters</h3>
+<ul>
+<li>Dates in ISO 8601 format: <code>2026-07-11</code> or
+<code>2026-07-11T14:30:00Z</code></li>
+<li>Date ranges:
+<code>createdAt.between=2026-01-01,2026-06-30</code></li>
+<li>All dates stored in UTC; queries interpret naive dates as UTC</li>
+</ul>
+<h3 id="filter-validation">6.6 Filter Validation</h3>
+<ul>
+<li>Unknown filter fields return <code>400</code> with
+<code>{field: 'status', message: 'Unknown field'}</code></li>
+<li>Invalid filter values return <code>400</code> (e.g.,
+<code>createdAt.gt=not-a-date</code>)</li>
+<li>Filter operators on incompatible types return <code>400</code>
+(e.g., <code>status.gt=ACTIVE</code>)</li>
+</ul>
+<hr />
+<h2 id="sorting">7. Sorting</h2>
+<h3 id="sort-syntax">7.1 Sort Syntax</h3>
+<pre><code>GET /api/v1/purchase-orders?sort=-createdAt,supplierName</code></pre>
+<ul>
+<li>Prefix <code>-</code> for descending (e.g., <code>-createdAt</code>
+= newest first)</li>
+<li>Multiple sort fields comma-separated (priority order)</li>
+<li>Default sort: <code>-createdAt</code> (newest first) if no
+<code>sort</code> param</li>
+</ul>
+<h3 id="sortable-fields">7.2 Sortable Fields</h3>
+<ul>
+<li>Each endpoint declares sortable fields in its OpenAPI spec</li>
+<li>Sorting by non-sortable field returns <code>400</code></li>
+<li>Sorting by sensitive field (e.g., <code>password_hash</code>) is
+forbidden — field not in whitelist</li>
+</ul>
+<h3 id="sort-stability">7.3 Sort Stability</h3>
+<ul>
+<li>Secondary sort by <code>id</code> always applied to ensure stable
+pagination</li>
+<li>E.g., <code>sort=-createdAt</code> becomes
+<code>ORDER BY created_at DESC, id ASC</code></li>
+</ul>
+<hr />
+<h2 id="bulk-apis">8. Bulk APIs</h2>
+<h3 id="bulk-create">8.1 Bulk Create</h3>
+<pre><code>POST /api/v1/products/bulk
+Content-Type: application/json
+
+{
+  &quot;items&quot;: [
+    { &quot;name&quot;: &quot;Kaju Katli 250g&quot;, &quot;sku&quot;: &quot;KK-250&quot;, ... },
+    { &quot;name&quot;: &quot;Kaju Katli 500g&quot;, &quot;sku&quot;: &quot;KK-500&quot;, ... }
+  ]
+}</code></pre>
+<ul>
+<li>Max 100 items per bulk request</li>
+<li>Returns <code>207 Multi-Status</code> with per-item result:</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;success&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;succeeded&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span> <span class="dt">&quot;index&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span> <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="st">&quot;...&quot;</span><span class="fu">,</span> <span class="dt">&quot;sku&quot;</span><span class="fu">:</span> <span class="st">&quot;KK-250&quot;</span> <span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;failed&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span> <span class="dt">&quot;index&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span> <span class="dt">&quot;errors&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span> <span class="dt">&quot;field&quot;</span><span class="fu">:</span> <span class="st">&quot;sku&quot;</span><span class="fu">,</span> <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Already exists&quot;</span> <span class="fu">}</span><span class="ot">]</span> <span class="fu">}</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;summary&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;total&quot;</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">,</span> <span class="dt">&quot;succeeded&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span> <span class="dt">&quot;failed&quot;</span><span class="fu">:</span> <span class="dv">1</span> <span class="fu">}</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<ul>
+<li>All-or-nothing mode via <code>?atomic=true</code> — fails entire
+batch if any item invalid</li>
+</ul>
+<h3 id="bulk-update">8.2 Bulk Update</h3>
+<pre><code>PATCH /api/v1/products/bulk
+{
+  &quot;updates&quot;: [
+    { &quot;id&quot;: &quot;...&quot;, &quot;version&quot;: 1, &quot;data&quot;: { &quot;status&quot;: &quot;DISCONTINUED&quot; } },
+    { &quot;id&quot;: &quot;...&quot;, &quot;version&quot;: 3, &quot;data&quot;: { &quot;status&quot;: &quot;DISCONTINUED&quot; } }
+  ]
+}</code></pre>
+<ul>
+<li>Each update must include <code>version</code> for optimistic
+locking</li>
+<li>Returns <code>207 Multi-Status</code></li>
+</ul>
+<h3 id="bulk-delete">8.3 Bulk Delete</h3>
+<pre><code>DELETE /api/v1/products/bulk
+{
+  &quot;ids&quot;: [&quot;...&quot;, &quot;...&quot;, &quot;...&quot;]
+}</code></pre>
+<ul>
+<li>Max 100 IDs per request</li>
+<li>Returns <code>207 Multi-Status</code></li>
+</ul>
+<h3 id="bulk-import-csvexcel">8.4 Bulk Import (CSV/Excel)</h3>
+<pre><code>POST /api/v1/products/import
+Content-Type: multipart/form-data
+
+file: products.csv</code></pre>
+<ul>
+<li>Async — returns <code>202 Accepted</code> with job ID</li>
+<li>Client polls <code>GET /api/v1/_internal/jobs/{jobId}</code> for
+status</li>
+<li>Job result includes row-level errors</li>
+<li>Max 10,000 rows per import; larger batches via S3 upload + signed
+URL</li>
+</ul>
+<h3 id="bulk-export">8.5 Bulk Export</h3>
+<pre><code>GET /api/v1/products/export?format=csv&amp;filter=...</code></pre>
+<ul>
+<li>Async — returns <code>202 Accepted</code> with job ID</li>
+<li>Job produces file in S3; client receives signed URL when ready</li>
+<li>Max 1 million rows per export</li>
+</ul>
+<hr />
+<h2 id="idempotency">9. Idempotency</h2>
+<h3 id="idempotency-key">9.1 Idempotency Key</h3>
+<p>For all <code>POST</code> and <code>PATCH</code> requests that create
+or mutate state, clients SHOULD send an idempotency key:</p>
+<pre><code>POST /api/v1/purchase-orders
+Idempotency-Key: 7d8b2c1e-9f3a-4b6c-8e2d-1a5f9b3c7e8d
+Content-Type: application/json
+
+{ ... }</code></pre>
+<h3 id="server-behavior">9.2 Server Behavior</h3>
+<ul>
+<li>Server stores
+<code>(idempotencyKey, tenantId, requestHash, response, expiresAt)</code>
+in <code>idempotency_keys</code> table</li>
+<li>On retry with same key + same request hash: returns stored response
+(status + body)</li>
+<li>On retry with same key + different request hash: returns
+<code>409 Conflict</code> (idempotency key reuse)</li>
+<li>Keys expire after 24 hours (configurable)</li>
+<li>Keys are scoped to tenant — same key in different tenants are
+independent</li>
+</ul>
+<h3 id="required-for">9.3 Required for</h3>
+<ul>
+<li>All <code>POST</code> to collection endpoints (create)</li>
+<li>All <code>POST</code> to action endpoints (submit, approve,
+etc.)</li>
+<li>All bulk operations</li>
+<li>All payment/financial mutations</li>
+</ul>
+<h3 id="optional-for">9.4 Optional for</h3>
+<ul>
+<li><code>GET</code> (always idempotent by nature)</li>
+<li><code>DELETE</code> (idempotent — soft-deleting already-deleted is
+no-op)</li>
+<li><code>PATCH</code> (idempotent if client includes
+<code>version</code> for optimistic locking)</li>
+</ul>
+<hr />
+<h2 id="error-codes">10. Error Codes</h2>
+<h3 id="error-code-format">10.1 Error Code Format</h3>
+<p>Error codes are namespaced strings:</p>
+<pre><code>&lt;DOMAIN&gt;.&lt;ENTITY&gt;.&lt;RULE&gt;</code></pre>
+<p>Examples:</p>
+<pre><code>VALIDATION.REQUIRED_FIELD
+VALIDATION.INVALID_FORMAT
+VALIDATION.OUT_OF_RANGE
+AUTH.TOKEN_EXPIRED
+AUTH.INVALID_CREDENTIALS
+AUTH.ACCOUNT_LOCKED
+RBAC.PERMISSION_DENIED
+PO.SUPPLIER_INACTIVE
+PO.BUDGET_EXCEEDED
+PO.DUPLICATE_LINE_ITEM
+GRN.QUANTITY_EXCEEDS_PO_LINE
+STOCK.INSUFFICIENT_STOCK
+STOCK.NEGATIVE_BALANCE_FORBIDDEN
+CONCURRENCY.VERSION_MISMATCH
+CONCURRENCY.DEADLOCK_RETRY
+RATE_LIMIT.TOO_MANY_REQUESTS
+EXTERNAL.S3_UNAVAILABLE
+EXTERNAL.EMAIL_SEND_FAILED</code></pre>
+<h3 id="error-code-registry">10.2 Error Code Registry</h3>
+<p>All error codes catalogued in
+<code>packages/shared/src/enums/error-code.enum.ts</code>. New codes
+require PR review. Frontend uses codes to render localized messages.</p>
+<h3 id="error-response-shape">10.3 Error Response Shape</h3>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;success&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;error&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;PO.SUPPLIER_INACTIVE&quot;</span><span class="fu">,</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Supplier SUP-001 is not active and cannot be added to a purchase order&quot;</span><span class="fu">,</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;details&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;field&quot;</span><span class="fu">:</span> <span class="st">&quot;supplierId&quot;</span><span class="fu">,</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;PO.SUPPLIER_INACTIVE&quot;</span><span class="fu">,</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Supplier status is BLACKLISTED&quot;</span><span class="fu">,</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;supplierId&quot;</span><span class="fu">:</span> <span class="st">&quot;...&quot;</span><span class="fu">,</span> <span class="dt">&quot;currentStatus&quot;</span><span class="fu">:</span> <span class="st">&quot;BLACKLISTED&quot;</span> <span class="fu">}</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;entityId&quot;</span><span class="fu">:</span> <span class="st">&quot;po-abc-123&quot;</span><span class="fu">,</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;retryAfter&quot;</span><span class="fu">:</span> <span class="kw">null</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;meta&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;correlationId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="validation-error-shape">10.4 Validation Error Shape</h3>
+<p>For <code>400 Bad Request</code> from zod validation:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;success&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;error&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;VALIDATION.REQUIRED_FIELD&quot;</span><span class="fu">,</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Request body validation failed&quot;</span><span class="fu">,</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;details&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span> <span class="dt">&quot;field&quot;</span><span class="fu">:</span> <span class="st">&quot;poLines[0].quantity&quot;</span><span class="fu">,</span> <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;REQUIRED&quot;</span><span class="fu">,</span> <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Quantity is required&quot;</span> <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span> <span class="dt">&quot;field&quot;</span><span class="fu">:</span> <span class="st">&quot;poLines[1].unitPrice&quot;</span><span class="fu">,</span> <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;INVALID_FORMAT&quot;</span><span class="fu">,</span> <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Must be a positive number&quot;</span><span class="fu">,</span> <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;actual&quot;</span><span class="fu">:</span> <span class="dv">-5</span> <span class="fu">}</span> <span class="fu">}</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;meta&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;correlationId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span> <span class="fu">}</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="field-paths">10.5 Field Paths</h3>
+<p>Field paths use dot + bracket notation: - <code>name</code> -
+<code>address.city</code> - <code>poLines[0].quantity</code> -
+<code>poLines[2].taxes.cgst.rate</code></p>
+<hr />
+<h2 id="response-standards">11. Response Standards</h2>
+<h3 id="success-envelope">11.1 Success Envelope</h3>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;success&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;data&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="er">...</span> <span class="fu">},</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;Purchase order created successfully&quot;</span><span class="fu">,</span>  <span class="er">//</span> <span class="er">optional</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;meta&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;correlationId&quot;</span><span class="fu">:</span> <span class="st">&quot;01HXY...&quot;</span><span class="fu">,</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;page&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span>              <span class="er">//</span> <span class="er">only</span> <span class="er">for</span> <span class="er">lists</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;pageSize&quot;</span><span class="fu">:</span> <span class="dv">25</span><span class="fu">,</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;total&quot;</span><span class="fu">:</span> <span class="dv">482</span><span class="fu">,</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;totalPages&quot;</span><span class="fu">:</span> <span class="dv">20</span><span class="fu">,</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;hasNext&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="error-envelope">11.2 Error Envelope</h3>
+<p>See §10.3.</p>
+<h3 id="field-naming-in-responses">11.3 Field Naming in Responses</h3>
+<ul>
+<li><strong>camelCase</strong> in JSON responses (JavaScript
+convention)</li>
+<li>Database is snake_case; transformation happens in controller
+layer</li>
+<li>Example: DB column <code>created_at</code> → JSON field
+<code>createdAt</code></li>
+<li>Prisma Client handles this transformation via the <code>@map</code>
+annotation</li>
+</ul>
+<h3 id="date-format">11.4 Date Format</h3>
+<ul>
+<li>All dates in ISO 8601 with timezone:
+<code>2026-07-11T14:30:00Z</code></li>
+<li>All dates in UTC (Z suffix) — client converts to local timezone for
+display</li>
+<li>Date-only fields: <code>2026-07-11</code> (no time component)</li>
+<li>Duration fields: ISO 8601 duration (<code>PT5M30S</code> for 5 min
+30 sec)</li>
+</ul>
+<h3 id="money-fields">11.5 Money Fields</h3>
+<ul>
+<li>Always returned as objects with amount + currency:</li>
+</ul>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;totalValue&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;amount&quot;</span><span class="fu">:</span> <span class="st">&quot;12500.00&quot;</span><span class="fu">,</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;currency&quot;</span><span class="fu">:</span> <span class="st">&quot;INR&quot;</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<ul>
+<li>Amount is <strong>string</strong> (not number) to avoid
+floating-point precision loss</li>
+<li>Currency is ISO 4217 3-letter code</li>
+</ul>
+<h3 id="quantity-fields">11.6 Quantity Fields</h3>
+<ul>
+<li>Decimal quantities as <strong>string</strong>:
+<code>"125.500"</code> (preserves precision)</li>
+<li>Integer counts as <strong>number</strong>: <code>125</code></li>
+</ul>
+<h3 id="empty-responses">11.7 Empty Responses</h3>
+<ul>
+<li><code>204 No Content</code> — no body (DELETE, action with no
+return)</li>
+<li><code>200 OK</code> with <code>data: null</code> — explicit null
+when resource exists but has no representation (rare)</li>
+<li><code>200 OK</code> with <code>data: []</code> — empty list
+(different from <code>null</code> — list exists, has 0 items)</li>
+</ul>
+<h3 id="sparse-fieldsets">11.8 Sparse Fieldsets</h3>
+<p>Clients can request specific fields to reduce payload:</p>
+<pre><code>GET /api/v1/products?fields=id,name,sku,stock</code></pre>
+<ul>
+<li>Returns only requested fields</li>
+<li><code>id</code> always included</li>
+<li>Unknown fields return <code>400</code></li>
+<li>Default (no <code>fields</code> param) returns all fields per
+entity’s response schema</li>
+</ul>
+<hr />
+<h2 id="authentication">12. Authentication</h2>
+<h3 id="authentication-scheme">12.1 Authentication Scheme</h3>
+<p><strong>JWT Bearer tokens:</strong></p>
+<pre><code>Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</code></pre>
+<h3 id="jwt-structure">12.2 JWT Structure</h3>
+<ul>
+<li><strong>Algorithm:</strong> HS256 (HMAC-SHA256) — symmetric,
+simple</li>
+<li><strong>Future:</strong> RS256 (asymmetric) when external clients
+need to verify tokens without sharing secret</li>
+<li><strong>Header:</strong></li>
+</ul>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span> <span class="dt">&quot;alg&quot;</span><span class="fu">:</span> <span class="st">&quot;HS256&quot;</span><span class="fu">,</span> <span class="dt">&quot;typ&quot;</span><span class="fu">:</span> <span class="st">&quot;JWT&quot;</span><span class="fu">,</span> <span class="dt">&quot;kid&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span> <span class="fu">}</span></span></code></pre></div>
+<ul>
+<li><strong>Payload:</strong></li>
+</ul>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;sub&quot;</span><span class="fu">:</span> <span class="st">&quot;user-uuid-v7&quot;</span><span class="fu">,</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;tenantId&quot;</span><span class="fu">:</span> <span class="st">&quot;tenant-uuid-v7&quot;</span><span class="fu">,</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;email&quot;</span><span class="fu">:</span> <span class="st">&quot;rajesh@sudhamrit.com&quot;</span><span class="fu">,</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;roles&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;quality_manager&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;permissions&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;po:read&quot;</span><span class="ot">,</span> <span class="st">&quot;po:create&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;iat&quot;</span><span class="fu">:</span> <span class="dv">1720000000</span><span class="fu">,</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;exp&quot;</span><span class="fu">:</span> <span class="dv">1720000900</span><span class="fu">,</span>  <span class="er">//</span> <span class="er">15</span> <span class="er">min</span> <span class="er">from</span> <span class="er">issue</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;iss&quot;</span><span class="fu">:</span> <span class="st">&quot;suop-erp&quot;</span><span class="fu">,</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;aud&quot;</span><span class="fu">:</span> <span class="st">&quot;suop-frontend&quot;</span><span class="fu">,</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;jti&quot;</span><span class="fu">:</span> <span class="st">&quot;token-uuid-v7&quot;</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="token-lifecycle">12.3 Token Lifecycle</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Token</th>
+<th>TTL</th>
+<th>Storage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Access token</td>
+<td>15 minutes</td>
+<td>In-memory (frontend); never localStorage</td>
+</tr>
+<tr class="even">
+<td>Refresh token</td>
+<td>30 days</td>
+<td>httpOnly secure cookie (frontend); hashed in DB</td>
+</tr>
+<tr class="odd">
+<td>Device session</td>
+<td>90 days</td>
+<td>DB (<code>device_sessions</code> table)</td>
+</tr>
+<tr class="even">
+<td>API key</td>
+<td>1 year (rotated)</td>
+<td>DB (<code>api_keys</code> table, hashed)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="refresh-flow">12.4 Refresh Flow</h3>
+<ol type="1">
+<li>Client makes request with access token</li>
+<li>If access token expired (401), client calls
+<code>POST /api/v1/auth/refresh</code> with refresh token cookie</li>
+<li>Server validates refresh token against DB (revocation list), issues
+new access token + new refresh token (rotation)</li>
+<li>Old refresh token immediately invalidated (replay detection)</li>
+<li>New refresh token in httpOnly cookie</li>
+</ol>
+<h3 id="token-revocation">12.5 Token Revocation</h3>
+<ul>
+<li><strong>Access tokens:</strong> Cannot be revoked (short-lived —
+wait 15 min). Mitigated by short TTL.</li>
+<li><strong>Refresh tokens:</strong> Revocable via
+<code>POST /api/v1/auth/logout</code> (deletes from DB) or admin
+force-logout</li>
+<li><strong>JTI blocklist:</strong> Compromised access tokens’ JTIs
+added to Redis blocklist (TTL = remaining token TTL); checked on every
+request</li>
+</ul>
+<h3 id="multi-factor-authentication-mfa">12.6 Multi-Factor
+Authentication (MFA)</h3>
+<ul>
+<li><strong>TOTP-based</strong> (Google Authenticator, Authy)</li>
+<li><strong>Required for:</strong> Admin roles, finance roles, anyone
+with <code>system:*</code> permissions</li>
+<li><strong>Optional for:</strong> Other users (configurable per
+tenant)</li>
+<li><strong>Flow:</strong>
+<ol type="1">
+<li>User logs in with email + password → server returns
+<code>MFA_REQUIRED</code> response with
+<code>mfaSessionToken</code></li>
+<li>User enters 6-digit TOTP code →
+<code>POST /api/v1/auth/mfa/verify</code> with
+<code>mfaSessionToken</code> + code</li>
+<li>Server verifies TOTP, issues access + refresh tokens</li>
+</ol></li>
+</ul>
+<h3 id="api-keys-for-integrations">12.7 API Keys (for integrations)</h3>
+<ul>
+<li>Long-lived (1 year), rotated</li>
+<li>Format: <code>suop_&lt;random_64_chars&gt;</code></li>
+<li>Stored hashed (argon2id) in <code>api_keys</code> table</li>
+<li>Scoped to specific permissions (not full user permissions)</li>
+<li>Sent via <code>X-API-Key</code> header (not Authorization —
+distinguish from user JWTs)</li>
+</ul>
+<hr />
+<h2 id="authorization">13. Authorization</h2>
+<h3 id="permission-model">13.1 Permission Model</h3>
+<p><strong>RBAC (Role-Based Access Control)</strong> with optional ABAC
+(Attribute-Based) checks.</p>
+<h3 id="permission-format">13.2 Permission Format</h3>
+<pre><code>&lt;resource&gt;:&lt;action&gt;</code></pre>
+<p>Examples:</p>
+<pre><code>org:read          org:create        org:update        org:delete
+po:read           po:create         po:approve        po:cancel
+product:read      product:create    product:update    product:delete
+audit:read        audit:read:critical
+system:tenant:cross</code></pre>
+<h3 id="permission-check-points">13.3 Permission Check Points</h3>
+<p><strong>Layer 1 — Route-level (middleware):</strong></p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>router<span class="op">.</span><span class="fu">post</span>(<span class="st">&#39;/purchase-orders&#39;</span><span class="op">,</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">requirePermission</span>(<span class="st">&#39;po:create&#39;</span>)<span class="op">,</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  poController<span class="op">.</span><span class="at">create</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<ul>
+<li>Blocks unauthorized users before controller executes</li>
+<li>Returns <code>403</code> if missing permission</li>
+</ul>
+<p><strong>Layer 2 — Row-level (service):</strong></p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">async</span> <span class="fu">approve</span>(ctx<span class="op">,</span> poId) {</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> po <span class="op">=</span> <span class="cf">await</span> poRepo<span class="op">.</span><span class="fu">findByIdOrThrow</span>(ctx<span class="op">,</span> poId)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="co">// User can only approve POs they&#39;re assigned as approver for</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (po<span class="op">.</span><span class="at">approverId</span> <span class="op">!==</span> ctx<span class="op">.</span><span class="at">userId</span> <span class="op">&amp;&amp;</span> <span class="op">!</span>ctx<span class="op">.</span><span class="fu">hasPermission</span>(<span class="st">&#39;po:approve:any&#39;</span>)) {</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">throw</span> <span class="kw">new</span> <span class="fu">AuthorizationError</span>(<span class="st">&#39;You can only approve POs assigned to you&#39;</span>)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">// ...</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p><strong>Layer 3 — Field-level (response shaping):</strong> - Some
+fields visible only to certain roles - E.g., <code>costPrice</code> on
+products visible to <code>finance:*</code> but not <code>sales:*</code>
+- Controller strips fields based on user permissions</p>
+<h3 id="permission-hierarchy">13.4 Permission Hierarchy</h3>
+<ul>
+<li><code>system:*</code> — super-admin (rare; only platform team)</li>
+<li><code>tenant:admin</code> — tenant administrator (full access within
+tenant)</li>
+<li><code>&lt;resource&gt;:*</code> — full access to a resource (e.g.,
+<code>po:*</code>)</li>
+<li><code>&lt;resource&gt;:&lt;action&gt;</code> — specific action</li>
+<li><code>&lt;resource&gt;:&lt;action&gt;:&lt;scope&gt;</code> — scoped
+action (e.g., <code>po:approve:any</code> vs
+<code>po:approve:own</code>)</li>
+</ul>
+<h3 id="frontend-permission-checks">13.5 Frontend Permission Checks</h3>
+<ul>
+<li><code>&lt;PermissionGuard require="po:create"&gt;&lt;Button&gt;New PO&lt;/Button&gt;&lt;/PermissionGuard&gt;</code>
+— hides button if user lacks permission</li>
+<li>Sidebar menu items filtered by permission</li>
+<li>Routes blocked at route level (redirect to 403 page)</li>
+<li><strong>Note:</strong> Frontend checks are UX only — backend
+enforces truth. Never trust frontend for security.</li>
+</ul>
+<hr />
+<h2 id="rate-limiting">14. Rate Limiting</h2>
+<h3 id="rate-limit-tiers">14.1 Rate Limit Tiers</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tier</th>
+<th>Limit</th>
+<th>Window</th>
+<th>Applies to</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Public</td>
+<td>60 req/min</td>
+<td>IP</td>
+<td><code>/api/v1/auth/login</code>,
+<code>/api/v1/auth/register</code></td>
+</tr>
+<tr class="even">
+<td>Authenticated</td>
+<td>600 req/min</td>
+<td>tenant + user</td>
+<td>All authenticated endpoints</td>
+</tr>
+<tr class="odd">
+<td>Heavy</td>
+<td>30 req/min</td>
+<td>tenant + user</td>
+<td>Export, import, bulk operations</td>
+</tr>
+<tr class="even">
+<td>Read</td>
+<td>1200 req/min</td>
+<td>tenant + user</td>
+<td>GET endpoints (more lenient)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rate-limit-algorithm">14.2 Rate Limit Algorithm</h3>
+<ul>
+<li><strong>Sliding window</strong> via Redis (more accurate than fixed
+window)</li>
+<li>Key:
+<code>rate_limit:{tier}:{identifier}:{minute_bucket}</code></li>
+<li>On each request: increment counter, check against limit, set TTL
+60s</li>
+</ul>
+<h3 id="rate-limit-response">14.3 Rate Limit Response</h3>
+<pre><code>HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 23
+X-RateLimit-Limit: 600
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1720000923
+
+{
+  &quot;success&quot;: false,
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;RATE_LIMIT.TOO_MANY_REQUESTS&quot;,
+    &quot;message&quot;: &quot;Rate limit exceeded. Retry after 23 seconds.&quot;,
+    &quot;retryAfter&quot;: 23
+  },
+  &quot;meta&quot;: { &quot;correlationId&quot;: &quot;01HXY...&quot; }
+}</code></pre>
+<h3 id="burst-allowance">14.4 Burst Allowance</h3>
+<ul>
+<li>Token bucket allows short bursts above steady-state limit</li>
+<li>E.g., 600/min allows 100-token burst, refilled at 10/sec</li>
+<li>Prevents legitimate batch operations from being throttled</li>
+</ul>
+<hr />
+<h2 id="api-documentation-strategy">15. API Documentation Strategy</h2>
+<h3 id="openapi-specification">15.1 OpenAPI Specification</h3>
+<ul>
+<li>Every endpoint documented in OpenAPI 3.1 spec</li>
+<li>Spec generated from zod schemas via <code>zod-to-openapi</code></li>
+<li>Spec committed to repo at
+<code>packages/shared/openapi.yaml</code></li>
+<li>Spec served at <code>GET /api/v1/_internal/openapi.json</code></li>
+<li>Swagger UI at <code>/api/docs</code> (development only — disabled in
+production)</li>
+</ul>
+<h3 id="documentation-requirements-per-endpoint">15.2 Documentation
+Requirements per Endpoint</h3>
+<ul>
+<li>Summary (one line)</li>
+<li>Description (paragraph)</li>
+<li>Parameters (path, query, header) with types + examples</li>
+<li>Request body schema with example</li>
+<li>Response schemas for each status code (200, 201, 400, 401, 403, 404,
+409, 422, 429, 500)</li>
+<li>Error codes specific to this endpoint</li>
+<li>Required permission</li>
+<li>Idempotency: required/optional/N/A</li>
+<li>Rate limit tier</li>
+<li>Sample request (curl)</li>
+<li>Sample response</li>
+</ul>
+<h3 id="sdk-generation">15.3 SDK Generation</h3>
+<ul>
+<li>TypeScript SDK auto-generated from OpenAPI spec via
+<code>openapi-typescript-codegen</code></li>
+<li>SDK published as <code>@suop/api-client</code> npm package
+(internal)</li>
+<li>Frontend uses SDK instead of raw <code>fetch</code> — guarantees
+type safety</li>
+<li>Mobile app uses same SDK</li>
+</ul>
+<h3 id="api-changelog">15.4 API Changelog</h3>
+<ul>
+<li>Every PR that adds/changes an endpoint updates
+<code>CHANGELOG.md</code></li>
+<li>Entry format:</li>
+</ul>
+<pre><code>## [Unreleased]
+### Added
+- POST /api/v1/purchase-orders/{id}/submit — submit PO for approval
+### Changed
+- GET /api/v1/products now returns `upi` field (was previously `upiCode`)
+### Deprecated
+- GET /api/v1/products?include=barcodes — use GET /api/v1/products/{id}/barcodes instead
+### Removed
+- None</code></pre>
+<ul>
+<li>Release process generates <code>CHANGELOG.md</code> entries into
+versioned docs</li>
+</ul>
+<h3 id="versioned-documentation">15.5 Versioned Documentation</h3>
+<ul>
+<li>Each API version has its own documentation snapshot</li>
+<li><code>docs.api.suop.com/v1/...</code> for v1 docs</li>
+<li><code>docs.api.suop.com/v2/...</code> for v2 docs</li>
+<li>Old versions preserved indefinitely (link rot forbidden)</li>
+</ul>
+<hr />
+<h2 id="requestresponse-logging">16. Request/Response Logging</h2>
+<h3 id="logged-per-request">16.1 Logged per Request</h3>
+<ul>
+<li>Method, path, query params (values redacted for sensitive
+fields)</li>
+<li>Request body (redacted for sensitive fields: <code>password</code>,
+<code>token</code>, <code>creditCard</code>)</li>
+<li>User ID, tenant ID (if authenticated)</li>
+<li>Response status, duration, response size</li>
+<li>Correlation ID</li>
+</ul>
+<h3 id="sensitive-field-redaction">16.2 Sensitive Field Redaction</h3>
+<ul>
+<li>Field names matching
+<code>/password|token|secret|key|auth|credit/i</code> have values
+replaced with <code>[REDACTED]</code></li>
+<li>PII fields (<code>email</code>, <code>phone</code>,
+<code>aadhaar</code>, <code>pan</code>) hashed (SHA-256) for correlation
+without exposure</li>
+<li>Redaction config in <code>logging/redaction-config.ts</code></li>
+</ul>
+<h3 id="sampling">16.3 Sampling</h3>
+<ul>
+<li>100% of mutating requests (POST/PUT/PATCH/DELETE) logged at
+INFO</li>
+<li>10% of GET requests logged at INFO (90% at DEBUG)</li>
+<li>100% of error responses (4xx, 5xx) logged at WARN/ERROR</li>
+<li>100% of slow requests (&gt;1s) logged at WARN</li>
+</ul>
+<hr />
+<h2 id="cors">17. CORS</h2>
+<h3 id="allowed-origins">17.1 Allowed Origins</h3>
+<ul>
+<li>Production: <code>https://app.sudhamrit.com</code>,
+<code>https://erp.sudhamrit.com</code></li>
+<li>Staging: <code>https://staging.sudhamrit.com</code></li>
+<li>Development: <code>http://localhost:3000</code>,
+<code>http://localhost:3001</code></li>
+<li>Mobile: capacitor origin (<code>capacitor://localhost</code>)</li>
+</ul>
+<h3 id="headers">17.2 Headers</h3>
+<pre><code>Access-Control-Allow-Origin: &lt;allowed origin or null&gt;
+Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key, X-Request-Id
+Access-Control-Expose-Headers: X-Request-Id, X-RateLimit-*, ETag, Location
+Access-Control-Allow-Credentials: true
+Access-Control-Max-Age: 86400</code></pre>
+<h3 id="preflight-caching">17.3 Preflight Caching</h3>
+<ul>
+<li><code>OPTIONS</code> preflight cached for 24 hours
+(<code>Access-Control-Max-Age: 86400</code>)</li>
+<li>Reduces OPTIONS traffic to ~1 per origin per day per browser</li>
+</ul>
+<hr />
+<h2 id="api-security">18. API Security</h2>
+<h3 id="input-validation">18.1 Input Validation</h3>
+<ul>
+<li>All inputs validated by zod schema before controller executes</li>
+<li>Unknown fields rejected (<code>z.object({...}).strict()</code>)</li>
+<li>String length limits enforced</li>
+<li>Numeric ranges enforced</li>
+<li>Date format validation</li>
+</ul>
+<h3 id="output-encoding">18.2 Output Encoding</h3>
+<ul>
+<li>All JSON responses encoded by framework (no manual
+<code>JSON.stringify</code> of user data)</li>
+<li>No HTML responses from API (CSRF protection — see Security doc)</li>
+<li>Headers like <code>X-Content-Type-Options: nosniff</code> prevent
+MIME sniffing</li>
+</ul>
+<h3 id="file-upload-validation">18.3 File Upload Validation</h3>
+<ul>
+<li>MIME type whitelist per category</li>
+<li>File size limits per category</li>
+<li>Magic byte verification (not just trusting Content-Type header)</li>
+<li>Virus scan via ClamAV before storage</li>
+</ul>
+<h3 id="sql-injection-prevention">18.4 SQL Injection Prevention</h3>
+<ul>
+<li>Prisma parameterized queries everywhere — no raw SQL with string
+interpolation</li>
+<li>Raw queries (rare) use parameterized <code>Prisma.sql</code>
+template literal</li>
+<li>Code review enforces no <code>Prisma.$queryRawUnsafe</code>
+ever</li>
+</ul>
+<h3 id="rate-limit-per-user-not-just-ip">18.5 Rate Limit per User (not
+just IP)</h3>
+<ul>
+<li>Rate limits keyed on <code>userId</code> (authenticated) or
+<code>IP</code> (unauthenticated)</li>
+<li>Prevents single user from bypassing limits via IP rotation</li>
+<li>Failed login attempts: 10 per user per 15 min → account lockout (30
+min)</li>
+</ul>
+<hr />
+<h2 id="open-questions-for-approval">19. Open Questions for
+Approval</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Q-A1</td>
+<td>Pagination default</td>
+<td>Offset for lists, cursor for logs</td>
+<td>Cursor everywhere</td>
+</tr>
+<tr class="even">
+<td>Q-A2</td>
+<td>Filter syntax</td>
+<td>Query param operators (<code>.gt</code>, <code>.in</code>)</td>
+<td>JSON-encoded filter</td>
+</tr>
+<tr class="odd">
+<td>Q-A3</td>
+<td>Bulk max items</td>
+<td>100</td>
+<td>50, 500</td>
+</tr>
+<tr class="even">
+<td>Q-A4</td>
+<td>Idempotency key TTL</td>
+<td>24 hours</td>
+<td>1 hour, 7 days</td>
+</tr>
+<tr class="odd">
+<td>Q-A5</td>
+<td>JWT algorithm</td>
+<td>HS256 (Phase 0) → RS256 (Phase X)</td>
+<td>RS256 from start</td>
+</tr>
+<tr class="even">
+<td>Q-A6</td>
+<td>Access token TTL</td>
+<td>15 minutes</td>
+<td>5 min, 30 min</td>
+</tr>
+<tr class="odd">
+<td>Q-A7</td>
+<td>Refresh token TTL</td>
+<td>30 days</td>
+<td>7 days, 90 days</td>
+</tr>
+<tr class="even">
+<td>Q-A8</td>
+<td>MFA requirement</td>
+<td>Required for admin/finance</td>
+<td>Required for all</td>
+</tr>
+<tr class="odd">
+<td>Q-A9</td>
+<td>API docs in production</td>
+<td>Disabled (internal only)</td>
+<td>Enabled (public)</td>
+</tr>
+<tr class="even">
+<td>Q-A10</td>
+<td>SDK generation</td>
+<td>Auto from OpenAPI</td>
+<td>Manual</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><em>End of Enterprise API Standards Document</em></p>
+</body>
+</html>

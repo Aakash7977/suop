@@ -1,0 +1,3689 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>07_PRODUCTION_READINESS_CHECKLIST</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="data:text/css,body{font-family:system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.6;color:%23333}table{border-collapse:collapse;width:100%25;margin:1rem 0}th,td{border:1px solid %23ddd;padding:8px;text-align:left}th{background:%23f4f4f4}code{background:%23f4f4f4;padding:2px 4px;border-radius:3px}pre{background:%23f4f4f4;padding:1rem;border-radius:5px;overflow-x:auto}h1,h2,h3{color:%231a1a1a;border-bottom:1px solid %23eee;padding-bottom:0.3em}" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">07_PRODUCTION_READINESS_CHECKLIST</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#suop-erp-v1.0-final-production-readiness-checklist"
+id="toc-suop-erp-v1.0-final-production-readiness-checklist">SUOP ERP
+v1.0 — Final Production Readiness Checklist</a>
+<ul>
+<li><a href="#how-to-use-this-checklist"
+id="toc-how-to-use-this-checklist">How to Use This Checklist</a></li>
+<li><a href="#documentation-100-complete"
+id="toc-documentation-100-complete">1. Documentation (100%
+complete)</a></li>
+<li><a href="#foundation-framework-phase-0-code"
+id="toc-foundation-framework-phase-0-code">2. Foundation Framework
+(Phase 0 Code)</a></li>
+<li><a href="#database" id="toc-database">3. Database</a></li>
+<li><a href="#api" id="toc-api">4. API</a></li>
+<li><a href="#security" id="toc-security">5. Security</a></li>
+<li><a href="#devops" id="toc-devops">6. DevOps</a></li>
+<li><a href="#performance" id="toc-performance">7. Performance</a></li>
+<li><a href="#disaster-recovery" id="toc-disaster-recovery">8. Disaster
+Recovery</a></li>
+<li><a href="#monitoring-observability"
+id="toc-monitoring-observability">9. Monitoring &amp;
+Observability</a></li>
+<li><a href="#testing" id="toc-testing">10. Testing</a></li>
+<li><a href="#first-business-journey-procure-to-receive"
+id="toc-first-business-journey-procure-to-receive">11. First Business
+Journey (Procure-to-Receive)</a></li>
+<li><a href="#production-launch-readiness"
+id="toc-production-launch-readiness">12. Production Launch
+Readiness</a></li>
+<li><a href="#final-production-readiness-score"
+id="toc-final-production-readiness-score">Final Production Readiness
+Score</a></li>
+<li><a href="#approval-block" id="toc-approval-block">Approval
+Block</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="suop-erp-v1.0-final-production-readiness-checklist">SUOP ERP
+v1.0 — Final Production Readiness Checklist</h1>
+<table>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Document Version</td>
+<td>1.0</td>
+</tr>
+<tr class="even">
+<td>Status</td>
+<td>DRAFT — Awaiting Final Approval</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>2026-07-11</td>
+</tr>
+<tr class="even">
+<td>Approval Required</td>
+<td>Project Owner</td>
+</tr>
+<tr class="odd">
+<td>Purpose</td>
+<td>Single source of truth for v1.0 production readiness</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="how-to-use-this-checklist">How to Use This Checklist</h2>
+<p>This checklist defines <strong>100% completion criteria</strong> for
+SUOP ERP v1.0 production readiness. When every item is checked, the
+documentation phase is <strong>permanently frozen</strong> and
+implementation may begin.</p>
+<p>The checklist aggregates requirements from all 8 architecture
+documents: - Phase 0 Architecture - Data Architecture - API Standards -
+Security Architecture - DevOps Architecture - Performance Standards -
+Disaster Recovery - (Plus operational items)</p>
+<p><strong>Each checkbox must be verifiable.</strong> “Verifiable” means
+there is a test, command, or artifact that proves the item is
+complete.</p>
+<hr />
+<h2 id="documentation-100-complete">1. Documentation (100%
+complete)</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1.1</td>
+<td>Phase 0 Architecture approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>1.2</td>
+<td>Data Architecture approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>1.3</td>
+<td>API Standards approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>1.4</td>
+<td>Security Architecture approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>1.5</td>
+<td>DevOps Architecture approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>1.6</td>
+<td>Performance Standards approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>1.7</td>
+<td>Disaster Recovery approved</td>
+<td>Stakeholder signature</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>1.8</td>
+<td>Schema Review Report produced</td>
+<td>Document exists</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>1.9</td>
+<td>Stock Ledger Design produced</td>
+<td>Document exists</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>1.10</td>
+<td>All ADRs (Architecture Decision Records) written</td>
+<td>ADR folder populated</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>1.11</td>
+<td>Runbooks for top 10 ops tasks written</td>
+<td>Runbook folder</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>1.12</td>
+<td>README.md in every package</td>
+<td>File inspection</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="foundation-framework-phase-0-code">2. Foundation Framework
+(Phase 0 Code)</h2>
+<h3 id="project-structure">2.1 Project Structure</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.1.1</td>
+<td>Monorepo setup (Turborepo + pnpm)</td>
+<td><code>pnpm install</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.1.2</td>
+<td><code>apps/web</code>, <code>apps/backend</code>,
+<code>apps/mobile</code> folders</td>
+<td>Folder structure</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.1.3</td>
+<td><code>packages/shared</code>, <code>packages/prisma</code>,
+<code>packages/ui</code> folders</td>
+<td>Folder structure</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.1.4</td>
+<td>ESLint config enforces layer boundaries</td>
+<td><code>bun run lint</code> passes</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.1.5</td>
+<td>TypeScript strict mode enabled</td>
+<td><code>tsconfig.json</code> inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.1.6</td>
+<td>No <code>any</code> types (without justification)</td>
+<td>ESLint rule</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration-framework">2.2 Configuration Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.2.1</td>
+<td>Env validation (zod schema)</td>
+<td>App refuses to start on missing env</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.2.2</td>
+<td>Feature flags implemented</td>
+<td><code>features.isEnabled()</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.2.3</td>
+<td>Config sources prioritized (env &gt; DB &gt; defaults)</td>
+<td>Tested</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.2.4</td>
+<td>Secrets manager integration</td>
+<td>Secrets loaded at boot</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="error-framework">2.3 Error Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.3.1</td>
+<td>Error hierarchy (BaseError + 10 subclasses)</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.3.2</td>
+<td>Error code catalog</td>
+<td><code>packages/shared</code> export</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.3.3</td>
+<td>Error handler middleware</td>
+<td>Errors shaped correctly</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.3.4</td>
+<td>5xx errors published to Sentry</td>
+<td>Sentry integration</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="response-envelope">2.4 Response Envelope</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.4.1</td>
+<td>Success envelope <code>{success, data, meta}</code></td>
+<td>All endpoints return this</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.4.2</td>
+<td>Error envelope <code>{success: false, error, meta}</code></td>
+<td>All errors return this</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.4.3</td>
+<td>Pagination meta</td>
+<td>List endpoints include meta</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.4.4</td>
+<td>Correlation ID in every response</td>
+<td><code>X-Request-Id</code> header</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logging-framework">2.5 Logging Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.5.1</td>
+<td>Structured JSON logging (Pino)</td>
+<td>Log format verified</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.5.2</td>
+<td>Request context (correlation ID, user, tenant)</td>
+<td>Logs include context</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.5.3</td>
+<td>Sensitive field redaction</td>
+<td>Logs don’t contain secrets</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.5.4</td>
+<td>Log levels (fatal, error, warn, info, debug)</td>
+<td>Configurable per env</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="validation-framework">2.6 Validation Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.6.1</td>
+<td>Zod schemas for every endpoint</td>
+<td>Schema files exist</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.6.2</td>
+<td>Validation middleware</td>
+<td>Invalid input → 400 with details</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.6.3</td>
+<td>Schema registry</td>
+<td>Schemas registered at boot</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.6.4</td>
+<td>Reusable schema fragments</td>
+<td>Shared schemas in <code>packages/shared</code></td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.6.5</td>
+<td>OpenAPI spec generated from schemas</td>
+<td><code>openapi.yaml</code> exists</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="audit-framework">2.7 Audit Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.7.1</td>
+<td><code>audit_logs</code> table migrated</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.7.2</td>
+<td>Audit log table is append-only</td>
+<td>RLS policy enforced</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.7.3</td>
+<td>Audit middleware records mutations</td>
+<td>All POST/PATCH/DELETE audited</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.7.4</td>
+<td>Workflow transitions audit logged</td>
+<td>Transitions produce audit entry</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.7.5</td>
+<td>Audit query API (<code>/api/v1/audit/...</code>)</td>
+<td>Endpoints work</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.7.6</td>
+<td><code>&lt;AuditTrail /&gt;</code> frontend component</td>
+<td>Renders audit timeline</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.7.7</td>
+<td>Hash chain for audit log integrity</td>
+<td>Daily hash published externally</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="event-bus">2.8 Event Bus</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.8.1</td>
+<td>EventBus interface</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.8.2</td>
+<td>Outbox pattern implemented</td>
+<td><code>event_outbox</code> table + publisher job</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.8.3</td>
+<td>Event handler base class</td>
+<td><code>BaseEventHandler</code> exists</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.8.4</td>
+<td>Event catalog (all event names)</td>
+<td><code>packages/shared</code> export</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.8.5</td>
+<td>At-least-once delivery</td>
+<td>Idempotency tested</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.8.6</td>
+<td>Event replay API</td>
+<td>Admin can replay events</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="notification-engine">2.9 Notification Engine</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.9.1</td>
+<td>Notification rule engine</td>
+<td>Rules configurable per tenant</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.9.2</td>
+<td>In-app channel</td>
+<td>Notifications table populated</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.9.3</td>
+<td>Email channel</td>
+<td>Test email sent via SMTP</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.9.4</td>
+<td>SMS channel (Twilio)</td>
+<td>Stub or working</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.9.5</td>
+<td>WhatsApp channel</td>
+<td>Stub or working</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.9.6</td>
+<td>Durable delivery (outbox pattern)</td>
+<td><code>notification_outbox</code> table</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.9.7</td>
+<td>Template system (Handlebars)</td>
+<td>Templates versioned</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.9.8</td>
+<td>Subscription service</td>
+<td>User can unsubscribe</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.9.9</td>
+<td>Delivery status tracked</td>
+<td>Status visible in UI</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="workflow-engine">2.10 Workflow Engine</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.10.1</td>
+<td><code>BaseWorkflow</code> class</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.10.2</td>
+<td>State machine with guards</td>
+<td>Invalid transition rejected</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.10.3</td>
+<td>Pre/post transition hooks</td>
+<td>Hooks fire on transition</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.10.4</td>
+<td>Transitions publish events</td>
+<td>Events emitted</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.10.5</td>
+<td>Transitions audit logged</td>
+<td>Audit entries created</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.10.6</td>
+<td>Workflow registry</td>
+<td>All workflows registered at boot</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.10.7</td>
+<td>Workflow inspection API</td>
+<td><code>/api/v1/workflows/:entityType/:id</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.10.8</td>
+<td><code>&lt;WorkflowActions /&gt;</code> frontend component</td>
+<td>UI shows available actions</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="permission-framework">2.11 Permission Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.11.1</td>
+<td>RBAC middleware</td>
+<td>Endpoints protected</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.11.2</td>
+<td><code>@requirePermission</code> decorator</td>
+<td>Used on routes</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.11.3</td>
+<td>Permission registry</td>
+<td>All permissions catalogued</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.11.4</td>
+<td>3-layer enforcement (route, service, field)</td>
+<td>Tested</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.11.5</td>
+<td><code>&lt;PermissionGuard&gt;</code> frontend component</td>
+<td>UI hides unauthorized</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.11.6</td>
+<td>Default roles seeded</td>
+<td><code>tenants</code>, <code>roles</code>, <code>permissions</code>
+seeded</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="multi-tenancy">2.12 Multi-Tenancy</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.12.1</td>
+<td><code>tenantId</code> on every business table</td>
+<td>Schema inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.12.2</td>
+<td>Prisma extension auto-scopes queries</td>
+<td>Cross-tenant test blocked</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.12.3</td>
+<td>PostgreSQL RLS enabled</td>
+<td>DB policy check</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.12.4</td>
+<td>TenantMiddleware loads context</td>
+<td>AsyncLocalStorage populated</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.12.5</td>
+<td>Cross-tenant access audited at CRITICAL</td>
+<td>Audit log check</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="transaction-helper">2.13 Transaction Helper</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.13.1</td>
+<td><code>transaction()</code> helper</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.13.2</td>
+<td>Retry on deadlock/serialization</td>
+<td>Retry test passes</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.13.3</td>
+<td>Long transaction detection (&gt;5s warning)</td>
+<td>Log warning fires</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.13.4</td>
+<td>Outbox pattern in transactions</td>
+<td>Events published after commit</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-upload-service">2.14 File Upload Service</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.14.1</td>
+<td>FileService interface</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.14.2</td>
+<td>S3 driver</td>
+<td>Files uploaded to S3</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.14.3</td>
+<td>Local driver (dev)</td>
+<td>Files saved locally</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.14.4</td>
+<td>MIME type whitelist</td>
+<td>Invalid MIME rejected</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.14.5</td>
+<td>File size limits</td>
+<td>Large file rejected</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.14.6</td>
+<td>Signed URLs (15-min TTL)</td>
+<td>URLs expire</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.14.7</td>
+<td>Virus scan (ClamAV)</td>
+<td>Infected file rejected</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.14.8</td>
+<td>File metadata in <code>file_uploads</code> table</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="background-job-framework">2.15 Background Job Framework</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.15.1</td>
+<td>BullMQ integration</td>
+<td>Queue works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.15.2</td>
+<td>Scheduled jobs (cron)</td>
+<td>Jobs fire on schedule</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.15.3</td>
+<td>Queued jobs</td>
+<td><code>jobs.enqueue()</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.15.4</td>
+<td>Retry with backoff</td>
+<td>Failed job retried</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.15.5</td>
+<td>Dead-letter queue</td>
+<td>Failed jobs land in DLQ</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.15.6</td>
+<td>Job observability API</td>
+<td><code>/api/v1/_internal/jobs</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.15.7</td>
+<td>Distributed lock (single instance per tenant)</td>
+<td>Duplicate job prevented</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="base-classes">2.16 Base Classes</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.16.1</td>
+<td><code>BaseRepository</code> with tenant scope, soft delete,
+optimistic lock</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.16.2</td>
+<td><code>BaseService</code> with hooks + validation contract</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.16.3</td>
+<td><code>BaseController</code> with CRUD handlers</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.16.4</td>
+<td><code>BaseWorkflow</code> with state machine</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.16.5</td>
+<td><code>BaseEventHandler</code></td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.16.6</td>
+<td><code>BaseJob</code></td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.16.7</td>
+<td><code>BaseMiddleware</code></td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="frontend-foundation">2.17 Frontend Foundation</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2.17.1</td>
+<td>Axios client with interceptors</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.17.2</td>
+<td>React Query client + query key factory</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.17.3</td>
+<td>Auth context + permission guard</td>
+<td>Login works, guards hide UI</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.17.4</td>
+<td>Shared UI components (DataTable, EntityForm, StatusBadge, etc.)</td>
+<td>Component library exists</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>2.17.5</td>
+<td>Loading/error/empty states</td>
+<td>All data views have states</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>2.17.6</td>
+<td>Toast notifications</td>
+<td>Mutations show toasts</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="database">3. Database</h2>
+<h3 id="database-setup">3.1 Database Setup</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>3.1.1</td>
+<td>PostgreSQL 16+ provisioned (production)</td>
+<td>Live DB connection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.1.2</td>
+<td>PostgreSQL 16+ provisioned (staging)</td>
+<td>Live DB connection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.1.3</td>
+<td>PostgreSQL 16+ in Docker (development)</td>
+<td><code>docker-compose up</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.1.4</td>
+<td>Connection pooling (PgBouncer/Supavisor)</td>
+<td>Pool config verified</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.1.5</td>
+<td>Read replica provisioned</td>
+<td>Replica accessible</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.1.6</td>
+<td>TLS required for all connections</td>
+<td>Connection test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="schema">3.2 Schema</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>3.2.1</td>
+<td>All Prisma models have reserved columns (id, tenant_id, version,
+created_at, etc.)</td>
+<td>Schema inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.2.2</td>
+<td>UUID v7 primary keys</td>
+<td>Schema inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.2.3</td>
+<td>Soft delete columns (deleted_at, deleted_by)</td>
+<td>Schema inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.2.4</td>
+<td>Optimistic locking (version field)</td>
+<td>Schema inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.2.5</td>
+<td>Foreign key indexes on every FK</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.2.6</td>
+<td>Partial indexes for soft-deleted tables</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.2.7</td>
+<td>Row-Level Security enabled</td>
+<td>RLS policy check</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.2.8</td>
+<td>Check constraints for business rules</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.2.9</td>
+<td>Audit log table append-only</td>
+<td>RLS policy</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="migrations">3.3 Migrations</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>3.3.1</td>
+<td>Initial migration applied to production</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.3.2</td>
+<td>Migration files in <code>prisma/migrations/</code></td>
+<td>Folder inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.3.3</td>
+<td>Every migration has rollback SQL</td>
+<td>Rollback tested</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.3.4</td>
+<td>Migrations forward-compatible (no downtime)</td>
+<td>Tested in staging</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.3.5</td>
+<td>Migrations use <code>CONCURRENTLY</code> for new indexes</td>
+<td>SQL inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.3.6</td>
+<td>Seed scripts for reference data</td>
+<td>Seed runs</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.3.7</td>
+<td>Seed scripts for default roles + permissions</td>
+<td>Seed runs</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="backups">3.4 Backups</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>3.4.1</td>
+<td>PITR enabled (14-day retention)</td>
+<td>Backup config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.4.2</td>
+<td>Daily logical backup to S3</td>
+<td>Backup job runs</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.4.3</td>
+<td>Weekly logical backup (12-month retention)</td>
+<td>Backup config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.4.4</td>
+<td>Monthly logical backup to Glacier (7-year retention)</td>
+<td>Backup config</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.4.5</td>
+<td>Backup encryption (SSE-KMS)</td>
+<td>Encryption verified</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.4.6</td>
+<td>Daily restore-test job</td>
+<td>Job runs, alerts on fail</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.4.7</td>
+<td>Weekly full restore to staging</td>
+<td>Restore verified</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.4.8</td>
+<td>Cross-region backup replication</td>
+<td>Replication verified</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="observability">3.5 Observability</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>3.5.1</td>
+<td><code>pg_stat_statements</code> enabled</td>
+<td>Extension check</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.5.2</td>
+<td>Slow query log (&gt;500ms)</td>
+<td>Log inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.5.3</td>
+<td>Prometheus metrics exporter</td>
+<td>Metrics scraped</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.5.4</td>
+<td>Database dashboard in Grafana</td>
+<td>Dashboard exists</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>3.5.5</td>
+<td>Lock wait alerting</td>
+<td>Alert fires on lock</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>3.5.6</td>
+<td>Connection pool monitoring</td>
+<td>Dashboard shows pool</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="api">4. API</h2>
+<h3 id="api-conformance">4.1 API Conformance</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4.1.1</td>
+<td>All endpoints under <code>/api/v1/</code></td>
+<td>Route inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.2</td>
+<td>REST conventions (verbs, status codes)</td>
+<td>API test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.3</td>
+<td>Plural kebab-case URLs</td>
+<td>Route inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.4</td>
+<td>UUID v7 IDs in URLs</td>
+<td>Route test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.5</td>
+<td>Standard response envelope</td>
+<td>API test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.6</td>
+<td>Error codes namespaced</td>
+<td>Error response test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.7</td>
+<td>Pagination (offset + cursor)</td>
+<td>List endpoint test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.8</td>
+<td>Filtering (operator suffixes)</td>
+<td>Filter test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.9</td>
+<td>Sorting (<code>-field</code> for desc)</td>
+<td>Sort test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.10</td>
+<td>Bulk operations (max 100)</td>
+<td>Bulk endpoint test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.11</td>
+<td>Idempotency key support</td>
+<td>Idempotency test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.12</td>
+<td>Rate limiting (4 response headers)</td>
+<td>Rate limit test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.13</td>
+<td>CORS configured</td>
+<td>CORS test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.1.14</td>
+<td>ETag + conditional requests</td>
+<td>Cache test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.1.15</td>
+<td>gzip/Brotli compression</td>
+<td>Compression test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="authentication">4.2 Authentication</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4.2.1</td>
+<td>JWT auth on all endpoints (except login, health)</td>
+<td>Unauth request → 401</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.2.2</td>
+<td>Argon2id password hashing</td>
+<td>Hash inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.2.3</td>
+<td>15-min access token TTL</td>
+<td>Token inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.2.4</td>
+<td>30-day refresh token (httpOnly cookie)</td>
+<td>Cookie inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.2.5</td>
+<td>Refresh token rotation</td>
+<td>Old token rejected</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.2.6</td>
+<td>Refresh token replay detection</td>
+<td>Replay → session revoked</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.2.7</td>
+<td>MFA (TOTP) for admin/finance/recall</td>
+<td>MFA flow tested</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.2.8</td>
+<td>Account lockout (5 attempts → 30-min)</td>
+<td>Lockout test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.2.9</td>
+<td>Password reset (token-based, 30-min TTL)</td>
+<td>Reset flow tested</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.2.10</td>
+<td>JWT blocklist for compromised tokens</td>
+<td>Blocklist test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="authorization">4.3 Authorization</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4.3.1</td>
+<td>RBAC middleware on every endpoint</td>
+<td>Permission test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.3.2</td>
+<td>Row-level checks (user can only see own data)</td>
+<td>Cross-user test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.3.3</td>
+<td>Field-level response shaping</td>
+<td>Sensitive field hidden</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.3.4</td>
+<td>Cross-tenant access blocked</td>
+<td>Cross-tenant test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.3.5</td>
+<td>Sensitive endpoints require MFA re-auth</td>
+<td>Re-auth test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.3.6</td>
+<td>All auth failures audit logged</td>
+<td>Audit log check</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-documentation">4.4 API Documentation</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4.4.1</td>
+<td>OpenAPI 3.1 spec generated</td>
+<td><code>openapi.yaml</code> exists</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.4.2</td>
+<td>Every endpoint documented</td>
+<td>Spec inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.4.3</td>
+<td>TypeScript SDK auto-generated</td>
+<td><code>@suop/api-client</code> package</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>4.4.4</td>
+<td>API changelog maintained</td>
+<td><code>CHANGELOG.md</code> updated</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>4.4.5</td>
+<td>Swagger UI (dev only)</td>
+<td><code>/api/docs</code> works in dev</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="security">5. Security</h2>
+<h3 id="transport-security">5.1 Transport Security</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.1.1</td>
+<td>TLS 1.3 enforced</td>
+<td>SSL Labs A+ grade</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.1.2</td>
+<td>HSTS header (2-year, includeSubDomains, preload)</td>
+<td>Header inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.1.3</td>
+<td>Auto-renewing certificates</td>
+<td>Renewal verified</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.1.4</td>
+<td>DB connection over TLS</td>
+<td>Connection test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.1.5</td>
+<td>Redis connection over TLS</td>
+<td>Connection test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="application-security">5.2 Application Security</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.2.1</td>
+<td>All inputs validated by zod schema</td>
+<td>Validation test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.2.2</td>
+<td>SQL injection prevention (Prisma parameterized)</td>
+<td>SAST scan</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.2.3</td>
+<td>XSS prevention (React auto-encoding, no
+dangerouslySetInnerHTML)</td>
+<td>Code scan</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.2.4</td>
+<td>CSRF protection (SameSite cookies)</td>
+<td>Cookie test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.2.5</td>
+<td>SSRF prevention (URL allowlist + IP blocking)</td>
+<td>Outbound URL test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.2.6</td>
+<td>Content Security Policy header</td>
+<td>Header inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.2.7</td>
+<td>Security headers (nosniff, frame-deny, etc.)</td>
+<td>Header inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.2.8</td>
+<td>Sensitive column encryption (pgcrypto)</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.2.9</td>
+<td>Password pepper from secrets manager</td>
+<td>Config inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.2.10</td>
+<td>No secrets in code/git</td>
+<td>Secret scan</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="infrastructure-security">5.3 Infrastructure Security</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.3.1</td>
+<td>VPC with private subnets</td>
+<td>Network config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.3.2</td>
+<td>DB in isolated subnet (no internet)</td>
+<td>Network config</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.3.3</td>
+<td>Security groups least privilege</td>
+<td>SG inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.3.4</td>
+<td>S3 buckets private (no public access)</td>
+<td>Bucket policy</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.3.5</td>
+<td>S3 versioning enabled</td>
+<td>Bucket config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.3.6</td>
+<td>S3 cross-region replication</td>
+<td>Replication check</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.3.7</td>
+<td>Container non-root user</td>
+<td>Dockerfile inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.3.8</td>
+<td>Container read-only filesystem</td>
+<td>Container test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.3.9</td>
+<td>Image scanning (Trivy)</td>
+<td>CI scan passes</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.3.10</td>
+<td>SBOM generated per image</td>
+<td>SBOM artifact</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="security-testing">5.4 Security Testing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.4.1</td>
+<td>SAST on every PR (SonarQube)</td>
+<td>CI passes</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.4.2</td>
+<td>Dependency scanning (Snyk + npm audit)</td>
+<td>CI passes</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.4.3</td>
+<td>Secret scanning (git-secrets)</td>
+<td>CI passes</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.4.4</td>
+<td>Container image scanning (Trivy)</td>
+<td>CI passes</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.4.5</td>
+<td>Annual penetration test</td>
+<td>Pen test report</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.4.6</td>
+<td>OWASP Top 10 coverage verified</td>
+<td>Coverage doc</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="audit-compliance">5.5 Audit &amp; Compliance</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>5.5.1</td>
+<td>All mutations audit logged</td>
+<td>Audit log inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.5.2</td>
+<td>Audit log immutable (RLS)</td>
+<td>UPDATE/DELETE rejected</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.5.3</td>
+<td>Audit log hash chain</td>
+<td>Hash verified</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.5.4</td>
+<td>Audit log retention (7 years)</td>
+<td>Retention config</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.5.5</td>
+<td>FSSAI compliance (2-year records)</td>
+<td>Retention verified</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>5.5.6</td>
+<td>GST compliance (6-year records)</td>
+<td>Retention verified</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>5.5.7</td>
+<td>DPDP compliance (DSAR workflow)</td>
+<td>DSAR test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="devops">6. DevOps</h2>
+<h3 id="cicd">6.1 CI/CD</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>6.1.1</td>
+<td>CI pipeline (lint, typecheck, test, build)</td>
+<td>CI runs on PR</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.1.2</td>
+<td>CD pipeline (staging auto, production manual)</td>
+<td>Deploy verified</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.1.3</td>
+<td>Blue-green deployment</td>
+<td>Zero-downtime deploy</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.1.4</td>
+<td>Auto-rollback on smoke test failure</td>
+<td>Rollback tested</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.1.5</td>
+<td>Migration tested in CI</td>
+<td>Migration runs in CI</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.1.6</td>
+<td>All gates blocking</td>
+<td>PR blocked on fail</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="docker">6.2 Docker</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>6.2.1</td>
+<td>Dockerfile.backend (multi-stage)</td>
+<td>Build works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.2.2</td>
+<td>Dockerfile.web (multi-stage, Next.js standalone)</td>
+<td>Build works</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.2.3</td>
+<td>docker-compose.yml (full stack)</td>
+<td><code>docker-compose up</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.2.4</td>
+<td>Non-root user in containers</td>
+<td>Container test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.2.5</td>
+<td>Health check in Dockerfile</td>
+<td>Health endpoint works</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="infrastructure-as-code">6.3 Infrastructure as Code</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>6.3.1</td>
+<td>Terraform for all infrastructure</td>
+<td><code>terraform plan</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.3.2</td>
+<td>State in S3 backend with lock</td>
+<td>State config</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.3.3</td>
+<td>Drift detection daily</td>
+<td>Drift alert works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.3.4</td>
+<td>Staging + production environments</td>
+<td>Both deployable</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="git-strategy">6.4 Git Strategy</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>6.4.1</td>
+<td>Branch protection on main + develop</td>
+<td>Branch settings</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.4.2</td>
+<td>Signed commits required</td>
+<td>Commit signatures</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.4.3</td>
+<td>PR review (1 for code, 2 for security)</td>
+<td>PR template</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>6.4.4</td>
+<td>Squash &amp; merge</td>
+<td>Merge history</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>6.4.5</td>
+<td>Conventional commits enforced</td>
+<td>Commit lint</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="performance">7. Performance</h2>
+<h3 id="api-performance">7.1 API Performance</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>7.1.1</td>
+<td>p95 latency targets met (per endpoint type)</td>
+<td>Load test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.1.2</td>
+<td>No N+1 queries</td>
+<td>Query count test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.1.3</td>
+<td>Cursor pagination for &gt;100k row tables</td>
+<td>API test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.1.4</td>
+<td>Page size max 200</td>
+<td>API test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.1.5</td>
+<td>ETag on GET responses</td>
+<td>Header test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.1.6</td>
+<td>gzip/Brotli enabled</td>
+<td>Compression test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="database-performance">7.2 Database Performance</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>7.2.1</td>
+<td>Every FK has an index</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.2.2</td>
+<td>EXPLAIN ANALYZE shows no seq scans &gt;10k rows</td>
+<td>Plan inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.2.3</td>
+<td>Slow query log enabled (&gt;500ms)</td>
+<td>Log config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.2.4</td>
+<td>Auto-vacuum tuned</td>
+<td>Config inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.2.5</td>
+<td>Partitioning for large tables (audit, ledger)</td>
+<td>Partition check</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.2.6</td>
+<td>Cache hit ratio &gt;95%</td>
+<td><code>pg_stat_database</code></td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="frontend-performance">7.3 Frontend Performance</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>7.3.1</td>
+<td>Lighthouse Performance ≥90</td>
+<td>Lighthouse run</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.3.2</td>
+<td>LCP &lt;2.5s</td>
+<td>Lighthouse</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.3.3</td>
+<td>FID &lt;100ms</td>
+<td>Lighthouse</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.3.4</td>
+<td>CLS &lt;0.1</td>
+<td>Lighthouse</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.3.5</td>
+<td>Initial bundle &lt;300KB gzipped</td>
+<td>Bundle analyzer</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.3.6</td>
+<td>Per-route bundle &lt;100KB gzipped</td>
+<td>Bundle analyzer</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.3.7</td>
+<td>Code splitting per route</td>
+<td>Bundle inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.3.8</td>
+<td>Image optimization (Next.js Image)</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="caching">7.4 Caching</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>7.4.1</td>
+<td>Redis cache operational</td>
+<td>Cache hit/miss metrics</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.4.2</td>
+<td>Reference data cached (1h TTL)</td>
+<td>Cache test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.4.3</td>
+<td>Master data cached (5min TTL)</td>
+<td>Cache test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.4.4</td>
+<td>Dashboard aggregations cached (5min TTL)</td>
+<td>Cache test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.4.5</td>
+<td>Cache hit rate &gt;80%</td>
+<td>Redis metrics</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.4.6</td>
+<td>Cache invalidation on update</td>
+<td>Update → cache miss</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.4.7</td>
+<td>CDN configured (Cloudflare)</td>
+<td>CDN test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.4.8</td>
+<td>Static assets cached (1 year)</td>
+<td>CDN config</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="load-testing">7.5 Load Testing</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>7.5.1</td>
+<td>Normal load test (100 users) passes</td>
+<td>k6 run</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.5.2</td>
+<td>Peak load test (500 users) passes</td>
+<td>k6 run</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.5.3</td>
+<td>Stress test (find breaking point) documented</td>
+<td>Report exists</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.5.4</td>
+<td>Spike test passes</td>
+<td>k6 run</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>7.5.5</td>
+<td>Soak test (8 hours) passes</td>
+<td>k6 run</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>7.5.6</td>
+<td>Performance regression tests in CI</td>
+<td>CI passes</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="disaster-recovery">8. Disaster Recovery</h2>
+<h3 id="backup-recovery">8.1 Backup &amp; Recovery</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>8.1.1</td>
+<td>Daily restore-test job</td>
+<td>Job runs, alerts work</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.1.2</td>
+<td>Weekly full restore to staging</td>
+<td>Restore verified</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.1.3</td>
+<td>Monthly DR failover drill</td>
+<td>Drill report</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.1.4</td>
+<td>Annual full disaster simulation</td>
+<td>Simulation report</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.1.5</td>
+<td>Glacier restore tested</td>
+<td>Restore time documented</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="high-availability">8.2 High Availability</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>8.2.1</td>
+<td>Multi-AZ DB (primary + 2 replicas)</td>
+<td>DB config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.2.2</td>
+<td>Auto-failover for DB</td>
+<td>Failover test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.2.3</td>
+<td>Cross-region async replica</td>
+<td>Replication lag &lt;1min</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.2.4</td>
+<td>Multi-AZ backend (min 2 tasks)</td>
+<td>ECS config</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.2.5</td>
+<td>Multi-AZ load balancer</td>
+<td>ALB config</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.2.6</td>
+<td>Route53 health check + failover</td>
+<td>DNS config</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dr-documentation">8.3 DR Documentation</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>8.3.1</td>
+<td>15 DR runbooks written</td>
+<td>Runbook folder</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.3.2</td>
+<td>DR contact tree documented</td>
+<td>Doc inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.3.3</td>
+<td>BCP manual workaround procedures</td>
+<td>BCP doc</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.3.4</td>
+<td>Communication templates drafted</td>
+<td>Template folder</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.3.5</td>
+<td>Regulatory notification procedures</td>
+<td>Doc inspection</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dr-testing">8.4 DR Testing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>8.4.1</td>
+<td>Tabletop exercise (quarterly)</td>
+<td>Exercise report</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.4.2</td>
+<td>DR failover drill (monthly)</td>
+<td>Drill report</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.4.3</td>
+<td>Full restore test (weekly)</td>
+<td>Test report</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>8.4.4</td>
+<td>Full BCP test (annual)</td>
+<td>Test report</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>8.4.5</td>
+<td>Full disaster simulation (annual)</td>
+<td>Simulation report</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="monitoring-observability">9. Monitoring &amp; Observability</h2>
+<h3 id="metrics">9.1 Metrics</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>9.1.1</td>
+<td>Prometheus scraping backend</td>
+<td>Metrics endpoint</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.1.2</td>
+<td>Grafana dashboards (system, DB, business)</td>
+<td>Dashboards exist</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.1.3</td>
+<td>Database metrics (connections, latency, locks)</td>
+<td>Dashboard</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.1.4</td>
+<td>Redis metrics (memory, hit rate)</td>
+<td>Dashboard</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.1.5</td>
+<td>Business metrics (POs/day, GRNs/day, NCRs/day)</td>
+<td>Dashboard</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logs">9.2 Logs</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>9.2.1</td>
+<td>Structured JSON logs (Pino)</td>
+<td>Log format</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.2.2</td>
+<td>Log aggregation (Loki or ELK)</td>
+<td>Logs searchable</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.2.3</td>
+<td>Sensitive field redaction</td>
+<td>Log inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.2.4</td>
+<td>Log retention (30 days hot, 90 days warm)</td>
+<td>Retention config</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.2.5</td>
+<td>Correlation ID in every log line</td>
+<td>Log inspection</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tracing">9.3 Tracing</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>9.3.1</td>
+<td>OpenTelemetry instrumentation</td>
+<td>Trace export</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.3.2</td>
+<td>Traces exported to Tempo/Jaeger</td>
+<td>Trace inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.3.3</td>
+<td>100% error traces captured</td>
+<td>Trace test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.3.4</td>
+<td>10% normal traces sampled</td>
+<td>Sampling config</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="alerting">9.4 Alerting</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>9.4.1</td>
+<td>PagerDuty integration (critical alerts)</td>
+<td>Test page</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.4.2</td>
+<td>Slack integration (warning alerts)</td>
+<td>Test alert</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.4.3</td>
+<td>High error rate alert (&gt;5% for 5min)</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.4.4</td>
+<td>Service down alert</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.4.5</td>
+<td>DB down alert</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.4.6</td>
+<td>High latency alert (p95 &gt;1s for 10min)</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.4.7</td>
+<td>Disk space alert (&gt;80%)</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.4.8</td>
+<td>Business alerts (NCR critical, recall, CAPA overdue)</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.4.9</td>
+<td>Security alerts (failed login spike, permission denied spike)</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.4.10</td>
+<td>Alert fatigue prevention (grouping, inhibition)</td>
+<td>Config verified</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="error-tracking">9.5 Error Tracking</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>9.5.1</td>
+<td>Sentry integration</td>
+<td>Errors captured</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.5.2</td>
+<td>Source maps uploaded</td>
+<td>Stack traces readable</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.5.3</td>
+<td>Release tracking</td>
+<td>Releases tagged in Sentry</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.5.4</td>
+<td>Frontend errors captured</td>
+<td>Error test</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="uptime-monitoring">9.6 Uptime Monitoring</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>9.6.1</td>
+<td>External uptime monitor (Pingdom/UptimeRobot)</td>
+<td>Monitor configured</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.6.2</td>
+<td>Synthetic transaction monitoring (Checkly)</td>
+<td>Synthetics run</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>9.6.3</td>
+<td>Status page (public)</td>
+<td><code>status.sudhamrit.com</code> live</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>9.6.4</td>
+<td>Real User Monitoring (Sentry Performance)</td>
+<td>RUM data flowing</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="testing">10. Testing</h2>
+<h3 id="test-infrastructure">10.1 Test Infrastructure</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>10.1.1</td>
+<td>Vitest configured</td>
+<td><code>bun run test:unit</code> works</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.1.2</td>
+<td>Testcontainers configured</td>
+<td>Integration tests run</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>10.1.3</td>
+<td>Playwright configured</td>
+<td>E2E tests run</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.1.4</td>
+<td>k6 configured</td>
+<td>Load tests run</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>10.1.5</td>
+<td>Test database isolated</td>
+<td>Tests don’t pollute</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="test-coverage">10.2 Test Coverage</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>10.2.1</td>
+<td>Foundation code coverage ≥90%</td>
+<td>Coverage report</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.2.2</td>
+<td>Business code coverage ≥70%</td>
+<td>Coverage report</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>10.2.3</td>
+<td>Coverage gate in CI</td>
+<td>CI fails below threshold</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.2.4</td>
+<td>Mutation tests (Stryker) on foundation</td>
+<td>Mutation score ≥80%</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="test-types">10.3 Test Types</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>10.3.1</td>
+<td>Unit tests for every service method</td>
+<td>Test count</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.3.2</td>
+<td>Unit tests for every workflow transition</td>
+<td>Test count</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>10.3.3</td>
+<td>Integration tests for every endpoint</td>
+<td>Test count</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.3.4</td>
+<td>E2E tests for top 20 user journeys</td>
+<td>Test count</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>10.3.5</td>
+<td>Performance regression tests</td>
+<td>Nightly run</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>10.3.6</td>
+<td>Contract tests (frontend ↔︎ backend)</td>
+<td>CI passes</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>10.3.7</td>
+<td>Smoke tests post-deploy</td>
+<td>Deploy triggers tests</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="first-business-journey-procure-to-receive">11. First Business
+Journey (Procure-to-Receive)</h2>
+<h3 id="organization-module">11.1 Organization Module</h3>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>11.1.1</td>
+<td>Schema migrated</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.1.2</td>
+<td>Repository implemented</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.1.3</td>
+<td>Service with business rules</td>
+<td>Code inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.1.4</td>
+<td>Workflow (Plant lifecycle)</td>
+<td>State machine test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.1.5</td>
+<td>API endpoints (CRUD + workflow)</td>
+<td>API tests</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.1.6</td>
+<td>Frontend wired to API</td>
+<td>UI test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.1.7</td>
+<td>RBAC enforced</td>
+<td>Permission test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.1.8</td>
+<td>Audit logging</td>
+<td>Audit log check</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.1.9</td>
+<td>Notifications (plant activation)</td>
+<td>Notification test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.1.10</td>
+<td>Unit + integration tests</td>
+<td>Tests pass</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="auth-rbac-module">11.2 Auth &amp; RBAC Module</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>11.2.1</td>
+<td>Schema migrated</td>
+<td>DB inspection</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.2.2</td>
+<td>Real auth (Argon2id + JWT)</td>
+<td>Auth test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.2.3</td>
+<td>MFA (TOTP)</td>
+<td>MFA test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.2.4</td>
+<td>Refresh token rotation</td>
+<td>Rotation test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.2.5</td>
+<td>User lifecycle state machine</td>
+<td>Workflow test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.2.6</td>
+<td>RBAC middleware on every endpoint</td>
+<td>Permission test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.2.7</td>
+<td>Frontend login wired to real API</td>
+<td>Login test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.2.8</td>
+<td>RBAC UI (roles, permissions) wired</td>
+<td>UI test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.2.9</td>
+<td>Audit logging (login, logout, permission changes)</td>
+<td>Audit check</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>11.2.10</td>
+<td>Notifications (welcome, password reset)</td>
+<td>Notification test</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>11.2.11</td>
+<td>Tests (90%+ coverage)</td>
+<td>Coverage report</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="remaining-10-modules">11.3-11.12 — Remaining 10 Modules</h3>
+<p>(Same 10-point checklist per module: Organization, Auth, Supplier,
+Product, Purchase Order, GRN, IQC, Quality Hold, Inventory, Barcode,
+Stock Ledger, Warehouse Available Stock)</p>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Module</th>
+<th>DB</th>
+<th>Repo</th>
+<th>Service</th>
+<th>Workflow</th>
+<th>API</th>
+<th>Frontend</th>
+<th>RBAC</th>
+<th>Audit</th>
+<th>Notifications</th>
+<th>Tests</th>
+<th>Done</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Organization</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>Auth &amp; RBAC</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>Supplier</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>Product</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>Purchase Order</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>GRN</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>IQC</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>Quality Hold</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>Inventory</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>Barcode</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>Stock Ledger</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>Warehouse Stock</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="production-launch-readiness">12. Production Launch
+Readiness</h2>
+<h3 id="final-pre-launch">12.1 Final Pre-Launch</h3>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Item</th>
+<th>Verified By</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>12.1.1</td>
+<td>Production environment provisioned</td>
+<td>Terraform applied</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.2</td>
+<td>DNS configured</td>
+<td>DNS lookup works</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.3</td>
+<td>TLS certificate valid</td>
+<td>SSL Labs test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.4</td>
+<td>All env vars set in secrets manager</td>
+<td>Config check</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.5</td>
+<td>Database migrated</td>
+<td>Migration applied</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.6</td>
+<td>Seed data loaded (roles, permissions, reference data)</td>
+<td>Seed runs</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.7</td>
+<td>Initial tenant + admin user created</td>
+<td>Login test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.8</td>
+<td>Smoke tests pass on production</td>
+<td>Test run</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.9</td>
+<td>Monitoring alerts firing</td>
+<td>Alert test</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.10</td>
+<td>Status page live</td>
+<td>Page accessible</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.11</td>
+<td>Backup jobs scheduled</td>
+<td>Jobs run</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.12</td>
+<td>DR drill completed</td>
+<td>Drill report</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.13</td>
+<td>On-call rotation set up</td>
+<td>PagerDuty schedule</td>
+<td>☐</td>
+</tr>
+<tr class="even">
+<td>12.1.14</td>
+<td>Customer support trained</td>
+<td>Training complete</td>
+<td>☐</td>
+</tr>
+<tr class="odd">
+<td>12.1.15</td>
+<td>Documentation for end users</td>
+<td>User guide exists</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sign-off">12.2 Sign-off</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Role</th>
+<th>Name</th>
+<th>Signature</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Project Owner</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Lead Architect</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Engineering Lead</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Operations Lead</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Security Lead</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>QA Lead</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="final-production-readiness-score">Final Production Readiness
+Score</h2>
+<p><strong>Calculation:</strong> - Total checkboxes: ~350 - Each
+checkbox worth ~0.285% - Production Ready % = (checked / total) ×
+100</p>
+<p><strong>Status:</strong> - ☐ 0% — Documentation phase - ☐ 25% —
+Foundation framework complete - ☐ 50% — First business journey complete
+- ☐ 75% — All modules wired - ☐ 90% — Testing + monitoring complete - ☐
+100% — Production ready (sign-off required)</p>
+<p><strong>Target: 100% before any code is “done”</strong></p>
+<hr />
+<h2 id="approval-block">Approval Block</h2>
+<p>By approving this checklist, the Project Owner authorizes:</p>
+<ol type="1">
+<li><strong>Permanent freeze</strong> of all architecture
+documentation</li>
+<li><strong>No additional documentation</strong> unless explicitly
+requested</li>
+<li><strong>All future responses contain production code
+only</strong></li>
+<li>Implementation begins with Phase 0 Foundation code</li>
+</ol>
+<p><strong>Approved by:</strong> ______________________
+<strong>Date:</strong> ___________</p>
+<p><strong>Signature:</strong> ______________________</p>
+<p><strong>Once approved, the documentation phase is permanently frozen.
+Implementation begins.</strong></p>
+<hr />
+<p><em>End of Final Production Readiness Checklist</em></p>
+</body>
+</html>
