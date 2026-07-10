@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
@@ -11,7 +12,27 @@ import {
 } from "@/components/ui/toast"
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts, toast } = useToast()
+
+  // Listen for placeholder button clicks dispatched by the Button component
+  // when a button without an `onClick` is pressed. This gives users visible
+  // feedback that the click was registered, instead of silently doing nothing.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {}
+      const label = detail.label || "This action"
+      toast({
+        title: "Feature coming soon",
+        description: `"${label}" is not wired up yet. Connect an onClick handler in the source to enable it.`,
+      })
+    }
+    window.addEventListener("suop:placeholder-click", handler as EventListener)
+    return () =>
+      window.removeEventListener(
+        "suop:placeholder-click",
+        handler as EventListener
+      )
+  }, [toast])
 
   return (
     <ToastProvider>

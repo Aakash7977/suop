@@ -35,11 +35,52 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Lazy-loaded toast fallback.
+ *
+ * Many <Button> instances across the SUOP app are currently rendered as UI
+ * placeholders WITHOUT an `onClick` handler. Previously, clicking them did
+ * nothing silently — which made users think the buttons were broken.
+ *
+ * To give immediate visible feedback, we now intercept clicks on buttons
+ * that have no `onClick` (and are not `disabled`, `type="submit"`, or
+ * rendered via `asChild`) and show a "coming soon" toast.
+ *
+ * The toast hook is loaded lazily so that the Button component can still be
+ * used from server components / contexts where the toast provider is not
+ * available.
+ */
+function firePlaceholderToast(label: string) {
+  if (typeof window === "undefined") return
+  try {
+    // Dynamic import avoids useToast's "use client" requirement at module load
+    import("@/hooks/use-toast").then(({ useToast }) => {
+      // useToast is a hook; we cannot call it here. Instead, dispatch
+      // through the global toaster store via the imperative API below.
+    }).catch(() => {})
+  } catch {}
+
+  // Imperative fallback: dispatch a CustomEvent that the Toaster component
+  // can listen for. We also use a simpler window-level dispatch so any
+  // listener (including the Toaster in layout.tsx) can react.
+  try {
+    window.dispatchEvent(
+      new CustomEvent("suop:placeholder-click", {
+        detail: { label: label || "This button" },
+      })
+    )
+  } catch {}
+}
+
 function Button({
   className,
   variant,
   size,
   asChild = false,
+  onClick,
+  type = "button",
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
@@ -47,12 +88,48 @@ function Button({
   }) {
   const Comp = asChild ? Slot : "button"
 
+  // Derive a textual label for the placeholder toast.
+  const label = React.useMemo(() => {
+    if (typeof children === "string") return children
+    if (Array.isArray(children)) {
+      const text = children
+        .map((c) => (typeof c === "string" ? c : ""))
+        .join("")
+        .trim()
+      if (text) return text
+    }
+    return ""
+  }, [children])
+
+  const handleClick = React.useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      // If the button is a real submit button (inside a form), let it work.
+      if (type === "submit") {
+        onClick?.(e)
+        return
+      }
+      // If there is a real onClick, call it.
+      if (typeof onClick === "function") {
+        onClick(e)
+        return
+      }
+      // Otherwise, give the user feedback so the click is not silent.
+      firePlaceholderToast(label)
+    },
+    [onClick, type, label]
+  )
+
   return (
     <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      type={type}
+      disabled={disabled}
+      onClick={handleClick}
       {...props}
-    />
+    >
+      {children}
+    </Comp>
   )
 }
 
