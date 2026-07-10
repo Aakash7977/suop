@@ -16890,3 +16890,327 @@ model SampleTracking {
   @@index([sampleNumber, eventTime], map: "idx_st53_sample_time")
   @@index([trackingEvent], map: "idx_st53_event")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 54 — HACCP, CCP MONITORING, FOOD SAFETY MANAGEMENT & ENVIRONMENTAL MONITORING
+// Part 6: QMS · Sprint 6 of 15 · 11 new models · Epic 1-8 (HACCP plans, hazards,
+// CCP limits/monitoring, OPRP, environmental monitoring, sanitation, allergens, food defense)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: HACCP Plan Management ──────────────────────────────────────
+model HACCPPlan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planNumber          String   @unique @map("plan_number") // HACCP-2026-001
+  planName            String   @map("plan_name")
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  plantName           String   @map("plant_name")
+  departmentCode      String?  @map("department_code")
+  productionLineCode  String?  @map("production_line_code")
+  productFamily       String?  @map("product_family") // KATLI, MILK_SWEET, NAMKEEN, ALL
+  // ─── Version ───
+  version             String   @default("v1.0") @map("version")
+  parentPlanId        String?  @db.Uuid @map("parent_plan_id")
+  // ─── Standard ───
+  standardType        String   @default("HACCP") @map("standard_type") // HACCP, ISO_22000, FSSAI, BRCGS, CODEX, GMP, GHP, SSOP, INTERNAL
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Period ───
+  effectiveDate       DateTime? @map("effective_date")
+  expiryDate          DateTime? @map("expiry_date")
+  // ─── Status ───
+  status              String   @default("DRAFT") @map("status") // DRAFT, UNDER_REVIEW, APPROVED, ACTIVE, SUPERSEDED, ARCHIVED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  hazards             HazardAssessment[]
+  controlPoints       CriticalControlPointV2[]
+  oprps               OPRPControl[]
+
+  @@map("haccp_plans")
+  @@index([plantCode, status], map: "idx_hp54_plant_status")
+  @@index([productFamily], map: "idx_hp54_family")
+  @@index([status], map: "idx_hp54_status")
+}
+
+// ─── Epic 2: Hazard Analysis ────────────────────────────────────────────
+model HazardAssessment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  haccpPlanId         String   @db.Uuid @map("haccp_plan_id")
+  // ─── Hazard ───
+  hazardCode          String   @map("hazard_code") // HZ-BIO-001
+  hazardType          String   @map("hazard_type") // BIOLOGICAL, CHEMICAL, PHYSICAL, ALLERGEN, RADIOLOGICAL, FOREIGN_MATERIAL
+  hazardName          String   @map("hazard_name")
+  hazardDescription   String   @map("hazard_description")
+  // ─── Source ───
+  sourceStage         String   @map("source_stage") // RAW_MATERIAL, PROCESSING, PACKAGING, STORAGE, TRANSPORT, PERSONNEL, ENVIRONMENT
+  // ─── Risk Assessment ───
+  likelihood          Int      @map("likelihood") // 1-5
+  severity            Int      @map("severity") // 1-5
+  riskScore           Int      @map("risk_score") // likelihood × severity
+  riskLevel           String   @map("risk_level") // LOW (1-4), MEDIUM (5-9), HIGH (10-15), CRITICAL (16-25)
+  // ─── Control ───
+  controlMeasure      String?  @map("control_measure")
+  isCCP               Boolean  @default(false) @map("is_ccp")
+  isOPRP              Boolean  @default(false) @map("is_oprp")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  haccpPlan           HACCPPlan @relation(fields: [haccpPlanId], references: [id], onDelete: Cascade)
+
+  @@map("hazard_assessments")
+  @@index([haccpPlanId], map: "idx_ha54_plan")
+  @@index([hazardType, riskLevel], map: "idx_ha54_type_risk")
+  @@index([riskLevel], map: "idx_ha54_risk")
+}
+
+// ─── Epic 3: Critical Control Point (V2 — extends Sprint 51 CCPPoint) ───
+model CriticalControlPointV2 {
+  id                  String   @id @default(uuid()) @db.Uuid
+  haccpPlanId         String   @db.Uuid @map("haccp_plan_id")
+  ccpCode             String   @unique @map("ccp_code") // CCP-2026-001
+  ccpName             String   @map("ccp_name")
+  // ─── Stage ───
+  productionStage     String   @map("production_stage")
+  // ─── Hazard ───
+  hazardControlled    String   @map("hazard_controlled") // e.g., "Biological - Salmonella"
+  // ─── Critical Limits ───
+  criticalMin         Decimal? @db.Decimal(14, 4) @map("critical_min")
+  criticalMax         Decimal? @db.Decimal(14, 4) @map("critical_max")
+  targetValue         Decimal  @db.Decimal(14, 4) @map("target_value")
+  tolerance           Decimal? @db.Decimal(10, 4) @map("tolerance")
+  unitOfMeasure       String   @map("unit_of_measure")
+  // ─── Monitoring ───
+  monitoringMethod    String   @map("monitoring_method") // AUTOMATIC_SENSOR, MANUAL_CHECK, INSTRUMENT_READING
+  monitoringFrequency String   @map("monitoring_frequency") // CONTINUOUS, EVERY_BATCH, HOURLY, PER_SHIFT
+  monitoringBy        String   @map("monitoring_by") // OPERATOR, QC_INSPECTOR, AUTOMATIC_SYSTEM
+  // ─── Corrective Action ───
+  correctiveAction    String   @map("corrective_action")
+  // ─── Records ───
+  recordsRequired     Boolean  @default(true) @map("records_required")
+  // ─── Verification ───
+  verificationMethod  String?  @map("verification_method")
+  verificationFreq    String?  @map("verification_freq")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  haccpPlan           HACCPPlan @relation(fields: [haccpPlanId], references: [id], onDelete: Cascade)
+
+  @@map("critical_control_points_v2")
+  @@index([haccpPlanId], map: "idx_ccpv2_54_plan")
+  @@index([productionStage], map: "idx_ccpv2_54_stage")
+}
+
+// ─── Epic 4: OPRP (Operational Prerequisite Program) ────────────────────
+model OPRPControl {
+  id                  String   @id @default(uuid()) @db.Uuid
+  haccpPlanId         String   @db.Uuid @map("haccp_plan_id")
+  oprpCode            String   @unique @map("oprp_code") // OPRP-001
+  oprpName            String   @map("oprp_name")
+  // ─── Type ───
+  oprpType            String   @map("oprp_type") // CLEANING_VERIFICATION, HAND_HYGIENE, PEST_CONTROL, GLASS_CONTROL, EQUIPMENT_SANITATION, WATER_QUALITY, AIR_QUALITY, PERSONNEL_HYGIENE
+  // ─── Limits ───
+  acceptableLimit     String?  @map("acceptable_limit")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  // ─── Monitoring ───
+  monitoringFrequency String   @map("monitoring_frequency") // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  monitoringBy        String   @map("monitoring_by")
+  // ─── Corrective Action ───
+  correctiveAction    String   @map("corrective_action")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  haccpPlan           HACCPPlan @relation(fields: [haccpPlanId], references: [id], onDelete: Cascade)
+
+  @@map("oprp_controls")
+  @@index([haccpPlanId], map: "idx_oprp54_plan")
+  @@index([oprpType, status], map: "idx_oprp54_type_status")
+}
+
+// ─── Epic 5: Environmental Monitoring Program (EMP) ─────────────────────
+model EnvironmentalSample {
+  id                  String   @id @default(uuid()) @db.Uuid
+  sampleCode          String   @unique @map("sample_code") // EMP-2026-000001
+  // ─── Type ───
+  sampleType          String   @map("sample_type") // SURFACE_SWAB, AIR_SAMPLE, WATER_SAMPLE, DRAIN_SAMPLE, EQUIPMENT_SWAB, HAND_SWAB
+  // ─── Location ───
+  monitoringLocation  String   @map("monitoring_location") // ZONE_1_HIGH_RISK, ZONE_2_MEDIUM_RISK, ZONE_3_LOW_RISK, ZONE_4_NON_PRODUCT
+  locationCode        String?  @map("location_code")
+  locationDescription String?  @map("location_description")
+  // ─── Schedule ───
+  scheduledDate       DateTime @map("scheduled_date")
+  frequency           String   @map("frequency") // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  // ─── Collection ───
+  collectedById       String?  @db.Uuid @map("collected_by_id")
+  collectedByName     String?  @map("collected_by_name")
+  collectedAt         DateTime? @map("collected_at")
+  // ─── Result ───
+  testType            String?  @map("test_type") // ATP, TPC, COLIFORM, E_COLI, LISTERIA, SALMONELLA, YEAST_MOLD
+  resultValue         String?  @map("result_value")
+  resultUnit          String?  @map("result_unit") // CFU/CM2, CFU/ML, RLU
+  resultStatus        String   @default("PENDING") @map("result_status") // PENDING, PASS, FAIL, RETEST
+  // ─── Alert ───
+  alertLevel          String   @default("NONE") @map("alert_level") // NONE, WARNING, ACTION, CRITICAL
+  // ─── Status ───
+  status              String   @default("SCHEDULED") @map("status") // SCHEDULED, COLLECTED, TESTING, COMPLETED, FAILED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("environmental_samples")
+  @@index([sampleType, status], map: "idx_es54_type_status")
+  @@index([monitoringLocation, frequency], map: "idx_es54_loc_freq")
+  @@index([scheduledDate], map: "idx_es54_date")
+}
+
+// ─── Epic 6: Cleaning & Sanitation Verification ─────────────────────────
+model SanitationRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recordCode          String   @unique @map("record_code") // SAN-2026-000001
+  // ─── Cleaning ───
+  cleaningType        String   @map("cleaning_type") // PRE_PRODUCTION, BETWEEN_PRODUCT, END_OF_DAY, DEEP_CLEAN
+  // ─── Area ───
+  areaCode            String   @map("area_code")
+  areaName            String   @map("area_name")
+  equipmentCode       String?  @map("equipment_code")
+  equipmentName       String?  @map("equipment_name")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Schedule ───
+  scheduledDate       DateTime @map("scheduled_date")
+  // ─── Execution ───
+  cleanedById         String?  @db.Uuid @map("cleaned_by_id")
+  cleanedByName       String?  @map("cleaned_by_name")
+  cleanedAt           DateTime? @map("cleaned_at")
+  chemicalUsed        String?  @map("chemical_chemical")
+  chemicalConcentration String? @map("chemical_concentration")
+  contactTimeMin      Int?     @map("contact_time_min")
+  // ─── Verification ───
+  verificationMethod  String?  @map("verification_method") // VISUAL, ATP_TEST, MICROBIOLOGY, SWAB
+  verificationResult  String?  @map("verification_result") // PASS, FAIL, MARGINAL
+  atpReading          Decimal? @db.Decimal(10, 2) @map("atp_reading") // RLU
+  atpPassLimit        Decimal? @db.Decimal(10, 2) @map("atp_pass_limit")
+  microResult         String?  @map("micro_result")
+  verifiedById        String?  @db.Uuid @map("verified_by_id")
+  verifiedByName      String?  @map("verified_by_name")
+  verifiedAt          DateTime? @map("verified_at")
+  // ─── Status ───
+  status              String   @default("SCHEDULED") @map("status") // SCHEDULED, IN_PROGRESS, COMPLETED, VERIFIED, FAILED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("sanitation_records")
+  @@index([cleaningType, status], map: "idx_san54_type_status")
+  @@index([scheduledDate], map: "idx_san54_date")
+  @@index([productionLineCode], map: "idx_san54_line")
+}
+
+// ─── Epic 7: Allergen Management ────────────────────────────────────────
+model AllergenMatrixEntry {
+  id                  String   @id @default(uuid()) @db.Uuid
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  // ─── 8 FSSAI Allergens ───
+  containsMilk        Boolean  @default(false) @map("contains_milk")
+  containsTreeNuts    Boolean  @default(false) @map("contains_tree_nuts")
+  containsPeanuts     Boolean  @default(false) @map("contains_peanuts")
+  containsSesame      Boolean  @default(false) @map("contains_sesame")
+  containsSoy         Boolean  @default(false) @map("contains_soy")
+  containsGluten      Boolean  @default(false) @map("contains_gluten")
+  containsMustard     Boolean  @default(false) @map("contains_mustard")
+  containsSulphites   Boolean  @default(false) @map("contains_sulphites")
+  // ─── Allergen List ───
+  allergenList        String?  @map("allergen_list") // JSON array
+  // ─── Controls ───
+  dedicatedEquipment  Boolean  @default(false) @map("dedicated_equipment")
+  cleaningValidationRequired Boolean @default(true) @map("cleaning_validation_required")
+  sequencingRequired  Boolean  @default(false) @map("sequencing_required")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("allergen_matrix_entries")
+  @@index([productSku], map: "idx_am54_sku")
+  @@index([status], map: "idx_am54_status")
+}
+
+model CrossContactRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recordCode          String   @unique @map("record_code") // XCR-2026-000001
+  // ─── Links ───
+  productionBatchNumber String?  @map("production_batch_number")
+  productionLineCode  String   @map("production_line_code")
+  // ─── Allergen ───
+  allergenType        String   @map("allergen_type") // MILK, TREE_NUTS, PEANUTS, SESAME, SOY, GLUTEN, MUSTARD, SULPHITES
+  // ─── Incident ───
+  incidentType        String   @map("incident_type") // CROSS_CONTACT_RISK, CLEANING_FAILURE, SEQUENCING_ERROR, LABEL_ERROR
+  description         String   @map("description")
+  // ─── Severity ───
+  severity            String   @default("MEDIUM") @map("severity") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Action ───
+  correctiveAction    String?  @map("corrective_action")
+  resolvedAt          DateTime? @map("resolved_at")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, INVESTIGATING, RESOLVED, CLOSED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("cross_contact_records")
+  @@index([productionLineCode, status], map: "idx_xcr54_line_status")
+  @@index([allergenType, severity], map: "idx_xcr54_allergen_sev")
+}
+
+// ─── Epic 8: Food Defense & Food Fraud ──────────────────────────────────
+model FoodDefensePlan {
+  id                  String   @id @default(uuid()) @db.Uuid
+  planCode            String   @unique @map("plan_code") // FDP-2026-001
+  planName            String   @map("plan_name")
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  // ─── Components ───
+  facilitySecurity    Boolean  @default(false) @map("facility_security")
+  restrictedAreas     Boolean  @default(false) @map("restricted_areas")
+  visitorManagement   Boolean  @default(false) @map("visitor_management")
+  tamperDetection     Boolean  @default(false) @map("tamper_detection")
+  intentionalContaminationPrevention Boolean @default(false) @map("intentional_contamination_prevention")
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  // ─── Status ───
+  status              String   @default("DRAFT") @map("status") // DRAFT, APPROVED, ACTIVE, ARCHIVED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("food_defense_plans")
+  @@index([plantCode, status], map: "idx_fdp54_plant_status")
+}
+
+model FoodFraudAssessment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  assessmentCode      String   @unique @map("assessment_code") // FFA-2026-001
+  // ─── Ingredient ───
+  materialCode        String   @map("material_code")
+  materialName        String   @map("material_name")
+  supplierCode        String?  @map("supplier_code")
+  supplierName        String?  @map("supplier_name")
+  // ─── Assessment ───
+  fraudType           String   @map("fraud_type") // SUBSTITUTION, DILUTION, MISLABELING, CONCEALMENT, UNAPPROVED_ENHANCEMENT, COUNTERFEIT, GRAY_MARKET
+  vulnerabilityScore  Int      @default(0) @map("vulnerability_score") // 1-10
+  // ─── Mitigation ───
+  mitigationMeasures  String?  @map("mitigation_measures")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  assessedAt          DateTime @default(now()) @map("assessed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("food_fraud_assessments")
+  @@index([materialCode], map: "idx_ffa54_material")
+  @@index([vulnerabilityScore], map: "idx_ffa54_score")
+}
