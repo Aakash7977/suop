@@ -15991,3 +15991,325 @@ model VendorScorecard {
   @@index([supplierCode, periodStart], map: "idx_vsc50_supplier_period")
   @@index([overallRating], map: "idx_vsc50_rating")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 51 — IN-PROCESS QUALITY CONTROL (IPQC), PROCESS VALIDATION & REAL-TIME QUALITY
+// Part 6: QMS · Sprint 3 of 15 · 11 new models · Epic 1-8 (IPQC inspections,
+// checkpoints, process parameters, CCP monitoring, batch quality, production holds)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: In-Process Inspection Engine ───────────────────────────────
+model IPQCInspection {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionCode      String   @unique @map("inspection_code") // IPQC-2026-000001
+  // ─── Links ───
+  productionOrderNumber String? @map("production_order_number")
+  workOrderNumber     String?  @map("work_order_number")
+  productionBatchNumber String? @map("production_batch_number")
+  // ─── Stage ───
+  productionStage     String   @map("production_stage") // RAW_MATERIAL_PREP, MIXING, COOKING, ROASTING, COOLING, CUTTING, PACKING, METAL_DETECTION, FINISHED_BATCH
+  operationNo         Int?     @map("operation_no")
+  // ─── Machine ───
+  machineCode         String?  @map("machine_code")
+  machineName         String?  @map("machine_name")
+  workCenterCode      String?  @map("work_center_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Product ───
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  // ─── People ───
+  inspectorId         String?  @db.Uuid @map("inspector_id")
+  inspectorName       String?  @map("inspector_name")
+  operatorId          String?  @db.Uuid @map("operator_id")
+  operatorName        String?  @map("operator_name")
+  shiftCode           String?  @map("shift_code")
+  // ─── Template ───
+  inspectionTemplateCode String? @map("inspection_template_code")
+  checkpointCount     Int      @default(0) @map("checkpoint_count")
+  passedCount         Int      @default(0) @map("passed_count")
+  failedCount         Int      @default(0) @map("failed_count")
+  // ─── Result ───
+  overallResult       String?  @map("overall_result") // PASS, FAIL, CONDITIONAL_PASS, REWORK_REQUIRED
+  resultSummary       String?  @map("result_summary")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, IN_PROGRESS, PASSED, FAILED, CONDITIONAL_PASS, REWORK_REQUIRED, QUALITY_HOLD
+  // ─── Approval ───
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  digitalSignature    String?  @map("digital_signature")
+  // ─── Time ───
+  inspectedAt         DateTime? @map("inspected_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  results             IPQCResult[]
+
+  @@map("ipqc_inspections")
+  @@index([productionBatchNumber, productionStage], map: "idx_ipqc51_batch_stage")
+  @@index([status], map: "idx_ipqc51_status")
+  @@index([productionOrderNumber], map: "idx_ipqc51_po")
+}
+
+model IPQCResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  inspectionId        String   @db.Uuid @map("inspection_id")
+  inspectionCode      String   @map("inspection_code")
+  // ─── Checkpoint ───
+  checkpointCode      String   @map("checkpoint_code")
+  checkpointName      String   @map("checkpoint_name")
+  // ─── Parameter ───
+  parameterName       String   @map("parameter_name")
+  parameterCode       String   @map("parameter_code")
+  // ─── Spec ───
+  minValue            Decimal? @db.Decimal(14, 4) @map("min_value")
+  maxValue            Decimal? @db.Decimal(14, 4) @map("max_value")
+  targetValue         Decimal? @db.Decimal(14, 4) @map("target_value")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  // ─── Result ───
+  measuredValue       String   @map("measured_value")
+  result              String   @default("PASS") @map("result") // PASS, FAIL, MARGINAL, NA
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // CRITICAL, MAJOR, MINOR
+  isCCP               Boolean  @default(false) @map("is_ccp")
+  // ─── Notes ───
+  notes               String?
+  photoUrl            String?  @map("photo_url")
+  // ─── Audit ───
+  testedAt            DateTime @default(now()) @map("tested_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  inspection          IPQCInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@map("ipqc_results")
+  @@index([inspectionId], map: "idx_ipqcr51_inspection")
+  @@index([result], map: "idx_ipqcr51_result")
+}
+
+// ─── Epic 2: Stage-wise Quality Checkpoints ─────────────────────────────
+model QualityCheckpoint {
+  id                  String   @id @default(uuid()) @db.Uuid
+  checkpointCode      String   @unique @map("checkpoint_code") // CP-KK-COOK-TEMP
+  checkpointName      String   @map("checkpoint_name")
+  // ─── Stage ───
+  productionStage     String   @map("production_stage") // RAW_MATERIAL_PREP, MIXING, COOKING, ROASTING, COOLING, CUTTING, PACKING, METAL_DETECTION, FINISHED_BATCH
+  // ─── Product ───
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  productFamily       String?  @map("product_family") // KATLI, MILK_SWEET, NAMKEEN
+  // ─── Checkpoint ───
+  checkpointType      String   @map("checkpoint_type") // INGREDIENT_VERIFICATION, TEMPERATURE, COOKING_TIME, MOISTURE, COLOR, TASTE, TEXTURE, WEIGHT, DIMENSIONS, VISUAL_QUALITY
+  // ─── Spec ───
+  minValue            Decimal? @db.Decimal(14, 4) @map("min_value")
+  maxValue            Decimal? @db.Decimal(14, 4) @map("max_value")
+  targetValue         Decimal? @db.Decimal(14, 4) @map("target_value")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  tolerance           Decimal? @db.Decimal(10, 4) @map("tolerance")
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // CRITICAL, MAJOR, MINOR
+  isMandatory         Boolean  @default(true) @map("is_mandatory")
+  isCCP               Boolean  @default(false) @map("is_ccp")
+  // ─── Sequence ───
+  sequenceOrder       Int      @map("sequence_order")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("quality_checkpoints")
+  @@index([productionStage, productFamily], map: "idx_cp51_stage_family")
+  @@index([isCCP, isMandatory], map: "idx_cp51_ccp_mandatory")
+  @@index([productSku], map: "idx_cp51_sku")
+}
+
+// ─── Epic 3: Process Parameter Monitoring ───────────────────────────────
+model ProcessParameter {
+  id                  String   @id @default(uuid()) @db.Uuid
+  parameterCode       String   @unique @map("parameter_code") // PP-COOK-01-TEMP
+  parameterName       String   @map("parameter_name")
+  // ─── Machine ───
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  // ─── Type ───
+  parameterType       String   @map("parameter_type") // TEMPERATURE, PRESSURE, HUMIDITY, MIXING_SPEED, COOKING_TIME, COOLING_TIME, MACHINE_SPEED, OIL_TEMPERATURE, STEAM_PRESSURE
+  // ─── Limits ───
+  minValue            Decimal  @db.Decimal(14, 4) @map("min_value")
+  maxValue            Decimal  @db.Decimal(14, 4) @map("max_value")
+  targetValue         Decimal  @db.Decimal(14, 4) @map("target_value")
+  warningMin          Decimal? @db.Decimal(14, 4) @map("warning_min")
+  warningMax          Decimal? @db.Decimal(14, 4) @map("warning_max")
+  unitOfMeasure       String   @map("unit_of_measure")
+  // ─── Monitoring ───
+  monitoringFrequency String   @default("CONTINUOUS") @map("monitoring_frequency") // CONTINUOUS, EVERY_15_MIN, HOURLY, PER_BATCH
+  isCritical          Boolean  @default(false) @map("is_critical")
+  // ─── Alert ───
+  autoAlertOnBreach   Boolean  @default(true) @map("auto_alert_on_breach")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("process_parameters")
+  @@index([machineCode, parameterType], map: "idx_pp51_machine_type")
+  @@index([isCritical], map: "idx_pp51_critical")
+}
+
+// ─── Epic 4: CCP Monitoring ─────────────────────────────────────────────
+model CCPPoint {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ccpCode             String   @unique @map("ccp_code") // CCP-01-COOK-TEMP
+  ccpName             String   @map("ccp_name")
+  // ─── Stage ───
+  productionStage     String   @map("production_stage")
+  // ─── Product ───
+  productFamily       String?  @map("product_family")
+  // ─── Machine ───
+  machineCode         String?  @map("machine_code")
+  // ─── Critical Limits ───
+  criticalMin         Decimal? @db.Decimal(14, 4) @map("critical_min")
+  criticalMax         Decimal? @db.Decimal(14, 4) @map("critical_max")
+  targetValue         Decimal  @db.Decimal(14, 4) @map("target_value")
+  unitOfMeasure       String   @map("unit_of_measure")
+  // ─── Monitoring ───
+  monitoringMethod    String   @map("monitoring_method") // AUTOMATIC_SENSOR, MANUAL_CHECK, INSTRUMENT_READING
+  monitoringFrequency String   @map("monitoring_frequency")
+  // ─── Corrective Action ───
+  correctiveAction    String   @map("corrective_action")
+  // ─── HACCP ───
+  hazardType          String?  @map("hazard_type") // BIOLOGICAL, CHEMICAL, PHYSICAL, ALLERGEN
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  records             CCPRecord[]
+
+  @@map("ccp_points")
+  @@index([productionStage, status], map: "idx_ccp51_stage_status")
+  @@index([productFamily], map: "idx_ccp51_family")
+}
+
+model CCPRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ccpId               String   @db.Uuid @map("ccp_id")
+  ccpCode             String   @map("ccp_code")
+  // ─── Links ───
+  productionBatchNumber String?  @map("production_batch_number")
+  productionOrderNumber String?  @map("production_order_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Reading ───
+  measuredValue       Decimal  @db.Decimal(14, 4) @map("measured_value")
+  unitOfMeasure       String   @map("unit_of_measure")
+  // ─── Result ───
+  ccpStatus           String   @default("WITHIN_LIMIT") @map("ccp_status") // WITHIN_LIMIT, WARNING, CRITICAL_BREACH, CORRECTED
+  // ─── Corrective Action ───
+  correctiveActionTaken String? @map("corrective_action_taken")
+  correctiveActionBy String?  @map("corrective_action_by")
+  correctiveActionAt  DateTime? @map("corrective_action_at")
+  // ─── Production Impact ───
+  productionPaused    Boolean  @default(false) @map("production_paused")
+  // ─── Actor ───
+  checkedById         String?  @db.Uuid @map("checked_by_id")
+  checkedByName       String?  @map("checked_by_name")
+  // ─── Audit ───
+  checkedAt           DateTime @default(now()) @map("checked_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  ccp                 CCPPoint @relation(fields: [ccpId], references: [id], onDelete: Cascade)
+
+  @@map("ccp_records")
+  @@index([ccpId, checkedAt], map: "idx_ccpr51_ccp_time")
+  @@index([ccpStatus], map: "idx_ccpr51_status")
+  @@index([productionBatchNumber], map: "idx_ccpr51_batch")
+}
+
+// ─── Epic 6: Batch Quality Record ───────────────────────────────────────
+model BatchQualityRecord {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recordCode          String   @unique @map("record_code") // BQR-2026-000001
+  // ─── Batch ───
+  productionBatchNumber String   @unique @map("production_batch_number")
+  productionOrderNumber String?  @map("production_order_number")
+  // ─── Product ───
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  recipeCode          String?  @map("recipe_code")
+  recipeVersion       String?  @map("recipe_version")
+  // ─── Production ───
+  plantCode           String   @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  machineCode         String?  @map("machine_code")
+  operatorName        String?  @map("operator_name")
+  inspectorName       String?  @map("inspector_name")
+  shiftCode           String?  @map("shift_code")
+  // ─── Quality Summary ───
+  totalInspections    Int      @default(0) @map("total_inspections")
+  passedInspections   Int      @default(0) @map("passed_inspections")
+  failedInspections   Int      @default(0) @map("failed_inspections")
+  totalCheckpoints    Int      @default(0) @map("total_checkpoints")
+  passedCheckpoints   Int      @default(0) @map("passed_checkpoints")
+  failedCheckpoints   Int      @default(0) @map("failed_checkpoints")
+  ccpChecksTotal      Int      @default(0) @map("ccp_checks_total")
+  ccpChecksPassed     Int      @default(0) @map("ccp_checks_passed")
+  ccpBreaches         Int      @default(0) @map("ccp_breaches")
+  // ─── Overall ───
+  overallQualityResult String? @map("overall_quality_result") // PASS, FAIL, CONDITIONAL_PASS
+  qualityGrade        String?  @map("quality_grade") // A, B, C, REJECT
+  // ─── Digital History ───
+  inspectionData      String?  @map("inspection_data") // JSON summary of all inspections
+  ccpData             String?  @map("ccp_data") // JSON summary of all CCP records
+  photoUrls           String?  @map("photo_urls") // JSON array
+  // ─── Release ───
+  releasedById        String?  @db.Uuid @map("released_by_id")
+  releasedByName      String?  @map("released_by_name")
+  releasedAt          DateTime? @map("released_at")
+  releaseNotes        String?  @map("release_notes")
+  // ─── Status ───
+  status              String   @default("IN_PROGRESS") @map("status") // IN_PROGRESS, COMPLETED, RELEASED, ON_HOLD, REJECTED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("batch_quality_records")
+  @@index([productionBatchNumber], map: "idx_bqr51_batch")
+  @@index([productSku, status], map: "idx_bqr51_sku_status")
+  @@index([status], map: "idx_bqr51_status")
+}
+
+// ─── Epic 7: Production Quality Hold ────────────────────────────────────
+model ProductionQualityHold {
+  id                  String   @id @default(uuid()) @db.Uuid
+  holdCode            String   @unique @map("hold_code") // PQH-2026-000001
+  // ─── Links ───
+  productionBatchNumber String?  @map("production_batch_number")
+  productionOrderNumber String?  @map("production_order_number")
+  workOrderNumber     String?  @map("work_order_number")
+  // ─── Hold ───
+  holdType            String   @map("hold_type") // PARTIAL_HOLD, COMPLETE_HOLD, LINE_HOLD, MACHINE_HOLD
+  holdReason          String   @map("hold_reason") // QUALITY_FAILURE, CCP_BREACH, PARAMETER_DEVIATION, OPERATOR_ERROR, MACHINE_FAULT, REPEATED_DEFECTS, MANUAL_HOLD
+  holdDescription     String   @map("hold_description")
+  // ─── Stage ───
+  productionStage     String?  @map("production_stage")
+  machineCode         String?  @map("machine_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // MINOR, MAJOR, CRITICAL
+  // ─── Review ───
+  reviewedById        String?  @db.Uuid @map("reviewed_by_id")
+  reviewedByName      String?  @map("reviewed_by_name")
+  reviewedAt          DateTime? @map("reviewed_at")
+  reviewDecision      String?  @map("review_decision") // CONTINUE, REWORK, REJECT, CONDITIONAL_RELEASE
+  reviewNotes         String?  @map("review_notes")
+  // ─── Release ───
+  releasedById        String?  @db.Uuid @map("released_by_id")
+  releasedByName      String?  @map("released_by_name")
+  releasedAt          DateTime? @map("released_at")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, UNDER_REVIEW, RELEASED, REWORKED, REJECTED
+  // ─── Time ───
+  heldAt              DateTime @default(now()) @map("held_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("production_quality_holds")
+  @@index([productionBatchNumber, status], map: "idx_pqh51_batch_status")
+  @@index([holdReason, severity], map: "idx_pqh51_reason_sev")
+  @@index([status], map: "idx_pqh51_status")
+}
