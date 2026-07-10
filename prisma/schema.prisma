@@ -14980,3 +14980,282 @@ model DigitalFactoryNode {
   @@index([parentNodeId], map: "idx_dfn47_parent")
   @@index([status], map: "idx_dfn47_status")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 48 — AI MANUFACTURING INTELLIGENCE, AUTONOMOUS OPTIMIZATION & SMART FACTORY
+// Part 5: MES · FINAL SPRINT · 8 new models · Epic 1-8 (AI production, predictive
+// maintenance, predictive quality, recipe optimization, energy AI, root cause, CI)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: AI Production Optimization ─────────────────────────────────
+model AIProductionModel {
+  id                  String   @id @default(uuid()) @db.Uuid
+  modelCode           String   @unique @map("model_code") // AIPM-2026-001
+  modelName           String   @map("model_name")
+  modelType           String   @map("model_type") // PRODUCTION_OPTIMIZER, PREDICTIVE_MAINTENANCE, PREDICTIVE_QUALITY, RECIPE_OPTIMIZER, ENERGY_OPTIMIZER, ROOT_CAUSE_ANALYZER, SCHEDULING_OPTIMIZER
+  // ─── Training ───
+  version             String   @map("version") // v1.0.0
+  trainingDatasetSize Int      @default(0) @map("training_dataset_size")
+  trainingRecordsCount Int     @default(0) @map("training_records_count")
+  trainedAt           DateTime? @map("trained_at")
+  // ─── Accuracy ───
+  accuracyPercent     Decimal  @db.Decimal(5, 2) @default(0) @map("accuracy_percent")
+  precisionPercent    Decimal  @db.Decimal(5, 2) @default(0) @map("precision_percent")
+  recallPercent       Decimal  @db.Decimal(5, 2) @default(0) @map("recall_percent")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, TRAINING, DEPRECATED, RETIRED
+  lastPredictionAt    DateTime? @map("last_prediction_at")
+  totalPredictions    Int      @default(0) @map("total_predictions")
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_production_models")
+  @@index([modelType, status], map: "idx_aipm48_type_status")
+  @@index([status], map: "idx_aipm48_status")
+}
+
+model AIManufacturingRecommendation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  recommendationCode  String   @unique @map("recommendation_code") // AMR-2026-000001
+  // ─── AI Source ───
+  modelId             String?  @db.Uuid @map("model_id")
+  modelType           String   @map("model_type") // PRODUCTION_OPTIMIZER, PREDICTIVE_MAINTENANCE, PREDICTIVE_QUALITY, RECIPE_OPTIMIZER, ENERGY_OPTIMIZER, ROOT_CAUSE_ANALYZER, SCHEDULING_OPTIMIZER
+  // ─── Recommendation ───
+  recommendationType  String   @map("recommendation_type") // INCREASE_BATCH_SIZE, SPLIT_BATCH, CHANGE_MACHINE, ASSIGN_OPERATOR, REDUCE_DOWNTIME, IMPROVE_SEQUENCE, SCHEDULE_MAINTENANCE, ADJUST_RECIPE, OPTIMIZE_ENERGY, REORDER_PRODUCTION
+  title               String   @map("title")
+  description         String   @map("description")
+  rationale           String?  @map("rationale")
+  // ─── Impact ───
+  expectedImpact      String?  @map("expected_impact")
+  quantifiedImpact    Decimal? @db.Decimal(14, 2) @map("quantified_impact") // ₹ or % depending on type
+  impactUnit          String?  @map("impact_unit") // RUPEES, PERCENT, KG, HOURS
+  confidencePercent   Decimal  @db.Decimal(5, 2) @default(0) @map("confidence_percent")
+  priority            String   @default("MEDIUM") @map("priority") // LOW, MEDIUM, HIGH, CRITICAL
+  // ─── Scope ───
+  plantCode           String?  @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  machineCode         String?  @map("machine_code")
+  productSku          String?  @map("product_sku")
+  // ─── Action ───
+  actionStatus        String   @default("PENDING") @map("action_status") // PENDING, APPROVED, REJECTED, IMPLEMENTED, EXPIRED, AUTO_APPLIED
+  requiresApproval    Boolean  @default(true) @map("requires_approval")
+  approvedById        String?  @db.Uuid @map("approved_by_id")
+  approvedByName      String?  @map("approved_by_name")
+  approvedAt          DateTime? @map("approved_at")
+  implementedAt       DateTime? @map("implemented_at")
+  actualImpact        String?  @map("actual_impact")
+  // ─── Evidence ───
+  supportingEvidence  String?  @map("supporting_evidence") // JSON array of data points
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_mfg_recommendations")
+  @@index([modelType, actionStatus], map: "idx_amr48_type_status")
+  @@index([recommendationType, priority], map: "idx_amr48_type_priority")
+  @@index([actionStatus], map: "idx_amr48_status")
+}
+
+model AIDecisionHistory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  decisionCode        String   @unique @map("decision_code")
+  recommendationCode  String   @map("recommendation_code")
+  // ─── Decision ───
+  decisionType        String   @map("decision_type") // APPROVED, REJECTED, IMPLEMENTED, MODIFIED, DEFERRED
+  decisionReason      String?  @map("decision_reason")
+  // ─── Actor ───
+  decidedById         String?  @db.Uuid @map("decided_by_id")
+  decidedByName       String?  @map("decided_by_name")
+  // ─── Outcome ───
+  outcomeResult       String?  @map("outcome_result") // POSITIVE, NEUTRAL, NEGATIVE
+  outcomeMeasured     String?  @map("outcome_measured")
+  learningNotes       String?  @map("learning_notes")
+  // ─── Audit ───
+  decidedAt           DateTime @default(now()) @map("decided_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("ai_decision_history")
+  @@index([recommendationCode], map: "idx_adh48_rec")
+  @@index([decisionType], map: "idx_adh48_type")
+}
+
+// ─── Epic 2: Predictive Maintenance ─────────────────────────────────────
+model PredictiveMaintenanceResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  predictionCode      String   @unique @map("prediction_code") // PMR-2026-000001
+  // ─── Machine ───
+  machineCode         String   @map("machine_code")
+  machineName         String   @map("machine_name")
+  plantCode           String   @map("plant_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Prediction ───
+  failureType         String   @map("failure_type") // BEARING_FAILURE, MOTOR_FAILURE, TEMPERATURE_PROBLEM, VIBRATION_PROBLEM, LUBRICATION_ISSUE, SENSOR_FAILURE, HYDRAULIC_FAILURE, ELECTRICAL_FAILURE
+  failureProbability  Decimal  @db.Decimal(5, 2) @map("failure_probability") // 0-100%
+  predictedFailureDate DateTime? @map("predicted_failure_date")
+  recommendedActionDate DateTime? @map("recommended_action_date")
+  // ─── Inputs ───
+  runtimeHours        Decimal  @db.Decimal(12, 3) @map("runtime_hours")
+  avgTemperature      Decimal? @db.Decimal(8, 2) @map("avg_temperature")
+  avgVibration        Decimal? @db.Decimal(8, 2) @map("avg_vibration")
+  lastMaintenanceAt   DateTime? @map("last_maintenance_at")
+  machineAgeYears     Decimal? @db.Decimal(5, 2) @map("machine_age_years")
+  // ─── Recommendation ───
+  maintenanceType     String   @default("PREVENTIVE") @map("maintenance_type") // PREVENTIVE, CORRECTIVE, PREDICTIVE
+  recommendedAction   String   @map("recommended_action")
+  estimatedDowntimeMin Int     @default(0) @map("estimated_downtime_min")
+  estimatedCost       Decimal  @db.Decimal(10, 2) @default(0) @map("estimated_cost")
+  // ─── Confidence ───
+  confidencePercent   Decimal  @db.Decimal(5, 2) @default(0) @map("confidence_percent")
+  modelVersion        String?  @map("model_version")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, ACKNOWLEDGED, SCHEDULED, COMPLETED, DISMISSED
+  // ─── Audit ───
+  predictedAt         DateTime @default(now()) @map("predicted_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("predictive_maintenance_results")
+  @@index([machineCode, status], map: "idx_pmr48_machine_status")
+  @@index([failureType, failureProbability], map: "idx_pmr48_type_prob")
+  @@index([status], map: "idx_pmr48_status")
+}
+
+// ─── Epic 3: Predictive Quality ─────────────────────────────────────────
+model PredictiveQualityResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  predictionCode      String   @unique @map("prediction_code") // PQR-2026-000001
+  // ─── Links ───
+  productionBatchNumber String?  @map("production_batch_number")
+  productSku          String   @map("product_sku")
+  productName         String   @map("product_name")
+  machineCode         String?  @map("machine_code")
+  operatorCode        String?  @map("operator_code")
+  shiftCode           String?  @map("shift_code")
+  // ─── Prediction ───
+  predictionType      String   @map("prediction_type") // QUALITY_FAILURE, BATCH_REJECTION, YIELD_REDUCTION, CUSTOMER_COMPLAINT_RISK
+  riskLevel           String   @default("LOW") @map("risk_level") // LOW, MEDIUM, HIGH, CRITICAL
+  failureProbability  Decimal  @db.Decimal(5, 2) @map("failure_probability") // 0-100%
+  // ─── Factors ───
+  riskFactors         String?  @map("risk_factors") // JSON array of contributing factors
+  // ─── Recommendation ───
+  recommendedActions  String?  @map("recommended_actions") // JSON array
+  // ─── Confidence ───
+  confidencePercent   Decimal  @db.Decimal(5, 2) @default(0) @map("confidence_percent")
+  modelVersion        String?  @map("model_version")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, ACKNOWLEDGED, MITIGATED, OCCURRED, DISMISSED
+  actualOutcome       String?  @map("actual_outcome") // if quality failure occurred
+  // ─── Audit ───
+  predictedAt         DateTime @default(now()) @map("predicted_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("predictive_quality_results")
+  @@index([productSku, riskLevel], map: "idx_pqr48_sku_risk")
+  @@index([predictionType, status], map: "idx_pqr48_type_status")
+  @@index([status], map: "idx_pqr48_status")
+}
+
+// ─── Epic 6: AI Energy Optimization ─────────────────────────────────────
+model AIEnergyOptimization {
+  id                  String   @id @default(uuid()) @db.Uuid
+  optimizationCode    String   @unique @map("optimization_code") // AEO-2026-000001
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  machineCode         String?  @map("machine_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Energy Type ───
+  energyType          String   @map("energy_type") // ELECTRICITY, GAS, STEAM, WATER, COMPRESSED_AIR, COOLING
+  // ─── Analysis ───
+  currentConsumption  Decimal  @db.Decimal(14, 3) @map("current_consumption")
+  optimizedConsumption Decimal @db.Decimal(14, 3) @map("optimized_consumption")
+  potentialSaving     Decimal  @db.Decimal(14, 3) @default(0) @map("potential_saving")
+  savingPercent       Decimal  @db.Decimal(6, 2) @default(0) @map("saving_percent")
+  // ─── Recommendation ───
+  optimizationType    String   @map("optimization_type") // RUN_LOW_TARIFF, SHUTDOWN_IDLE, OPTIMIZE_HEATING, REDUCE_PEAK_LOAD, SCHEDULE_OFFPEAK
+  recommendation      String   @map("recommendation")
+  estimatedSavingRupees Decimal @db.Decimal(10, 2) @default(0) @map("estimated_saving_rupees")
+  // ─── Confidence ───
+  confidencePercent   Decimal  @db.Decimal(5, 2) @default(0) @map("confidence_percent")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, APPROVED, IMPLEMENTED, REJECTED
+  implementedAt       DateTime? @map("implemented_at")
+  actualSavingRupees  Decimal? @db.Decimal(10, 2) @map("actual_saving_rupees")
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("ai_energy_optimizations")
+  @@index([plantCode, energyType], map: "idx_aeo48_plant_type")
+  @@index([optimizationType, status], map: "idx_aeo48_type_status")
+  @@index([status], map: "idx_aeo48_status")
+}
+
+// ─── Epic 7: AI Root Cause Analysis ─────────────────────────────────────
+model RootCauseAnalysis {
+  id                  String   @id @default(uuid()) @db.Uuid
+  analysisCode        String   @unique @map("analysis_code") // RCA-2026-000001
+  // ─── Incident ───
+  incidentType        String   @map("incident_type") // QUALITY_FAILURE, MACHINE_FAULT, YIELD_LOSS, WASTE_SPIKE, DELAY, COMPLAINT
+  incidentDescription String   @map("incident_description")
+  incidentDate        DateTime @map("incident_date")
+  // ─── Links ───
+  productionBatchNumber String? @map("production_batch_number")
+  machineCode         String?  @map("machine_code")
+  productSku          String?  @map("product_sku")
+  // ─── Analysis ───
+  probableRootCause   String   @map("probable_root_cause")
+  rootCauseCategory   String   @map("root_cause_category") // RECIPE_DEVIATION, MACHINE_DOWNTIME, OPERATOR_ERROR, MATERIAL_QUALITY, ENVIRONMENTAL, UTILITY_FAILURE, PROCESS_VARIATION
+  confidencePercent   Decimal  @db.Decimal(5, 2) @default(0) @map("confidence_percent")
+  // ─── Evidence ───
+  supportingEvidence  String   @map("supporting_evidence") // JSON array of correlated data points
+  correlatedFactors   String?  @map("correlated_factors") // JSON
+  // ─── Actions ───
+  recommendedActions  String?  @map("recommended_actions") // JSON array
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, INVESTIGATING, IDENTIFIED, RESOLVED, CLOSED
+  // ─── Audit ───
+  analyzedAt          DateTime @default(now()) @map("analyzed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("root_cause_analyses")
+  @@index([incidentType, status], map: "idx_rca48_type_status")
+  @@index([rootCauseCategory], map: "idx_rca48_category")
+  @@index([status], map: "idx_rca48_status")
+}
+
+// ─── Epic 8: Continuous Improvement Engine ──────────────────────────────
+model ContinuousImprovement {
+  id                  String   @id @default(uuid()) @db.Uuid
+  improvementCode     String   @unique @map("improvement_code") // CIM-2026-000001
+  // ─── Source ───
+  sourceType          String   @map("source_type") // AI_RECOMMENDATION, KAIZEN, CAPA, LESSON_LEARNED, BEST_PRACTICE, OPERATOR_SUGGESTION
+  sourceReferenceCode String?  @map("source_reference_code")
+  // ─── Improvement ───
+  title               String   @map("title")
+  description         String   @map("description")
+  improvementType     String   @map("improvement_type") // PROCESS, RECIPE, MACHINE, OPERATOR, SCHEDULE, ENERGY, QUALITY, COST
+  // ─── Impact ───
+  beforeMetric        String?  @map("before_metric")
+  afterMetric         String?  @map("after_metric")
+  improvementPercent  Decimal? @db.Decimal(6, 2) @map("improvement_percent")
+  costSavingRupees    Decimal? @db.Decimal(10, 2) @map("cost_saving_rupees")
+  // ─── Implementation ───
+  implementedById     String?  @db.Uuid @map("implemented_by_id")
+  implementedByName   String?  @map("implemented_by_name")
+  implementedAt       DateTime? @map("implemented_at")
+  // ─── Learning ───
+  learningNotes       String?  @map("learning_notes")
+  bestPracticeTag     String?  @map("best_practice_tag")
+  isPublished         Boolean  @default(false) @map("is_published") // published to best practices library
+  // ─── Status ───
+  status              String   @default("PROPOSED") @map("status") // PROPOSED, APPROVED, IN_PROGRESS, IMPLEMENTED, MEASURED, PUBLISHED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("continuous_improvements")
+  @@index([sourceType, status], map: "idx_cim48_source_status")
+  @@index([improvementType], map: "idx_cim48_type")
+  @@index([status], map: "idx_cim48_status")
+}
