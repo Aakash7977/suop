@@ -11811,6 +11811,580 @@ CREATE TABLE "packaging_compliance_checks" (
     CONSTRAINT "packaging_compliance_checks_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "lab_samples" (
+    "id" UUID NOT NULL,
+    "sample_number" TEXT NOT NULL,
+    "barcode" TEXT NOT NULL,
+    "sample_type" TEXT NOT NULL,
+    "production_batch_number" TEXT,
+    "product_sku" TEXT,
+    "product_name" TEXT,
+    "supplier_code" TEXT,
+    "supplier_name" TEXT,
+    "production_order_number" TEXT,
+    "source_module" TEXT,
+    "request_reference_code" TEXT,
+    "requested_by_id" UUID,
+    "requested_by_name" TEXT,
+    "requested_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "collected_by_id" UUID,
+    "collected_by_name" TEXT,
+    "collected_at" TIMESTAMP(3),
+    "collection_location" TEXT,
+    "received_at_lab_at" TIMESTAMP(3),
+    "received_by" TEXT,
+    "sample_qty" DECIMAL(14,3),
+    "sample_uom" TEXT NOT NULL DEFAULT 'KG',
+    "container_type" TEXT,
+    "storage_condition" TEXT,
+    "storage_rack_code" TEXT,
+    "storage_position" TEXT,
+    "retention_expiry_date" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'REQUESTED',
+    "priority" TEXT NOT NULL DEFAULT 'NORMAL',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "lab_samples_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "lab_worklists" (
+    "id" UUID NOT NULL,
+    "worklist_code" TEXT NOT NULL,
+    "worklist_date" TIMESTAMP(3) NOT NULL,
+    "assigned_to_id" UUID,
+    "assigned_to_name" TEXT,
+    "total_tests" INTEGER NOT NULL DEFAULT 0,
+    "pending_tests" INTEGER NOT NULL DEFAULT 0,
+    "in_progress_tests" INTEGER NOT NULL DEFAULT 0,
+    "completed_tests" INTEGER NOT NULL DEFAULT 0,
+    "overdue_tests" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "lab_worklists_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "lab_tests" (
+    "id" UUID NOT NULL,
+    "test_code" TEXT NOT NULL,
+    "sample_id" UUID NOT NULL,
+    "sample_number" TEXT NOT NULL,
+    "worklist_id" UUID,
+    "test_category" TEXT NOT NULL,
+    "test_type" TEXT NOT NULL,
+    "test_method_name" TEXT,
+    "spec_min" DECIMAL(14,4),
+    "spec_max" DECIMAL(14,4),
+    "spec_target" DECIMAL(14,4),
+    "spec_unit" TEXT,
+    "result_value" DECIMAL(14,4),
+    "result_text" TEXT,
+    "result_unit" TEXT,
+    "result_status" TEXT NOT NULL DEFAULT 'PENDING',
+    "equipment_code" TEXT,
+    "equipment_name" TEXT,
+    "technician_id" UUID,
+    "technician_name" TEXT,
+    "tested_at" TIMESTAMP(3),
+    "validated_by_id" UUID,
+    "validated_by_name" TEXT,
+    "validated_at" TIMESTAMP(3),
+    "validation_decision" TEXT,
+    "electronic_signature" TEXT,
+    "notes" TEXT,
+    "priority" TEXT NOT NULL DEFAULT 'NORMAL',
+    "due_date" TIMESTAMP(3),
+    "completed_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "lab_tests_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "lab_equipment" (
+    "id" UUID NOT NULL,
+    "equipment_code" TEXT NOT NULL,
+    "equipment_name" TEXT NOT NULL,
+    "equipment_type" TEXT NOT NULL,
+    "manufacturer" TEXT,
+    "model_number" TEXT,
+    "serial_number" TEXT,
+    "plant_code" TEXT NOT NULL,
+    "lab_location" TEXT,
+    "last_calibrated_at" TIMESTAMP(3),
+    "next_calibration_due" TIMESTAMP(3),
+    "calibration_freq_days" INTEGER NOT NULL DEFAULT 90,
+    "calibration_status" TEXT NOT NULL DEFAULT 'VALID',
+    "qualification_status" TEXT NOT NULL DEFAULT 'QUALIFIED',
+    "total_usage_hours" DECIMAL(12,3) NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "lab_equipment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "lab_inventory" (
+    "id" UUID NOT NULL,
+    "item_code" TEXT NOT NULL,
+    "item_name" TEXT NOT NULL,
+    "item_type" TEXT NOT NULL,
+    "manufacturer" TEXT,
+    "catalog_number" TEXT,
+    "current_stock" DECIMAL(14,3) NOT NULL DEFAULT 0,
+    "min_stock" DECIMAL(14,3) NOT NULL DEFAULT 0,
+    "max_stock" DECIMAL(14,3) NOT NULL DEFAULT 0,
+    "uom" TEXT NOT NULL DEFAULT 'PCS',
+    "batch_number" TEXT,
+    "expiry_date" TIMESTAMP(3),
+    "storage_location" TEXT,
+    "storage_condition" TEXT,
+    "is_low_stock" BOOLEAN NOT NULL DEFAULT false,
+    "is_expiring_soon" BOOLEAN NOT NULL DEFAULT false,
+    "is_expired" BOOLEAN NOT NULL DEFAULT false,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "lab_inventory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "lab_reports" (
+    "id" UUID NOT NULL,
+    "report_code" TEXT NOT NULL,
+    "sample_number" TEXT NOT NULL,
+    "sample_id" UUID,
+    "production_batch_number" TEXT,
+    "report_type" TEXT NOT NULL,
+    "report_data" TEXT NOT NULL,
+    "digital_signature" TEXT,
+    "signed_by_id" UUID,
+    "signed_by_name" TEXT,
+    "signed_at" TIMESTAMP(3),
+    "pdf_url" TEXT,
+    "qr_code" TEXT,
+    "version" TEXT NOT NULL DEFAULT 'v1.0',
+    "status" TEXT NOT NULL DEFAULT 'GENERATED',
+    "generated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "lab_reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "sample_tracking" (
+    "id" UUID NOT NULL,
+    "sample_number" TEXT NOT NULL,
+    "tracking_event" TEXT NOT NULL,
+    "location_from" TEXT,
+    "location_to" TEXT,
+    "performed_by_id" UUID,
+    "performed_by_name" TEXT,
+    "notes" TEXT,
+    "event_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "sample_tracking_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "haccp_plans" (
+    "id" UUID NOT NULL,
+    "plan_number" TEXT NOT NULL,
+    "plan_name" TEXT NOT NULL,
+    "plant_code" TEXT NOT NULL,
+    "plant_name" TEXT NOT NULL,
+    "department_code" TEXT,
+    "production_line_code" TEXT,
+    "product_family" TEXT,
+    "version" TEXT NOT NULL DEFAULT 'v1.0',
+    "parent_plan_id" UUID,
+    "standard_type" TEXT NOT NULL DEFAULT 'HACCP',
+    "approved_by_id" UUID,
+    "approved_by_name" TEXT,
+    "approved_at" TIMESTAMP(3),
+    "effective_date" TIMESTAMP(3),
+    "expiry_date" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'DRAFT',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "haccp_plans_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "hazard_assessments" (
+    "id" UUID NOT NULL,
+    "haccp_plan_id" UUID NOT NULL,
+    "hazard_code" TEXT NOT NULL,
+    "hazard_type" TEXT NOT NULL,
+    "hazard_name" TEXT NOT NULL,
+    "hazard_description" TEXT NOT NULL,
+    "source_stage" TEXT NOT NULL,
+    "likelihood" INTEGER NOT NULL,
+    "severity" INTEGER NOT NULL,
+    "risk_score" INTEGER NOT NULL,
+    "risk_level" TEXT NOT NULL,
+    "control_measure" TEXT,
+    "is_ccp" BOOLEAN NOT NULL DEFAULT false,
+    "is_oprp" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "hazard_assessments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "critical_control_points_v2" (
+    "id" UUID NOT NULL,
+    "haccp_plan_id" UUID NOT NULL,
+    "ccp_code" TEXT NOT NULL,
+    "ccp_name" TEXT NOT NULL,
+    "production_stage" TEXT NOT NULL,
+    "hazard_controlled" TEXT NOT NULL,
+    "critical_min" DECIMAL(14,4),
+    "critical_max" DECIMAL(14,4),
+    "target_value" DECIMAL(14,4) NOT NULL,
+    "tolerance" DECIMAL(10,4),
+    "unit_of_measure" TEXT NOT NULL,
+    "monitoring_method" TEXT NOT NULL,
+    "monitoring_frequency" TEXT NOT NULL,
+    "monitoring_by" TEXT NOT NULL,
+    "corrective_action" TEXT NOT NULL,
+    "records_required" BOOLEAN NOT NULL DEFAULT true,
+    "verification_method" TEXT,
+    "verification_freq" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "critical_control_points_v2_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "oprp_controls" (
+    "id" UUID NOT NULL,
+    "haccp_plan_id" UUID NOT NULL,
+    "oprp_code" TEXT NOT NULL,
+    "oprp_name" TEXT NOT NULL,
+    "oprp_type" TEXT NOT NULL,
+    "acceptable_limit" TEXT,
+    "unit_of_measure" TEXT,
+    "monitoring_frequency" TEXT NOT NULL,
+    "monitoring_by" TEXT NOT NULL,
+    "corrective_action" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "oprp_controls_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "environmental_samples" (
+    "id" UUID NOT NULL,
+    "sample_code" TEXT NOT NULL,
+    "sample_type" TEXT NOT NULL,
+    "monitoring_location" TEXT NOT NULL,
+    "location_code" TEXT,
+    "location_description" TEXT,
+    "scheduled_date" TIMESTAMP(3) NOT NULL,
+    "frequency" TEXT NOT NULL,
+    "collected_by_id" UUID,
+    "collected_by_name" TEXT,
+    "collected_at" TIMESTAMP(3),
+    "test_type" TEXT,
+    "result_value" TEXT,
+    "result_unit" TEXT,
+    "result_status" TEXT NOT NULL DEFAULT 'PENDING',
+    "alert_level" TEXT NOT NULL DEFAULT 'NONE',
+    "status" TEXT NOT NULL DEFAULT 'SCHEDULED',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "environmental_samples_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "sanitation_records" (
+    "id" UUID NOT NULL,
+    "record_code" TEXT NOT NULL,
+    "cleaning_type" TEXT NOT NULL,
+    "area_code" TEXT NOT NULL,
+    "area_name" TEXT NOT NULL,
+    "equipment_code" TEXT,
+    "equipment_name" TEXT,
+    "production_line_code" TEXT,
+    "scheduled_date" TIMESTAMP(3) NOT NULL,
+    "cleaned_by_id" UUID,
+    "cleaned_by_name" TEXT,
+    "cleaned_at" TIMESTAMP(3),
+    "chemical_chemical" TEXT,
+    "chemical_concentration" TEXT,
+    "contact_time_min" INTEGER,
+    "verification_method" TEXT,
+    "verification_result" TEXT,
+    "atp_reading" DECIMAL(10,2),
+    "atp_pass_limit" DECIMAL(10,2),
+    "micro_result" TEXT,
+    "verified_by_id" UUID,
+    "verified_by_name" TEXT,
+    "verified_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'SCHEDULED',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "sanitation_records_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "allergen_matrix_entries" (
+    "id" UUID NOT NULL,
+    "product_sku" TEXT NOT NULL,
+    "product_name" TEXT NOT NULL,
+    "contains_milk" BOOLEAN NOT NULL DEFAULT false,
+    "contains_tree_nuts" BOOLEAN NOT NULL DEFAULT false,
+    "contains_peanuts" BOOLEAN NOT NULL DEFAULT false,
+    "contains_sesame" BOOLEAN NOT NULL DEFAULT false,
+    "contains_soy" BOOLEAN NOT NULL DEFAULT false,
+    "contains_gluten" BOOLEAN NOT NULL DEFAULT false,
+    "contains_mustard" BOOLEAN NOT NULL DEFAULT false,
+    "contains_sulphites" BOOLEAN NOT NULL DEFAULT false,
+    "allergen_list" TEXT,
+    "dedicated_equipment" BOOLEAN NOT NULL DEFAULT false,
+    "cleaning_validation_required" BOOLEAN NOT NULL DEFAULT true,
+    "sequencing_required" BOOLEAN NOT NULL DEFAULT false,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "allergen_matrix_entries_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cross_contact_records" (
+    "id" UUID NOT NULL,
+    "record_code" TEXT NOT NULL,
+    "production_batch_number" TEXT,
+    "production_line_code" TEXT NOT NULL,
+    "allergen_type" TEXT NOT NULL,
+    "incident_type" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "severity" TEXT NOT NULL DEFAULT 'MEDIUM',
+    "corrective_action" TEXT,
+    "resolved_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cross_contact_records_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "food_defense_plans" (
+    "id" UUID NOT NULL,
+    "plan_code" TEXT NOT NULL,
+    "plan_name" TEXT NOT NULL,
+    "plant_code" TEXT NOT NULL,
+    "facility_security" BOOLEAN NOT NULL DEFAULT false,
+    "restricted_areas" BOOLEAN NOT NULL DEFAULT false,
+    "visitor_management" BOOLEAN NOT NULL DEFAULT false,
+    "tamper_detection" BOOLEAN NOT NULL DEFAULT false,
+    "intentional_contamination_prevention" BOOLEAN NOT NULL DEFAULT false,
+    "approved_by_id" UUID,
+    "approved_by_name" TEXT,
+    "approved_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'DRAFT',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "food_defense_plans_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "food_fraud_assessments" (
+    "id" UUID NOT NULL,
+    "assessment_code" TEXT NOT NULL,
+    "material_code" TEXT NOT NULL,
+    "material_name" TEXT NOT NULL,
+    "supplier_code" TEXT,
+    "supplier_name" TEXT,
+    "fraud_type" TEXT NOT NULL,
+    "vulnerability_score" INTEGER NOT NULL DEFAULT 0,
+    "mitigation_measures" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "assessed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "food_fraud_assessments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "non_conformance_reports" (
+    "id" UUID NOT NULL,
+    "ncr_number" TEXT NOT NULL,
+    "source_module" TEXT NOT NULL,
+    "source_reference_code" TEXT,
+    "plant_code" TEXT NOT NULL,
+    "department_code" TEXT,
+    "production_line_code" TEXT,
+    "product_sku" TEXT,
+    "product_name" TEXT,
+    "production_batch_number" TEXT,
+    "material_code" TEXT,
+    "material_name" TEXT,
+    "incident_type" TEXT NOT NULL,
+    "incident_description" TEXT NOT NULL,
+    "severity" TEXT NOT NULL DEFAULT 'MAJOR',
+    "reported_by_id" UUID,
+    "reported_by_name" TEXT,
+    "reported_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "assigned_to_id" UUID,
+    "assigned_to_name" TEXT,
+    "quarantine_triggered" BOOLEAN NOT NULL DEFAULT false,
+    "quarantined_qty" DECIMAL(14,3),
+    "investigation_required" BOOLEAN NOT NULL DEFAULT true,
+    "investigation_status" TEXT,
+    "disposition" TEXT,
+    "disposition_approved" BOOLEAN NOT NULL DEFAULT false,
+    "disposition_approved_by" TEXT,
+    "disposition_approved_at" TIMESTAMP(3),
+    "escalation_level" INTEGER NOT NULL DEFAULT 0,
+    "escalated_to" TEXT,
+    "escalated_at" TIMESTAMP(3),
+    "closed_at" TIMESTAMP(3),
+    "closed_by" TEXT,
+    "closure_notes" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "non_conformance_reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "process_deviations" (
+    "id" UUID NOT NULL,
+    "deviation_code" TEXT NOT NULL,
+    "ncr_id" UUID,
+    "deviation_type" TEXT NOT NULL,
+    "planned_value" TEXT NOT NULL,
+    "actual_value" TEXT NOT NULL,
+    "deviation_amount" TEXT,
+    "unit_of_measure" TEXT,
+    "impact_assessment" TEXT,
+    "affected_qty" DECIMAL(14,3),
+    "review_decision" TEXT,
+    "review_notes" TEXT,
+    "reviewed_by" TEXT,
+    "reviewed_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "process_deviations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "root_cause_investigations" (
+    "id" UUID NOT NULL,
+    "investigation_code" TEXT NOT NULL,
+    "ncr_id" UUID NOT NULL,
+    "analysis_method" TEXT NOT NULL DEFAULT '5_WHYS',
+    "why_1" TEXT,
+    "why_2" TEXT,
+    "why_3" TEXT,
+    "why_4" TEXT,
+    "why_5" TEXT,
+    "immediate_cause" TEXT,
+    "root_cause" TEXT,
+    "contributing_factors" TEXT,
+    "evidence_summary" TEXT,
+    "attachment_urls" TEXT,
+    "investigated_by" TEXT,
+    "investigated_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'NOT_STARTED',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "root_cause_investigations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "quality_risk_assessments" (
+    "id" UUID NOT NULL,
+    "assessment_code" TEXT NOT NULL,
+    "ncr_id" UUID NOT NULL,
+    "severity_score" INTEGER NOT NULL,
+    "likelihood_score" INTEGER NOT NULL,
+    "detectability_score" INTEGER NOT NULL,
+    "rpn" INTEGER NOT NULL,
+    "risk_level" TEXT NOT NULL,
+    "mitigation_actions" TEXT,
+    "residual_risk" TEXT,
+    "assessed_by" TEXT,
+    "assessed_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'COMPLETED',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "quality_risk_assessments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "quarantine_inventory" (
+    "id" UUID NOT NULL,
+    "quarantine_code" TEXT NOT NULL,
+    "ncr_number" TEXT,
+    "production_batch_number" TEXT,
+    "material_code" TEXT NOT NULL,
+    "material_name" TEXT NOT NULL,
+    "item_type" TEXT NOT NULL,
+    "quarantined_qty" DECIMAL(14,3) NOT NULL,
+    "uom" TEXT NOT NULL DEFAULT 'KG',
+    "warehouse_code" TEXT NOT NULL,
+    "quarantine_bin_code" TEXT NOT NULL,
+    "is_locked" BOOLEAN NOT NULL DEFAULT true,
+    "locked_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "locked_by" TEXT,
+    "disposition" TEXT,
+    "disposition_executed" BOOLEAN NOT NULL DEFAULT false,
+    "disposition_executed_at" TIMESTAMP(3),
+    "released_at" TIMESTAMP(3),
+    "released_by" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'LOCKED',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "quarantine_inventory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "escalation_events" (
+    "id" UUID NOT NULL,
+    "escalation_code" TEXT NOT NULL,
+    "ncr_number" TEXT NOT NULL,
+    "severity" TEXT NOT NULL,
+    "escalation_level" INTEGER NOT NULL,
+    "escalated_to_role" TEXT NOT NULL,
+    "escalated_to_name" TEXT,
+    "delivery_channels" TEXT NOT NULL DEFAULT 'DASHBOARD',
+    "notification_sent" BOOLEAN NOT NULL DEFAULT false,
+    "notification_sent_at" TIMESTAMP(3),
+    "acknowledged_by" TEXT,
+    "acknowledged_at" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "escalated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "escalation_events_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_user_id_key" ON "users"("user_id");
 
@@ -16557,6 +17131,249 @@ CREATE INDEX "idx_pcc52_batch" ON "packaging_compliance_checks"("production_batc
 -- CreateIndex
 CREATE INDEX "idx_pcc52_compliance" ON "packaging_compliance_checks"("overall_compliance");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_samples_sample_number_key" ON "lab_samples"("sample_number");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_samples_barcode_key" ON "lab_samples"("barcode");
+
+-- CreateIndex
+CREATE INDEX "idx_ls53_type_status" ON "lab_samples"("sample_type", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_ls53_batch" ON "lab_samples"("production_batch_number");
+
+-- CreateIndex
+CREATE INDEX "idx_ls53_barcode" ON "lab_samples"("barcode");
+
+-- CreateIndex
+CREATE INDEX "idx_ls53_status_priority" ON "lab_samples"("status", "priority");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_worklists_worklist_code_key" ON "lab_worklists"("worklist_code");
+
+-- CreateIndex
+CREATE INDEX "idx_lw53_date_status" ON "lab_worklists"("worklist_date", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_lw53_assignee" ON "lab_worklists"("assigned_to_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_tests_test_code_key" ON "lab_tests"("test_code");
+
+-- CreateIndex
+CREATE INDEX "idx_lt53_sample" ON "lab_tests"("sample_id");
+
+-- CreateIndex
+CREATE INDEX "idx_lt53_worklist" ON "lab_tests"("worklist_id");
+
+-- CreateIndex
+CREATE INDEX "idx_lt53_cat_type" ON "lab_tests"("test_category", "test_type");
+
+-- CreateIndex
+CREATE INDEX "idx_lt53_status_priority" ON "lab_tests"("status", "priority");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_equipment_equipment_code_key" ON "lab_equipment"("equipment_code");
+
+-- CreateIndex
+CREATE INDEX "idx_le53_plant_status" ON "lab_equipment"("plant_code", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_le53_calibration" ON "lab_equipment"("calibration_status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_inventory_item_code_key" ON "lab_inventory"("item_code");
+
+-- CreateIndex
+CREATE INDEX "idx_li53_type_status" ON "lab_inventory"("item_type", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_li53_expiry" ON "lab_inventory"("expiry_date");
+
+-- CreateIndex
+CREATE INDEX "idx_li53_low_stock" ON "lab_inventory"("is_low_stock");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "lab_reports_report_code_key" ON "lab_reports"("report_code");
+
+-- CreateIndex
+CREATE INDEX "idx_lrep53_sample" ON "lab_reports"("sample_number");
+
+-- CreateIndex
+CREATE INDEX "idx_lrep53_type_status" ON "lab_reports"("report_type", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_st53_sample_time" ON "sample_tracking"("sample_number", "event_time");
+
+-- CreateIndex
+CREATE INDEX "idx_st53_event" ON "sample_tracking"("tracking_event");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "haccp_plans_plan_number_key" ON "haccp_plans"("plan_number");
+
+-- CreateIndex
+CREATE INDEX "idx_hp54_plant_status" ON "haccp_plans"("plant_code", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_hp54_family" ON "haccp_plans"("product_family");
+
+-- CreateIndex
+CREATE INDEX "idx_hp54_status" ON "haccp_plans"("status");
+
+-- CreateIndex
+CREATE INDEX "idx_ha54_plan" ON "hazard_assessments"("haccp_plan_id");
+
+-- CreateIndex
+CREATE INDEX "idx_ha54_type_risk" ON "hazard_assessments"("hazard_type", "risk_level");
+
+-- CreateIndex
+CREATE INDEX "idx_ha54_risk" ON "hazard_assessments"("risk_level");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "critical_control_points_v2_ccp_code_key" ON "critical_control_points_v2"("ccp_code");
+
+-- CreateIndex
+CREATE INDEX "idx_ccpv2_54_plan" ON "critical_control_points_v2"("haccp_plan_id");
+
+-- CreateIndex
+CREATE INDEX "idx_ccpv2_54_stage" ON "critical_control_points_v2"("production_stage");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "oprp_controls_oprp_code_key" ON "oprp_controls"("oprp_code");
+
+-- CreateIndex
+CREATE INDEX "idx_oprp54_plan" ON "oprp_controls"("haccp_plan_id");
+
+-- CreateIndex
+CREATE INDEX "idx_oprp54_type_status" ON "oprp_controls"("oprp_type", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "environmental_samples_sample_code_key" ON "environmental_samples"("sample_code");
+
+-- CreateIndex
+CREATE INDEX "idx_es54_type_status" ON "environmental_samples"("sample_type", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_es54_loc_freq" ON "environmental_samples"("monitoring_location", "frequency");
+
+-- CreateIndex
+CREATE INDEX "idx_es54_date" ON "environmental_samples"("scheduled_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "sanitation_records_record_code_key" ON "sanitation_records"("record_code");
+
+-- CreateIndex
+CREATE INDEX "idx_san54_type_status" ON "sanitation_records"("cleaning_type", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_san54_date" ON "sanitation_records"("scheduled_date");
+
+-- CreateIndex
+CREATE INDEX "idx_san54_line" ON "sanitation_records"("production_line_code");
+
+-- CreateIndex
+CREATE INDEX "idx_am54_sku" ON "allergen_matrix_entries"("product_sku");
+
+-- CreateIndex
+CREATE INDEX "idx_am54_status" ON "allergen_matrix_entries"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "cross_contact_records_record_code_key" ON "cross_contact_records"("record_code");
+
+-- CreateIndex
+CREATE INDEX "idx_xcr54_line_status" ON "cross_contact_records"("production_line_code", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_xcr54_allergen_sev" ON "cross_contact_records"("allergen_type", "severity");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "food_defense_plans_plan_code_key" ON "food_defense_plans"("plan_code");
+
+-- CreateIndex
+CREATE INDEX "idx_fdp54_plant_status" ON "food_defense_plans"("plant_code", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "food_fraud_assessments_assessment_code_key" ON "food_fraud_assessments"("assessment_code");
+
+-- CreateIndex
+CREATE INDEX "idx_ffa54_material" ON "food_fraud_assessments"("material_code");
+
+-- CreateIndex
+CREATE INDEX "idx_ffa54_score" ON "food_fraud_assessments"("vulnerability_score");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "non_conformance_reports_ncr_number_key" ON "non_conformance_reports"("ncr_number");
+
+-- CreateIndex
+CREATE INDEX "idx_ncr55_sev_status" ON "non_conformance_reports"("severity", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_ncr55_source" ON "non_conformance_reports"("source_module");
+
+-- CreateIndex
+CREATE INDEX "idx_ncr55_batch" ON "non_conformance_reports"("production_batch_number");
+
+-- CreateIndex
+CREATE INDEX "idx_ncr55_status" ON "non_conformance_reports"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "process_deviations_deviation_code_key" ON "process_deviations"("deviation_code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "process_deviations_ncr_id_key" ON "process_deviations"("ncr_id");
+
+-- CreateIndex
+CREATE INDEX "idx_pd55_type_status" ON "process_deviations"("deviation_type", "status");
+
+-- CreateIndex
+CREATE INDEX "idx_pd55_ncr" ON "process_deviations"("ncr_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "root_cause_investigations_investigation_code_key" ON "root_cause_investigations"("investigation_code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "root_cause_investigations_ncr_id_key" ON "root_cause_investigations"("ncr_id");
+
+-- CreateIndex
+CREATE INDEX "idx_rci55_ncr" ON "root_cause_investigations"("ncr_id");
+
+-- CreateIndex
+CREATE INDEX "idx_rci55_status" ON "root_cause_investigations"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "quality_risk_assessments_assessment_code_key" ON "quality_risk_assessments"("assessment_code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "quality_risk_assessments_ncr_id_key" ON "quality_risk_assessments"("ncr_id");
+
+-- CreateIndex
+CREATE INDEX "idx_qra55_ncr" ON "quality_risk_assessments"("ncr_id");
+
+-- CreateIndex
+CREATE INDEX "idx_qra55_risk" ON "quality_risk_assessments"("risk_level");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "quarantine_inventory_quarantine_code_key" ON "quarantine_inventory"("quarantine_code");
+
+-- CreateIndex
+CREATE INDEX "idx_qi55_ncr" ON "quarantine_inventory"("ncr_number");
+
+-- CreateIndex
+CREATE INDEX "idx_qi55_batch" ON "quarantine_inventory"("production_batch_number");
+
+-- CreateIndex
+CREATE INDEX "idx_qi55_status" ON "quarantine_inventory"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "escalation_events_escalation_code_key" ON "escalation_events"("escalation_code");
+
+-- CreateIndex
+CREATE INDEX "idx_esc55_ncr" ON "escalation_events"("ncr_number");
+
+-- CreateIndex
+CREATE INDEX "idx_esc55_sev_status" ON "escalation_events"("severity", "status");
+
 -- AddForeignKey
 ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -17243,4 +18060,25 @@ ALTER TABLE "stability_results" ADD CONSTRAINT "stability_results_validation_id_
 
 -- AddForeignKey
 ALTER TABLE "release_approvals" ADD CONSTRAINT "release_approvals_batch_release_id_fkey" FOREIGN KEY ("batch_release_id") REFERENCES "batch_releases"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "lab_tests" ADD CONSTRAINT "lab_tests_sample_id_fkey" FOREIGN KEY ("sample_id") REFERENCES "lab_samples"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "hazard_assessments" ADD CONSTRAINT "hazard_assessments_haccp_plan_id_fkey" FOREIGN KEY ("haccp_plan_id") REFERENCES "haccp_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "critical_control_points_v2" ADD CONSTRAINT "critical_control_points_v2_haccp_plan_id_fkey" FOREIGN KEY ("haccp_plan_id") REFERENCES "haccp_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "oprp_controls" ADD CONSTRAINT "oprp_controls_haccp_plan_id_fkey" FOREIGN KEY ("haccp_plan_id") REFERENCES "haccp_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "process_deviations" ADD CONSTRAINT "process_deviations_ncr_id_fkey" FOREIGN KEY ("ncr_id") REFERENCES "non_conformance_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "root_cause_investigations" ADD CONSTRAINT "root_cause_investigations_ncr_id_fkey" FOREIGN KEY ("ncr_id") REFERENCES "non_conformance_reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "quality_risk_assessments" ADD CONSTRAINT "quality_risk_assessments_ncr_id_fkey" FOREIGN KEY ("ncr_id") REFERENCES "non_conformance_reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
