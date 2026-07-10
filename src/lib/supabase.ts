@@ -1,32 +1,35 @@
 /**
  * SUOP — Supabase Client
- * Sprint 3: Epic 2 — Authentication Module
- *
- * Uses Supabase as the Identity Provider (IdP) abstraction layer.
- * Per Chief Architect recommendation: IdP Abstraction Layer allows
- * future addition of Google, Microsoft, LDAP, SAML without rewriting auth.
+ * Properly handles both configured and unconfigured states.
+ * - If NEXT_PUBLIC_SUPABASE_URL is set: uses real Supabase
+ * - If not set: exports null, auth falls back to local mode
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Supabase URL or Anon Key not configured. Check .env file.')
-}
+// Only create client if BOTH env vars are present and not placeholder
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl &&
+  supabaseAnonKey &&
+  supabaseUrl !== 'https://placeholder.supabase.co' &&
+  supabaseAnonKey !== 'placeholder-anon-key' &&
+  supabaseUrl.startsWith('http')
+)
 
-// ─── Supabase Client ────────────────────────────────────
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-  },
-})
+export const supabase: SupabaseClient | null = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
+    })
+  : null
 
-// ─── Auth Provider Types (IdP Abstraction) ──────────────
 export type AuthProvider = 'LOCAL' | 'GOOGLE' | 'MICROSOFT' | 'LDAP' | 'SAML' | 'GITHUB'
 
 export const AUTH_PROVIDERS: Record<AuthProvider, { label: string; icon: string; enabled: boolean }> = {
@@ -40,113 +43,60 @@ export const AUTH_PROVIDERS: Record<AuthProvider, { label: string; icon: string;
 
 // ─── Auth Helper Functions ──────────────────────────────
 
-/**
- * Sign in with email and password (LOCAL provider)
- */
 export async function signInWithEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  if (!supabase) {
+    return { data: null, error: { message: 'Supabase not configured' } as any }
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   return { data, error }
 }
 
-/**
- * Sign up with email and password
- */
 export async function signUpWithEmail(email: string, password: string, metadata?: Record<string, unknown>) {
+  if (!supabase) {
+    return { data: null, error: { message: 'Supabase not configured' } as any }
+  }
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: metadata,
-    },
+    options: { data: metadata },
   })
   return { data, error }
 }
 
-/**
- * Sign in with OAuth provider (Google, Microsoft, etc.)
- */
-export async function signInWithOAuth(provider: 'google' | 'azure' | 'github') {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    },
-  })
-  return { data, error }
-}
-
-/**
- * Sign out
- */
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
-  return { error }
+  if (supabase) {
+    await supabase.auth.signOut()
+  }
 }
 
-/**
- * Get current session
- */
 export async function getSession() {
-  const { data: { session }, error } = await supabase.auth.getSession()
-  return { session, error }
+  if (!supabase) return { session: null, error: null }
+  return await supabase.auth.getSession()
 }
 
-/**
- * Get current user
- */
 export async function getCurrentUser() {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  return { user, error }
+  if (!supabase) return { user: null, error: null }
+  return await supabase.auth.getUser()
 }
 
-/**
- * Refresh session
- */
 export async function refreshSession() {
-  const { data, error } = await supabase.auth.refreshSession()
-  return { data, error }
+  if (!supabase) return
+  await supabase.auth.refreshSession()
 }
 
-/**
- * Send password reset email
- */
 export async function sendPasswordResetEmail(email: string) {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/reset-password`,
-  })
-  return { data, error }
+  if (!supabase) return { error: { message: 'Supabase not configured' } as any }
+  return await supabase.auth.resetPasswordForEmail(email)
 }
 
-/**
- * Update password (after reset or change)
- */
 export async function updatePassword(newPassword: string) {
-  const { data, error } = await supabase.auth.updateUser({
-    password: newPassword,
-  })
-  return { data, error }
+  if (!supabase) return { error: { message: 'Supabase not configured' } as any }
+  return await supabase.auth.updateUser({ password: newPassword })
 }
 
-/**
- * Send email verification
- */
-export async function resendEmailVerification(email: string) {
-  const { data, error } = await supabase.auth.resend({
-    type: 'signup',
-    email,
-  })
-  return { data, error }
-}
-
-/**
- * Auth state change listener
- */
 export function onAuthStateChange(callback: (event: string, session: unknown) => void) {
-  return supabase.auth.onAuthStateChange(callback)
+  if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } }
+  return supabase.auth.onAuthStateChange(callback as any)
 }
 
-// ─── Default Export ─────────────────────────────────────
 export default supabase
