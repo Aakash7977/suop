@@ -1,0 +1,984 @@
+     1→// ═══════════════════════════════════════════════════════════════════════════════
+     2→// SPRINT 52 — FINISHED GOODS QUALITY CONTROL (FGQC) · BATCH RELEASE & QUALITY CERTIFICATION
+     3→// Admin modules: FGQC Dashboard, FG Inspection Records, Batch Release Center,
+     4→// Shelf-Life & Packaging Compliance, Quality Certificates
+     5→// ═══════════════════════════════════════════════════════════════════════════════
+     6→// ICON IMPORT NOTE: All 22 icons required by Sprint 52 are ALREADY imported in
+     7→// src/app/page.tsx (lines 4–34). No new icon imports needed. Verified icons:
+     8→//   ShieldCheck, FileText, FileCheck, FileWarning, CheckCircle2, X,
+     9→//   AlertTriangle, AlertCircle, Clock, Calendar, Package, PackageCheck,
+    10→//   PackageX, Award, Stamp, Download, PenTool, QrCode, ScanLine,
+    11→//   IndianRupee, ArrowRight, Plus
+    12→//
+    13→// CONFLICT NOTE: grep of `^function.*Module` in src/app/page.tsx against
+    14→// (fgqc|batch.release|shelf.life|packaging.compliance|certificate) returned
+    15→// ZERO matches. No collisions exist. All Sprint 52 modules use the `FGQC`
+    16→// prefix (FGQCDashboardModule, FGQCInspectionModule, FGQCBatchReleaseModule,
+    17→// FGQCShelfLifeModule, FGQCCertificatesModule) per task specification.
+    18→// ═══════════════════════════════════════════════════════════════════════════════
+    19→
+    20→// ─── FGQC Dashboard ─────────────────────────────────────────────────────
+    21→function FGQCDashboardModule() {
+    22→  const kpis = [
+    23→    { label: 'Total Inspections', value: '28', unit: 'finished goods lots', icon: ClipboardCheck, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+    24→    { label: 'Pending', value: '4', unit: 'awaiting inspector', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+    25→    { label: 'In Inspection', value: '2', unit: 'being verified', icon: ScanLine, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
+    26→    { label: 'Passed', value: '18', unit: 'compliant lots', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+    27→    { label: 'Failed', value: '2', unit: 'quality breach', icon: X, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-200' },
+    28→    { label: 'Conditional', value: '2', unit: 'partial release', icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' },
+    29→    { label: 'Released', value: '16', unit: 'cleared for sale', icon: PackageCheck, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+    30→    { label: 'Batch Releases', value: '20', unit: 'release requests', icon: PackageCheck, color: 'text-cyan-600', bg: 'bg-cyan-50 border-cyan-200' },
+    31→    { label: 'Pending Releases', value: '4', unit: 'awaiting approval', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+    32→    { label: 'Released Today', value: '8', unit: 'warehouse available', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+    33→    { label: 'Blocked Releases', value: '1', unit: 'quality hold', icon: PackageX, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-200' },
+    34→    { label: 'Certificates', value: '18', unit: '16 signed · 2 draft', icon: FileCheck, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' },
+    35→    { label: 'Shelf-Life Alerts', value: '3', unit: 'of 24 validations', icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-200' },
+    36→    { label: 'Packaging Checks', value: '24', unit: '22 compliant', icon: ShieldCheck, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+    37→    { label: 'Non-Compliant PKG', value: '2', unit: 'label / allergen', icon: FileWarning, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-200' },
+    38→  ]
+    39→
+    40→  // Chief Architect recommendation — 3-stage release model with access matrix
+    41→  const releaseStages = [
+    42→    {
+    43→      stage: 1, code: 'QUALITY_HOLD', name: 'Quality Hold',
+    44→      icon: PackageX, color: 'text-rose-600', bg: 'bg-rose-50 border-rose-300',
+    45→      desc: 'Finished goods produced and packed, gated in QC hold area pending lab verification & quality approval. No access for sales.',
+    46→      pos: 'BLOCKED', warehouse: 'HOLD_ZONE', retail: 'BLOCKED',
+    47→    },
+    48→    {
+    49→      stage: 2, code: 'CONDITIONAL_RELEASE', name: 'Conditional Release',
+    50→      icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-300',
+    51→      desc: 'Partial release granted with documented conditions (e.g., short shelf-life clearance, restricted channel). Time- or quantity-limited.',
+    52→      pos: 'LIMITED', warehouse: 'RESTRICTED', retail: 'CONDITIONAL',
+    53→    },
+    54→    {
+    55→      stage: 3, code: 'RELEASED', name: 'Released',
+    56→      icon: PackageCheck, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-300',
+    57→      desc: 'Full release — quality approved, digital signature captured, warehouse receipt generated, certificate published. Available to all channels.',
+    58→      pos: 'AVAILABLE', warehouse: 'AVAILABLE', retail: 'AVAILABLE',
+    59→    },
+    60→  ]
+    61→
+    62→  // FGQC end-to-end workflow
+    63→  const workflow = [
+    64→    { step: 1, code: 'PRODUCTION', name: 'Production', icon: Factory, color: 'bg-slate-100 text-slate-700 border-slate-300' },
+    65→    { step: 2, code: 'PACKAGING', name: 'Packaging', icon: Package, color: 'bg-blue-100 text-blue-700 border-blue-300' },
+    66→    { step: 3, code: 'FGQC', name: 'FGQC Inspection', icon: ClipboardCheck, color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
+    67→    { step: 4, code: 'LAB_VERIFICATION', name: 'Lab Verification', icon: Beaker, color: 'bg-purple-100 text-purple-700 border-purple-300' },
+    68→    { step: 5, code: 'QUALITY_APPROVAL', name: 'Quality Approval', icon: ShieldCheck, color: 'bg-amber-100 text-amber-700 border-amber-300' },
+    69→    { step: 6, code: 'BATCH_RELEASE', name: 'Batch Release', icon: PackageCheck, color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+    70→    { step: 7, code: 'WAREHOUSE_AVAILABLE', name: 'Warehouse Available', icon: Archive, color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+    71→    { step: 8, code: 'CHANNEL_DISPATCH', name: 'Retail / Restaurant / Distributor', icon: Truck, color: 'bg-rose-100 text-rose-700 border-rose-300' },
+    72→  ]
+    73→
+    74→  return (
+    75→    <div className="space-y-6">
+    76→      <div className="flex items-center justify-between">
+    77→        <div>
+    78→          <h2 className="text-2xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-emerald-600" />FGQC Dashboard</h2>
+    79→          <p className="text-sm text-muted-foreground mt-1">Sprint 52 · Finished Goods Quality Control · 28 inspections today · 20 batch releases · 18 certificates · 3 shelf-life alerts · 24 packaging compliance checks · End-to-end FGQC lifecycle from production to channel dispatch</p>
+    80→        </div>
+    81→        <div className="flex items-center gap-2">
+    82→          <Button size="sm" variant="outline"><FileText className="mr-1 h-4 w-4" />FGQC Report</Button>
+    83→          <Button size="sm" variant="outline"><Download className="mr-1 h-4 w-4" />Export KPIs</Button>
+    84→          <Button size="sm"><Plus className="mr-1 h-4 w-4" />New Inspection</Button>
+    85→        </div>
+    86→      </div>
+    87→
+    88→      {/* KPI grid */}
+    89→      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+    90→        {kpis.map((kpi) => (
+    91→          <Card key={kpi.label} className={`p-4 border ${kpi.bg}`}>
+    92→            <div className="flex items-start justify-between">
+    93→              <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+    94→              <span className="text-2xl font-bold text-foreground">{kpi.value}</span>
+    95→            </div>
+    96→            <p className="text-xs font-semibold mt-2 text-foreground">{kpi.label}</p>
+    97→            <p className="text-[10px] text-muted-foreground">{kpi.unit}</p>
+    98→          </Card>
+    99→        ))}
+   100→      </div>
+   101→
+   102→      {/* FGQC workflow visualization */}
+   103→      <Card className="p-5">
+   104→        <div className="flex items-center justify-between mb-4">
+   105→          <div>
+   106→            <h3 className="text-sm font-bold flex items-center gap-2"><ArrowRight className="h-4 w-4 text-blue-600" />FGQC Workflow · Production to Channel Dispatch</h3>
+   107→            <p className="text-xs text-muted-foreground mt-0.5">8-stage finished goods lifecycle — each stage gates the next; no batch reaches the customer without passing FGQC + lab + quality approval + release signature</p>
+   108→          </div>
+   109→          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300">
+   110→            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />Live
+   111→          </Badge>
+   112→        </div>
+   113→        <div className="flex items-center gap-1 overflow-x-auto pb-2">
+   114→          {workflow.map((step, i) => (
+   115→            <div key={step.code} className="flex items-center gap-1 shrink-0">
+   116→              <div className={`rounded-lg border ${step.color} px-3 py-2 min-w-[150px]`}>
+   117→                <div className="flex items-center gap-1.5">
+   118→                  <step.icon className="h-3.5 w-3.5" />
+   119→                  <span className="text-[9px] uppercase font-bold tracking-wide">Stage {step.step}</span>
+   120→                </div>
+   121→                <p className="text-[11px] font-semibold mt-1">{step.name}</p>
+   122→              </div>
+   123→              {i < workflow.length - 1 && (
+   124→                <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
+   125→              )}
+   126→            </div>
+   127→          ))}
+   128→        </div>
+   129→      </Card>
+   130→
+   131→      {/* Chief Architect recommendation — 3-stage release model with access matrix */}
+   132→      <Card className="p-5 bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-300">
+   133→        <div className="flex items-start gap-3">
+   134→          <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+   135→            <Award className="h-5 w-5 text-emerald-600" />
+   136→          </div>
+   137→          <div className="flex-1">
+   138→            <p className="font-semibold text-sm flex items-center gap-2"><Award className="h-4 w-4 text-emerald-600" />Chief Architect Recommendation — 3-Stage Release Model with POS / Warehouse Access Matrix</p>
+   139→            <p className="text-xs text-muted-foreground mt-1">Every finished goods lot transitions through a 3-stage release lifecycle before customer access. <span className="font-semibold text-rose-700">Quality Hold</span> blocks all channels; <span className="font-semibold text-orange-700">Conditional Release</span> opens limited channels with conditions; <span className="font-semibold text-emerald-700">Released</span> opens all channels. The POS and warehouse access matrix enforces this gating automatically — no SKU can be sold or dispatched until its release stage permits it.</p>
+   140→            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+   141→              {releaseStages.map((s) => (
+   142→                <div key={s.code} className={`rounded-lg border p-3 ${s.bg}`}>
+   143→                  <div className="flex items-center gap-1.5">
+   144→                    <s.icon className={`h-4 w-4 ${s.color}`} />
+   145→                    <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Stage {s.stage}</span>
+   146→                  </div>
+   147→                  <p className={`font-semibold text-xs mt-1 ${s.color}`}>{s.name}</p>
+   148→                  <p className="text-[10px] text-muted-foreground mt-1 leading-snug">{s.desc}</p>
+   149→                  <div className="mt-2 pt-2 border-t border-slate-200/60 grid grid-cols-3 gap-1 text-center">
+   150→                    <div>
+   151→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">POS</p>
+   152→                      <Badge variant="outline" className="text-[9px] mt-0.5">{s.pos}</Badge>
+   153→                    </div>
+   154→                    <div>
+   155→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">Warehouse</p>
+   156→                      <Badge variant="outline" className="text-[9px] mt-0.5">{s.warehouse}</Badge>
+   157→                    </div>
+   158→                    <div>
+   159→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">Retail</p>
+   160→                      <Badge variant="outline" className="text-[9px] mt-0.5">{s.retail}</Badge>
+   161→                    </div>
+   162→                  </div>
+   163→                </div>
+   164→              ))}
+   165→            </div>
+   166→          </div>
+   167→        </div>
+   168→      </Card>
+   169→
+   170→      {/* Quick channel access summary */}
+   171→      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+   172→        <Card className="p-4 border-rose-200 bg-rose-50/40">
+   173→          <div className="flex items-center gap-2 mb-2">
+   174→            <PackageX className="h-5 w-5 text-rose-600" />
+   175→            <p className="text-sm font-semibold text-rose-700">1 Batch on Quality Hold</p>
+   176→          </div>
+   177→          <p className="text-[11px] text-muted-foreground">FGQC-00025 Namkeen — blocked at quality approval stage. POS blocked, warehouse hold zone, retail blocked until quality approval or rejection.</p>
+   178→          <Button size="sm" variant="outline" className="mt-2 w-full text-[11px] h-7">View Hold Details</Button>
+   179→        </Card>
+   180→        <Card className="p-4 border-orange-200 bg-orange-50/40">
+   181→          <div className="flex items-center gap-2 mb-2">
+   182→            <AlertTriangle className="h-5 w-5 text-orange-600" />
+   183→            <p className="text-sm font-semibold text-orange-700">2 Conditional Releases</p>
+   184→          </div>
+   185→          <p className="text-[11px] text-muted-foreground">FGQC-00026 Idli Batter + BREL-00018 — limited channel access with documented conditions (short shelf-life clearance, restricted to local retail).</p>
+   186→          <Button size="sm" variant="outline" className="mt-2 w-full text-[11px] h-7">View Conditions</Button>
+   187→        </Card>
+   188→        <Card className="p-4 border-emerald-200 bg-emerald-50/40">
+   189→          <div className="flex items-center gap-2 mb-2">
+   190→            <PackageCheck className="h-5 w-5 text-emerald-600" />
+   191→            <p className="text-sm font-semibold text-emerald-700">16 Batches Fully Released</p>
+   192→          </div>
+   193→          <p className="text-[11px] text-muted-foreground">Full access across POS, warehouse, retail & restaurant/distributor channels. 8 released today, 16 certificates signed, ready for customer dispatch.</p>
+   194→          <Button size="sm" variant="outline" className="mt-2 w-full text-[11px] h-7">View Releases</Button>
+   195→        </Card>
+   196→      </div>
+   197→    </div>
+   198→  )
+   199→}
+   200→
+   201→// ─── FGQC Inspection Records ───────────────────────────────────────────
+   202→function FGQCInspectionModule() {
+   203→  const inspections = [
+   204→    {
+   205→      code: 'FGQC-00028', batch: 'BATCH-KK-500-26F003', product: 'Kaju Katli 500g', qty: '120 kg',
+   206→      mfgDate: '2026-02-15', expiryDate: '2026-04-15', template: 'FGQC-SWEET-KK-001',
+   207→      passed: 12, failed: 0, grade: 'A', inspector: 'R. Nair', inspectedAt: '2026-02-18 10:42',
+   208→      status: 'PASSED', result: 'PASSED', releaseStatus: 'RELEASED',
+   209→      failReason: '—', conditionNotes: '—',
+   210→    },
+   211→    {
+   212→      code: 'FGQC-00027', batch: 'BATCH-KK-1KG-26F002', product: 'Kaju Katli 1kg', qty: '80 kg',
+   213→      mfgDate: '2026-02-14', expiryDate: '2026-04-14', template: 'FGQC-SWEET-KK-001',
+   214→      passed: 12, failed: 0, grade: 'A', inspector: 'R. Nair', inspectedAt: '2026-02-18 09:55',
+   215→      status: 'PASSED', result: 'PASSED', releaseStatus: 'RELEASED',
+   216→      failReason: '—', conditionNotes: '—',
+   217→    },
+   218→    {
+   219→      code: 'FGQC-00026', batch: 'BATCH-SIB-26F005', product: 'Shwet Idli Batter 1kg', qty: '95 kg',
+   220→      mfgDate: '2026-02-17', expiryDate: '2026-02-22', template: 'FGQC-DAIRY-IB-002',
+   221→      passed: 10, failed: 2, grade: 'B', inspector: 'S. Iyer', inspectedAt: '2026-02-18 09:10',
+   222→      status: 'CONDITIONAL_PASS', result: 'CONDITIONAL_PASS', releaseStatus: 'CONDITIONAL_RELEASE',
+   223→      failReason: '—', conditionNotes: 'Shelf-life 5 days only (below 7-day norm) — conditional release granted for local retail channel within 25 km radius, must clear within 3 days.',
+   224→    },
+   225→    {
+   226→      code: 'FGQC-00025', batch: 'BATCH-NM-26F007', product: 'Mixed Namkeen 200g', qty: '60 kg',
+   227→      mfgDate: '2026-02-16', expiryDate: '2026-05-15', template: 'FGQC-SNACK-NM-003',
+   228→      passed: 8, failed: 4, grade: 'C', inspector: 'M. Joshi', inspectedAt: '2026-02-18 10:18',
+   229→      status: 'FAILED', result: 'FAILED', releaseStatus: 'QUALITY_HOLD',
+   230→      failReason: '4 critical checkpoint failures — moisture content 4.8% (limit ≤3.5%), packaging seal integrity breach on 12 units, label smudged on 8 units, allergen declaration missing on 5 units.',
+   231→      conditionNotes: '—',
+   232→    },
+   233→    {
+   234→      code: 'FGQC-00024', batch: 'BATCH-MT-26F011', product: 'Motichoor Laddu 1kg', qty: '70 kg',
+   235→      mfgDate: '2026-02-15', expiryDate: '2026-03-15', template: 'FGQC-SWEET-MT-001',
+   236→      passed: 12, failed: 0, grade: 'A', inspector: 'P. Verma', inspectedAt: '2026-02-18 09:32',
+   237→      status: 'PASSED', result: 'PASSED', releaseStatus: 'PENDING_RELEASE',
+   238→      failReason: '—', conditionNotes: '—',
+   239→    },
+   240→  ]
+   241→
+   242→  const statusColor: Record<string, string> = {
+   243→    PASSED: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   244→    FAILED: 'bg-rose-100 text-rose-700 border-rose-300',
+   245→    CONDITIONAL_PASS: 'bg-orange-100 text-orange-700 border-orange-300',
+   246→    IN_INSPECTION: 'bg-indigo-100 text-indigo-700 border-indigo-300',
+   247→    PENDING: 'bg-amber-100 text-amber-700 border-amber-300',
+   248→  }
+   249→  const gradeColor: Record<string, string> = {
+   250→    A: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   251→    B: 'bg-amber-100 text-amber-700 border-amber-300',
+   252→    C: 'bg-orange-100 text-orange-700 border-orange-300',
+   253→    D: 'bg-rose-100 text-rose-700 border-rose-300',
+   254→  }
+   255→  const releaseColor: Record<string, string> = {
+   256→    RELEASED: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   257→    CONDITIONAL_RELEASE: 'bg-orange-100 text-orange-700 border-orange-300',
+   258→    PENDING_RELEASE: 'bg-amber-100 text-amber-700 border-amber-300',
+   259→    QUALITY_HOLD: 'bg-rose-100 text-rose-700 border-rose-300',
+   260→  }
+   261→
+   262→  return (
+   263→    <div className="space-y-6">
+   264→      <div className="flex items-center justify-between">
+   265→        <div>
+   266→          <h2 className="text-2xl font-bold flex items-center gap-2"><ClipboardCheck className="h-6 w-6 text-blue-600" />FGQC Inspection Records</h2>
+   267→          <p className="text-sm text-muted-foreground mt-1">Sprint 52 · Finished Goods Quality Control · 5 most recent inspections · Each record contains batch, product, mfg/expiry dates, inspection template, checkpoint results, grade, inspector, status, and fail reason / condition notes</p>
+   268→        </div>
+   269→        <div className="flex items-center gap-2">
+   270→          <Button size="sm" variant="outline"><FileText className="mr-1 h-4 w-4" />Export</Button>
+   271→          <Button size="sm"><Plus className="mr-1 h-4 w-4" />New FG Inspection</Button>
+   272→        </div>
+   273→      </div>
+   274→
+   275→      {/* Summary strip */}
+   276→      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+   277→        <Card className="p-3 border-emerald-200 bg-emerald-50/40">
+   278→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Passed</span><CheckCircle2 className="h-4 w-4 text-emerald-600" /></div>
+   279→          <p className="text-xl font-bold text-emerald-700 mt-1">3</p>
+   280→        </Card>
+   281→        <Card className="p-3 border-orange-200 bg-orange-50/40">
+   282→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Conditional</span><AlertTriangle className="h-4 w-4 text-orange-600" /></div>
+   283→          <p className="text-xl font-bold text-orange-700 mt-1">1</p>
+   284→        </Card>
+   285→        <Card className="p-3 border-rose-200 bg-rose-50/40">
+   286→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Failed</span><X className="h-4 w-4 text-rose-600" /></div>
+   287→          <p className="text-xl font-bold text-rose-700 mt-1">1</p>
+   288→        </Card>
+   289→        <Card className="p-3 border-blue-200 bg-blue-50/40">
+   290→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Grade A</span><Award className="h-4 w-4 text-blue-600" /></div>
+   291→          <p className="text-xl font-bold text-blue-700 mt-1">3</p>
+   292→        </Card>
+   293→        <Card className="p-3 border-amber-200 bg-amber-50/40">
+   294→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Pending Release</span><Clock className="h-4 w-4 text-amber-600" /></div>
+   295→          <p className="text-xl font-bold text-amber-700 mt-1">1</p>
+   296→        </Card>
+   297→      </div>
+   298→
+   299→      {/* Inspection cards */}
+   300→      <div className="space-y-3">
+   301→        {inspections.map((row) => (
+   302→          <Card key={row.code} className={`p-4 ${row.status === 'FAILED' ? 'border-rose-300 bg-rose-50/30' : row.status === 'CONDITIONAL_PASS' ? 'border-orange-300 bg-orange-50/30' : 'border-slate-200'}`}>
+   303→            {/* Header row */}
+   304→            <div className="flex items-start justify-between gap-3 mb-3">
+   305→              <div className="flex-1 min-w-0">
+   306→                <div className="flex items-center gap-2 flex-wrap">
+   307→                  <span className="font-mono text-sm font-bold text-blue-600">{row.code}</span>
+   308→                  <Badge variant="outline" className={`text-[10px] ${statusColor[row.status]}`}>{row.status.replace(/_/g, ' ')}</Badge>
+   309→                  <Badge variant="outline" className={`text-[10px] ${releaseColor[row.releaseStatus]}`}>{row.releaseStatus.replace(/_/g, ' ')}</Badge>
+   310→                  <Badge variant="outline" className={`text-[10px] ${gradeColor[row.grade]}`}>Grade {row.grade}</Badge>
+   311→                  <Badge variant="outline" className="text-[10px]">{row.template}</Badge>
+   312→                </div>
+   313→                <p className="text-sm font-semibold mt-1.5">{row.product} <span className="text-muted-foreground font-normal">· {row.qty}</span></p>
+   314→                <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground flex-wrap">
+   315→                  <span className="font-mono">{row.batch}</span>
+   316→                  <span>·</span>
+   317→                  <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />MFG {row.mfgDate}</span>
+   318→                  <span>·</span>
+   319→                  <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" />EXP {row.expiryDate}</span>
+   320→                </div>
+   321→              </div>
+   322→              <div className="text-right shrink-0">
+   323→                <p className="text-[10px] uppercase font-bold text-muted-foreground">Inspector</p>
+   324→                <p className="text-xs font-semibold">{row.inspector}</p>
+   325→                <p className="text-[10px] font-mono text-muted-foreground mt-0.5">{row.inspectedAt}</p>
+   326→              </div>
+   327→            </div>
+   328→
+   329→            {/* Checkpoint progress */}
+   330→            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px] mb-3">
+   331→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   332→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Checkpoints Passed</p>
+   333→                <p className="text-sm font-semibold text-emerald-600">{row.passed}</p>
+   334→              </div>
+   335→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   336→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Checkpoints Failed</p>
+   337→                <p className={`text-sm font-semibold ${row.failed > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{row.failed}</p>
+   338→              </div>
+   339→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   340→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Total</p>
+   341→                <p className="text-sm font-semibold">{row.passed + row.failed}</p>
+   342→              </div>
+   343→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   344→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Pass Rate</p>
+   345→                <p className="text-sm font-semibold">{Math.round((row.passed / (row.passed + row.failed)) * 100)}%</p>
+   346→              </div>
+   347→            </div>
+   348→
+   349→            {/* Fail reason / condition notes */}
+   350→            {row.failReason !== '—' && (
+   351→              <div className="rounded-lg border border-rose-200 bg-rose-50/50 p-2.5 mb-2">
+   352→                <p className="text-[10px] uppercase font-bold text-rose-700 flex items-center gap-1"><X className="h-3 w-3" />Fail Reason</p>
+   353→                <p className="text-[11px] text-rose-900 mt-1 leading-snug">{row.failReason}</p>
+   354→              </div>
+   355→            )}
+   356→            {row.conditionNotes !== '—' && (
+   357→              <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-2.5 mb-2">
+   358→                <p className="text-[10px] uppercase font-bold text-orange-700 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Conditional Release Notes</p>
+   359→                <p className="text-[11px] text-orange-900 mt-1 leading-snug">{row.conditionNotes}</p>
+   360→              </div>
+   361→            )}
+   362→
+   363→            {/* Actions */}
+   364→            <div className="flex items-center justify-end gap-1.5 pt-2 border-t">
+   365→              <Button size="sm" variant="outline"><FileText className="h-3.5 w-3.5 mr-1" />View Detail</Button>
+   366→              {row.status === 'PASSED' && row.releaseStatus === 'PENDING_RELEASE' && (
+   367→                <Button size="sm"><PackageCheck className="h-3.5 w-3.5 mr-1" />Initiate Release</Button>
+   368→              )}
+   369→              {row.status === 'CONDITIONAL_PASS' && (
+   370→                <Button size="sm" variant="outline"><AlertTriangle className="h-3.5 w-3.5 mr-1" />View Conditions</Button>
+   371→              )}
+   372→              {row.status === 'FAILED' && (
+   373→                <Button size="sm" variant="destructive"><PackageX className="h-3.5 w-3.5 mr-1" />Quarantine</Button>
+   374→              )}
+   375→            </div>
+   376→          </Card>
+   377→        ))}
+   378→      </div>
+   379→    </div>
+   380→  )
+   381→}
+   382→
+   383→// ─── FGQC Batch Release Center ─────────────────────────────────────────
+   384→function FGQCBatchReleaseModule() {
+   385→  const releases = [
+   386→    {
+   387→      code: 'BREL-00020', batch: 'BATCH-KK-500-26F003', product: 'Kaju Katli 500g', qty: '120 kg',
+   388→      releaseType: 'FULL_RELEASE', releasedQty: '120 kg', restrictedQty: '0 kg',
+   389→      qualityApprovedBy: 'Dr. A. Mehta (QA Manager)', qualityApprovedAt: '2026-02-18 11:15',
+   390→      warehouseAuthorizedBy: 'V. Reddy (Warehouse Sup.)', warehouseAuthorizedAt: '2026-02-18 11:32',
+   391→      status: 'RELEASED', inventoryStatus: 'AVAILABLE', warehouseReceipt: 'WR-90342',
+   392→      conditions: '—',
+   393→    },
+   394→    {
+   395→      code: 'BREL-00019', batch: 'BATCH-KK-1KG-26F002', product: 'Kaju Katli 1kg', qty: '80 kg',
+   396→      releaseType: 'FULL_RELEASE', releasedQty: '80 kg', restrictedQty: '0 kg',
+   397→      qualityApprovedBy: 'Dr. A. Mehta (QA Manager)', qualityApprovedAt: '2026-02-18 10:50',
+   398→      warehouseAuthorizedBy: 'V. Reddy (Warehouse Sup.)', warehouseAuthorizedAt: '2026-02-18 11:08',
+   399→      status: 'RELEASED', inventoryStatus: 'AVAILABLE', warehouseReceipt: 'WR-90341',
+   400→      conditions: '—',
+   401→    },
+   402→    {
+   403→      code: 'BREL-00018', batch: 'BATCH-SIB-26F005', product: 'Shwet Idli Batter 1kg', qty: '95 kg',
+   404→      releaseType: 'CONDITIONAL_RELEASE', releasedQty: '85 kg', restrictedQty: '10 kg',
+   405→      qualityApprovedBy: 'Dr. A. Mehta (QA Manager)', qualityApprovedAt: '2026-02-18 09:45',
+   406→      warehouseAuthorizedBy: 'V. Reddy (Warehouse Sup.)', warehouseAuthorizedAt: '2026-02-18 10:02',
+   407→      status: 'CONDITIONAL_RELEASE', inventoryStatus: 'RESTRICTED', warehouseReceipt: 'WR-90340',
+   408→      conditions: '85 kg released for local retail within 25 km radius — must clear within 3 days. 10 kg restricted (short-dated) for internal QA re-evaluation; not available for sale.',
+   409→    },
+   410→    {
+   411→      code: 'BREL-00017', batch: 'BATCH-NM-26F007', product: 'Mixed Namkeen 200g', qty: '60 kg',
+   412→      releaseType: 'BLOCKED_RELEASE', releasedQty: '0 kg', restrictedQty: '60 kg',
+   413→      qualityApprovedBy: '—', qualityApprovedAt: '—',
+   414→      warehouseAuthorizedBy: '—', warehouseAuthorizedAt: '—',
+   415→      status: 'BLOCKED', inventoryStatus: 'QUALITY_HOLD', warehouseReceipt: '—',
+   416→      conditions: 'BLOCKED — 4 critical FGQC checkpoint failures (moisture, seal integrity, label, allergen). No release permitted until rework/repack and re-inspection passes.',
+   417→    },
+   418→    {
+   419→      code: 'BREL-00016', batch: 'BATCH-MT-26F011', product: 'Motichoor Laddu 1kg', qty: '70 kg',
+   420→      releaseType: 'FULL_RELEASE', releasedQty: '0 kg', restrictedQty: '0 kg',
+   421→      qualityApprovedBy: 'Dr. A. Mehta (QA Manager)', qualityApprovedAt: '2026-02-18 10:05',
+   422→      warehouseAuthorizedBy: '—', warehouseAuthorizedAt: '—',
+   423→      status: 'QUALITY_APPROVED', inventoryStatus: 'HOLD_ZONE', warehouseReceipt: '—',
+   424→      conditions: 'Quality approved — awaiting warehouse authorization & digital signature before batch release.',
+   425→    },
+   426→  ]
+   427→
+   428→  const releaseTypeColor: Record<string, string> = {
+   429→    FULL_RELEASE: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   430→    CONDITIONAL_RELEASE: 'bg-orange-100 text-orange-700 border-orange-300',
+   431→    BLOCKED_RELEASE: 'bg-rose-100 text-rose-700 border-rose-300',
+   432→    QUALITY_APPROVED: 'bg-amber-100 text-amber-700 border-amber-300',
+   433→  }
+   434→  const statusColor: Record<string, string> = {
+   435→    RELEASED: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   436→    CONDITIONAL_RELEASE: 'bg-orange-100 text-orange-700 border-orange-300',
+   437→    BLOCKED: 'bg-rose-100 text-rose-700 border-rose-300',
+   438→    QUALITY_APPROVED: 'bg-amber-100 text-amber-700 border-amber-300',
+   439→  }
+   440→  const inventoryColor: Record<string, string> = {
+   441→    AVAILABLE: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   442→    RESTRICTED: 'bg-orange-100 text-orange-700 border-orange-300',
+   443→    QUALITY_HOLD: 'bg-rose-100 text-rose-700 border-rose-300',
+   444→    HOLD_ZONE: 'bg-amber-100 text-amber-700 border-amber-300',
+   445→  }
+   446→
+   447→  // Release workflow
+   448→  const workflow = [
+   449→    { step: 1, code: 'INSPECTION_PASSED', name: 'Inspection Passed', icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+   450→    { step: 2, code: 'QUALITY_APPROVAL', name: 'Quality Approval', icon: ShieldCheck, color: 'bg-blue-100 text-blue-700 border-blue-300' },
+   451→    { step: 3, code: 'DIGITAL_SIGNATURE', name: 'Digital Signature', icon: PenTool, color: 'bg-purple-100 text-purple-700 border-purple-300' },
+   452→    { step: 4, code: 'BATCH_RELEASED', name: 'Batch Released', icon: PackageCheck, color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+   453→    { step: 5, code: 'WAREHOUSE_AVAILABLE', name: 'Warehouse Available', icon: Archive, color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+   454→  ]
+   455→
+   456→  return (
+   457→    <div className="space-y-6">
+   458→      <div className="flex items-center justify-between">
+   459→        <div>
+   460→          <h2 className="text-2xl font-bold flex items-center gap-2"><PackageCheck className="h-6 w-6 text-emerald-600" />Batch Release Center</h2>
+   461→          <p className="text-sm text-muted-foreground mt-1">Sprint 52 · FGQC Batch Release · 5 release requests · Each record includes release type, released/restricted qty, quality approval, warehouse authorization, inventory status, warehouse receipt number, and conditions for conditional releases</p>
+   462→        </div>
+   463→        <div className="flex items-center gap-2">
+   464→          <Button size="sm" variant="outline"><FileText className="mr-1 h-4 w-4" />Release Log</Button>
+   465→          <Button size="sm"><Plus className="mr-1 h-4 w-4" />New Release Request</Button>
+   466→        </div>
+   467→      </div>
+   468→
+   469→      {/* Release workflow visualization */}
+   470→      <Card className="p-5">
+   471→        <div className="flex items-center justify-between mb-4">
+   472→          <div>
+   473→            <h3 className="text-sm font-bold flex items-center gap-2"><ArrowRight className="h-4 w-4 text-blue-600" />Release Workflow · 5-Stage Gated Authorization</h3>
+   474→            <p className="text-xs text-muted-foreground mt-0.5">Each stage gates the next — quality approval requires inspection pass; digital signature requires quality approval; batch release requires signature; warehouse availability requires release</p>
+   475→          </div>
+   476→        </div>
+   477→        <div className="flex items-center gap-1 overflow-x-auto pb-2">
+   478→          {workflow.map((step, i) => (
+   479→            <div key={step.code} className="flex items-center gap-1 shrink-0">
+   480→              <div className={`rounded-lg border ${step.color} px-3 py-2 min-w-[160px]`}>
+   481→                <div className="flex items-center gap-1.5">
+   482→                  <step.icon className="h-3.5 w-3.5" />
+   483→                  <span className="text-[9px] uppercase font-bold tracking-wide">Stage {step.step}</span>
+   484→                </div>
+   485→                <p className="text-[11px] font-semibold mt-1">{step.name}</p>
+   486→              </div>
+   487→              {i < workflow.length - 1 && (
+   488→                <ArrowRight className="h-4 w-4 text-slate-400 shrink-0" />
+   489→              )}
+   490→            </div>
+   491→          ))}
+   492→        </div>
+   493→      </Card>
+   494→
+   495→      {/* Release cards */}
+   496→      <div className="space-y-3">
+   497→        {releases.map((row) => (
+   498→          <Card key={row.code} className={`p-4 ${row.status === 'BLOCKED' ? 'border-rose-300 bg-rose-50/30' : row.status === 'CONDITIONAL_RELEASE' ? 'border-orange-300 bg-orange-50/30' : row.status === 'QUALITY_APPROVED' ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'}`}>
+   499→            {/* Header */}
+   500→            <div className="flex items-start justify-between gap-3 mb-3">
+   501→              <div className="flex-1 min-w-0">
+   502→                <div className="flex items-center gap-2 flex-wrap">
+   503→                  <span className="font-mono text-sm font-bold text-blue-600">{row.code}</span>
+   504→                  <Badge variant="outline" className={`text-[10px] ${releaseTypeColor[row.releaseType]}`}>{row.releaseType.replace(/_/g, ' ')}</Badge>
+   505→                  <Badge variant="outline" className={`text-[10px] ${statusColor[row.status]}`}>{row.status.replace(/_/g, ' ')}</Badge>
+   506→                  <Badge variant="outline" className={`text-[10px] ${inventoryColor[row.inventoryStatus]}`}>{row.inventoryStatus.replace(/_/g, ' ')}</Badge>
+   507→                  {row.warehouseReceipt !== '—' && (
+   508→                    <Badge variant="outline" className="text-[10px] font-mono"><QrCode className="h-3 w-3 mr-0.5" />{row.warehouseReceipt}</Badge>
+   509→                  )}
+   510→                </div>
+   511→                <p className="text-sm font-semibold mt-1.5">{row.product} <span className="text-muted-foreground font-normal">· {row.qty}</span></p>
+   512→                <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{row.batch}</p>
+   513→              </div>
+   514→              <div className="text-right shrink-0">
+   515→                {row.status === 'RELEASED' && <PackageCheck className="h-6 w-6 text-emerald-600 ml-auto" />}
+   516→                {row.status === 'CONDITIONAL_RELEASE' && <AlertTriangle className="h-6 w-6 text-orange-600 ml-auto" />}
+   517→                {row.status === 'BLOCKED' && <PackageX className="h-6 w-6 text-rose-600 ml-auto" />}
+   518→                {row.status === 'QUALITY_APPROVED' && <Clock className="h-6 w-6 text-amber-600 ml-auto" />}
+   519→              </div>
+   520→            </div>
+   521→
+   522→            {/* Quantity split */}
+   523→            <div className="grid grid-cols-3 gap-2 text-[11px] mb-3">
+   524→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   525→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Released Qty</p>
+   526→                <p className="text-sm font-semibold text-emerald-600">{row.releasedQty}</p>
+   527→              </div>
+   528→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   529→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Restricted Qty</p>
+   530→                <p className={`text-sm font-semibold ${row.restrictedQty !== '0 kg' ? 'text-orange-600' : 'text-muted-foreground'}`}>{row.restrictedQty}</p>
+   531→              </div>
+   532→              <div className="rounded bg-muted/40 px-2 py-1.5">
+   533→                <p className="text-[9px] uppercase font-bold text-muted-foreground">Total Batch Qty</p>
+   534→                <p className="text-sm font-semibold">{row.qty}</p>
+   535→              </div>
+   536→            </div>
+   537→
+   538→            {/* Authorization matrix */}
+   539→            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+   540→              <div className={`rounded-lg border p-2.5 ${row.qualityApprovedBy !== '—' ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-muted/30'}`}>
+   541→                <p className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><ShieldCheck className="h-3 w-3" />Quality Approval</p>
+   542→                <p className="text-[11px] font-semibold mt-0.5">{row.qualityApprovedBy}</p>
+   543→                <p className="text-[10px] font-mono text-muted-foreground">{row.qualityApprovedAt}</p>
+   544→              </div>
+   545→              <div className={`rounded-lg border p-2.5 ${row.warehouseAuthorizedBy !== '—' ? 'border-emerald-200 bg-emerald-50/40' : 'border-amber-200 bg-amber-50/40'}`}>
+   546→                <p className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><Archive className="h-3 w-3" />Warehouse Authorization</p>
+   547→                <p className="text-[11px] font-semibold mt-0.5">{row.warehouseAuthorizedBy}</p>
+   548→                <p className="text-[10px] font-mono text-muted-foreground">{row.warehouseAuthorizedAt}</p>
+   549→              </div>
+   550→            </div>
+   551→
+   552→            {/* Conditions */}
+   553→            {row.conditions !== '—' && (
+   554→              <div className={`rounded-lg border p-2.5 mb-2 ${row.status === 'BLOCKED' ? 'border-rose-200 bg-rose-50/50' : 'border-orange-200 bg-orange-50/50'}`}>
+   555→                <p className={`text-[10px] uppercase font-bold flex items-center gap-1 ${row.status === 'BLOCKED' ? 'text-rose-700' : 'text-orange-700'}`}>
+   556→                  {row.status === 'BLOCKED' ? <X className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+   557→                  {row.status === 'BLOCKED' ? 'Block Reason' : 'Conditional Release Conditions'}
+   558→                </p>
+   559→                <p className={`text-[11px] mt-1 leading-snug ${row.status === 'BLOCKED' ? 'text-rose-900' : 'text-orange-900'}`}>{row.conditions}</p>
+   560→              </div>
+   561→            )}
+   562→
+   563→            {/* Actions */}
+   564→            <div className="flex items-center justify-end gap-1.5 pt-2 border-t">
+   565→              <Button size="sm" variant="outline"><FileText className="h-3.5 w-3.5 mr-1" />View Detail</Button>
+   566→              {row.status === 'RELEASED' && (
+   567→                <Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1" />Release Order</Button>
+   568→              )}
+   569→              {row.status === 'QUALITY_APPROVED' && (
+   570→                <Button size="sm"><PenTool className="h-3.5 w-3.5 mr-1" />Authorize Warehouse</Button>
+   571→              )}
+   572→              {row.status === 'BLOCKED' && (
+   573→                <Button size="sm" variant="destructive"><PackageX className="h-3.5 w-3.5 mr-1" />Quarantine</Button>
+   574→              )}
+   575→            </div>
+   576→          </Card>
+   577→        ))}
+   578→      </div>
+   579→    </div>
+   580→  )
+   581→}
+   582→
+   583→// ─── FGQC Shelf-Life & Packaging Compliance ────────────────────────────
+   584→function FGQCShelfLifeModule() {
+   585→  const shelfLifeAlerts = [
+   586→    {
+   587→      batch: 'BATCH-SIB-26F005', product: 'Shwet Idli Batter 1kg', mfgDate: '2026-02-13', expiryDate: '2026-02-18',
+   588→      remainingDays: 0, alertLevel: 'EXPIRED', valueAtRisk: 1600,
+   589→    },
+   590→    {
+   591→      batch: 'BATCH-FC-26F019', product: 'Fresh Curd 500g', mfgDate: '2026-02-16', expiryDate: '2026-02-21',
+   592→      remainingDays: 3, alertLevel: 'CRITICAL', valueAtRisk: 1200,
+   593→    },
+   594→    {
+   595→      batch: 'BATCH-PN-26F022', product: 'Paneer 200g', mfgDate: '2026-02-15', expiryDate: '2026-02-21',
+   596→      remainingDays: 3, alertLevel: 'CRITICAL', valueAtRisk: 3375,
+   597→    },
+   598→  ]
+   599→
+   600→  const alertColor: Record<string, string> = {
+   601→    EXPIRED: 'bg-rose-100 text-rose-700 border-rose-300',
+   602→    CRITICAL: 'bg-orange-100 text-orange-700 border-orange-300',
+   603→    WARNING: 'bg-amber-100 text-amber-700 border-amber-300',
+   604→    NORMAL: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   605→  }
+   606→  const alertIcon: Record<string, any> = {
+   607→    EXPIRED: X,
+   608→    CRITICAL: AlertCircle,
+   609→    WARNING: AlertTriangle,
+   610→    NORMAL: CheckCircle2,
+   611→  }
+   612→
+   613→  // 12 packaging compliance checks
+   614→  const packagingChecksList = ['box', 'label', 'barcode', 'qr', 'mrp', 'fssai', 'weight', 'ingredients', 'nutrition', 'allergen', 'mfgDate', 'expiryDate']
+   615→
+   616→  const packagingChecks = [
+   617→    {
+   618→      batch: 'BATCH-KK-500-26F003', product: 'Kaju Katli 500g', overall: 'COMPLIANT',
+   619→      method: 'AQL 2.5 Level-II sampling · 125 units inspected', checkedBy: 'K. Rao (PKG Inspector)', checkedAt: '2026-02-18 08:30',
+   620→      results: { box: true, label: true, barcode: true, qr: true, mrp: true, fssai: true, weight: true, ingredients: true, nutrition: true, allergen: true, mfgDate: true, expiryDate: true },
+   621→      failedChecks: [],
+   622→    },
+   623→    {
+   624→      batch: 'BATCH-NM-26F007', product: 'Mixed Namkeen 200g', overall: 'NON_COMPLIANT',
+   625→      method: 'AQL 2.5 Level-II sampling · 125 units inspected', checkedBy: 'K. Rao (PKG Inspector)', checkedAt: '2026-02-18 09:10',
+   626→      results: { box: true, label: false, barcode: true, qr: true, mrp: true, fssai: true, weight: true, ingredients: true, nutrition: true, allergen: false, mfgDate: true, expiryDate: true },
+   627→      failedChecks: ['label (smudged on 8 units — illegible)', 'allergen (declaration missing on 5 units)'],
+   628→    },
+   629→  ]
+   630→
+   631→  const overallColor: Record<string, string> = {
+   632→    COMPLIANT: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   633→    NON_COMPLIANT: 'bg-rose-100 text-rose-700 border-rose-300',
+   634→  }
+   635→
+   636→  const checkLabel: Record<string, string> = {
+   637→    box: 'Box Integrity', label: 'Label Print', barcode: 'Barcode Scan', qr: 'QR Code',
+   638→    mrp: 'MRP Print', fssai: 'FSSAI License', weight: 'Net Weight', ingredients: 'Ingredients List',
+   639→    nutrition: 'Nutrition Info', allergen: 'Allergen Decl.', mfgDate: 'MFG Date', expiryDate: 'Expiry Date',
+   640→  }
+   641→
+   642→  return (
+   643→    <div className="space-y-6">
+   644→      <div className="flex items-center justify-between">
+   645→        <div>
+   646→          <h2 className="text-2xl font-bold flex items-center gap-2"><Calendar className="h-6 w-6 text-blue-600" />Shelf-Life & Packaging Compliance</h2>
+   647→          <p className="text-sm text-muted-foreground mt-1">Sprint 52 · 24 shelf-life validations (3 alerts) + 24 packaging compliance checks (2 non-compliant) · Each shelf-life alert tracks remaining days, alert level & value at risk · Each packaging check runs 12 mandatory FSSAI compliance points</p>
+   648→        </div>
+   649→        <div className="flex items-center gap-2">
+   650→          <Button size="sm" variant="outline"><FileText className="mr-1 h-4 w-4" />Compliance Report</Button>
+   651→          <Button size="sm"><ScanLine className="mr-1 h-4 w-4" />New PKG Check</Button>
+   652→        </div>
+   653→      </div>
+   654→
+   655→      {/* Summary KPIs */}
+   656→      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+   657→        <Card className="p-3 border-rose-200 bg-rose-50/40">
+   658→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Expired</span><X className="h-4 w-4 text-rose-600" /></div>
+   659→          <p className="text-xl font-bold text-rose-700 mt-1">1</p>
+   660→        </Card>
+   661→        <Card className="p-3 border-orange-200 bg-orange-50/40">
+   662→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Critical (≤3 days)</span><AlertCircle className="h-4 w-4 text-orange-600" /></div>
+   663→          <p className="text-xl font-bold text-orange-700 mt-1">2</p>
+   664→        </Card>
+   665→        <Card className="p-3 border-emerald-200 bg-emerald-50/40">
+   666→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Shelf-Life OK</span><CheckCircle2 className="h-4 w-4 text-emerald-600" /></div>
+   667→          <p className="text-xl font-bold text-emerald-700 mt-1">21</p>
+   668→        </Card>
+   669→        <Card className="p-3 border-emerald-200 bg-emerald-50/40">
+   670→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">PKG Compliant</span><ShieldCheck className="h-4 w-4 text-emerald-600" /></div>
+   671→          <p className="text-xl font-bold text-emerald-700 mt-1">22</p>
+   672→        </Card>
+   673→        <Card className="p-3 border-rose-200 bg-rose-50/40">
+   674→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">PKG Non-Compliant</span><FileWarning className="h-4 w-4 text-rose-600" /></div>
+   675→          <p className="text-xl font-bold text-rose-700 mt-1">2</p>
+   676→        </Card>
+   677→      </div>
+   678→
+   679→      {/* Shelf-Life Alerts section */}
+   680→      <Card className="p-5">
+   681→        <div className="flex items-center justify-between mb-4">
+   682→          <div>
+   683→            <h3 className="text-sm font-bold flex items-center gap-2"><AlertCircle className="h-4 w-4 text-rose-600" />Shelf-Life Alerts · 3 Active</h3>
+   684→            <p className="text-xs text-muted-foreground mt-0.5">Batches with remaining shelf-life below 7-day warning threshold · EXPIRED requires immediate quarantine; CRITICAL requires conditional release or destruction</p>
+   685→          </div>
+   686→          <Badge variant="outline" className="text-[10px] bg-rose-50 text-rose-700 border-rose-300">₹6,175 at risk</Badge>
+   687→        </div>
+   688→        <div className="space-y-2">
+   689→          {shelfLifeAlerts.map((alert) => {
+   690→            const AIcon = alertIcon[alert.alertLevel]
+   691→            return (
+   692→              <div key={alert.batch} className={`rounded-lg border p-3 ${alert.alertLevel === 'EXPIRED' ? 'border-rose-300 bg-rose-50/40' : 'border-orange-300 bg-orange-50/40'}`}>
+   693→                <div className="flex items-center justify-between gap-3 flex-wrap">
+   694→                  <div className="flex items-center gap-2 flex-wrap">
+   695→                    <AIcon className={`h-4 w-4 ${alert.alertLevel === 'EXPIRED' ? 'text-rose-600' : 'text-orange-600'}`} />
+   696→                    <span className="font-semibold text-sm">{alert.product}</span>
+   697→                    <Badge variant="outline" className={`text-[10px] ${alertColor[alert.alertLevel]}`}>{alert.alertLevel}</Badge>
+   698→                    <span className="font-mono text-[11px] text-muted-foreground">{alert.batch}</span>
+   699→                  </div>
+   700→                  <div className="flex items-center gap-3 text-[11px]">
+   701→                    <div className="text-center">
+   702→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">MFG</p>
+   703→                      <p className="font-mono">{alert.mfgDate}</p>
+   704→                    </div>
+   705→                    <ArrowRight className="h-3 w-3 text-slate-400" />
+   706→                    <div className="text-center">
+   707→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">Expiry</p>
+   708→                      <p className="font-mono">{alert.expiryDate}</p>
+   709→                    </div>
+   710→                    <div className="text-center px-2 py-0.5 rounded border border-slate-200 bg-white">
+   711→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">Remaining</p>
+   712→                      <p className={`font-bold text-xs ${alert.remainingDays === 0 ? 'text-rose-600' : 'text-orange-600'}`}>{alert.remainingDays === 0 ? 'EXPIRED' : `${alert.remainingDays} days`}</p>
+   713→                    </div>
+   714→                    <div className="text-center px-2 py-0.5 rounded border border-slate-200 bg-white">
+   715→                      <p className="text-[9px] uppercase font-bold text-muted-foreground">Value at Risk</p>
+   716→                      <p className="font-bold text-xs text-rose-600 flex items-center gap-0.5"><IndianRupee className="h-3 w-3" />{alert.valueAtRisk.toLocaleString('en-IN')}</p>
+   717→                    </div>
+   718→                  </div>
+   719→                </div>
+   720→              </div>
+   721→            )
+   722→          })}
+   723→        </div>
+   724→      </Card>
+   725→
+   726→      {/* Packaging Compliance Checks section */}
+   727→      <Card className="p-5">
+   728→        <div className="flex items-center justify-between mb-4">
+   729→          <div>
+   730→            <h3 className="text-sm font-bold flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-blue-600" />Packaging Compliance Checks · 12-Point FSSAI Verification</h3>
+   731→            <p className="text-xs text-muted-foreground mt-0.5">Each batch runs 12 mandatory compliance checks (Box, Label, Barcode, QR, MRP, FSSAI, Weight, Ingredients, Nutrition, Allergen, MFG Date, Expiry Date) · pass/fail indicator per check</p>
+   732→          </div>
+   733→        </div>
+   734→        <div className="space-y-3">
+   735→          {packagingChecks.map((check) => (
+   736→            <div key={check.batch} className={`rounded-lg border p-3 ${check.overall === 'COMPLIANT' ? 'border-emerald-200 bg-emerald-50/30' : 'border-rose-200 bg-rose-50/30'}`}>
+   737→              {/* Header */}
+   738→              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+   739→                <div className="flex items-center gap-2 flex-wrap">
+   740→                  <span className="font-semibold text-sm">{check.product}</span>
+   741→                  <Badge variant="outline" className={`text-[10px] ${overallColor[check.overall]}`}>{check.overall.replace(/_/g, ' ')}</Badge>
+   742→                  <span className="font-mono text-[11px] text-muted-foreground">{check.batch}</span>
+   743→                </div>
+   744→                <div className="text-[10px] text-muted-foreground text-right">
+   745→                  <p>Checked by <span className="font-semibold text-foreground">{check.checkedBy}</span></p>
+   746→                  <p className="font-mono">{check.checkedAt}</p>
+   747→                </div>
+   748→              </div>
+   749→
+   750→              {/* 12 compliance checks grid */}
+   751→              <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5 mb-3">
+   752→                {packagingChecksList.map((key) => {
+   753→                  const passed = (check.results as any)[key]
+   754→                  return (
+   755→                    <div key={key} className={`rounded border px-1.5 py-1 text-center ${passed ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50'}`}>
+   756→                      <div className="flex items-center justify-center gap-0.5">
+   757→                        {passed ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <X className="h-3 w-3 text-rose-600" />}
+   758→                        <span className={`text-[9px] font-semibold ${passed ? 'text-emerald-700' : 'text-rose-700'}`}>{checkLabel[key]}</span>
+   759→                      </div>
+   760→                    </div>
+   761→                  )
+   762→                })}
+   763→              </div>
+   764→
+   765→              {/* Method */}
+   766→              <div className="text-[11px] text-muted-foreground mb-2">
+   767→                <span className="font-semibold">Method:</span> {check.method}
+   768→              </div>
+   769→
+   770→              {/* Failed checks detail */}
+   771→              {check.failedChecks.length > 0 && (
+   772→                <div className="rounded border border-rose-200 bg-rose-50/50 p-2">
+   773→                  <p className="text-[10px] uppercase font-bold text-rose-700 flex items-center gap-1 mb-1"><FileWarning className="h-3 w-3" />Failed Checks · {check.failedChecks.length}</p>
+   774→                  <ul className="text-[11px] text-rose-900 space-y-0.5">
+   775→                    {check.failedChecks.map((fc, i) => (
+   776→                      <li key={i} className="flex items-start gap-1"><X className="h-3 w-3 mt-0.5 shrink-0" /><span>{fc}</span></li>
+   777→                    ))}
+   778→                  </ul>
+   779→                </div>
+   780→              )}
+   781→            </div>
+   782→          ))}
+   783→        </div>
+   784→      </Card>
+   785→    </div>
+   786→  )
+   787→}
+   788→
+   789→// ─── FGQC Quality Certificates ─────────────────────────────────────────
+   790→function FGQCCertificatesModule() {
+   791→  const certificates = [
+   792→    {
+   793→      code: 'QCERT-00018', batch: 'BATCH-KK-500-26F003', product: 'Kaju Katli 500g',
+   794→      type: 'BATCH_QUALITY_CERTIFICATE', grade: 'A', signed: true,
+   795→      signedBy: 'Dr. A. Mehta (QA Manager)', signedAt: '2026-02-18 11:20',
+   796→      version: 'v1.0', status: 'PUBLISHED',
+   797→    },
+   798→    {
+   799→      code: 'QCERT-00017', batch: 'BATCH-KK-500-26F003', product: 'Kaju Katli 500g',
+   800→      type: 'INSPECTION_REPORT', grade: 'A', signed: true,
+   801→      signedBy: 'R. Nair (FGQC Inspector)', signedAt: '2026-02-18 10:48',
+   802→      version: 'v1.0', status: 'PUBLISHED',
+   803→    },
+   804→    {
+   805→      code: 'QCERT-00016', batch: 'BATCH-KK-1KG-26F002', product: 'Kaju Katli 1kg',
+   806→      type: 'BATCH_QUALITY_CERTIFICATE', grade: 'A', signed: true,
+   807→      signedBy: 'Dr. A. Mehta (QA Manager)', signedAt: '2026-02-18 10:55',
+   808→      version: 'v1.0', status: 'PUBLISHED',
+   809→    },
+   810→    {
+   811→      code: 'QCERT-00015', batch: 'BATCH-MT-26F011', product: 'Motichoor Laddu 1kg',
+   812→      type: 'BATCH_QUALITY_CERTIFICATE', grade: 'A', signed: false,
+   813→      signedBy: '—', signedAt: '—',
+   814→      version: 'v0.1 (draft)', status: 'GENERATED',
+   815→    },
+   816→  ]
+   817→
+   818→  // 6 certificate types
+   819→  const certificateTypes = [
+   820→    { code: 'BATCH_QUALITY_CERTIFICATE', name: 'Batch Quality Certificate', icon: Award, desc: 'Comprehensive quality attestation for a finished goods batch', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+   821→    { code: 'RELEASE_CERTIFICATE', name: 'Release Certificate', icon: PackageCheck, desc: 'Official release authorization with warehouse receipt reference', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+   822→    { code: 'INSPECTION_REPORT', name: 'Inspection Report', icon: ClipboardCheck, desc: 'Detailed FGQC inspection record with checkpoint results', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
+   823→    { code: 'INTERNAL_COA', name: 'Internal COA', icon: Beaker, desc: 'Certificate of Analysis with lab verification results', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+   824→    { code: 'PACKAGING_COMPLIANCE_REPORT', name: 'Packaging Compliance Report', icon: ShieldCheck, desc: '12-point FSSAI packaging compliance verification', color: 'bg-cyan-100 text-cyan-700 border-cyan-300' },
+   825→    { code: 'QUALITY_SUMMARY', name: 'Quality Summary', icon: FileText, desc: 'Executive summary across all quality dimensions for a batch', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+   826→  ]
+   827→
+   828→  // Certificate features
+   829→  const features = [
+   830→    { code: 'PDF_GENERATION', name: 'PDF Generation', icon: Download, desc: 'One-click PDF export with branded template & embedded QR', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+   831→    { code: 'DIGITAL_SIGNATURE', name: 'Digital Signature', icon: PenTool, desc: 'Tamper-proof digital signature with signer identity & timestamp', color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' },
+   832→    { code: 'QR_VERIFICATION', name: 'QR Verification', icon: QrCode, desc: 'Public QR code linking to verified certificate copy for customers/auditors', color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
+   833→    { code: 'VERSION_CONTROL', name: 'Version Control', icon: History, desc: 'Full version history with supersession tracking — old versions retained', color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
+   834→  ]
+   835→
+   836→  const typeColor: Record<string, string> = {
+   837→    BATCH_QUALITY_CERTIFICATE: 'bg-blue-100 text-blue-700 border-blue-300',
+   838→    RELEASE_CERTIFICATE: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   839→    INSPECTION_REPORT: 'bg-indigo-100 text-indigo-700 border-indigo-300',
+   840→    INTERNAL_COA: 'bg-purple-100 text-purple-700 border-purple-300',
+   841→    PACKAGING_COMPLIANCE_REPORT: 'bg-cyan-100 text-cyan-700 border-cyan-300',
+   842→    QUALITY_SUMMARY: 'bg-amber-100 text-amber-700 border-amber-300',
+   843→  }
+   844→
+   845→  const statusColor: Record<string, string> = {
+   846→    GENERATED: 'bg-amber-100 text-amber-700 border-amber-300',
+   847→    SIGNED: 'bg-blue-100 text-blue-700 border-blue-300',
+   848→    PUBLISHED: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+   849→    SUPERSEDED: 'bg-slate-200 text-slate-700 border-slate-300',
+   850→    REVOKED: 'bg-rose-100 text-rose-700 border-rose-300',
+   851→  }
+   852→
+   853→  return (
+   854→    <div className="space-y-6">
+   855→      <div className="flex items-center justify-between">
+   856→        <div>
+   857→          <h2 className="text-2xl font-bold flex items-center gap-2"><FileCheck className="h-6 w-6 text-emerald-600" />Quality Certificates</h2>
+   858→          <p className="text-sm text-muted-foreground mt-1">Sprint 52 · 18 certificates total · 16 signed · 4 most recent shown · 6 certificate types supported · Features: PDF generation, digital signature, QR verification, version control</p>
+   859→        </div>
+   860→        <div className="flex items-center gap-2">
+   861→          <Button size="sm" variant="outline"><FileText className="mr-1 h-4 w-4" />Certificate Registry</Button>
+   862→          <Button size="sm"><Plus className="mr-1 h-4 w-4" />Generate Certificate</Button>
+   863→        </div>
+   864→      </div>
+   865→
+   866→      {/* Summary KPIs */}
+   867→      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+   868→        <Card className="p-3 border-blue-200 bg-blue-50/40">
+   869→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Total</span><FileCheck className="h-4 w-4 text-blue-600" /></div>
+   870→          <p className="text-xl font-bold text-blue-700 mt-1">18</p>
+   871→        </Card>
+   872→        <Card className="p-3 border-emerald-200 bg-emerald-50/40">
+   873→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Signed</span><PenTool className="h-4 w-4 text-emerald-600" /></div>
+   874→          <p className="text-xl font-bold text-emerald-700 mt-1">16</p>
+   875→        </Card>
+   876→        <Card className="p-3 border-amber-200 bg-amber-50/40">
+   877→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Draft (Generated)</span><Clock className="h-4 w-4 text-amber-600" /></div>
+   878→          <p className="text-xl font-bold text-amber-700 mt-1">2</p>
+   879→        </Card>
+   880→        <Card className="p-3 border-purple-200 bg-purple-50/40">
+   881→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">Certificate Types</span><Award className="h-4 w-4 text-purple-600" /></div>
+   882→          <p className="text-xl font-bold text-purple-700 mt-1">6</p>
+   883→        </Card>
+   884→        <Card className="p-3 border-cyan-200 bg-cyan-50/40">
+   885→          <div className="flex items-center justify-between"><span className="text-[11px] text-muted-foreground">QR Verified</span><QrCode className="h-4 w-4 text-cyan-600" /></div>
+   886→          <p className="text-xl font-bold text-cyan-700 mt-1">16</p>
+   887→        </Card>
+   888→      </div>
+   889→
+   890→      {/* Certificate features */}
+   891→      <Card className="p-5">
+   892→        <div className="mb-4">
+   893→          <h3 className="text-sm font-bold flex items-center gap-2"><Stamp className="h-4 w-4 text-emerald-600" />Certificate Features · 4 Core Capabilities</h3>
+   894→          <p className="text-xs text-muted-foreground mt-0.5">Every certificate supports PDF generation, digital signature, QR verification, and version control</p>
+   895→        </div>
+   896→        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+   897→          {features.map((f) => (
+   898→            <div key={f.code} className={`rounded-lg border p-3 ${f.bg}`}>
+   899→              <f.icon className={`h-5 w-5 ${f.color}`} />
+   900→              <p className={`font-semibold text-xs mt-2 ${f.color}`}>{f.name}</p>
+   901→              <p className="text-[10px] text-muted-foreground mt-1 leading-snug">{f.desc}</p>
+   902→            </div>
+   903→          ))}
+   904→        </div>
+   905→      </Card>
+   906→
+   907→      {/* Certificate types catalog */}
+   908→      <Card className="p-5">
+   909→        <div className="mb-4">
+   910→          <h3 className="text-sm font-bold flex items-center gap-2"><FileText className="h-4 w-4 text-blue-600" />Certificate Types · 6 Supported</h3>
+   911→          <p className="text-xs text-muted-foreground mt-0.5">Each certificate type has its own template, sign-off authority, and FSSAI compliance scope</p>
+   912→        </div>
+   913→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+   914→          {certificateTypes.map((ct) => (
+   915→            <div key={ct.code} className={`rounded-lg border p-3 ${ct.color}`}>
+   916→              <div className="flex items-center gap-2 mb-1.5">
+   917→                <ct.icon className="h-4 w-4" />
+   918→                <span className="text-[10px] font-bold uppercase tracking-wide">{ct.code.replace(/_/g, ' ')}</span>
+   919→              </div>
+   920→              <p className="font-semibold text-xs">{ct.name}</p>
+   921→              <p className="text-[10px] text-muted-foreground mt-1 leading-snug">{ct.desc}</p>
+   922→            </div>
+   923→          ))}
+   924→        </div>
+   925→      </Card>
+   926→
+   927→      {/* Recent certificates */}
+   928→      <Card className="p-5">
+   929→        <div className="flex items-center justify-between mb-4">
+   930→          <div>
+   931→            <h3 className="text-sm font-bold flex items-center gap-2"><FileCheck className="h-4 w-4 text-emerald-600" />Recent Certificates · 4 Most Recent</h3>
+   932→            <p className="text-xs text-muted-foreground mt-0.5">Each certificate carries code, batch, product, type, grade, signed status, signed by/at, version, and lifecycle status (GENERATED → SIGNED → PUBLISHED → SUPERSEDED / REVOKED)</p>
+   933→          </div>
+   934→        </div>
+   935→        <div className="space-y-2">
+   936→          {certificates.map((cert) => (
+   937→            <div key={cert.code} className={`rounded-lg border p-3 ${cert.status === 'PUBLISHED' ? 'border-emerald-200 bg-emerald-50/30' : cert.status === 'GENERATED' ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'}`}>
+   938→              <div className="flex items-start justify-between gap-3 flex-wrap">
+   939→                <div className="flex-1 min-w-0">
+   940→                  <div className="flex items-center gap-2 flex-wrap">
+   941→                    <span className="font-mono text-sm font-bold text-blue-600">{cert.code}</span>
+   942→                    <Badge variant="outline" className={`text-[10px] ${typeColor[cert.type]}`}>{cert.type.replace(/_/g, ' ')}</Badge>
+   943→                    <Badge variant="outline" className={`text-[10px] ${statusColor[cert.status]}`}>{cert.status}</Badge>
+   944→                    <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300">Grade {cert.grade}</Badge>
+   945→                    <Badge variant="outline" className="text-[10px] font-mono">{cert.version}</Badge>
+   946→                    {cert.signed ? (
+   947→                      <Badge variant="outline" className="text-[10px] bg-emerald-100 text-emerald-700 border-emerald-300"><PenTool className="h-2.5 w-2.5 mr-0.5" />SIGNED</Badge>
+   948→                    ) : (
+   949→                      <Badge variant="outline" className="text-[10px] bg-amber-100 text-amber-700 border-amber-300"><Clock className="h-2.5 w-2.5 mr-0.5" />UNSIGNED</Badge>
+   950→                    )}
+   951→                  </div>
+   952→                  <p className="text-sm font-semibold mt-1.5">{cert.product}</p>
+   953→                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
+   954→                    <span className="font-mono">{cert.batch}</span>
+   955→                    <span>·</span>
+   956→                    <span>Signed by <span className="font-semibold text-foreground">{cert.signedBy}</span></span>
+   957→                    {cert.signedAt !== '—' && (
+   958→                      <>
+   959→                        <span>·</span>
+   960→                        <span className="font-mono">{cert.signedAt}</span>
+   961→                      </>
+   962→                    )}
+   963→                  </div>
+   964→                </div>
+   965→                <div className="flex items-center gap-1.5 shrink-0">
+   966→                  {cert.status === 'PUBLISHED' && (
+   967→                    <>
+   968→                      <Button size="sm" variant="outline"><QrCode className="h-3.5 w-3.5" /></Button>
+   969→                      <Button size="sm" variant="outline"><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
+   970→                    </>
+   971→                  )}
+   972→                  {cert.status === 'GENERATED' && (
+   973→                    <Button size="sm"><PenTool className="h-3.5 w-3.5 mr-1" />Sign Now</Button>
+   974→                  )}
+   975→                </div>
+   976→              </div>
+   977→            </div>
+   978→          ))}
+   979→        </div>
+   980→      </Card>
+   981→    </div>
+   982→  )
+   983→}
+   984→

@@ -16621,3 +16621,272 @@ model PackagingComplianceCheck {
   @@index([productionBatchNumber], map: "idx_pcc52_batch")
   @@index([overallCompliance], map: "idx_pcc52_compliance")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 53 — LABORATORY INFORMATION MANAGEMENT SYSTEM (LIMS), SAMPLE LIFECYCLE
+// Part 6: QMS · Sprint 5 of 15 · 9 new models · Epic 1-8 (samples, worklists,
+// tests, equipment, inventory, reports)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Sample Registration ────────────────────────────────────────
+model LabSample {
+  id                  String   @id @default(uuid()) @db.Uuid
+  sampleNumber        String   @unique @map("sample_number") // LAB-2026-000001
+  barcode             String   @unique @map("barcode")
+  // ─── Type ───
+  sampleType          String   @map("sample_type") // RAW_MATERIAL, PACKAGING_MATERIAL, SEMI_FINISHED, FINISHED_GOODS, WATER, OIL, CLEANING_VERIFICATION, ENVIRONMENTAL, RETENTION, COMPLAINT
+  // ─── Links ───
+  productionBatchNumber String? @map("production_batch_number")
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  supplierCode        String?  @map("supplier_code")
+  supplierName        String?  @map("supplier_name")
+  productionOrderNumber String? @map("production_order_number")
+  // ─── Source ───
+  sourceModule        String?  @map("source_module") // IQC, IPQC, FGQC, MANUFACTURING, COMPLAINT, RETENTION, ROUTINE
+  requestReferenceCode String? @map("request_reference_code")
+  // ─── Requested By ───
+  requestedById       String?  @db.Uuid @map("requested_by_id")
+  requestedByName     String?  @map("requested_by_name")
+  requestedAt         DateTime @default(now()) @map("requested_at")
+  // ─── Collection ───
+  collectedById       String?  @db.Uuid @map("collected_by_id")
+  collectedByName     String?  @map("collected_by_name")
+  collectedAt         DateTime? @map("collected_at")
+  collectionLocation  String?  @map("collection_location")
+  // ─── Lab Receipt ───
+  receivedAtLabAt     DateTime? @map("received_at_lab_at")
+  receivedBy          String?  @map("received_by")
+  // ─── Sample Details ───
+  sampleQty           Decimal? @db.Decimal(14, 3) @map("sample_qty")
+  sampleUom           String   @default("KG") @map("sample_uom")
+  containerType       String?  @map("container_type") // BOTTLE, BAG, JAR, TUBE, SWAB
+  storageCondition    String?  @map("storage_condition") // AMBIENT, REFRIGERATED, FROZEN
+  // ─── Storage ───
+  storageRackCode     String?  @map("storage_rack_code")
+  storagePosition     String?  @map("storage_position")
+  retentionExpiryDate DateTime? @map("retention_expiry_date")
+  // ─── Status ───
+  status              String   @default("REQUESTED") @map("status") // REQUESTED, COLLECTED, RECEIVED, TESTING, VALIDATION, APPROVED, REJECTED, ARCHIVED
+  // ─── Priority ───
+  priority            String   @default("NORMAL") @map("priority") // URGENT, HIGH, NORMAL, LOW
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  tests               LabTest[]
+
+  @@map("lab_samples")
+  @@index([sampleType, status], map: "idx_ls53_type_status")
+  @@index([productionBatchNumber], map: "idx_ls53_batch")
+  @@index([barcode], map: "idx_ls53_barcode")
+  @@index([status, priority], map: "idx_ls53_status_priority")
+}
+
+// ─── Epic 3: Laboratory Worklist ────────────────────────────────────────
+model LabWorklist {
+  id                  String   @id @default(uuid()) @db.Uuid
+  worklistCode        String   @unique @map("worklist_code") // WL-2026-001
+  worklistDate        DateTime @map("worklist_date")
+  // ─── Assignment ───
+  assignedToId        String?  @db.Uuid @map("assigned_to_id")
+  assignedToName      String?  @map("assigned_to_name")
+  // ─── Summary ───
+  totalTests          Int      @default(0) @map("total_tests")
+  pendingTests        Int      @default(0) @map("pending_tests")
+  inProgressTests     Int      @default(0) @map("in_progress_tests")
+  completedTests      Int      @default(0) @map("completed_tests")
+  overdueTests        Int      @default(0) @map("overdue_tests")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, IN_PROGRESS, COMPLETED, CLOSED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("lab_worklists")
+  @@index([worklistDate, status], map: "idx_lw53_date_status")
+  @@index([assignedToId], map: "idx_lw53_assignee")
+}
+
+// ─── Epic 4: Test Management ────────────────────────────────────────────
+model LabTest {
+  id                  String   @id @default(uuid()) @db.Uuid
+  testCode            String   @unique @map("test_code") // LT-2026-000001
+  // ─── Sample ───
+  sampleId            String   @db.Uuid @map("sample_id")
+  sampleNumber        String   @map("sample_number")
+  // ─── Worklist ───
+  worklistId          String?  @db.Uuid @map("worklist_id")
+  // ─── Test ───
+  testCategory        String   @map("test_category") // CHEMICAL, PHYSICAL, MICROBIOLOGY
+  testType            String   @map("test_type") // MOISTURE, FAT, SUGAR, SALT, PROTEIN, PH, DENSITY, VISCOSITY, BRIX, WATER_ACTIVITY, ASH_CONTENT, TPC, COLIFORM, YEAST_MOLD, E_COLI, SALMONELLA
+  testMethodName      String?  @map("test_method_name")
+  // ─── Spec ───
+  specMin             Decimal? @db.Decimal(14, 4) @map("spec_min")
+  specMax             Decimal? @db.Decimal(14, 4) @map("spec_max")
+  specTarget          Decimal? @db.Decimal(14, 4) @map("spec_target")
+  specUnit            String?  @map("spec_unit")
+  // ─── Result ───
+  resultValue         Decimal? @db.Decimal(14, 4) @map("result_value")
+  resultText          String?  @map("result_text") // for qualitative results
+  resultUnit          String?  @map("result_unit")
+  resultStatus        String   @default("PENDING") @map("result_status") // PENDING, IN_PROGRESS, COMPLETED, VALIDATED, APPROVED, REJECTED, RETEST, OOS
+  // ─── Equipment ───
+  equipmentCode       String?  @map("equipment_code")
+  equipmentName       String?  @map("equipment_name")
+  // ─── Technician ───
+  technicianId        String?  @db.Uuid @map("technician_id")
+  technicianName      String?  @map("technician_name")
+  testedAt            DateTime? @map("tested_at")
+  // ─── Validation ───
+  validatedById       String?  @db.Uuid @map("validated_by_id")
+  validatedByName     String?  @map("validated_by_name")
+  validatedAt         DateTime? @map("validated_at")
+  validationDecision  String?  @map("validation_decision") // APPROVED, REJECTED, RETEST
+  electronicSignature String?  @map("electronic_signature")
+  // ─── Notes ───
+  notes               String?
+  // ─── Priority ───
+  priority            String   @default("NORMAL") @map("priority") // URGENT, HIGH, NORMAL, LOW
+  // ─── Time ───
+  dueDate             DateTime? @map("due_date")
+  completedAt         DateTime? @map("completed_at")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, IN_PROGRESS, COMPLETED, VALIDATED, APPROVED, REJECTED, RETEST, OOS
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  sample              LabSample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@map("lab_tests")
+  @@index([sampleId], map: "idx_lt53_sample")
+  @@index([worklistId], map: "idx_lt53_worklist")
+  @@index([testCategory, testType], map: "idx_lt53_cat_type")
+  @@index([status, priority], map: "idx_lt53_status_priority")
+}
+
+// ─── Epic 5: Laboratory Equipment ───────────────────────────────────────
+model LabEquipment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  equipmentCode       String   @unique @map("equipment_code") // LE-PH-01
+  equipmentName       String   @map("equipment_name")
+  // ─── Type ───
+  equipmentType       String   @map("equipment_type") // WEIGHING_SCALE, MOISTURE_ANALYZER, PH_METER, SPECTROPHOTOMETER, INCUBATOR, AUTOCLAVE, MICROSCOPE, THERMOMETER, BRIX_METER
+  // ─── Details ───
+  manufacturer        String?  @map("manufacturer")
+  modelNumber         String?  @map("model_number")
+  serialNumber        String?  @map("serial_number")
+  // ─── Location ───
+  plantCode           String   @map("plant_code")
+  labLocation         String?  @map("lab_location")
+  // ─── Calibration ───
+  lastCalibratedAt    DateTime? @map("last_calibrated_at")
+  nextCalibrationDue  DateTime? @map("next_calibration_due")
+  calibrationFreqDays Int      @default(90) @map("calibration_freq_days")
+  calibrationStatus   String   @default("VALID") @map("calibration_status") // VALID, DUE, OVERDUE, EXPIRED
+  // ─── Qualification ───
+  qualificationStatus String   @default("QUALIFIED") @map("qualification_status") // QUALIFIED, PENDING, FAILED
+  // ─── Usage ───
+  totalUsageHours     Decimal  @db.Decimal(12, 3) @default(0) @map("total_usage_hours")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, MAINTENANCE, OUT_OF_SERVICE, RETIRED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("lab_equipment")
+  @@index([plantCode, status], map: "idx_le53_plant_status")
+  @@index([calibrationStatus], map: "idx_le53_calibration")
+}
+
+// ─── Epic 7: Laboratory Inventory ───────────────────────────────────────
+model LabInventory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  itemCode            String   @unique @map("item_code") // LI-REAG-001
+  itemName            String   @map("item_name")
+  // ─── Type ───
+  itemType            String   @map("item_type") // CHEMICAL, REAGENT, GLASSWARE, STANDARD, REFERENCE_MATERIAL, PIPETTE, FILTER, CONSUMABLE
+  // ─── Details ───
+  manufacturer        String?  @map("manufacturer")
+  catalogNumber       String?  @map("catalog_number")
+  // ─── Quantity ───
+  currentStock        Decimal  @db.Decimal(14, 3) @default(0) @map("current_stock")
+  minStock            Decimal  @db.Decimal(14, 3) @default(0) @map("min_stock")
+  maxStock            Decimal  @db.Decimal(14, 3) @default(0) @map("max_stock")
+  uom                 String   @default("PCS") @map("uom")
+  // ─── Batch ───
+  batchNumber         String?  @map("batch_number")
+  expiryDate          DateTime? @map("expiry_date")
+  // ─── Location ───
+  storageLocation     String?  @map("storage_location")
+  storageCondition    String?  @map("storage_condition") // AMBIENT, REFRIGERATED, FROZEN
+  // ─── Alerts ───
+  isLowStock          Boolean  @default(false) @map("is_low_stock")
+  isExpiringSoon      Boolean  @default(false) @map("is_expiring_soon")
+  isExpired           Boolean  @default(false) @map("is_expired")
+  // ─── Status ───
+  status              String   @default("ACTIVE") @map("status") // ACTIVE, LOW_STOCK, EXPIRED, DISCONTINUED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("lab_inventory")
+  @@index([itemType, status], map: "idx_li53_type_status")
+  @@index([expiryDate], map: "idx_li53_expiry")
+  @@index([isLowStock], map: "idx_li53_low_stock")
+}
+
+// ─── Epic 8: Lab Reports ────────────────────────────────────────────────
+model LabReport {
+  id                  String   @id @default(uuid()) @db.Uuid
+  reportCode          String   @unique @map("report_code") // LREP-2026-000001
+  // ─── Links ───
+  sampleNumber        String   @map("sample_number")
+  sampleId            String?  @db.Uuid @map("sample_id")
+  productionBatchNumber String? @map("production_batch_number")
+  // ─── Report ───
+  reportType          String   @map("report_type") // LABORATORY_TEST_REPORT, CERTIFICATE_OF_TEST, INTERNAL_ANALYSIS, TREND_REPORT, CALIBRATION_REPORT, SAMPLE_HISTORY
+  // ─── Content ───
+  reportData          String   @map("report_data") // JSON with test results
+  // ─── Digital ───
+  digitalSignature    String?  @map("digital_signature")
+  signedById          String?  @db.Uuid @map("signed_by_id")
+  signedByName        String?  @map("signed_by_name")
+  signedAt            DateTime? @map("signed_at")
+  // ─── Document ───
+  pdfUrl              String?  @map("pdf_url")
+  qrCode              String?  @map("qr_code")
+  // ─── Version ───
+  version             String   @default("v1.0") @map("version")
+  // ─── Status ───
+  status              String   @default("GENERATED") @map("status") // GENERATED, SIGNED, PUBLISHED, ARCHIVED
+  // ─── Audit ───
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("lab_reports")
+  @@index([sampleNumber], map: "idx_lrep53_sample")
+  @@index([reportType, status], map: "idx_lrep53_type_status")
+}
+
+// ─── Epic 2: Sample Tracking (Chain of Custody) ─────────────────────────
+model SampleTracking {
+  id                  String   @id @default(uuid()) @db.Uuid
+  sampleNumber        String   @map("sample_number")
+  // ─── Tracking ───
+  trackingEvent       String   @map("tracking_event") // REGISTERED, BARCODE_PRINTED, COLLECTED, RECEIVED_AT_LAB, ASSIGNED_TO_WORKLIST, TESTING_STARTED, TESTING_COMPLETED, VALIDATED, APPROVED, REJECTED, ARCHIVED, DISPOSED
+  // ─── Location ───
+  locationFrom        String?  @map("location_from")
+  locationTo          String?  @map("location_to")
+  // ─── Actor ───
+  performedById       String?  @db.Uuid @map("performed_by_id")
+  performedByName     String?  @map("performed_by_name")
+  // ─── Notes ───
+  notes               String?
+  // ─── Audit ───
+  eventTime           DateTime @default(now()) @map("event_time")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("sample_tracking")
+  @@index([sampleNumber, eventTime], map: "idx_st53_sample_time")
+  @@index([trackingEvent], map: "idx_st53_event")
+}
