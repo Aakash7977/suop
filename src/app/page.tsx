@@ -89,19 +89,19 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
   const [loading, setLoading] = useState(false)
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-3 md:p-4">
+      <div className="w-full max-w-md space-y-4 md:space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-3xl">S</div>
+          <div className="inline-flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-2xl md:text-3xl">S</div>
           <div>
-            <h1 className="text-2xl font-bold text-white">SUOP Admin</h1>
-            <p className="text-sm text-slate-400">Sudhastar Unified Operating Platform</p>
+            <h1 className="text-xl md:text-2xl font-bold text-white">SUOP Admin</h1>
+            <p className="text-xs md:text-sm text-slate-400">Sudhastar Unified Operating Platform</p>
           </div>
-          <Badge variant="outline" className="border-slate-600 text-slate-300">
-            <Shield className="mr-1 h-3 w-3" /> Enterprise Operating System
+          <Badge variant="outline" className="border-slate-600 text-slate-300 text-xs">
+            <Shield className="mr-1 h-3 w-3" /> Sprint 52 · Parts 1-6 · 473 Tables
           </Badge>
         </div>
-        <Card className="p-6 bg-slate-900/80 backdrop-blur border-slate-700">
+        <Card className="p-4 md:p-6 bg-slate-900/80 backdrop-blur border-slate-700">
           <form onSubmit={async (e) => { e.preventDefault(); setLoading(true); await onLogin(email, password, rem); setLoading(false) }} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-slate-200">Email Address</Label>
@@ -126,11 +126,14 @@ function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: b
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : <>Sign In<ArrowRight className="ml-2 h-4 w-4" /></>}
             </Button>
           </form>
-          <Separator className="bg-slate-700 mt-6" />
+          <div className="relative my-4">
+            <Separator className="bg-slate-700" />
+            <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-slate-900 px-3 text-xs text-slate-500">OR</span>
+          </div>
           <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
             <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
           </Button>
-          <p className="text-center text-xs text-slate-500 mt-4">Sprints 1-27 · Part 2 Complete + Part 3 Inventory Engine COMPLETE + Part 4 WMS (Receipt, Issue, Transfer, Adjustment, Reservation, Cycle Count, Batch & Expiry, Costing & Valuation, Analytics & Mission Control, Warehouse Foundation, Locations & Bins, Receiving & ASN Engine, Directed Putaway & Bin Intelligence, Picking & Packing, Dispatch & Shipping)</p>
+          <p className="text-center text-[10px] md:text-xs text-slate-500 mt-4">Enter any email & password to sign in, or click Demo Mode to explore all 100+ modules instantly — no setup needed.</p>
         </Card>
       </div>
     </div>
@@ -31286,7 +31289,7 @@ function ComingSoon({ name }: { name: string }) {
 export default function Home() {
   const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode } = useAuthStore()
   const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [zoom, setZoom] = useState(100)
 
   useEffect(() => { initialize() }, [initialize])
@@ -31342,8 +31345,16 @@ export default function Home() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
       {/* Sidebar */}
-      <aside className={cn('flex flex-col border-r bg-sidebar transition-all duration-200 flex-shrink-0', sidebarOpen ? 'w-64' : 'w-0')}>
+      <aside className={cn(
+        'flex flex-col border-r bg-sidebar transition-all duration-200 flex-shrink-0 z-40',
+        'fixed md:relative inset-y-0 left-0 h-full',
+        sidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full md:w-0 md:translate-x-0'
+      )}>
         {sidebarOpen && (
           <>
             <div className="flex h-16 items-center gap-3 border-b px-6">
@@ -31361,7 +31372,7 @@ export default function Home() {
                           className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                             activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
                           )}
-                          onClick={() => item.available && setActiveModule(item.module)}
+                          onClick={() => { if (item.available) { setActiveModule(item.module); if (window.innerWidth < 768) setSidebarOpen(false) } }}
                         >
                           {item.icon}{item.name}
                           {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
@@ -31379,38 +31390,40 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center gap-4 border-b px-6">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
-          <h1 className="text-lg font-semibold">{moduleNames[activeModule]}</h1>
-          <div className="flex-1" />
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-1 py-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(60, z - 10))} title="Zoom Out (Ctrl -)">
-              <span className="text-base leading-none">−</span>
-            </Button>
-            <button
-              onClick={() => setZoom(100)}
-              className="min-w-[44px] text-xs font-medium hover:bg-accent rounded px-1 py-0.5"
-              title="Reset Zoom (Ctrl 0)"
-            >
-              {zoom}%
-            </button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(150, z + 10))} title="Zoom In (Ctrl +)">
-              <span className="text-base leading-none">+</span>
-            </Button>
+        <header className="flex h-16 items-center gap-2 md:gap-4 border-b px-3 md:px-6">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex-shrink-0">{sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
+          <h1 className="text-sm md:text-lg font-semibold truncate flex-1">{moduleNames[activeModule]}</h1>
+          <div className="hidden md:flex items-center gap-2">
+            {/* Zoom Controls - desktop only */}
+            <div className="flex items-center gap-1 rounded-md border bg-muted/40 px-1 py-1">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(60, z - 10))} title="Zoom Out (Ctrl -)">
+                <span className="text-base leading-none">−</span>
+              </Button>
+              <button
+                onClick={() => setZoom(100)}
+                className="min-w-[44px] text-xs font-medium hover:bg-accent rounded px-1 py-0.5"
+                title="Reset Zoom (Ctrl 0)"
+              >
+                {zoom}%
+              </button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(150, z + 10))} title="Zoom In (Ctrl +)">
+                <span className="text-base leading-none">+</span>
+              </Button>
+            </div>
+            <Badge variant="outline" className="hidden lg:flex"><Calendar className="mr-1 h-3 w-3" />Sprint 52 · 473 Tables · Part 6 QMS</Badge>
+            {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo</Badge>}
+            <a href="/mobile" target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950 hidden md:flex">
+                <Smartphone className="mr-1 h-4 w-4" />Mobile
+              </Button>
+            </a>
           </div>
-          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />Sprint 52 · 473 Tables · Part 6 QMS</Badge>
-          {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950"><Sparkles className="mr-1 h-3 w-3" />Demo Mode</Badge>}
-          <a href="/mobile" target="_blank" rel="noopener noreferrer">
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-amber-950">
-              <Smartphone className="mr-1 h-4 w-4" />Launch Mobile App
-            </Button>
-          </a>
+          {isDemoMode && <Badge className="bg-amber-500 hover:bg-amber-500 text-amber-950 md:hidden"><Sparkles className="mr-1 h-3 w-3" />Demo</Badge>}
         </header>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden suop-main-scroll" style={{ scrollBehavior: 'smooth' }}>
           <main
-            className="p-6 mx-auto origin-top"
+            className="p-3 md:p-6 mx-auto origin-top w-full"
             style={{
               maxWidth: '1600px',
               zoom: `${zoom}%`,
