@@ -17214,3 +17214,236 @@ model FoodFraudAssessment {
   @@index([materialCode], map: "idx_ffa54_material")
   @@index([vulnerabilityScore], map: "idx_ffa54_score")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 55 — NON-CONFORMANCE (NCR), DEVIATION MANAGEMENT & QUALITY INCIDENT CONTROL
+// Part 6: QMS · Sprint 7 of 15 · 8 new models · Epic 1-7 (NCR, deviations,
+// quarantine, root cause, risk assessment, disposition, escalation)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Epic 1: Non-Conformance Report (NCR) ───────────────────────────────
+model NonConformanceReport {
+  id                  String   @id @default(uuid()) @db.Uuid
+  ncrNumber           String   @unique @map("ncr_number") // NCR-2026-000001
+  // ─── Source ───
+  sourceModule        String   @map("source_module") // IQC, IPQC, FGQC, LIMS, WAREHOUSE, MANUFACTURING, PACKAGING, DISPATCH, CUSTOMER_COMPLAINT, INTERNAL_AUDIT, FOOD_SAFETY, SUPPLIER
+  sourceReferenceCode String?  @map("source_reference_code")
+  // ─── Scope ───
+  plantCode           String   @map("plant_code")
+  departmentCode      String?  @map("department_code")
+  productionLineCode  String?  @map("production_line_code")
+  // ─── Product ───
+  productSku          String?  @map("product_sku")
+  productName         String?  @map("product_name")
+  productionBatchNumber String? @map("production_batch_number")
+  materialCode        String?  @map("material_code")
+  materialName        String?  @map("material_name")
+  // ─── Incident ───
+  incidentType        String   @map("incident_type") // WRONG_INGREDIENT, PACKAGING_DEFECT, METAL_DETECTION_FAILURE, CUSTOMER_COMPLAINT, LAB_FAILURE, PROCESS_DEVIATION, SUPPLIER_DEFECT, TEMPERATURE_EXCURSION, SPECIFICATION_DEVIATION, CONTAMINATION, MISLABELING, CLEANING_FAILURE
+  incidentDescription String   @map("incident_description")
+  // ─── Severity ───
+  severity            String   @default("MAJOR") @map("severity") // MINOR, MAJOR, CRITICAL, FOOD_SAFETY_CRITICAL
+  // ─── People ───
+  reportedById        String?  @db.Uuid @map("reported_by_id")
+  reportedByName      String?  @map("reported_by_name")
+  reportedAt          DateTime @default(now()) @map("reported_at")
+  assignedToId        String?  @db.Uuid @map("assigned_to_id")
+  assignedToName      String?  @map("assigned_to_name")
+  // ─── Quarantine ───
+  quarantineTriggered Boolean  @default(false) @map("quarantine_triggered")
+  quarantinedQty      Decimal? @db.Decimal(14, 3) @map("quarantined_qty")
+  // ─── Investigation ───
+  investigationRequired Boolean @default(true) @map("investigation_required")
+  investigationStatus String?  @map("investigation_status") // NOT_STARTED, IN_PROGRESS, COMPLETED
+  // ─── Disposition ───
+  disposition         String?  @map("disposition") // RELEASE, CONDITIONAL_RELEASE, REWORK, REPROCESS, REJECT, DESTROY, RETURN_SUPPLIER
+  dispositionApproved Boolean  @default(false) @map("disposition_approved")
+  dispositionApprovedBy String? @map("disposition_approved_by")
+  dispositionApprovedAt DateTime? @map("disposition_approved_at")
+  // ─── Escalation ───
+  escalationLevel     Int      @default(0) @map("escalation_level")
+  escalatedTo         String?  @map("escalated_to")
+  escalatedAt         DateTime? @map("escalated_at")
+  // ─── Closure ───
+  closedAt            DateTime? @map("closed_at")
+  closedBy            String?  @map("closed_by")
+  closureNotes        String?  @map("closure_notes")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, INVESTIGATING, DISPOSITION_PENDING, DISPOSITION_APPROVED, IMPLEMENTING, CLOSED, CANCELLED
+  // ─── Audit ───
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  deviation           ProcessDeviation?
+  rootCause           RootCauseInvestigation?
+  riskAssessment      QualityRiskAssessment?
+
+  @@map("non_conformance_reports")
+  @@index([severity, status], map: "idx_ncr55_sev_status")
+  @@index([sourceModule], map: "idx_ncr55_source")
+  @@index([productionBatchNumber], map: "idx_ncr55_batch")
+  @@index([status], map: "idx_ncr55_status")
+}
+
+// ─── Epic 2: Deviation Management ───────────────────────────────────────
+model ProcessDeviation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  deviationCode       String   @unique @map("deviation_code") // DEV-2026-000001
+  ncrId              String?  @db.Uuid @map("ncr_id") @unique
+  // ─── Deviation ───
+  deviationType       String   @map("deviation_type") // RECIPE_DEVIATION, TEMPERATURE_DEVIATION, WEIGHT_DEVIATION, PACKAGING_DEVIATION, CLEANING_DEVIATION, PROCESS_DEVIATION, SPECIFICATION_DEVIATION
+  // ─── Details ───
+  plannedValue        String   @map("planned_value")
+  actualValue         String   @map("actual_value")
+  deviationAmount     String?  @map("deviation_amount")
+  unitOfMeasure       String?  @map("unit_of_measure")
+  // ─── Impact ───
+  impactAssessment    String?  @map("impact_assessment")
+  affectedQty         Decimal? @db.Decimal(14, 3) @map("affected_qty")
+  // ─── Decision ───
+  reviewDecision      String?  @map("review_decision") // APPROVED, REJECTED, CONDITIONAL
+  reviewNotes         String?  @map("review_notes")
+  reviewedBy          String?  @map("reviewed_by")
+  reviewedAt          DateTime? @map("reviewed_at")
+  // ─── Status ───
+  status              String   @default("OPEN") @map("status") // OPEN, UNDER_REVIEW, APPROVED, REJECTED, CLOSED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  ncr                 NonConformanceReport? @relation(fields: [ncrId], references: [id], onDelete: SetNull)
+
+  @@map("process_deviations")
+  @@index([deviationType, status], map: "idx_pd55_type_status")
+  @@index([ncrId], map: "idx_pd55_ncr")
+}
+
+// ─── Epic 4: Root Cause Analysis ────────────────────────────────────────
+model RootCauseInvestigation {
+  id                  String   @id @default(uuid()) @db.Uuid
+  investigationCode   String   @unique @map("investigation_code") // INV-2026-000001
+  ncrId              String   @db.Uuid @map("ncr_id") @unique
+  // ─── Method ───
+  analysisMethod      String   @default("5_WHYS") @map("analysis_method") // 5_WHYS, FISHBONE, FAULT_TREE, PARETO, TIMELINE
+  // ─── 5 Whys ───
+  why1                String?  @map("why_1")
+  why2                String?  @map("why_2")
+  why3                String?  @map("why_3")
+  why4                String?  @map("why_4")
+  why5                String?  @map("why_5")
+  // ─── Findings ───
+  immediateCause      String?  @map("immediate_cause")
+  rootCause           String?  @map("root_cause")
+  contributingFactors String?  @map("contributing_factors") // JSON array
+  // ─── Evidence ───
+  evidenceSummary     String?  @map("evidence_summary")
+  attachmentUrls      String?  @map("attachment_urls") // JSON array
+  // ─── Investigator ───
+  investigatedBy      String?  @map("investigated_by")
+  investigatedAt      DateTime? @map("investigated_at")
+  // ─── Status ───
+  status              String   @default("NOT_STARTED") @map("status") // NOT_STARTED, IN_PROGRESS, COMPLETED, VERIFIED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  ncr                 NonConformanceReport @relation(fields: [ncrId], references: [id], onDelete: Cascade)
+
+  @@map("root_cause_investigations")
+  @@index([ncrId], map: "idx_rci55_ncr")
+  @@index([status], map: "idx_rci55_status")
+}
+
+// ─── Epic 5: Risk Assessment ────────────────────────────────────────────
+model QualityRiskAssessment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  assessmentCode      String   @unique @map("assessment_code") // RSK-2026-000001
+  ncrId              String   @db.Uuid @map("ncr_id") @unique
+  // ─── FMEA-style Risk ───
+  severityScore       Int      @map("severity_score") // 1-10
+  likelihoodScore     Int      @map("likelihood_score") // 1-10
+  detectabilityScore  Int      @map("detectability_score") // 1-10
+  rpn                 Int      @map("rpn") // Risk Priority Number = S × L × D
+  // ─── Risk Level ───
+  riskLevel           String   @map("risk_level") // LOW (1-50), MEDIUM (51-150), HIGH (151-300), CRITICAL (301-1000)
+  // ─── Mitigation ───
+  mitigationActions   String?  @map("mitigation_actions") // JSON array
+  residualRisk        String?  @map("residual_risk")
+  // ─── Assessor ───
+  assessedBy          String?  @map("assessed_by")
+  assessedAt          DateTime? @map("assessed_at")
+  // ─── Status ───
+  status              String   @default("COMPLETED") @map("status")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  ncr                 NonConformanceReport @relation(fields: [ncrId], references: [id], onDelete: Cascade)
+
+  @@map("quality_risk_assessments")
+  @@index([ncrId], map: "idx_qra55_ncr")
+  @@index([riskLevel], map: "idx_qra55_risk")
+}
+
+// ─── Epic 3: Quarantine Inventory ───────────────────────────────────────
+model QuarantineInventory {
+  id                  String   @id @default(uuid()) @db.Uuid
+  quarantineCode      String   @unique @map("quarantine_code") // QRT-2026-000001
+  // ─── Links ───
+  ncrNumber           String?  @map("ncr_number")
+  productionBatchNumber String? @map("production_batch_number")
+  // ─── Item ───
+  materialCode        String   @map("material_code")
+  materialName        String   @map("material_name")
+  itemType            String   @map("item_type") // RAW_MATERIAL, SEMI_FINISHED, FINISHED_GOODS, PACKAGING, RETENTION_SAMPLE
+  // ─── Quantity ───
+  quarantinedQty      Decimal  @db.Decimal(14, 3) @map("quarantined_qty")
+  uom                 String   @default("KG") @map("uom")
+  // ─── Location ───
+  warehouseCode       String   @map("warehouse_code")
+  quarantineBinCode   String   @map("quarantine_bin_code")
+  // ─── Lock ───
+  isLocked            Boolean  @default(true) @map("is_locked")
+  lockedAt            DateTime @default(now()) @map("locked_at")
+  lockedBy            String?  @map("locked_by")
+  // ─── Disposition ───
+  disposition         String?  @map("disposition") // RELEASE, CONDITIONAL_RELEASE, REWORK, REJECT, DESTROY, RETURN_SUPPLIER
+  dispositionExecuted Boolean  @default(false) @map("disposition_executed")
+  dispositionExecutedAt DateTime? @map("disposition_executed_at")
+  // ─── Release ───
+  releasedAt          DateTime? @map("released_at")
+  releasedBy          String?  @map("released_by")
+  // ─── Status ───
+  status              String   @default("LOCKED") @map("status") // LOCKED, UNDER_INVESTIGATION, DISPOSITION_PENDING, RELEASED, REJECTED, DESTROYED, RETURNED
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("quarantine_inventory")
+  @@index([ncrNumber], map: "idx_qi55_ncr")
+  @@index([productionBatchNumber], map: "idx_qi55_batch")
+  @@index([status], map: "idx_qi55_status")
+}
+
+// ─── Epic 7: Escalation Engine ──────────────────────────────────────────
+model EscalationEvent {
+  id                  String   @id @default(uuid()) @db.Uuid
+  escalationCode      String   @unique @map("escalation_code") // ESC-2026-000001
+  // ─── Links ───
+  ncrNumber           String   @map("ncr_number")
+  // ─── Escalation ───
+  severity            String   @map("severity") // MINOR, MAJOR, CRITICAL, FOOD_SAFETY_CRITICAL
+  escalationLevel     Int      @map("escalation_level") // 1, 2, 3, 4
+  escalatedToRole     String   @map("escalated_to_role") // QUALITY_SUPERVISOR, QUALITY_MANAGER, PLANT_HEAD, CEO, QUALITY_HEAD, FOOD_SAFETY_TEAM
+  escalatedToName     String?  @map("escalated_to_name")
+  // ─── Notification ───
+  deliveryChannels    String   @default("DASHBOARD") @map("delivery_channels") // DASHBOARD, EMAIL, SMS, WHATSAPP, MOBILE_APP, TEAMS, SLACK
+  notificationSent    Boolean  @default(false) @map("notification_sent")
+  notificationSentAt  DateTime? @map("notification_sent_at")
+  // ─── Acknowledgement ───
+  acknowledgedBy      String?  @map("acknowledged_by")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  // ─── Status ───
+  status              String   @default("PENDING") @map("status") // PENDING, SENT, ACKNOWLEDGED, RESOLVED
+  escalatedAt         DateTime @default(now()) @map("escalated_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("escalation_events")
+  @@index([ncrNumber], map: "idx_esc55_ncr")
+  @@index([severity, status], map: "idx_esc55_sev_status")
+}
