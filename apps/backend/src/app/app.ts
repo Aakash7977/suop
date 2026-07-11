@@ -40,6 +40,12 @@ import { productionPlanningRoutes } from '@/modules/production-planning/routes'
 import { productionOrderRoutes } from '@/modules/production-order/routes'
 import { batchManufacturingRoutes } from '@/modules/batch-manufacturing/routes'
 import { fgqcRoutes } from '@/modules/fgqc/routes'
+import { qualityFoundationRoutes } from '@/modules/quality-foundation/routes'
+import { ncrManagementRoutes } from '@/modules/ncr-management/routes'
+import { capaManagementRoutes } from '@/modules/capa-management/routes'
+import { coaManagementRoutes } from '@/modules/coa-management/routes'
+import { recallManagementRoutes } from '@/modules/recall-management/routes'
+import { supplierQualityRoutes } from '@/modules/supplier-quality/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -108,6 +114,12 @@ export function createApp() {
   app.route('/api/v1/manufacturing/orders', productionOrderRoutes)
   app.route('/api/v1/manufacturing/batches', batchManufacturingRoutes)
   app.route('/api/v1/manufacturing/fgqc', fgqcRoutes)
+  app.route('/api/v1/quality/foundation', qualityFoundationRoutes)
+  app.route('/api/v1/quality/ncr', ncrManagementRoutes)
+  app.route('/api/v1/quality/capa', capaManagementRoutes)
+  app.route('/api/v1/quality/coa', coaManagementRoutes)
+  app.route('/api/v1/quality/recall', recallManagementRoutes)
+  app.route('/api/v1/quality/supplier', supplierQualityRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
