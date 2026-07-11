@@ -55,7 +55,7 @@ export interface RequestContext {
 
 // ─── AsyncLocalStorage Instance ─────────────────────────────────────────────
 
-const asyncLocalStorage = new AsyncLocalStorage<RequestContext>()
+export const asyncLocalStorage = new AsyncLocalStorage<RequestContext>()
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 

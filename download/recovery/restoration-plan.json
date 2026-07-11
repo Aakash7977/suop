@@ -1,0 +1,1702 @@
+{
+  "generated_at": "2026-07-11T09:17:33.811467",
+  "snapshot_root": "/tmp/my-project",
+  "current_root": "/home/z/my-project",
+  "totals": {
+    "files_in_snapshot": 393,
+    "files_in_current": 1341,
+    "only_in_snapshot_NEW": 82,
+    "only_in_current_NOT_IN_SNAPSHOT": 1030,
+    "in_both_identical": 310,
+    "in_both_newer_in_snapshot": 0,
+    "in_both_newer_in_current": 1,
+    "in_both_conflict_same_mtime_diff_content": 0
+  },
+  "summary_by_category_and_action": {
+    "only_in_snapshot::Other": 4,
+    "only_in_snapshot::Migrations": 9,
+    "only_in_snapshot::Tests": 9,
+    "only_in_snapshot::Backend": 36,
+    "only_in_snapshot::Middleware": 7,
+    "only_in_snapshot::Routes": 2,
+    "only_in_snapshot::Frontend": 15,
+    "newer_in_current::Other": 1,
+    "identical::Configuration": 18,
+    "identical::Other": 61,
+    "identical::Migrations": 1,
+    "identical::Prisma": 3,
+    "identical::Tests": 16,
+    "identical::Backend": 42,
+    "identical::Documentation": 51,
+    "identical::MiniServices": 4,
+    "identical::Mobile": 14,
+    "identical::Scripts": 40,
+    "identical::Frontend": 60
+  },
+  "restore_plan": {
+    "only_in_snapshot": [
+      {
+        "path": ".initial_snapshot.json",
+        "category": "Other",
+        "snapshot_mtime": 1783759587.2094364
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0002_organization.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783742700.2353196
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0003_soft_delete.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783748848.6790135
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0004_authentication.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783749590.518063
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0005_user_management.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783750672.2746458
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0006_product_master.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783751397.243642
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0007_supplier_master.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783752145.8767226
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0008_customer_master.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783753542.1476936
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0009_procurement.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783754314.9877698
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0010_rfq.sql",
+        "category": "Migrations",
+        "snapshot_mtime": 1783755309.7582207
+      },
+      {
+        "path": "apps/backend/scripts/setup-database.ts",
+        "category": "Other",
+        "snapshot_mtime": 1783740686.7715793
+      },
+      {
+        "path": "apps/backend/scripts/setup-phase1.ts",
+        "category": "Other",
+        "snapshot_mtime": 1783742668.96628
+      },
+      {
+        "path": "apps/backend/scripts/start-dev.sh",
+        "category": "Other",
+        "snapshot_mtime": 1783740975.7100282
+      },
+      {
+        "path": "apps/backend/src/app/__tests__/integration.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783741814.4901578
+      },
+      {
+        "path": "apps/backend/src/app/app.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783755414.8304043
+      },
+      {
+        "path": "apps/backend/src/core/db/pglite.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783740890.6059139
+      },
+      {
+        "path": "apps/backend/src/main.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783741327.461513
+      },
+      {
+        "path": "apps/backend/src/middleware/audit.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783740803.0307772
+      },
+      {
+        "path": "apps/backend/src/middleware/auth.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783749791.7253568
+      },
+      {
+        "path": "apps/backend/src/middleware/error-handler.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783741522.9067714
+      },
+      {
+        "path": "apps/backend/src/middleware/logging.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783740733.8976622
+      },
+      {
+        "path": "apps/backend/src/middleware/rbac.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783740789.6297555
+      },
+      {
+        "path": "apps/backend/src/middleware/request-id.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783741134.1402512
+      },
+      {
+        "path": "apps/backend/src/middleware/tenant.ts",
+        "category": "Middleware",
+        "snapshot_mtime": 1783741306.5924854
+      },
+      {
+        "path": "apps/backend/src/modules/auth/__tests__/auth.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783750131.3418553
+      },
+      {
+        "path": "apps/backend/src/modules/auth/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783749903.6835182
+      },
+      {
+        "path": "apps/backend/src/modules/auth/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783749743.936285
+      },
+      {
+        "path": "apps/backend/src/modules/auth/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783750019.494693
+      },
+      {
+        "path": "apps/backend/src/modules/auth/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783749611.5600922
+      },
+      {
+        "path": "apps/backend/src/modules/customer/__tests__/customer.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783753816.1470733
+      },
+      {
+        "path": "apps/backend/src/modules/customer/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783753600.3027735
+      },
+      {
+        "path": "apps/backend/src/modules/customer/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783753652.8338454
+      },
+      {
+        "path": "apps/backend/src/modules/customer/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783753679.5518823
+      },
+      {
+        "path": "apps/backend/src/modules/customer/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783753565.2427254
+      },
+      {
+        "path": "apps/backend/src/modules/organization/__tests__/organization.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783749138.4174228
+      },
+      {
+        "path": "apps/backend/src/modules/organization/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783748871.1170444
+      },
+      {
+        "path": "apps/backend/src/modules/organization/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783748967.3191779
+      },
+      {
+        "path": "apps/backend/src/modules/organization/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783748948.613152
+      },
+      {
+        "path": "apps/backend/src/modules/organization/types/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783742770.9994106
+      },
+      {
+        "path": "apps/backend/src/modules/organization/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783742859.7145278
+      },
+      {
+        "path": "apps/backend/src/modules/procurement/__tests__/procurement.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783754467.1739872
+      },
+      {
+        "path": "apps/backend/src/modules/procurement/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783754361.4778357
+      },
+      {
+        "path": "apps/backend/src/modules/procurement/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783754403.339895
+      },
+      {
+        "path": "apps/backend/src/modules/procurement/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783754433.8219388
+      },
+      {
+        "path": "apps/backend/src/modules/procurement/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783754334.132797
+      },
+      {
+        "path": "apps/backend/src/modules/product/__tests__/product.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783751651.9819949
+      },
+      {
+        "path": "apps/backend/src/modules/product/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783751558.235862
+      },
+      {
+        "path": "apps/backend/src/modules/product/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783751527.8468204
+      },
+      {
+        "path": "apps/backend/src/modules/product/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783751611.9659371
+      },
+      {
+        "path": "apps/backend/src/modules/product/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783751449.5337133
+      },
+      {
+        "path": "apps/backend/src/modules/rfq/__tests__/rfq.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783755571.1986477
+      },
+      {
+        "path": "apps/backend/src/modules/rfq/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783755356.6342928
+      },
+      {
+        "path": "apps/backend/src/modules/rfq/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783755405.637389
+      },
+      {
+        "path": "apps/backend/src/modules/rfq/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783755535.1575918
+      },
+      {
+        "path": "apps/backend/src/modules/rfq/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783755330.427253
+      },
+      {
+        "path": "apps/backend/src/modules/supplier/__tests__/supplier.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783752533.7432792
+      },
+      {
+        "path": "apps/backend/src/modules/supplier/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783752201.9178038
+      },
+      {
+        "path": "apps/backend/src/modules/supplier/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783752303.1819496
+      },
+      {
+        "path": "apps/backend/src/modules/supplier/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783752237.5648544
+      },
+      {
+        "path": "apps/backend/src/modules/supplier/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783752164.4867496
+      },
+      {
+        "path": "apps/backend/src/modules/user-management/__tests__/user-management.test.ts",
+        "category": "Tests",
+        "snapshot_mtime": 1783750852.8628926
+      },
+      {
+        "path": "apps/backend/src/modules/user-management/repository/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783750730.3667264
+      },
+      {
+        "path": "apps/backend/src/modules/user-management/routes/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783750820.635849
+      },
+      {
+        "path": "apps/backend/src/modules/user-management/service/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783750927.9189944
+      },
+      {
+        "path": "apps/backend/src/modules/user-management/workflow/index.ts",
+        "category": "Backend",
+        "snapshot_mtime": 1783750696.4706793
+      },
+      {
+        "path": "apps/backend/src/routes/smoke-test.ts",
+        "category": "Routes",
+        "snapshot_mtime": 1783741581.2918482
+      },
+      {
+        "path": "apps/backend/src/routes/system.ts",
+        "category": "Routes",
+        "snapshot_mtime": 1783740902.9749293
+      },
+      {
+        "path": "src/modules/auth/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783750205.9459686
+      },
+      {
+        "path": "src/modules/customer/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783753874.848155
+      },
+      {
+        "path": "src/modules/customer/components/CustomerModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783753908.8832023
+      },
+      {
+        "path": "src/modules/organization/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783748625.127698
+      },
+      {
+        "path": "src/modules/organization/components/OrganizationModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783748713.771823
+      },
+      {
+        "path": "src/modules/procurement/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783754522.9880688
+      },
+      {
+        "path": "src/modules/procurement/components/ProcurementModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783754557.586118
+      },
+      {
+        "path": "src/modules/product/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783751707.308074
+      },
+      {
+        "path": "src/modules/product/components/ProductModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783751747.5861309
+      },
+      {
+        "path": "src/modules/rfq/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783755667.6977987
+      },
+      {
+        "path": "src/modules/rfq/components/RfqModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783755709.0348601
+      },
+      {
+        "path": "src/modules/supplier/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783752619.7404027
+      },
+      {
+        "path": "src/modules/supplier/components/SupplierModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783752652.354449
+      },
+      {
+        "path": "src/modules/user-management/api/client.ts",
+        "category": "Frontend",
+        "snapshot_mtime": 1783750991.8990805
+      },
+      {
+        "path": "src/modules/user-management/components/UserManagementModule.tsx",
+        "category": "Frontend",
+        "snapshot_mtime": 1783751050.1781592
+      }
+    ],
+    "newer_in_snapshot": [],
+    "newer_in_current": [
+      {
+        "path": "worklog.md",
+        "category": "Other",
+        "snapshot_mtime": 1783692596.0,
+        "current_mtime": 1783761400.7648134
+      }
+    ],
+    "identical": [
+      {
+        "path": ".env",
+        "category": "Configuration"
+      },
+      {
+        "path": ".github/workflows/ci-cd.yml",
+        "category": "Other"
+      },
+      {
+        "path": ".gitignore",
+        "category": "Configuration"
+      },
+      {
+        "path": ".zscripts/build.sh",
+        "category": "Other"
+      },
+      {
+        "path": ".zscripts/dev.pid",
+        "category": "Other"
+      },
+      {
+        "path": ".zscripts/dev.sh",
+        "category": "Other"
+      },
+      {
+        "path": ".zscripts/mini-services-build.sh",
+        "category": "Other"
+      },
+      {
+        "path": ".zscripts/mini-services-install.sh",
+        "category": "Other"
+      },
+      {
+        "path": ".zscripts/mini-services-start.sh",
+        "category": "Other"
+      },
+      {
+        "path": ".zscripts/start.sh",
+        "category": "Other"
+      },
+      {
+        "path": "Caddyfile",
+        "category": "Other"
+      },
+      {
+        "path": "apps/backend/bun.lock",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/package-lock.json",
+        "category": "Other"
+      },
+      {
+        "path": "apps/backend/package.json",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/postcss.config.mjs",
+        "category": "Other"
+      },
+      {
+        "path": "apps/backend/prisma/migrations/0001_init.sql",
+        "category": "Migrations"
+      },
+      {
+        "path": "apps/backend/prisma/schema.prisma",
+        "category": "Prisma"
+      },
+      {
+        "path": "apps/backend/src/config/__tests__/env-singleton.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/config/__tests__/env.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/config/__tests__/features-provider.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/config/__tests__/features.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/config/__tests__/secrets-provider.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/config/__tests__/secrets.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/config/env.ts",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/src/config/features.ts",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/src/config/index.ts",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/src/config/secrets.ts",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/src/core/audit/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/audit/service.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/auth/__tests__/jwt.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/auth/__tests__/password.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/auth/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/auth/jwt.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/auth/password.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/auth/session.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/context/__tests__/request-context.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/context/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/context/request-context.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/client.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/extensions/audit.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/extensions/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/extensions/soft-delete.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/extensions/tenant.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/db/transaction.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/errors/__tests__/base-error.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/errors/base-error.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/errors/error-codes.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/errors/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/events/__tests__/event-bus.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/events/event-bus.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/events/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/files/__tests__/file-service.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/files/file-service.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/files/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/jobs/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/jobs/queue.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/logging/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/logging/logger.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/notifications/engine.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/notifications/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/permissions/__tests__/registry.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/permissions/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/permissions/middleware.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/permissions/registry.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/response/__tests__/envelope.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/response/envelope.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/response/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/validation/__tests__/validate.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/validation/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/validation/validate.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/workflow/__tests__/state-machine.test.ts",
+        "category": "Tests"
+      },
+      {
+        "path": "apps/backend/src/core/workflow/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/core/workflow/state-machine.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/modules/quotation/repository/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/modules/quotation/routes/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/modules/quotation/service/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/src/modules/quotation/workflow/index.ts",
+        "category": "Backend"
+      },
+      {
+        "path": "apps/backend/tsconfig.json",
+        "category": "Configuration"
+      },
+      {
+        "path": "apps/backend/vitest.config.ts",
+        "category": "Other"
+      },
+      {
+        "path": "apps/backend/vitest.setup.ts",
+        "category": "Other"
+      },
+      {
+        "path": "bun.lock",
+        "category": "Configuration"
+      },
+      {
+        "path": "components.json",
+        "category": "Configuration"
+      },
+      {
+        "path": "db/custom.db",
+        "category": "Other"
+      },
+      {
+        "path": "docker-compose.yml",
+        "category": "Configuration"
+      },
+      {
+        "path": "docs/PHASE_0_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/01_DATA_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/02_API_STANDARDS.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/03_SECURITY_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/04_DEVOPS_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/05_PERFORMANCE_STANDARDS.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/06_DISASTER_RECOVERY.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "docs/architecture/07_PRODUCTION_READINESS_CHECKLIST.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/LOCAL_DEPLOYMENT_GUIDE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/README.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-admin-sprint1-final.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-admin-sprint1.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-admin-sprint2.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/01_DATA_ARCHITECTURE.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/01_DATA_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/01_DATA_ARCHITECTURE.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/02_API_STANDARDS.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/02_API_STANDARDS.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/02_API_STANDARDS.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/03_SECURITY_ARCHITECTURE.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/03_SECURITY_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/03_SECURITY_ARCHITECTURE.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/04_DEVOPS_ARCHITECTURE.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/04_DEVOPS_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/04_DEVOPS_ARCHITECTURE.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/05_PERFORMANCE_STANDARDS.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/05_PERFORMANCE_STANDARDS.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/05_PERFORMANCE_STANDARDS.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/06_DISASTER_RECOVERY.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/06_DISASTER_RECOVERY.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/06_DISASTER_RECOVERY.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/07_PRODUCTION_READINESS_CHECKLIST.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/07_PRODUCTION_READINESS_CHECKLIST.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/07_PRODUCTION_READINESS_CHECKLIST.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/PHASE_0_ARCHITECTURE.html",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/PHASE_0_ARCHITECTURE.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/PHASE_0_ARCHITECTURE.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/README.md",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/SUOP_ERP_v1_ARCHITECTURE_PACK.pdf",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-architecture-pack/SUOP_ERP_v1_ARCHITECTURE_PACK.zip",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-erp-sprint-52.zip",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-erp-sprint-55.zip",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint3-complete.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint3-login-final.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint3-login.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint4-org.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint5-rbac.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint6-products.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-sprint7-pim.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/suop-unified-all-sprints.png",
+        "category": "Documentation"
+      },
+      {
+        "path": "download/supabase-migration.sql",
+        "category": "Documentation"
+      },
+      {
+        "path": "eslint.config.mjs",
+        "category": "Configuration"
+      },
+      {
+        "path": "examples/websocket/frontend.tsx",
+        "category": "Other"
+      },
+      {
+        "path": "examples/websocket/server.ts",
+        "category": "Other"
+      },
+      {
+        "path": "infrastructure/docker/prometheus/prometheus.yml",
+        "category": "Other"
+      },
+      {
+        "path": "infrastructure/docker/tempo/tempo.yml",
+        "category": "Other"
+      },
+      {
+        "path": "mini-services/.gitkeep",
+        "category": "MiniServices"
+      },
+      {
+        "path": "mini-services/suop-backend/bun.lock",
+        "category": "MiniServices"
+      },
+      {
+        "path": "mini-services/suop-backend/index.ts",
+        "category": "MiniServices"
+      },
+      {
+        "path": "mini-services/suop-backend/package.json",
+        "category": "MiniServices"
+      },
+      {
+        "path": "mobile-app/App.tsx",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/README.md",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/app.json",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/babel.config.js",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/package.json",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/api/client.ts",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/screens/DashboardScreen.tsx",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/screens/LoginScreen.tsx",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/screens/OtherScreens.tsx",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/screens/ProductionScreens.tsx",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/screens/TaskScreens.tsx",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/types/index.ts",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/src/utils/offline.ts",
+        "category": "Mobile"
+      },
+      {
+        "path": "mobile-app/tsconfig.json",
+        "category": "Mobile"
+      },
+      {
+        "path": "next.config.ts",
+        "category": "Configuration"
+      },
+      {
+        "path": "package.json",
+        "category": "Configuration"
+      },
+      {
+        "path": "packages/config/package.json",
+        "category": "Other"
+      },
+      {
+        "path": "packages/config/src/index.ts",
+        "category": "Other"
+      },
+      {
+        "path": "packages/database/package.json",
+        "category": "Other"
+      },
+      {
+        "path": "packages/database/prisma/schema.prisma",
+        "category": "Prisma"
+      },
+      {
+        "path": "packages/database/src/index.ts",
+        "category": "Other"
+      },
+      {
+        "path": "packages/sdk/package.json",
+        "category": "Other"
+      },
+      {
+        "path": "packages/sdk/src/index.ts",
+        "category": "Other"
+      },
+      {
+        "path": "packages/shared/package.json",
+        "category": "Other"
+      },
+      {
+        "path": "packages/shared/src/index.ts",
+        "category": "Other"
+      },
+      {
+        "path": "postcss.config.mjs",
+        "category": "Configuration"
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "category": "Prisma"
+      },
+      {
+        "path": "public/logo.svg",
+        "category": "Other"
+      },
+      {
+        "path": "public/robots.txt",
+        "category": "Other"
+      },
+      {
+        "path": "scripts/append-sprint-56-57-prisma.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint40_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint41_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint42_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint43_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint44_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint45_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint46_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint47_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint48_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint49_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint50_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint51_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint52_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint53_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint54_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/append_sprint55_backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/insert-sprint-56-57-backend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/insert-sprint-56-57-frontend.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/insert_sprint40_mobile_screens.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/keep-server-alive.sh",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint39-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint40-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint40-backend-payload.py",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint40-mobile-screens.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint41-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint42-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint43-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint44-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint45-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint46-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint47-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint48-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint49-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint50-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint51-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint52-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint53-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint54-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "scripts/sprint55-admin-modules.tsx",
+        "category": "Scripts"
+      },
+      {
+        "path": "src/app/api/route.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/app/globals.css",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/app/layout.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/app/mobile/page.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/app/page.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/accordion.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/alert-dialog.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/alert.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/aspect-ratio.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/avatar.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/badge.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/breadcrumb.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/button.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/calendar.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/card.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/carousel.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/chart.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/checkbox.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/collapsible.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/command.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/context-menu.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/dialog.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/drawer.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/dropdown-menu.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/form.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/hover-card.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/input-otp.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/input.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/label.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/menubar.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/navigation-menu.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/pagination.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/popover.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/progress.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/radio-group.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/resizable.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/scroll-area.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/select.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/separator.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/sheet.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/sidebar.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/skeleton.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/slider.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/sonner.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/switch.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/table.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/tabs.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/textarea.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/toast.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/toaster.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/toggle-group.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/toggle.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/components/ui/tooltip.tsx",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/hooks/use-mobile.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/hooks/use-toast.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/lib/db.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/lib/supabase.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/lib/utils.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/stores/auth-store.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "src/stores/org-context-store.ts",
+        "category": "Frontend"
+      },
+      {
+        "path": "tailwind.config.ts",
+        "category": "Configuration"
+      },
+      {
+        "path": "tsconfig.json",
+        "category": "Configuration"
+      },
+      {
+        "path": "upload/MiniCentrinoLite_v1.9.10.zip",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529158900.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529166907.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529173983.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529180895.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529194123.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529206122.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529215343.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529245445.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783529252739.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783534032815.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783534352477.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783534384119.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783537912500.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783538312988.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783539682526.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783539829446.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783539838413.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783539845431.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783616929783.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617433287.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617439419.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617446599.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617463093.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617472938.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617483117.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617495063.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617505454.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783617515679.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783618322743.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783701642341.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783701682332.png",
+        "category": "Other"
+      },
+      {
+        "path": "upload/pasted_image_1783701692838.png",
+        "category": "Other"
+      }
+    ],
+    "conflicts": []
+  }
+}

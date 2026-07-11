@@ -3064,3 +3064,46 @@ Task: Sprint 55 — Non-Conformance (NCR), Deviation Management & Quality Incide
 - 7 deviation types, 5 root cause analysis methods, RPN formula (S×L×D), 7 disposition options
 - Chief Architect: Critical NCR → auto-lock inventory via batch genealogy → block POS/Restaurant → notify quality → investigate
 - Build verified: Frontend + Backend both compile cleanly
+
+---
+Task ID: RECOVERY-STEP-1
+Agent: Main (Super Z)
+Task: Create Restoration Plan from /tmp/my-project snapshot
+
+Work Log:
+- Verified /tmp/my-project snapshot contains 1,701 tracked files
+- Will produce classified restoration plan
+- Will compare each file's snapshot vs current before restoring
+
+Stage Summary:
+- Starting RESTORATION MODE (no rebuild)
+- Snapshot source: /tmp/my-project (1,701 files, modified Jul 11 08:30)
+- Target: /home/z/my-project (current workspace, Jul 11 04:18)
+
+---
+Task ID: RECOVERY-STEP-4
+Agent: Main (Super Z)
+Task: Validate restored repository (prisma, typecheck, eslint, tests)
+
+Work Log:
+- Prisma validate: PASSED (with backend .env loaded)
+- TypeScript typecheck: PASSED (after 2 fixes — see below)
+- ESLint: PASSED (0 errors, 0 warnings)
+- Unit + Integration tests: 503/503 PASSED across 25 test files (13.52s)
+- Tests cover: app integration, auth, supplier, organization, env config,
+  procurement, customer, rfq, product, features, user-management,
+  base-error, state-machine, env-singleton, secrets, permissions registry,
+  validation, file-service, event-bus, jwt, features-provider,
+  request-context, envelope, secrets-provider, password
+
+Fixes Applied:
+1. Added `hono` and `@hono/zod-validator` to apps/backend/package.json
+   (snapshot's package.json was missing these deps that all routes/middleware use)
+2. Exported `asyncLocalStorage` from `core/context/request-context.ts`
+   (request-id.ts middleware imports it but it was a private const)
+
+Stage Summary:
+- Repository is fully restored and validated
+- 503 tests pass, 0 type errors, 0 lint errors
+- Prisma schema is valid
+- Ready for git commit + tagging
