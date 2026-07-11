@@ -1,0 +1,158 @@
+# ════════════════════════════════════════════════════════════════════════════
+# SUOP ERP v1.0 — Docker Compose (Production)
+# ════════════════════════════════════════════════════════════════════════════
+# Production stack: backend + PostgreSQL + Redis + Caddy reverse proxy
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# Required environment (set in .env.prod or via CI):
+#   POSTGRES_PASSWORD, JWT_SECRET, S3_SECRET_KEY, SMTP_PASS
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: suop-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-suop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+      POSTGRES_DB: ${POSTGRES_DB:-suop_prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/backend/prisma/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-suop} -d ${POSTGRES_DB:-suop_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - suop-internal
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # ─── Redis Cache ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: suop-redis-prod
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - suop-internal
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 128M
+
+  # ─── Backend Service (Bun + Hono) ─────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-1.0.0-rc1}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE}
+        BUILD_HOST: docker-prod
+    image: suop/backend:${APP_VERSION:-1.0.0-rc1}
+    container_name: suop-backend-prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3030
+      DATABASE_URL: postgresql://${POSTGRES_USER:-suop}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-suop_prod}?schema=public&pool_max=20
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT required}
+      S3_BUCKET: ${S3_BUCKET:-suop-uploads}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY required}
+      S3_REGION: ${S3_REGION:-ap-south-1}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET required}
+      JWT_ISSUER: ${JWT_ISSUER:-suop-erp}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-suop-frontend}
+      JWT_ACCESS_TTL_MIN: ${JWT_ACCESS_TTL_MIN:-15}
+      JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-30}
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST required}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:?SMTP_USER required}
+      SMTP_PASS: ${SMTP_PASS:?SMTP_PASS required}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@sudhamrit.com}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - suop-internal
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+
+  # ─── Caddy Reverse Proxy (TLS termination) ────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: suop-caddy-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    networks:
+      - suop-internal
+      - suop-public
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+networks:
+  suop-internal:
+    driver: bridge
+    internal: true
+  suop-public:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_uploads:
+  caddy_data:
+  caddy_config:

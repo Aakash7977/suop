@@ -83,6 +83,11 @@ import { getRequestContext } from '@/core/context'
 export function createApp() {
   const app = new Hono()
 
+  // ─── Root-level Health Endpoints (no auth, no audit) ─────────────────────
+  // Mounted before global middleware so they bypass auth/audit.
+  // These are the standard Kubernetes liveness/readiness probe endpoints.
+  app.route('/', systemRoutes)
+
   // ─── Global Middleware ────────────────────────────────────────────────────
   app.use('*', requestIdMiddleware)
   app.use('*', loggingMiddleware)
@@ -122,7 +127,6 @@ export function createApp() {
   })
 
   // ─── Routes ───────────────────────────────────────────────────────────────
-  app.route('/api/v1', systemRoutes)
   app.route('/api/v1/organization', organizationRoutes)
   app.route('/api/v1/auth', authRoutes)
   app.route('/api/v1/admin', userManagementRoutes)

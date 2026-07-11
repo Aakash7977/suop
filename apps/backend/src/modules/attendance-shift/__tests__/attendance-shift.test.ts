@@ -1,0 +1,86 @@
+/**
+ * attendance-shift Service — Smoke Tests
+ *
+ * Verifies the service implementation:
+ *   - Exports the expected method shape
+ *   - Enforces authentication (AuthorizationError without context)
+ *   - Validates required fields (ValidationError on missing code)
+ *   - Workflow registration (when applicable)
+ *
+ * Per RC1 Fix Pack 1 §Quality Gates: coverage must not decrease.
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest'
+import { AttendanceShiftService } from '@/modules/attendance-shift/service'
+import { AuthorizationError, ValidationError } from '@/core/errors'
+import { _runInTestContext, asyncLocalStorage } from '@/core/context'
+
+
+
+describe('AttendanceShiftService', () => {
+
+  // ═══ Service shape ═════════════════════════════════════════════════════════
+  describe('service shape', () => {
+    it('exports an object with required methods', () => {
+      expect(AttendanceShiftService).toBeDefined()
+      expect(typeof AttendanceShiftService.list).toBe('function')
+      expect(typeof AttendanceShiftService.getById).toBe('function')
+      expect(typeof AttendanceShiftService.create).toBe('function')
+      expect(typeof AttendanceShiftService.update).toBe('function')
+      expect(typeof AttendanceShiftService.delete).toBe('function')
+      expect(typeof AttendanceShiftService.transition).toBe('function')
+      expect(typeof AttendanceShiftService.count).toBe('function')
+      expect(typeof AttendanceShiftService.existsByCode).toBe('function')
+    })
+  })
+
+  // ═══ Authentication enforcement ════════════════════════════════════════════
+  describe('authentication enforcement', () => {
+    beforeEach(() => {
+      // Ensure no request context is set
+      asyncLocalStorage.disable()
+    })
+
+    it('list() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.list()).rejects.toThrow(AuthorizationError)
+    })
+
+    it('getById() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.getById('test-id')).rejects.toThrow(AuthorizationError)
+    })
+
+    it('create() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.create({})).rejects.toThrow(AuthorizationError)
+    })
+
+    it('update() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.update('id', {})).rejects.toThrow(AuthorizationError)
+    })
+
+    it('delete() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.delete('id')).rejects.toThrow(AuthorizationError)
+    })
+
+    it('count() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.count()).rejects.toThrow(AuthorizationError)
+    })
+
+    it('existsByCode() throws AuthorizationError when no request context', async () => {
+      await expect(AttendanceShiftService.existsByCode('code')).rejects.toThrow(AuthorizationError)
+    })
+  })
+
+  // ═══ Validation ═══════════════════════════════════════════════════════════
+  describe('input validation', () => {
+    it('create() throws ValidationError when attendance_date is missing', async () => {
+      await _runInTestContext(
+        { userId: 'u1', tenantId: 't1', userEmail: 'test@test.com', correlationId: 'c1' },
+        async () => {
+          await expect(AttendanceShiftService.create({})).rejects.toThrow(ValidationError)
+        }
+      )
+    })
+  })
+
+  
+})

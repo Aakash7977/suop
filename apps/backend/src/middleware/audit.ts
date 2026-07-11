@@ -18,8 +18,13 @@ export async function auditMiddleware(c: Context, next: Next) {
     return
   }
 
-  // Skip audit for system endpoints
-  if (c.req.path.startsWith('/api/v1/_internal')) {
+  // Skip audit for system endpoints (root-level + internal)
+  if (
+    c.req.path.startsWith('/api/v1/_internal') ||
+    c.req.path === '/health' ||
+    c.req.path === '/ready' ||
+    c.req.path === '/live'
+  ) {
     return
   }
 

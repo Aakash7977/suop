@@ -1,0 +1,44 @@
+# ════════════════════════════════════════════════════════════════════════════
+# SUOP ERP v1.0 — Backend Dockerfile (Development)
+# ════════════════════════════════════════════════════════════════════════════
+# Single-stage image with hot reload, debug tools, and test runner.
+# Use docker-compose.dev.yml to mount source code as a volume.
+
+FROM oven/bun:1.1
+
+WORKDIR /app
+
+# Install all OS dependencies (including dev tools)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    libssl-dev \
+    ca-certificates \
+    curl \
+    git \
+    postgresql-client \
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY apps/backend/package.json apps/backend/bun.lock* ./
+
+# Install all dependencies (including devDependencies)
+RUN bun install
+
+# Copy Prisma schema and generate client
+COPY apps/backend/prisma ./prisma
+RUN DATABASE_URL="postgresql://placeholder" bunx prisma generate --schema=prisma/schema.prisma
+
+# Copy source (will be overridden by volume mount in docker-compose)
+COPY apps/backend ./
+
+# Create uploads directory
+RUN mkdir -p uploads db
+
+# Expose port
+EXPOSE 3030
+
+# Default command: start dev server with hot reload
+CMD ["bun", "--hot", "src/main.ts"]

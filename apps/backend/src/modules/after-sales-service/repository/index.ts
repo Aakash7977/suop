@@ -1,9 +1,154 @@
-import { query } from '@/core/db/pglite'
-import { randomUUID } from 'node:crypto'
-export function genRepo(tableName: string) {
-  return {
-    async create(data: Record<string, unknown>) { const id = randomUUID(); const cols = ['id']; const vals: unknown[] = [id]; for (const [k, c] of Object.entries(data)) { if (k !== 'id' && c !== undefined && c !== null) { cols.push(k); vals.push(c) } } const ph = vals.map((_, i) => '$' + (i + 1)).join(', '); await query('INSERT INTO ' + tableName + ' (' + cols.join(', ') + ', created_at, updated_at) VALUES (' + ph + ', NOW(), NOW())', vals); const r = await query('SELECT * FROM ' + tableName + ' WHERE id = $1', [id]); return r.rows[0] ?? null },
-    async findById(t: string, id: string) { const r = await query('SELECT * FROM ' + tableName + ' WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL', [t, id]); return r.rows[0] ?? null },
-    async list(t: string, p: { page?: number; pageSize?: number; status?: string } = {}) { const pg = p.page ?? 1; const ps = p.pageSize ?? 25; const off = (pg - 1) * ps; let w = 'tenant_id = $1 AND deleted_at IS NULL'; const sp: unknown[] = [t]; let i = 2; if (p.status) { w += ' AND status = $' + i++; sp.push(p.status) } const c = await query<{ cnt: string }>('SELECT COUNT(*) as cnt FROM ' + tableName + ' WHERE ' + w, sp); const r = await query('SELECT * FROM ' + tableName + ' WHERE ' + w + ' ORDER BY created_at DESC LIMIT $' + i + ' OFFSET $' + (i + 1), [...sp, ps, off]); return { rows: r.rows, total: Number(c.rows[0]!.cnt), page: pg, pageSize: ps } },
-  }
+/**
+ * after-sales-service Repository — Prisma-backed
+ *
+ * RC1 Fix Pack 1: Refactored from raw SQL (genRepo factory) to Prisma client.
+ *
+ * The service layer (../service/index.ts) already uses the Prisma client
+ * directly. This repository file is retained as a thin compatibility layer
+ * for any external consumer that imports repository functions.
+ *
+ * Per RC1 Fix Pack 1 §3: "Repositories must use Prisma. Only performance-
+ * critical SQL may remain." No raw SQL remains in this module.
+ */
+
+import { db, transaction, type TransactionClient } from '@/core/db'
+import { getRequestContext } from '@/core/context'
+import { NotFoundError, AuthorizationError } from '@/core/errors'
+
+function getContext() {
+  const ctx = getRequestContext()
+  if (!ctx?.tenantId) throw new AuthorizationError('Authentication required')
+  return { tenantId: ctx.tenantId, userId: ctx.userId }
 }
+
+// ─── Prisma-backed CRUD operations on ServiceRequests ─────────────────────────────
+
+export const repository = {
+  /**
+   * Find a record by ID, scoped to the current tenant.
+   * Soft-deleted records (deleted_at IS NOT NULL) are excluded.
+   */
+  async findById(id: string) {
+    const { tenantId } = getContext()
+    return (db as any).ServiceRequests.findFirst({
+      where: { id, tenantId, deletedAt: null },
+    })
+  },
+
+  /**
+   * List records with pagination, status filter, and search.
+   * Tenant isolation enforced automatically.
+   */
+  async list(params: {
+    page?: number
+    pageSize?: number
+    status?: string
+    search?: string
+  } = {}) {
+    const { tenantId } = getContext()
+    const page = Math.max(1, params.page ?? 1)
+    const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 25))
+    const skip = (page - 1) * pageSize
+
+    const where: Record<string, unknown> = {
+      tenantId,
+      deletedAt: null,
+    }
+    if (params.status) where.status = params.status
+
+    const [rows, total] = await Promise.all([
+      (db as any).ServiceRequests.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+      }),
+      (db as any).ServiceRequests.count({ where }),
+    ])
+
+    return { rows, total, page, pageSize }
+  },
+
+  /**
+   * Create a new record. Tenant ID, version, and audit fields are populated
+   * automatically. The caller is responsible for higher-level business rules,
+   * audit logging, and event publishing (typically done in the service layer).
+   */
+  async create(data: Record<string, unknown>) {
+    const { tenantId, userId } = getContext()
+    return (db as any).ServiceRequests.create({
+      data: {
+        ...data,
+        tenantId,
+        version: 0,
+        createdBy: userId,
+        updatedBy: userId,
+      },
+    })
+  },
+
+  /**
+   * Update an existing record by ID. Optimistic concurrency is enforced
+   * via the version field — the caller must pass the expected version.
+   */
+  async update(id: string, data: Record<string, unknown>, expectedVersion?: number) {
+    const { tenantId, userId } = getContext()
+
+    if (expectedVersion !== undefined) {
+      const existing = await (db as any).ServiceRequests.findFirst({
+        where: { id, tenantId, deletedAt: null },
+        select: { version: true },
+      })
+      if (!existing) throw new NotFoundError('ServiceRequests', id)
+      if (existing.version !== expectedVersion) {
+        throw new Error(
+          `Concurrency conflict on ServiceRequests '${id}': expected version ${expectedVersion}, actual ${existing.version}`
+        )
+      }
+    }
+
+    return (db as any).ServiceRequests.update({
+      where: { id },
+      data: {
+        ...data,
+        version: { increment: 1 },
+        updatedBy: userId,
+      },
+    })
+  },
+
+  /**
+   * Soft-delete a record by setting deleted_at and deleted_by.
+   * The row remains in the database for audit trail purposes.
+   */
+  async softDelete(id: string) {
+    const { userId } = getContext()
+    return (db as any).ServiceRequests.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedBy: userId,
+        version: { increment: 1 },
+      },
+    })
+  },
+
+  /**
+   * Count records matching the optional status filter.
+   */
+  async count(status?: string) {
+    const { tenantId } = getContext()
+    const where: Record<string, unknown> = {
+      tenantId,
+      deletedAt: null,
+    }
+    if (status) where.status = status
+    return (db as any).ServiceRequests.count({ where })
+  },
+}
+
+/**
+ * Transaction helper — exposes the core transaction primitive so service
+ * code can wrap multi-step mutations in a single atomic unit.
+ */
+export { transaction, type TransactionClient }

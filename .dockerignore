@@ -1,0 +1,92 @@
+# ════════════════════════════════════════════════════════════════════════════
+# SUOP ERP v1.0 — .dockerignore
+# ════════════════════════════════════════════════════════════════════════════
+# Reduces build context size by excluding files not needed inside the container.
+# This speeds up docker build and prevents cache-busting from local dev artifacts.
+
+# ─── Version control ─────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.github
+.gitlab
+
+# ─── Dependencies (will be installed inside the container) ──────────────────
+**/node_modules
+
+# ─── Build artifacts ────────────────────────────────────────────────────────
+**/dist
+**/build
+**/.next
+**/coverage
+**/.turbo
+**/.parcel-cache
+
+# ─── Test artifacts ─────────────────────────────────────────────────────────
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/*.test.tsx
+**/*.spec.tsx
+**/vitest.config.ts
+**/vitest.setup.ts
+**/jest.config.*
+
+# ─── Documentation ──────────────────────────────────────────────────────────
+**/README.md
+**/CHANGELOG.md
+**/LICENSE
+**/docs
+**/*.md
+
+# ─── IDE / Editor config ────────────────────────────────────────────────────
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Environment files (use docker-compose env instead) ────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Logs ───────────────────────────────────────────────────────────────────
+**/*.log
+**/logs
+
+# ─── Runtime data ───────────────────────────────────────────────────────────
+**/uploads
+**/db
+**/data
+**/tmp
+
+# ─── Docker artifacts ───────────────────────────────────────────────────────
+Dockerfile
+Dockerfile.dev
+docker-compose*.yml
+.dockerignore
+
+# ─── Frontend (this is backend-only build) ──────────────────────────────────
+src/app
+src/components
+src/hooks
+src/stores
+src/lib
+public
+mobile-app
+volume-0.5
+volume-0.75-eta
+
+# ─── Project metadata not needed in image ───────────────────────────────────
+worklog.md
+.initial_snapshot.json
+tool-results
+download
+examples
+scripts
+skills
+tool-results
+.zscripts

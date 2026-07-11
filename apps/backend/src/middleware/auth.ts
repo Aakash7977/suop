@@ -13,6 +13,9 @@ import { updateContext } from '@/core/context'
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = new Set([
+  '/health',
+  '/ready',
+  '/live',
   '/api/v1/_internal/health',
   '/api/v1/_internal/live',
   '/api/v1/_internal/ready',
@@ -26,8 +29,12 @@ const PUBLIC_ROUTES = new Set([
 ])
 
 export async function authMiddleware(c: Context, next: Next) {
-  // Skip auth for public routes
-  if (PUBLIC_ROUTES.has(c.req.path) || c.req.path.startsWith('/api/v1/reference/')) {
+  // Skip auth for public routes (root-level health + internal + reference)
+  if (
+    PUBLIC_ROUTES.has(c.req.path) ||
+    c.req.path.startsWith('/api/v1/_internal') ||
+    c.req.path.startsWith('/api/v1/reference/')
+  ) {
     return next()
   }
 
