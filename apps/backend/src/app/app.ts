@@ -70,6 +70,11 @@ import { LeaveManagementRoutes } from '@/modules/leave-management/routes'
 import { PayrollProcessingRoutes } from '@/modules/payroll-processing/routes'
 import { RecruitmentOnboardingRoutes } from '@/modules/recruitment-onboarding/routes'
 import { PerformanceManagementRoutes } from '@/modules/performance-management/routes'
+import { BiFoundationRoutes } from '@/modules/bi-foundation/routes'
+import { ExecutiveDashboardsRoutes } from '@/modules/executive-dashboards/routes'
+import { AiPredictionRoutes } from '@/modules/ai-prediction/routes'
+import { ReportingPlatformRoutes } from '@/modules/reporting-platform/routes'
+import { AlertsKpiEngineRoutes } from '@/modules/alerts-kpi-engine/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -168,6 +173,11 @@ export function createApp() {
   app.route('/api/v1/hrms/payroll', PayrollProcessingRoutes)
   app.route('/api/v1/hrms/recruitment', RecruitmentOnboardingRoutes)
   app.route('/api/v1/hrms/performance', PerformanceManagementRoutes)
+  app.route('/api/v1/bi/foundation', BiFoundationRoutes)
+  app.route('/api/v1/bi/dashboards', ExecutiveDashboardsRoutes)
+  app.route('/api/v1/bi/ai', AiPredictionRoutes)
+  app.route('/api/v1/bi/reports', ReportingPlatformRoutes)
+  app.route('/api/v1/bi/alerts', AlertsKpiEngineRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
