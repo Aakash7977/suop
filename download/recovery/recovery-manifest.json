@@ -1,597 +1,67 @@
 {
-  "executed_at": "2026-07-11T09:18:12.166417",
-  "snapshot_root": "/tmp/my-project",
-  "current_root": "/home/z/my-project",
-  "actions": {
-    "restored": [
-      {
-        "path": ".initial_snapshot.json",
-        "category": "Other",
-        "bytes": 87654,
-        "sha256": "db715bbbaf614b730fcfa4d70d4dd55b4ab5ef4553b746b120510cde1da08cc7",
-        "snapshot_mtime": 1783759587.2094364
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0002_organization.sql",
-        "category": "Migrations",
-        "bytes": 21869,
-        "sha256": "b53ea1f8a2c8f9fed7ae672d63c631020c4c2d52a73841fe3763f34693929463",
-        "snapshot_mtime": 1783742700.2353196
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0003_soft_delete.sql",
-        "category": "Migrations",
-        "bytes": 871,
-        "sha256": "ed9f205eed9a0daf9e4ee63e59d684cc9af3c147c6525caa8c741f3376ea3ca8",
-        "snapshot_mtime": 1783748848.6790135
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0004_authentication.sql",
-        "category": "Migrations",
-        "bytes": 22040,
-        "sha256": "b0b4b45e70d349e22ce6baec290ec9397b7851d2439f83b6fb94d94bde8d16eb",
-        "snapshot_mtime": 1783749590.518063
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0005_user_management.sql",
-        "category": "Migrations",
-        "bytes": 23563,
-        "sha256": "4dcf2548f5158c79e72d8795631aeab84128bb8c978d83d4c033c8d91569354e",
-        "snapshot_mtime": 1783750672.2746458
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0006_product_master.sql",
-        "category": "Migrations",
-        "bytes": 29226,
-        "sha256": "7ba7b4ee4efb448ee17ffbdfb5fc3e2c044ffbfe3d89a6c11e6a37c65b68b70e",
-        "snapshot_mtime": 1783751397.243642
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0007_supplier_master.sql",
-        "category": "Migrations",
-        "bytes": 32935,
-        "sha256": "f24ba2788ac55f362e91d1949574eab12aea6833301a605bfd741635b60ea703",
-        "snapshot_mtime": 1783752145.8767226
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0008_customer_master.sql",
-        "category": "Migrations",
-        "bytes": 32841,
-        "sha256": "478b0c9f17d527af20f6210100d3ac04df17de95ed53f858ffd27be9015cb3e6",
-        "snapshot_mtime": 1783753542.1476936
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0009_procurement.sql",
-        "category": "Migrations",
-        "bytes": 34596,
-        "sha256": "92bc34b8d9d993a36ce5b12ebc387fb241a2127d0660b0243d2b54e28c9632d0",
-        "snapshot_mtime": 1783754314.9877698
-      },
-      {
-        "path": "apps/backend/prisma/migrations/0010_rfq.sql",
-        "category": "Migrations",
-        "bytes": 35832,
-        "sha256": "85ee68c200eca6f01ad69a96bf0013d2d4f20dd17f7321a4a1eee236d9e7ea2d",
-        "snapshot_mtime": 1783755309.7582207
-      },
-      {
-        "path": "apps/backend/scripts/setup-database.ts",
-        "category": "Other",
-        "bytes": 5378,
-        "sha256": "87973f7a4887cb2b6e0471a2750acfc2a20a5852430ab669b333b5049ae4c237",
-        "snapshot_mtime": 1783740686.7715793
-      },
-      {
-        "path": "apps/backend/scripts/setup-phase1.ts",
-        "category": "Other",
-        "bytes": 7866,
-        "sha256": "57670b2693505f83ba6420697f3c035e79b7d500774f6543c23a1015ab7c8fd3",
-        "snapshot_mtime": 1783742668.96628
-      },
-      {
-        "path": "apps/backend/scripts/start-dev.sh",
-        "category": "Other",
-        "bytes": 227,
-        "sha256": "fa458f065d511e97b6ff843ce45da6ef6e4e6665d04b28839630e9a5cc9bba7f",
-        "snapshot_mtime": 1783740975.7100282
-      },
-      {
-        "path": "apps/backend/src/app/__tests__/integration.test.ts",
-        "category": "Tests",
-        "bytes": 16316,
-        "sha256": "8daa46751b5369ca12f081f4acfbc3b4503fe627242de531c9273054326a43f6",
-        "snapshot_mtime": 1783741814.4901578
-      },
-      {
-        "path": "apps/backend/src/app/app.ts",
-        "category": "Backend",
-        "bytes": 4258,
-        "sha256": "40ecb11d0f436f822f21d5370c409ec66d972d046ef597d2c6bff5065990c2ad",
-        "snapshot_mtime": 1783755414.8304043
-      },
-      {
-        "path": "apps/backend/src/core/db/pglite.ts",
-        "category": "Backend",
-        "bytes": 2075,
-        "sha256": "8d47bb906805839ca9686766ea67bb5deadc5a1bd1bf9787223552910b3f5e89",
-        "snapshot_mtime": 1783740890.6059139
-      },
-      {
-        "path": "apps/backend/src/main.ts",
-        "category": "Backend",
-        "bytes": 1883,
-        "sha256": "a43e55f67fa41ea6cd1822a948204f68bd8728b1b463e87ea8a660a7c530d1e8",
-        "snapshot_mtime": 1783741327.461513
-      },
-      {
-        "path": "apps/backend/src/middleware/audit.ts",
-        "category": "Middleware",
-        "bytes": 1234,
-        "sha256": "a4b11ee6aeace45f30327c0bdb5fe2fab2d0d7b760a91bbe9ef89703840a9186",
-        "snapshot_mtime": 1783740803.0307772
-      },
-      {
-        "path": "apps/backend/src/middleware/auth.ts",
-        "category": "Middleware",
-        "bytes": 1660,
-        "sha256": "0261b2469ef99ea0ecca4ced7a3e647c30aedd97e2d62dba7ccdeab1e590356a",
-        "snapshot_mtime": 1783749791.7253568
-      },
-      {
-        "path": "apps/backend/src/middleware/error-handler.ts",
-        "category": "Middleware",
-        "bytes": 856,
-        "sha256": "2d6e2195ddf6e90d64b50c267d5bb774d560e605eabe0953e6c856d44a752778",
-        "snapshot_mtime": 1783741522.9067714
-      },
-      {
-        "path": "apps/backend/src/middleware/logging.ts",
-        "category": "Middleware",
-        "bytes": 1032,
-        "sha256": "a8502f484b901e8e092050cd78ebcddde2918d8f156701291fe0a379b8da36db",
-        "snapshot_mtime": 1783740733.8976622
-      },
-      {
-        "path": "apps/backend/src/middleware/rbac.ts",
-        "category": "Middleware",
-        "bytes": 1245,
-        "sha256": "473ca3260219f70d3209c13339a7007637f5c3dba5dfa90c30d28ae926d0d958",
-        "snapshot_mtime": 1783740789.6297555
-      },
-      {
-        "path": "apps/backend/src/middleware/request-id.ts",
-        "category": "Middleware",
-        "bytes": 984,
-        "sha256": "d3e1deda40b669d8538bb46444411a6e3af93655691e6272d65b68d6431a204c",
-        "snapshot_mtime": 1783741134.1402512
-      },
-      {
-        "path": "apps/backend/src/middleware/tenant.ts",
-        "category": "Middleware",
-        "bytes": 546,
-        "sha256": "ca9d9dc11b3e3608cbee9f96888df9eea495f5f78d22f0e170cb42ed4121e7c5",
-        "snapshot_mtime": 1783741306.5924854
-      },
-      {
-        "path": "apps/backend/src/modules/auth/__tests__/auth.test.ts",
-        "category": "Tests",
-        "bytes": 13359,
-        "sha256": "5983f289b2b0e36478e6ba10fc579751ce8ca20bf0a216bf157d067e641e863d",
-        "snapshot_mtime": 1783750131.3418553
-      },
-      {
-        "path": "apps/backend/src/modules/auth/repository/index.ts",
-        "category": "Backend",
-        "bytes": 15270,
-        "sha256": "47930960864a954700fdf18b5d6756aca6209d62d7e9713065a3f1a93fbae3b1",
-        "snapshot_mtime": 1783749903.6835182
-      },
-      {
-        "path": "apps/backend/src/modules/auth/routes/index.ts",
-        "category": "Backend",
-        "bytes": 7323,
-        "sha256": "4ade49859621d87824c98f6ba70bcf359570289ed63b216f9d00b9267c8c9302",
-        "snapshot_mtime": 1783749743.936285
-      },
-      {
-        "path": "apps/backend/src/modules/auth/service/index.ts",
-        "category": "Backend",
-        "bytes": 30117,
-        "sha256": "0abea9cbfc7252768aa54c4555b1d321157b8e4653f284c20eedba76ac9ac0bb",
-        "snapshot_mtime": 1783750019.494693
-      },
-      {
-        "path": "apps/backend/src/modules/auth/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1232,
-        "sha256": "4e9d40c0e9a42ce8e30075f9e3365b8a7c03659304c20dd98462088e37b16767",
-        "snapshot_mtime": 1783749611.5600922
-      },
-      {
-        "path": "apps/backend/src/modules/customer/__tests__/customer.test.ts",
-        "category": "Tests",
-        "bytes": 7731,
-        "sha256": "3483b1c666df743861efdca18f32d72d34b05e83003843a0a9581fa4bf1c0687",
-        "snapshot_mtime": 1783753816.1470733
-      },
-      {
-        "path": "apps/backend/src/modules/customer/repository/index.ts",
-        "category": "Backend",
-        "bytes": 8254,
-        "sha256": "986916afaf6d907c17d0fbb3ded0724e68d5ca2807c526cdcfbfad43f441685d",
-        "snapshot_mtime": 1783753600.3027735
-      },
-      {
-        "path": "apps/backend/src/modules/customer/routes/index.ts",
-        "category": "Backend",
-        "bytes": 7330,
-        "sha256": "5df9b4aef5c8eaeaebc7006c4be5faa1edb63c146dca0d463d05259ee6cb91df",
-        "snapshot_mtime": 1783753652.8338454
-      },
-      {
-        "path": "apps/backend/src/modules/customer/service/index.ts",
-        "category": "Backend",
-        "bytes": 10432,
-        "sha256": "34fb7d8b4263e85f366e116dd4efb8a26f5325d3c93e8e965ade82e961f2ac9e",
-        "snapshot_mtime": 1783753679.5518823
-      },
-      {
-        "path": "apps/backend/src/modules/customer/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1214,
-        "sha256": "9e2e3dece4e80f1469eb70eb14d5d7338b9a88dd73c07dfdff13fefdd50504c1",
-        "snapshot_mtime": 1783753565.2427254
-      },
-      {
-        "path": "apps/backend/src/modules/organization/__tests__/organization.test.ts",
-        "category": "Tests",
-        "bytes": 8958,
-        "sha256": "e40c5485fdb5cf5a0cbeacfe8e2c8e429ad6b2c7b7be731e9ee09072a1812917",
-        "snapshot_mtime": 1783749138.4174228
-      },
-      {
-        "path": "apps/backend/src/modules/organization/repository/index.ts",
-        "category": "Backend",
-        "bytes": 27101,
-        "sha256": "b53f21e9a8115629dc76b7189bf2e95f4f85cef9893d5dd1ed556f0cfae9e42e",
-        "snapshot_mtime": 1783748871.1170444
-      },
-      {
-        "path": "apps/backend/src/modules/organization/routes/index.ts",
-        "category": "Backend",
-        "bytes": 13443,
-        "sha256": "0a79417cfa141f2a42e33b69d94f556c6cf9f5920ecce42c449623d9aa26c177",
-        "snapshot_mtime": 1783748967.3191779
-      },
-      {
-        "path": "apps/backend/src/modules/organization/service/index.ts",
-        "category": "Backend",
-        "bytes": 16090,
-        "sha256": "db995ee1a601dad764f1711205b8bc2be973e5b52eb34e5652c1f29d6aba4dc1",
-        "snapshot_mtime": 1783748948.613152
-      },
-      {
-        "path": "apps/backend/src/modules/organization/types/index.ts",
-        "category": "Backend",
-        "bytes": 3035,
-        "sha256": "6c35dffbac663516f5fa8787a1c874f859075d3c81ca4a9f8d7d79bdf6e7de4a",
-        "snapshot_mtime": 1783742770.9994106
-      },
-      {
-        "path": "apps/backend/src/modules/organization/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1349,
-        "sha256": "df6467b0f7485e73ac00a15928541bdcca27cd0476826aef1148a5927f99cc3f",
-        "snapshot_mtime": 1783742859.7145278
-      },
-      {
-        "path": "apps/backend/src/modules/procurement/__tests__/procurement.test.ts",
-        "category": "Tests",
-        "bytes": 8089,
-        "sha256": "4880bfe872a707116e57f466b956161280232ad8f1f37754a2f6965e225ac449",
-        "snapshot_mtime": 1783754467.1739872
-      },
-      {
-        "path": "apps/backend/src/modules/procurement/repository/index.ts",
-        "category": "Backend",
-        "bytes": 7737,
-        "sha256": "c46075a8cbd51f3591215dd15346547180b83ea193820d01713db799f52c23fd",
-        "snapshot_mtime": 1783754361.4778357
-      },
-      {
-        "path": "apps/backend/src/modules/procurement/routes/index.ts",
-        "category": "Backend",
-        "bytes": 4596,
-        "sha256": "24dc622f247e0b1558ee9e3f90459163dd18fd272b89cad28f8e74a711438d09",
-        "snapshot_mtime": 1783754403.339895
-      },
-      {
-        "path": "apps/backend/src/modules/procurement/service/index.ts",
-        "category": "Backend",
-        "bytes": 8540,
-        "sha256": "290751682cd2bd315fce240ed87f610848f3e538a8b2eeebba3a3923980dbb0a",
-        "snapshot_mtime": 1783754433.8219388
-      },
-      {
-        "path": "apps/backend/src/modules/procurement/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1700,
-        "sha256": "22f7d3d1c65c78206050d281d8e8fa32277c3e26d9cd7a3bcc286ac3c5a8178d",
-        "snapshot_mtime": 1783754334.132797
-      },
-      {
-        "path": "apps/backend/src/modules/product/__tests__/product.test.ts",
-        "category": "Tests",
-        "bytes": 6987,
-        "sha256": "53f51f8a21d11dc4f64ad54b7d74d59351d1aa8a59fe2769446e1940b29435ee",
-        "snapshot_mtime": 1783751651.9819949
-      },
-      {
-        "path": "apps/backend/src/modules/product/repository/index.ts",
-        "category": "Backend",
-        "bytes": 10802,
-        "sha256": "07843c60e17c769420575e45bce2568b8608ed108b7c0234629c280260ac7452",
-        "snapshot_mtime": 1783751558.235862
-      },
-      {
-        "path": "apps/backend/src/modules/product/routes/index.ts",
-        "category": "Backend",
-        "bytes": 7198,
-        "sha256": "031e24660f5010de9c10f3c89af5a3c5d0937ada37ff81043fe65f66e68f59fb",
-        "snapshot_mtime": 1783751527.8468204
-      },
-      {
-        "path": "apps/backend/src/modules/product/service/index.ts",
-        "category": "Backend",
-        "bytes": 8835,
-        "sha256": "d7cba68d6439daf1797647ffb03eda19b465eae7076c88c0aa10cb25edf136ec",
-        "snapshot_mtime": 1783751611.9659371
-      },
-      {
-        "path": "apps/backend/src/modules/product/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1035,
-        "sha256": "80251b3812e8013d3d433e2cb468299271a98a69727e5f4d3d0757922da6d60c",
-        "snapshot_mtime": 1783751449.5337133
-      },
-      {
-        "path": "apps/backend/src/modules/rfq/__tests__/rfq.test.ts",
-        "category": "Tests",
-        "bytes": 7534,
-        "sha256": "cb818a00ad51f269aa212228c13f01fe0418d4e35bcfc083664a77a9cc871ea9",
-        "snapshot_mtime": 1783755571.1986477
-      },
-      {
-        "path": "apps/backend/src/modules/rfq/repository/index.ts",
-        "category": "Backend",
-        "bytes": 7357,
-        "sha256": "5069c6b3252fcfc5b181ead2694b66d4f6cfd59090ba940a67b666b25d5d6b76",
-        "snapshot_mtime": 1783755356.6342928
-      },
-      {
-        "path": "apps/backend/src/modules/rfq/routes/index.ts",
-        "category": "Backend",
-        "bytes": 4371,
-        "sha256": "261d5db921453a1e412b8f116e680eecb607561dcb5ef4c36fcbd6660caa0bdd",
-        "snapshot_mtime": 1783755405.637389
-      },
-      {
-        "path": "apps/backend/src/modules/rfq/service/index.ts",
-        "category": "Backend",
-        "bytes": 10780,
-        "sha256": "191eef98bcb0b6780e2a0874b1c733bd783c3b7df6f669af753b76ae2ee39065",
-        "snapshot_mtime": 1783755535.1575918
-      },
-      {
-        "path": "apps/backend/src/modules/rfq/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1361,
-        "sha256": "3e3d2fb12224cefb08ce353b2261f0bf0925731759049f5a9752550c0e5baee7",
-        "snapshot_mtime": 1783755330.427253
-      },
-      {
-        "path": "apps/backend/src/modules/supplier/__tests__/supplier.test.ts",
-        "category": "Tests",
-        "bytes": 9462,
-        "sha256": "da8fb24f620a1d6f5b088d8de26132891f5df96030332e5985bdb76a602a3a09",
-        "snapshot_mtime": 1783752533.7432792
-      },
-      {
-        "path": "apps/backend/src/modules/supplier/repository/index.ts",
-        "category": "Backend",
-        "bytes": 12008,
-        "sha256": "8cbf69d34c6f13c90e2f299b9b0505f030e602f792dd56f33ad503105e6c537d",
-        "snapshot_mtime": 1783752201.9178038
-      },
-      {
-        "path": "apps/backend/src/modules/supplier/routes/index.ts",
-        "category": "Backend",
-        "bytes": 9029,
-        "sha256": "757e21bb777ff1e9f3abd35732e39bcb47d4cf720143a41a840c1cc5ca58abfb",
-        "snapshot_mtime": 1783752303.1819496
-      },
-      {
-        "path": "apps/backend/src/modules/supplier/service/index.ts",
-        "category": "Backend",
-        "bytes": 12183,
-        "sha256": "2b01dea4a0ad6d38ae4d74a424df37995cfbb826916860b56b89f23340a09413",
-        "snapshot_mtime": 1783752237.5648544
-      },
-      {
-        "path": "apps/backend/src/modules/supplier/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 1365,
-        "sha256": "9e02e48b5bbcafaf45b4d433c1f39aa68feaa85c3a63a1691c39d3c4bc0e1005",
-        "snapshot_mtime": 1783752164.4867496
-      },
-      {
-        "path": "apps/backend/src/modules/user-management/__tests__/user-management.test.ts",
-        "category": "Tests",
-        "bytes": 5338,
-        "sha256": "481eb48d4bc3b8d3f1a7a578dcb55c51132de4dc94f84fe168387f897517cb23",
-        "snapshot_mtime": 1783750852.8628926
-      },
-      {
-        "path": "apps/backend/src/modules/user-management/repository/index.ts",
-        "category": "Backend",
-        "bytes": 11592,
-        "sha256": "91a63351e0e01709eab86789b8ad511ca4ad822ed1806be687f751e19b2e17f8",
-        "snapshot_mtime": 1783750730.3667264
-      },
-      {
-        "path": "apps/backend/src/modules/user-management/routes/index.ts",
-        "category": "Backend",
-        "bytes": 11804,
-        "sha256": "54e9bcf01f8aadc7cd2f1b10f85a02a7b08b29c0ebab0ae95dca732b2c4a4873",
-        "snapshot_mtime": 1783750820.635849
-      },
-      {
-        "path": "apps/backend/src/modules/user-management/service/index.ts",
-        "category": "Backend",
-        "bytes": 15962,
-        "sha256": "c2426e0d2922d30fc7a22d4e4e260d2e9550c0bbe09ffa1368b56146d456b0aa",
-        "snapshot_mtime": 1783750927.9189944
-      },
-      {
-        "path": "apps/backend/src/modules/user-management/workflow/index.ts",
-        "category": "Backend",
-        "bytes": 883,
-        "sha256": "f7a95aee415b0b1f87066f36b22a33a1f2cdbf34929187286e01556e9e941e91",
-        "snapshot_mtime": 1783750696.4706793
-      },
-      {
-        "path": "apps/backend/src/routes/smoke-test.ts",
-        "category": "Routes",
-        "bytes": 10169,
-        "sha256": "b4970f10f90a5fa6359c6af8b312ee0e8b718cd636d701255e02182686fe5139",
-        "snapshot_mtime": 1783741581.2918482
-      },
-      {
-        "path": "apps/backend/src/routes/system.ts",
-        "category": "Routes",
-        "bytes": 1181,
-        "sha256": "331d5e47d38be8770cca36fa876b330031856a30d4c19e988dd21d1b19381502",
-        "snapshot_mtime": 1783740902.9749293
-      },
-      {
-        "path": "src/modules/auth/api/client.ts",
-        "category": "Frontend",
-        "bytes": 4707,
-        "sha256": "45fbc99984629d93d5b84ca87a97d00d44e26ff6ac179e4c26ac02d18803b2c6",
-        "snapshot_mtime": 1783750205.9459686
-      },
-      {
-        "path": "src/modules/customer/api/client.ts",
-        "category": "Frontend",
-        "bytes": 2720,
-        "sha256": "b0bae1571a31f659789e87ecca833632486cad43530325d157b7e8c80629f803",
-        "snapshot_mtime": 1783753874.848155
-      },
-      {
-        "path": "src/modules/customer/components/CustomerModule.tsx",
-        "category": "Frontend",
-        "bytes": 11446,
-        "sha256": "87a0693811646f4d8cc44023bca200ffcae06b83457cc63db0a4f0f135bb10c5",
-        "snapshot_mtime": 1783753908.8832023
-      },
-      {
-        "path": "src/modules/organization/api/client.ts",
-        "category": "Frontend",
-        "bytes": 11402,
-        "sha256": "323b68f5313dc6bbbec22c75f86afc8dc5459a714ea589a2e472f9d267813a7e",
-        "snapshot_mtime": 1783748625.127698
-      },
-      {
-        "path": "src/modules/organization/components/OrganizationModule.tsx",
-        "category": "Frontend",
-        "bytes": 36862,
-        "sha256": "bf491d696ee5e49a554d9e0408e18038890eb20a28639950d080a7c1453902c4",
-        "snapshot_mtime": 1783748713.771823
-      },
-      {
-        "path": "src/modules/procurement/api/client.ts",
-        "category": "Frontend",
-        "bytes": 2264,
-        "sha256": "daf489cbde7fef2511900ea353afc1d689edeaf90c76db274ec07095efe1ea18",
-        "snapshot_mtime": 1783754522.9880688
-      },
-      {
-        "path": "src/modules/procurement/components/ProcurementModule.tsx",
-        "category": "Frontend",
-        "bytes": 11688,
-        "sha256": "b25649a644965cec22e252150379b85d8db6ddd1349f28cc3b92025ead3d02db",
-        "snapshot_mtime": 1783754557.586118
-      },
-      {
-        "path": "src/modules/product/api/client.ts",
-        "category": "Frontend",
-        "bytes": 3562,
-        "sha256": "0fc74299539f135865da480c0854b7903ef5137fec3674d0298279cdf0a6c6de",
-        "snapshot_mtime": 1783751707.308074
-      },
-      {
-        "path": "src/modules/product/components/ProductModule.tsx",
-        "category": "Frontend",
-        "bytes": 14337,
-        "sha256": "c526269ace4f9ee57ead7b4c46db0948eab74b2c42353e25a6799aaeeaecb736",
-        "snapshot_mtime": 1783751747.5861309
-      },
-      {
-        "path": "src/modules/rfq/api/client.ts",
-        "category": "Frontend",
-        "bytes": 2383,
-        "sha256": "b4873ffe4df2e624837ad591b05541fdfa8a11b1620c1267ec052f3cad9d2db9",
-        "snapshot_mtime": 1783755667.6977987
-      },
-      {
-        "path": "src/modules/rfq/components/RfqModule.tsx",
-        "category": "Frontend",
-        "bytes": 10785,
-        "sha256": "0370eb5d2ba06e5226c775121d3946a47dbcc809402e50c0586df4666a5a137f",
-        "snapshot_mtime": 1783755709.0348601
-      },
-      {
-        "path": "src/modules/supplier/api/client.ts",
-        "category": "Frontend",
-        "bytes": 2867,
-        "sha256": "28f78c2ed7bed3bf124ac4d72637b2ba232734bb8c44f0ddbf6a72e971dbf150",
-        "snapshot_mtime": 1783752619.7404027
-      },
-      {
-        "path": "src/modules/supplier/components/SupplierModule.tsx",
-        "category": "Frontend",
-        "bytes": 11755,
-        "sha256": "1482b9768860950e56625d0f3caf28369df097a57a8143e0054319d8e2c934d6",
-        "snapshot_mtime": 1783752652.354449
-      },
-      {
-        "path": "src/modules/user-management/api/client.ts",
-        "category": "Frontend",
-        "bytes": 5525,
-        "sha256": "9f2186388b778dd6614c3984ccbacaa3cecb0a50a726874768c23183ba4a928a",
-        "snapshot_mtime": 1783750991.8990805
-      },
-      {
-        "path": "src/modules/user-management/components/UserManagementModule.tsx",
-        "category": "Frontend",
-        "bytes": 19540,
-        "sha256": "081d5adbf6b8375733355132e473f29b7da5aa4fdb6449232b0bce923f08f4dc",
-        "snapshot_mtime": 1783751050.1781592
-      }
+  "manifest_version": "1.0",
+  "generated_at": "2026-07-11T09:23:38.897941",
+  "operation": "RECOVERY MODE \u2014 controlled restoration from /tmp/my-project snapshot",
+  "snapshot_source": "/tmp/my-project",
+  "target_repository": "/home/z/my-project",
+  "snapshot_files_total": 393,
+  "current_files_total": 1341,
+  "restoration_date": "2026-07-11",
+  "restored_by": "Super Z (Main agent)",
+  "git": {
+    "commit_hash": "43bd8a981d096ea3cc424a8bd213b75f37d8c213",
+    "commit_short": "43bd8a9",
+    "commit_message_first_line": "phase-0-9: Restore Phases 1-8 from /tmp/my-project snapshot",
+    "commit_author": "Z User <z@container>",
+    "commit_date": "2026-07-11T09:22:16Z",
+    "tags": [
+      "phase-0-foundation",
+      "phase-1-organization",
+      "phase-2-authentication",
+      "phase-3-user-management",
+      "phase-4-product-master",
+      "phase-5-supplier-master",
+      "phase-6-customer-master",
+      "phase-7-procurement",
+      "phase-8-rfq",
+      "phase-9-recovery"
     ],
-    "skipped_newer_current": [
-      {
-        "path": "worklog.md",
-        "category": "Other",
-        "reason": "current file is newer than snapshot",
-        "snapshot_mtime": 1783692596.0,
-        "current_mtime": 1783761400.7648134
-      }
-    ],
-    "skipped_identical": [],
-    "merged": [],
-    "replaced": [],
-    "manual_review": []
+    "remote": "(none configured)",
+    "branch": "main",
+    "total_commits": "123"
+  },
+  "validation": {
+    "prisma_validate": "PASSED",
+    "typescript_typecheck": "PASSED (0 errors)",
+    "eslint": "PASSED (0 errors, 0 warnings)",
+    "unit_tests": "503/503 PASSED across 25 test files (13.52s)",
+    "test_breakdown": {
+      "app/__tests__/integration.test.ts": 20,
+      "modules/auth/__tests__/auth.test.ts": 44,
+      "modules/supplier/__tests__/supplier.test.ts": 41,
+      "modules/organization/__tests__/organization.test.ts": 29,
+      "config/__tests__/env.test.ts": 32,
+      "modules/procurement/__tests__/procurement.test.ts": 36,
+      "modules/customer/__tests__/customer.test.ts": 34,
+      "modules/rfq/__tests__/rfq.test.ts": 36,
+      "modules/product/__tests__/product.test.ts": 30,
+      "config/__tests__/features.test.ts": 21,
+      "modules/user-management/__tests__/user-management.test.ts": 20,
+      "core/errors/__tests__/base-error.test.ts": 22,
+      "core/workflow/__tests__/state-machine.test.ts": 12,
+      "config/__tests__/env-singleton.test.ts": 17,
+      "config/__tests__/secrets.test.ts": 17,
+      "core/permissions/__tests__/registry.test.ts": 14,
+      "core/validation/__tests__/validate.test.ts": 14,
+      "core/files/__tests__/file-service.test.ts": 7,
+      "core/events/__tests__/event-bus.test.ts": 5,
+      "core/auth/__tests__/jwt.test.ts": 8,
+      "config/__tests__/features-provider.test.ts": 10,
+      "core/context/__tests__/request-context.test.ts": 8,
+      "core/response/__tests__/envelope.test.ts": 8,
+      "config/__tests__/secrets-provider.test.ts": 9,
+      "core/auth/__tests__/password.test.ts": 9
+    }
   },
   "summary": {
     "total_restored": 82,
@@ -601,5 +71,620 @@
     "total_manual_review": 0,
     "total_bytes_restored": 888966,
     "total_identical": 310
-  }
+  },
+  "files_restored": [
+    {
+      "path": ".initial_snapshot.json",
+      "category": "Other",
+      "bytes": 87654,
+      "sha256": "db715bbbaf614b730fcfa4d70d4dd55b4ab5ef4553b746b120510cde1da08cc7",
+      "snapshot_mtime": 1783759587.2094364
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0002_organization.sql",
+      "category": "Migrations",
+      "bytes": 21869,
+      "sha256": "b53ea1f8a2c8f9fed7ae672d63c631020c4c2d52a73841fe3763f34693929463",
+      "snapshot_mtime": 1783742700.2353196
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0003_soft_delete.sql",
+      "category": "Migrations",
+      "bytes": 871,
+      "sha256": "ed9f205eed9a0daf9e4ee63e59d684cc9af3c147c6525caa8c741f3376ea3ca8",
+      "snapshot_mtime": 1783748848.6790135
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0004_authentication.sql",
+      "category": "Migrations",
+      "bytes": 22040,
+      "sha256": "b0b4b45e70d349e22ce6baec290ec9397b7851d2439f83b6fb94d94bde8d16eb",
+      "snapshot_mtime": 1783749590.518063
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0005_user_management.sql",
+      "category": "Migrations",
+      "bytes": 23563,
+      "sha256": "4dcf2548f5158c79e72d8795631aeab84128bb8c978d83d4c033c8d91569354e",
+      "snapshot_mtime": 1783750672.2746458
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0006_product_master.sql",
+      "category": "Migrations",
+      "bytes": 29226,
+      "sha256": "7ba7b4ee4efb448ee17ffbdfb5fc3e2c044ffbfe3d89a6c11e6a37c65b68b70e",
+      "snapshot_mtime": 1783751397.243642
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0007_supplier_master.sql",
+      "category": "Migrations",
+      "bytes": 32935,
+      "sha256": "f24ba2788ac55f362e91d1949574eab12aea6833301a605bfd741635b60ea703",
+      "snapshot_mtime": 1783752145.8767226
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0008_customer_master.sql",
+      "category": "Migrations",
+      "bytes": 32841,
+      "sha256": "478b0c9f17d527af20f6210100d3ac04df17de95ed53f858ffd27be9015cb3e6",
+      "snapshot_mtime": 1783753542.1476936
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0009_procurement.sql",
+      "category": "Migrations",
+      "bytes": 34596,
+      "sha256": "92bc34b8d9d993a36ce5b12ebc387fb241a2127d0660b0243d2b54e28c9632d0",
+      "snapshot_mtime": 1783754314.9877698
+    },
+    {
+      "path": "apps/backend/prisma/migrations/0010_rfq.sql",
+      "category": "Migrations",
+      "bytes": 35832,
+      "sha256": "85ee68c200eca6f01ad69a96bf0013d2d4f20dd17f7321a4a1eee236d9e7ea2d",
+      "snapshot_mtime": 1783755309.7582207
+    },
+    {
+      "path": "apps/backend/scripts/setup-database.ts",
+      "category": "Other",
+      "bytes": 5378,
+      "sha256": "87973f7a4887cb2b6e0471a2750acfc2a20a5852430ab669b333b5049ae4c237",
+      "snapshot_mtime": 1783740686.7715793
+    },
+    {
+      "path": "apps/backend/scripts/setup-phase1.ts",
+      "category": "Other",
+      "bytes": 7866,
+      "sha256": "57670b2693505f83ba6420697f3c035e79b7d500774f6543c23a1015ab7c8fd3",
+      "snapshot_mtime": 1783742668.96628
+    },
+    {
+      "path": "apps/backend/scripts/start-dev.sh",
+      "category": "Other",
+      "bytes": 227,
+      "sha256": "fa458f065d511e97b6ff843ce45da6ef6e4e6665d04b28839630e9a5cc9bba7f",
+      "snapshot_mtime": 1783740975.7100282
+    },
+    {
+      "path": "apps/backend/src/app/__tests__/integration.test.ts",
+      "category": "Tests",
+      "bytes": 16316,
+      "sha256": "8daa46751b5369ca12f081f4acfbc3b4503fe627242de531c9273054326a43f6",
+      "snapshot_mtime": 1783741814.4901578
+    },
+    {
+      "path": "apps/backend/src/app/app.ts",
+      "category": "Backend",
+      "bytes": 4258,
+      "sha256": "40ecb11d0f436f822f21d5370c409ec66d972d046ef597d2c6bff5065990c2ad",
+      "snapshot_mtime": 1783755414.8304043
+    },
+    {
+      "path": "apps/backend/src/core/db/pglite.ts",
+      "category": "Backend",
+      "bytes": 2075,
+      "sha256": "8d47bb906805839ca9686766ea67bb5deadc5a1bd1bf9787223552910b3f5e89",
+      "snapshot_mtime": 1783740890.6059139
+    },
+    {
+      "path": "apps/backend/src/main.ts",
+      "category": "Backend",
+      "bytes": 1883,
+      "sha256": "a43e55f67fa41ea6cd1822a948204f68bd8728b1b463e87ea8a660a7c530d1e8",
+      "snapshot_mtime": 1783741327.461513
+    },
+    {
+      "path": "apps/backend/src/middleware/audit.ts",
+      "category": "Middleware",
+      "bytes": 1234,
+      "sha256": "a4b11ee6aeace45f30327c0bdb5fe2fab2d0d7b760a91bbe9ef89703840a9186",
+      "snapshot_mtime": 1783740803.0307772
+    },
+    {
+      "path": "apps/backend/src/middleware/auth.ts",
+      "category": "Middleware",
+      "bytes": 1660,
+      "sha256": "0261b2469ef99ea0ecca4ced7a3e647c30aedd97e2d62dba7ccdeab1e590356a",
+      "snapshot_mtime": 1783749791.7253568
+    },
+    {
+      "path": "apps/backend/src/middleware/error-handler.ts",
+      "category": "Middleware",
+      "bytes": 856,
+      "sha256": "2d6e2195ddf6e90d64b50c267d5bb774d560e605eabe0953e6c856d44a752778",
+      "snapshot_mtime": 1783741522.9067714
+    },
+    {
+      "path": "apps/backend/src/middleware/logging.ts",
+      "category": "Middleware",
+      "bytes": 1032,
+      "sha256": "a8502f484b901e8e092050cd78ebcddde2918d8f156701291fe0a379b8da36db",
+      "snapshot_mtime": 1783740733.8976622
+    },
+    {
+      "path": "apps/backend/src/middleware/rbac.ts",
+      "category": "Middleware",
+      "bytes": 1245,
+      "sha256": "473ca3260219f70d3209c13339a7007637f5c3dba5dfa90c30d28ae926d0d958",
+      "snapshot_mtime": 1783740789.6297555
+    },
+    {
+      "path": "apps/backend/src/middleware/request-id.ts",
+      "category": "Middleware",
+      "bytes": 984,
+      "sha256": "d3e1deda40b669d8538bb46444411a6e3af93655691e6272d65b68d6431a204c",
+      "snapshot_mtime": 1783741134.1402512
+    },
+    {
+      "path": "apps/backend/src/middleware/tenant.ts",
+      "category": "Middleware",
+      "bytes": 546,
+      "sha256": "ca9d9dc11b3e3608cbee9f96888df9eea495f5f78d22f0e170cb42ed4121e7c5",
+      "snapshot_mtime": 1783741306.5924854
+    },
+    {
+      "path": "apps/backend/src/modules/auth/__tests__/auth.test.ts",
+      "category": "Tests",
+      "bytes": 13359,
+      "sha256": "5983f289b2b0e36478e6ba10fc579751ce8ca20bf0a216bf157d067e641e863d",
+      "snapshot_mtime": 1783750131.3418553
+    },
+    {
+      "path": "apps/backend/src/modules/auth/repository/index.ts",
+      "category": "Backend",
+      "bytes": 15270,
+      "sha256": "47930960864a954700fdf18b5d6756aca6209d62d7e9713065a3f1a93fbae3b1",
+      "snapshot_mtime": 1783749903.6835182
+    },
+    {
+      "path": "apps/backend/src/modules/auth/routes/index.ts",
+      "category": "Backend",
+      "bytes": 7323,
+      "sha256": "4ade49859621d87824c98f6ba70bcf359570289ed63b216f9d00b9267c8c9302",
+      "snapshot_mtime": 1783749743.936285
+    },
+    {
+      "path": "apps/backend/src/modules/auth/service/index.ts",
+      "category": "Backend",
+      "bytes": 30117,
+      "sha256": "0abea9cbfc7252768aa54c4555b1d321157b8e4653f284c20eedba76ac9ac0bb",
+      "snapshot_mtime": 1783750019.494693
+    },
+    {
+      "path": "apps/backend/src/modules/auth/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1232,
+      "sha256": "4e9d40c0e9a42ce8e30075f9e3365b8a7c03659304c20dd98462088e37b16767",
+      "snapshot_mtime": 1783749611.5600922
+    },
+    {
+      "path": "apps/backend/src/modules/customer/__tests__/customer.test.ts",
+      "category": "Tests",
+      "bytes": 7731,
+      "sha256": "3483b1c666df743861efdca18f32d72d34b05e83003843a0a9581fa4bf1c0687",
+      "snapshot_mtime": 1783753816.1470733
+    },
+    {
+      "path": "apps/backend/src/modules/customer/repository/index.ts",
+      "category": "Backend",
+      "bytes": 8254,
+      "sha256": "986916afaf6d907c17d0fbb3ded0724e68d5ca2807c526cdcfbfad43f441685d",
+      "snapshot_mtime": 1783753600.3027735
+    },
+    {
+      "path": "apps/backend/src/modules/customer/routes/index.ts",
+      "category": "Backend",
+      "bytes": 7330,
+      "sha256": "5df9b4aef5c8eaeaebc7006c4be5faa1edb63c146dca0d463d05259ee6cb91df",
+      "snapshot_mtime": 1783753652.8338454
+    },
+    {
+      "path": "apps/backend/src/modules/customer/service/index.ts",
+      "category": "Backend",
+      "bytes": 10432,
+      "sha256": "34fb7d8b4263e85f366e116dd4efb8a26f5325d3c93e8e965ade82e961f2ac9e",
+      "snapshot_mtime": 1783753679.5518823
+    },
+    {
+      "path": "apps/backend/src/modules/customer/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1214,
+      "sha256": "9e2e3dece4e80f1469eb70eb14d5d7338b9a88dd73c07dfdff13fefdd50504c1",
+      "snapshot_mtime": 1783753565.2427254
+    },
+    {
+      "path": "apps/backend/src/modules/organization/__tests__/organization.test.ts",
+      "category": "Tests",
+      "bytes": 8958,
+      "sha256": "e40c5485fdb5cf5a0cbeacfe8e2c8e429ad6b2c7b7be731e9ee09072a1812917",
+      "snapshot_mtime": 1783749138.4174228
+    },
+    {
+      "path": "apps/backend/src/modules/organization/repository/index.ts",
+      "category": "Backend",
+      "bytes": 27101,
+      "sha256": "b53f21e9a8115629dc76b7189bf2e95f4f85cef9893d5dd1ed556f0cfae9e42e",
+      "snapshot_mtime": 1783748871.1170444
+    },
+    {
+      "path": "apps/backend/src/modules/organization/routes/index.ts",
+      "category": "Backend",
+      "bytes": 13443,
+      "sha256": "0a79417cfa141f2a42e33b69d94f556c6cf9f5920ecce42c449623d9aa26c177",
+      "snapshot_mtime": 1783748967.3191779
+    },
+    {
+      "path": "apps/backend/src/modules/organization/service/index.ts",
+      "category": "Backend",
+      "bytes": 16090,
+      "sha256": "db995ee1a601dad764f1711205b8bc2be973e5b52eb34e5652c1f29d6aba4dc1",
+      "snapshot_mtime": 1783748948.613152
+    },
+    {
+      "path": "apps/backend/src/modules/organization/types/index.ts",
+      "category": "Backend",
+      "bytes": 3035,
+      "sha256": "6c35dffbac663516f5fa8787a1c874f859075d3c81ca4a9f8d7d79bdf6e7de4a",
+      "snapshot_mtime": 1783742770.9994106
+    },
+    {
+      "path": "apps/backend/src/modules/organization/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1349,
+      "sha256": "df6467b0f7485e73ac00a15928541bdcca27cd0476826aef1148a5927f99cc3f",
+      "snapshot_mtime": 1783742859.7145278
+    },
+    {
+      "path": "apps/backend/src/modules/procurement/__tests__/procurement.test.ts",
+      "category": "Tests",
+      "bytes": 8089,
+      "sha256": "4880bfe872a707116e57f466b956161280232ad8f1f37754a2f6965e225ac449",
+      "snapshot_mtime": 1783754467.1739872
+    },
+    {
+      "path": "apps/backend/src/modules/procurement/repository/index.ts",
+      "category": "Backend",
+      "bytes": 7737,
+      "sha256": "c46075a8cbd51f3591215dd15346547180b83ea193820d01713db799f52c23fd",
+      "snapshot_mtime": 1783754361.4778357
+    },
+    {
+      "path": "apps/backend/src/modules/procurement/routes/index.ts",
+      "category": "Backend",
+      "bytes": 4596,
+      "sha256": "24dc622f247e0b1558ee9e3f90459163dd18fd272b89cad28f8e74a711438d09",
+      "snapshot_mtime": 1783754403.339895
+    },
+    {
+      "path": "apps/backend/src/modules/procurement/service/index.ts",
+      "category": "Backend",
+      "bytes": 8540,
+      "sha256": "290751682cd2bd315fce240ed87f610848f3e538a8b2eeebba3a3923980dbb0a",
+      "snapshot_mtime": 1783754433.8219388
+    },
+    {
+      "path": "apps/backend/src/modules/procurement/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1700,
+      "sha256": "22f7d3d1c65c78206050d281d8e8fa32277c3e26d9cd7a3bcc286ac3c5a8178d",
+      "snapshot_mtime": 1783754334.132797
+    },
+    {
+      "path": "apps/backend/src/modules/product/__tests__/product.test.ts",
+      "category": "Tests",
+      "bytes": 6987,
+      "sha256": "53f51f8a21d11dc4f64ad54b7d74d59351d1aa8a59fe2769446e1940b29435ee",
+      "snapshot_mtime": 1783751651.9819949
+    },
+    {
+      "path": "apps/backend/src/modules/product/repository/index.ts",
+      "category": "Backend",
+      "bytes": 10802,
+      "sha256": "07843c60e17c769420575e45bce2568b8608ed108b7c0234629c280260ac7452",
+      "snapshot_mtime": 1783751558.235862
+    },
+    {
+      "path": "apps/backend/src/modules/product/routes/index.ts",
+      "category": "Backend",
+      "bytes": 7198,
+      "sha256": "031e24660f5010de9c10f3c89af5a3c5d0937ada37ff81043fe65f66e68f59fb",
+      "snapshot_mtime": 1783751527.8468204
+    },
+    {
+      "path": "apps/backend/src/modules/product/service/index.ts",
+      "category": "Backend",
+      "bytes": 8835,
+      "sha256": "d7cba68d6439daf1797647ffb03eda19b465eae7076c88c0aa10cb25edf136ec",
+      "snapshot_mtime": 1783751611.9659371
+    },
+    {
+      "path": "apps/backend/src/modules/product/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1035,
+      "sha256": "80251b3812e8013d3d433e2cb468299271a98a69727e5f4d3d0757922da6d60c",
+      "snapshot_mtime": 1783751449.5337133
+    },
+    {
+      "path": "apps/backend/src/modules/rfq/__tests__/rfq.test.ts",
+      "category": "Tests",
+      "bytes": 7534,
+      "sha256": "cb818a00ad51f269aa212228c13f01fe0418d4e35bcfc083664a77a9cc871ea9",
+      "snapshot_mtime": 1783755571.1986477
+    },
+    {
+      "path": "apps/backend/src/modules/rfq/repository/index.ts",
+      "category": "Backend",
+      "bytes": 7357,
+      "sha256": "5069c6b3252fcfc5b181ead2694b66d4f6cfd59090ba940a67b666b25d5d6b76",
+      "snapshot_mtime": 1783755356.6342928
+    },
+    {
+      "path": "apps/backend/src/modules/rfq/routes/index.ts",
+      "category": "Backend",
+      "bytes": 4371,
+      "sha256": "261d5db921453a1e412b8f116e680eecb607561dcb5ef4c36fcbd6660caa0bdd",
+      "snapshot_mtime": 1783755405.637389
+    },
+    {
+      "path": "apps/backend/src/modules/rfq/service/index.ts",
+      "category": "Backend",
+      "bytes": 10780,
+      "sha256": "191eef98bcb0b6780e2a0874b1c733bd783c3b7df6f669af753b76ae2ee39065",
+      "snapshot_mtime": 1783755535.1575918
+    },
+    {
+      "path": "apps/backend/src/modules/rfq/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1361,
+      "sha256": "3e3d2fb12224cefb08ce353b2261f0bf0925731759049f5a9752550c0e5baee7",
+      "snapshot_mtime": 1783755330.427253
+    },
+    {
+      "path": "apps/backend/src/modules/supplier/__tests__/supplier.test.ts",
+      "category": "Tests",
+      "bytes": 9462,
+      "sha256": "da8fb24f620a1d6f5b088d8de26132891f5df96030332e5985bdb76a602a3a09",
+      "snapshot_mtime": 1783752533.7432792
+    },
+    {
+      "path": "apps/backend/src/modules/supplier/repository/index.ts",
+      "category": "Backend",
+      "bytes": 12008,
+      "sha256": "8cbf69d34c6f13c90e2f299b9b0505f030e602f792dd56f33ad503105e6c537d",
+      "snapshot_mtime": 1783752201.9178038
+    },
+    {
+      "path": "apps/backend/src/modules/supplier/routes/index.ts",
+      "category": "Backend",
+      "bytes": 9029,
+      "sha256": "757e21bb777ff1e9f3abd35732e39bcb47d4cf720143a41a840c1cc5ca58abfb",
+      "snapshot_mtime": 1783752303.1819496
+    },
+    {
+      "path": "apps/backend/src/modules/supplier/service/index.ts",
+      "category": "Backend",
+      "bytes": 12183,
+      "sha256": "2b01dea4a0ad6d38ae4d74a424df37995cfbb826916860b56b89f23340a09413",
+      "snapshot_mtime": 1783752237.5648544
+    },
+    {
+      "path": "apps/backend/src/modules/supplier/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 1365,
+      "sha256": "9e02e48b5bbcafaf45b4d433c1f39aa68feaa85c3a63a1691c39d3c4bc0e1005",
+      "snapshot_mtime": 1783752164.4867496
+    },
+    {
+      "path": "apps/backend/src/modules/user-management/__tests__/user-management.test.ts",
+      "category": "Tests",
+      "bytes": 5338,
+      "sha256": "481eb48d4bc3b8d3f1a7a578dcb55c51132de4dc94f84fe168387f897517cb23",
+      "snapshot_mtime": 1783750852.8628926
+    },
+    {
+      "path": "apps/backend/src/modules/user-management/repository/index.ts",
+      "category": "Backend",
+      "bytes": 11592,
+      "sha256": "91a63351e0e01709eab86789b8ad511ca4ad822ed1806be687f751e19b2e17f8",
+      "snapshot_mtime": 1783750730.3667264
+    },
+    {
+      "path": "apps/backend/src/modules/user-management/routes/index.ts",
+      "category": "Backend",
+      "bytes": 11804,
+      "sha256": "54e9bcf01f8aadc7cd2f1b10f85a02a7b08b29c0ebab0ae95dca732b2c4a4873",
+      "snapshot_mtime": 1783750820.635849
+    },
+    {
+      "path": "apps/backend/src/modules/user-management/service/index.ts",
+      "category": "Backend",
+      "bytes": 15962,
+      "sha256": "c2426e0d2922d30fc7a22d4e4e260d2e9550c0bbe09ffa1368b56146d456b0aa",
+      "snapshot_mtime": 1783750927.9189944
+    },
+    {
+      "path": "apps/backend/src/modules/user-management/workflow/index.ts",
+      "category": "Backend",
+      "bytes": 883,
+      "sha256": "f7a95aee415b0b1f87066f36b22a33a1f2cdbf34929187286e01556e9e941e91",
+      "snapshot_mtime": 1783750696.4706793
+    },
+    {
+      "path": "apps/backend/src/routes/smoke-test.ts",
+      "category": "Routes",
+      "bytes": 10169,
+      "sha256": "b4970f10f90a5fa6359c6af8b312ee0e8b718cd636d701255e02182686fe5139",
+      "snapshot_mtime": 1783741581.2918482
+    },
+    {
+      "path": "apps/backend/src/routes/system.ts",
+      "category": "Routes",
+      "bytes": 1181,
+      "sha256": "331d5e47d38be8770cca36fa876b330031856a30d4c19e988dd21d1b19381502",
+      "snapshot_mtime": 1783740902.9749293
+    },
+    {
+      "path": "src/modules/auth/api/client.ts",
+      "category": "Frontend",
+      "bytes": 4707,
+      "sha256": "45fbc99984629d93d5b84ca87a97d00d44e26ff6ac179e4c26ac02d18803b2c6",
+      "snapshot_mtime": 1783750205.9459686
+    },
+    {
+      "path": "src/modules/customer/api/client.ts",
+      "category": "Frontend",
+      "bytes": 2720,
+      "sha256": "b0bae1571a31f659789e87ecca833632486cad43530325d157b7e8c80629f803",
+      "snapshot_mtime": 1783753874.848155
+    },
+    {
+      "path": "src/modules/customer/components/CustomerModule.tsx",
+      "category": "Frontend",
+      "bytes": 11446,
+      "sha256": "87a0693811646f4d8cc44023bca200ffcae06b83457cc63db0a4f0f135bb10c5",
+      "snapshot_mtime": 1783753908.8832023
+    },
+    {
+      "path": "src/modules/organization/api/client.ts",
+      "category": "Frontend",
+      "bytes": 11402,
+      "sha256": "323b68f5313dc6bbbec22c75f86afc8dc5459a714ea589a2e472f9d267813a7e",
+      "snapshot_mtime": 1783748625.127698
+    },
+    {
+      "path": "src/modules/organization/components/OrganizationModule.tsx",
+      "category": "Frontend",
+      "bytes": 36862,
+      "sha256": "bf491d696ee5e49a554d9e0408e18038890eb20a28639950d080a7c1453902c4",
+      "snapshot_mtime": 1783748713.771823
+    },
+    {
+      "path": "src/modules/procurement/api/client.ts",
+      "category": "Frontend",
+      "bytes": 2264,
+      "sha256": "daf489cbde7fef2511900ea353afc1d689edeaf90c76db274ec07095efe1ea18",
+      "snapshot_mtime": 1783754522.9880688
+    },
+    {
+      "path": "src/modules/procurement/components/ProcurementModule.tsx",
+      "category": "Frontend",
+      "bytes": 11688,
+      "sha256": "b25649a644965cec22e252150379b85d8db6ddd1349f28cc3b92025ead3d02db",
+      "snapshot_mtime": 1783754557.586118
+    },
+    {
+      "path": "src/modules/product/api/client.ts",
+      "category": "Frontend",
+      "bytes": 3562,
+      "sha256": "0fc74299539f135865da480c0854b7903ef5137fec3674d0298279cdf0a6c6de",
+      "snapshot_mtime": 1783751707.308074
+    },
+    {
+      "path": "src/modules/product/components/ProductModule.tsx",
+      "category": "Frontend",
+      "bytes": 14337,
+      "sha256": "c526269ace4f9ee57ead7b4c46db0948eab74b2c42353e25a6799aaeeaecb736",
+      "snapshot_mtime": 1783751747.5861309
+    },
+    {
+      "path": "src/modules/rfq/api/client.ts",
+      "category": "Frontend",
+      "bytes": 2383,
+      "sha256": "b4873ffe4df2e624837ad591b05541fdfa8a11b1620c1267ec052f3cad9d2db9",
+      "snapshot_mtime": 1783755667.6977987
+    },
+    {
+      "path": "src/modules/rfq/components/RfqModule.tsx",
+      "category": "Frontend",
+      "bytes": 10785,
+      "sha256": "0370eb5d2ba06e5226c775121d3946a47dbcc809402e50c0586df4666a5a137f",
+      "snapshot_mtime": 1783755709.0348601
+    },
+    {
+      "path": "src/modules/supplier/api/client.ts",
+      "category": "Frontend",
+      "bytes": 2867,
+      "sha256": "28f78c2ed7bed3bf124ac4d72637b2ba232734bb8c44f0ddbf6a72e971dbf150",
+      "snapshot_mtime": 1783752619.7404027
+    },
+    {
+      "path": "src/modules/supplier/components/SupplierModule.tsx",
+      "category": "Frontend",
+      "bytes": 11755,
+      "sha256": "1482b9768860950e56625d0f3caf28369df097a57a8143e0054319d8e2c934d6",
+      "snapshot_mtime": 1783752652.354449
+    },
+    {
+      "path": "src/modules/user-management/api/client.ts",
+      "category": "Frontend",
+      "bytes": 5525,
+      "sha256": "9f2186388b778dd6614c3984ccbacaa3cecb0a50a726874768c23183ba4a928a",
+      "snapshot_mtime": 1783750991.8990805
+    },
+    {
+      "path": "src/modules/user-management/components/UserManagementModule.tsx",
+      "category": "Frontend",
+      "bytes": 19540,
+      "sha256": "081d5adbf6b8375733355132e473f29b7da5aa4fdb6449232b0bce923f08f4dc",
+      "snapshot_mtime": 1783751050.1781592
+    }
+  ],
+  "files_skipped_newer_current": [
+    {
+      "path": "worklog.md",
+      "category": "Other",
+      "reason": "current file is newer than snapshot",
+      "snapshot_mtime": 1783692596.0,
+      "current_mtime": 1783761400.7648134
+    }
+  ],
+  "files_replaced": [],
+  "files_merged": [],
+  "files_manual_review": [],
+  "post_restoration_fixes": [
+    {
+      "file": "apps/backend/package.json",
+      "change": "Added dependencies: hono@^4.12.29, @hono/zod-validator@^0.8.0",
+      "reason": "Snapshot's package.json was missing these deps that all routes and middleware import. Without them, TypeScript cannot resolve 'hono' module imports.",
+      "scope": "minimal \u2014 only dependency addition, no code changes"
+    },
+    {
+      "file": "apps/backend/src/core/context/request-context.ts",
+      "change": "Changed `const asyncLocalStorage` to `export const asyncLocalStorage`",
+      "reason": "The restored middleware/request-id.ts imports asyncLocalStorage from '@/core/context', but the original Phase 0 implementation kept it private. This is the smallest possible fix to make the symbol accessible.",
+      "scope": "minimal \u2014 only added `export` keyword"
+    },
+    {
+      "file": "apps/backend/src/core/context/index.ts",
+      "change": "Added `asyncLocalStorage` to the re-export list",
+      "reason": "Barrel re-export so middleware can import from '@/core/context' rather than the deep path.",
+      "scope": "minimal \u2014 only added one entry to export list"
+    }
+  ],
+  "files_skipped_reason": "Files identical in both snapshot and current workspace were not re-copied. Files newer in current than snapshot were preserved as-is (only worklog.md).",
+  "next_steps_recommended": [
+    "Resume Phase 9 (Supplier Quotation & Bid Evaluation) implementation",
+    "Verify quotation module integration with restored RFQ module",
+    "Consider setting up a remote repository for backup (none currently configured)",
+    "Add CI/CD pipeline to prevent future Phase loss"
+  ]
 }
