@@ -39,6 +39,13 @@ export const Permission = {
   PO_CANCEL: 'po:cancel',
   PO_RECEIVE: 'po:receive',
 
+  // Supplier Quotation (Phase 9)
+  QUOT_READ: 'quot:read',
+  QUOT_CREATE: 'quot:create',
+  QUOT_APPROVE: 'quot:approve',
+  QUOT_REJECT: 'quot:reject',
+  QUOT_AWARD: 'quot:award',
+
   // Goods Receipt
   GRN_READ: 'grn:read',
   GRN_CREATE: 'grn:create',
@@ -79,6 +86,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.PRODUCT_READ, Permission.PRODUCT_CREATE, Permission.PRODUCT_UPDATE, Permission.PRODUCT_DELETE,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE, Permission.SUPPLIER_DELETE,
     Permission.PO_READ, Permission.PO_CREATE, Permission.PO_APPROVE, Permission.PO_APPROVE_ANY, Permission.PO_CANCEL, Permission.PO_RECEIVE,
+    Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT, Permission.QUOT_AWARD,
     Permission.GRN_READ, Permission.GRN_CREATE, Permission.GRN_POST, Permission.GRN_PUTAWAY,
     Permission.IQC_INSPECT, Permission.IQC_APPROVE,
     Permission.NCR_CREATE, Permission.NCR_APPROVE,
@@ -99,6 +107,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.PRODUCT_READ,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE,
     Permission.PO_READ, Permission.PO_CREATE,
+    Permission.QUOT_READ, Permission.QUOT_CREATE,
     Permission.GRN_READ,
     Permission.INVENTORY_READ,
   ],
@@ -106,6 +115,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.PRODUCT_READ,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE, Permission.SUPPLIER_BLACKLIST,
     Permission.PO_READ, Permission.PO_CREATE, Permission.PO_APPROVE, Permission.PO_CANCEL,
+    Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT, Permission.QUOT_AWARD,
     Permission.GRN_READ, Permission.GRN_CREATE,
     Permission.INVENTORY_READ,
   ],
@@ -118,6 +128,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.PRODUCT_READ,
     Permission.SUPPLIER_READ,
     Permission.PO_READ,
+    Permission.QUOT_READ,
     Permission.GRN_READ,
     Permission.INVENTORY_READ,
     Permission.AUDIT_READ, Permission.AUDIT_READ_CRITICAL,

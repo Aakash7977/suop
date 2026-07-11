@@ -28,6 +28,7 @@ import { supplierRoutes } from '@/modules/supplier/routes'
 import { customerRoutes } from '@/modules/customer/routes'
 import { procurementRoutes } from '@/modules/procurement/routes'
 import { rfqRoutes } from '@/modules/rfq/routes'
+import { quotationRoutes } from '@/modules/quotation/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -84,6 +85,7 @@ export function createApp() {
   app.route('/api/v1/sales', customerRoutes)
   app.route('/api/v1/procurement/requisitions', procurementRoutes)
   app.route('/api/v1/procurement/rfqs', rfqRoutes)
+  app.route('/api/v1/procurement/quotations', quotationRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {

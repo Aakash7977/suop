@@ -39,9 +39,9 @@ const transitionSchema = z.object({
   rejectionReason: z.string().optional(),
 })
 
-const QUOT_READ = Permission.PO_READ
-const QUOT_CREATE = Permission.PO_CREATE
-const QUOT_APPROVE = Permission.PO_APPROVE
+const QUOT_READ = Permission.QUOT_READ
+const QUOT_CREATE = Permission.QUOT_CREATE
+const QUOT_APPROVE = Permission.QUOT_APPROVE
 
 // List
 quotationRoutes.get('/quotations', requirePermission(QUOT_READ), async (c) => {
