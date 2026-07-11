@@ -34,6 +34,12 @@ import { goodsReceiptRoutes } from '@/modules/goods-receipt/routes'
 import { qualityInspectionRoutes } from '@/modules/quality-inspection/routes'
 import { inventoryRoutes } from '@/modules/inventory/routes'
 import { warehouseRoutes } from '@/modules/warehouse/routes'
+import { mesRoutes } from '@/modules/mes/routes'
+import { recipeBomRoutes } from '@/modules/recipe-bom/routes'
+import { productionPlanningRoutes } from '@/modules/production-planning/routes'
+import { productionOrderRoutes } from '@/modules/production-order/routes'
+import { batchManufacturingRoutes } from '@/modules/batch-manufacturing/routes'
+import { fgqcRoutes } from '@/modules/fgqc/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -96,6 +102,12 @@ export function createApp() {
   app.route('/api/v1/quality', qualityInspectionRoutes)
   app.route('/api/v1/inventory', inventoryRoutes)
   app.route('/api/v1/warehouse', warehouseRoutes)
+  app.route('/api/v1/mes', mesRoutes)
+  app.route('/api/v1/manufacturing/recipes', recipeBomRoutes)
+  app.route('/api/v1/manufacturing/planning', productionPlanningRoutes)
+  app.route('/api/v1/manufacturing/orders', productionOrderRoutes)
+  app.route('/api/v1/manufacturing/batches', batchManufacturingRoutes)
+  app.route('/api/v1/manufacturing/fgqc', fgqcRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
