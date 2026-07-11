@@ -3381,3 +3381,65 @@ Stage Summary:
 - Supplier acknowledgement with 5 response types
 - Revision control with full snapshot history
 - Awaiting user approval before Phase 11 (Goods Receipt Note)
+
+---
+Task ID: PHASES-11-14-WAREHOUSE-INVENTORY
+Agent: Main (Super Z)
+Task: Implement Warehouse & Inventory Domain (Phases 11-14 as ONE journey)
+
+Work Log:
+- Created migration 0012_warehouse_inventory.sql with 30 tables:
+  - Phase 11 GRN: goods_receipts, goods_receipt_lines, grn_attachments, grn_vehicle_details, grn_transport_details, grn_delivery_challans, grn_supplier_invoices, grn_damage_records (8 tables)
+  - Phase 12 IQC: inspection_plans, sampling_plans, inspection_parameters, inspection_lots, inspection_results, quality_holds, ncrs, capa_records (8 tables)
+  - Phase 13 Inventory: batches, lots, inventory, inventory_transactions, inventory_ledger, stock_reservations, stock_blocks (7 tables)
+  - Phase 14 Warehouse: warehouse_zones, warehouse_aisles, warehouse_racks, warehouse_bins, putaway_tasks, barcode_labels, scan_logs (7 tables)
+- Created 4 workflows:
+  - GRN: 8 states, 12 transitions (DRAFT → VERIFIED → UNDER_INSPECTION → ACCEPTED → CLOSED)
+  - IQC: 6 states, 8 transitions (PENDING → IN_PROGRESS → PASSED/CONDITIONAL_PASS/FAILED)
+  - NCR: 5 states, 6 transitions (OPEN → UNDER_INVESTIGATION → CAPA_INITIATED → RESOLVED → CLOSED)
+- Created 4 repository files (one per module) with full CRUD + specialized queries
+- Created 4 service files with business rules:
+  - GRN: short/over receipt detection, partial receipt, damage recording, PO balance update
+  - IQC: AQL sampling, sample size determination, auto-NCR on fail, auto-quality-hold on fail
+  - Inventory: Moving Average Cost, FEFO/FIFO issuance, immutable ledger, expiry tracking, reservations, blocks
+  - Warehouse: capacity validation, put-away validation, barcode engine (GS1/QR/Code128), scanner API
+- Created 4 route files with 40+ endpoints total
+- Mounted all routes in app.ts
+- Created 4 frontend API clients + 4 component modules
+- Wrote 191 unit tests across 4 modules:
+  - GRN: 45 tests (workflow, business rules, errors, RBAC, schemas, number generation)
+  - IQC: 60 tests (workflow, AQL sampling, business rules, errors, RBAC, schemas, number generation)
+  - Inventory: 50 tests (MAC calculation, FEFO/FIFO, business rules, ledger immutability, batch/lot, expiry, RBAC, schemas)
+  - Warehouse: 36 tests (hierarchy, capacity validation, putaway, barcode engine, scanner, RBAC, errors)
+- Added INVENTORY_POST to warehouse_operator role
+
+Business Rules Enforced:
+- No inventory before IQC approval (stockIn requires PASSED/CONDITIONAL_PASS)
+- Rejected inventory cannot become available (auto-quality-hold + NCR on FAIL)
+- Partial GRN updates PO balance (updatePoBalance method)
+- Inventory ledger is IMMUTABLE (is_immutable = true, no UPDATE/DELETE)
+- Every movement creates a ledger entry
+- Barcode unique (uq constraint)
+- Batch unique per product (uq constraint)
+- Lot unique per product (uq constraint)
+- Expiry mandatory for batch-tracked products
+- Warehouse capacity validation (bin capacity cannot be exceeded)
+- Put-away validation (target bin must exist, be active, not blocked, have capacity)
+
+Quality Gates:
+- TypeScript: 0 errors ✅
+- ESLint: 0 errors, 0 warnings ✅
+- Prisma validate: valid ✅
+- Unit tests: 891/891 passed (was 700, +191) ✅
+- Coverage: 47.43% statements (was 47.19%, INCREASED) ✅ did not decrease
+- CI pipeline: ready ✅
+
+Stage Summary:
+- Phases 11-14 Warehouse & Inventory Domain COMPLETE
+- 191 new tests, 891 total
+- 30 new database tables (72 → 102 total)
+- 40+ new REST endpoints
+- Complete procurement-to-inventory journey: PO → GRN → IQC → Inventory → Putaway → Available Stock
+- Immutable stock ledger with FEFO/FIFO + Moving Average Cost
+- Full barcode engine (GS1/QR/Code128) with scanner API
+- Awaiting user approval before Phase 15 (Manufacturing)

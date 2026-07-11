@@ -30,6 +30,10 @@ import { procurementRoutes } from '@/modules/procurement/routes'
 import { rfqRoutes } from '@/modules/rfq/routes'
 import { quotationRoutes } from '@/modules/quotation/routes'
 import { purchaseOrderRoutes } from '@/modules/purchase-order/routes'
+import { goodsReceiptRoutes } from '@/modules/goods-receipt/routes'
+import { qualityInspectionRoutes } from '@/modules/quality-inspection/routes'
+import { inventoryRoutes } from '@/modules/inventory/routes'
+import { warehouseRoutes } from '@/modules/warehouse/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -88,6 +92,10 @@ export function createApp() {
   app.route('/api/v1/procurement/rfqs', rfqRoutes)
   app.route('/api/v1/procurement/quotations', quotationRoutes)
   app.route('/api/v1/procurement/purchase-orders', purchaseOrderRoutes)
+  app.route('/api/v1/warehouse/grns', goodsReceiptRoutes)
+  app.route('/api/v1/quality', qualityInspectionRoutes)
+  app.route('/api/v1/inventory', inventoryRoutes)
+  app.route('/api/v1/warehouse', warehouseRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
