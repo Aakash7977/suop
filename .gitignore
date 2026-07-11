@@ -12,6 +12,8 @@ node_modules
 
 # testing
 /coverage
+apps/backend/coverage/
+apps/backend/coverage/**
 
 # next.js
 /.next/
@@ -30,8 +32,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
+# Default: ignore all .env files (contain runtime values)
+# Exceptions: explicitly track templates and dev defaults (no secrets)
 .env*
+!.env.production.example
+!.env.example
+# Note: apps/backend/.env, apps/backend/.env.test, apps/backend/prisma/.env
+# are explicitly tracked because they contain only dev/test defaults.
+# Use `git add -f` to force-add if needed.
 
 # vercel
 .vercel
@@ -50,5 +59,22 @@ test
 prompt
 
 server.log
+
 # Skills directory
 /skills/
+
+# Runtime uploads — never commit user-uploaded files
+# These are runtime artifacts (COA, evidence photos, documents) that
+# belong in object storage (S3) or a persistent volume, NOT in git.
+apps/backend/uploads/
+apps/backend/uploads/**
+# Keep the .gitkeep so the directory structure is preserved
+!apps/backend/uploads/.gitkeep
+
+# PostgreSQL data directory — runtime state, never commit
+# (this is the PGlite/Postgres data dir used in development)
+apps/backend/db/
+
+# Build output
+apps/backend/dist/
+dist/

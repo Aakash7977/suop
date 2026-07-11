@@ -5,14 +5,20 @@
   "type": "module",
   "main": "src/main.ts",
   "scripts": {
-    "dev": "bun --watch src/main.ts",
-    "start": "bun src/main.ts",
+    "dev": "bash scripts/start-dev.sh",
+    "dev:raw": "bun --watch src/main.ts",
+    "start": "bash scripts/start-dev.sh",
     "build": "bun build src/main.ts --target=bun --outdir dist",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prisma:validate": "unset DATABASE_URL && prisma validate",
+    "prisma:format": "unset DATABASE_URL && prisma format",
+    "prisma:generate": "unset DATABASE_URL && prisma generate",
+    "prisma:migrate": "unset DATABASE_URL && prisma migrate dev",
+    "prisma:studio": "unset DATABASE_URL && prisma studio"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",

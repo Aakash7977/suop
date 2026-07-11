@@ -51,113 +51,113 @@ model AuditLog {
   createdAt     DateTime @default(now()) @map("created_at")
   createdBy     String?  @map("created_by") @db.Uuid
 
-  @@map("audit_logs")
   @@index([tenantId, entityType, entityId], map: "idx_audit_tenant_entity")
   @@index([tenantId, action], map: "idx_audit_tenant_action")
   @@index([tenantId, severity], map: "idx_audit_tenant_severity")
   @@index([correlationId], map: "idx_audit_correlation")
   @@index([timestamp], map: "idx_audit_timestamp")
+  @@map("audit_logs")
 }
 
 // ─── Event Outbox (durable domain event delivery) ───────────────────────────
 // Per Phase 0 Architecture §18: outbox pattern guarantees at-least-once
 // event delivery even if the event bus is temporarily unavailable.
 model EventOutbox {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
-  eventName    String   @map("event_name")
-  payload      Json
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  eventName     String    @map("event_name")
+  payload       Json
   // Publishing state
-  status       String   @default("PENDING") // PENDING, PUBLISHED, FAILED
-  publishedAt  DateTime? @map("published_at")
-  retryCount   Int      @default(0) @map("retry_count")
-  lastError    String?  @map("last_error")
+  status        String    @default("PENDING") // PENDING, PUBLISHED, FAILED
+  publishedAt   DateTime? @map("published_at")
+  retryCount    Int       @default(0) @map("retry_count")
+  lastError     String?   @map("last_error")
   // Context
-  correlationId String  @map("correlation_id")
-  actorId      String?  @map("actor_id") @db.Uuid
+  correlationId String    @map("correlation_id")
+  actorId       String?   @map("actor_id") @db.Uuid
   // Metadata
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
-  @@map("event_outbox")
   @@index([status, createdAt], map: "idx_outbox_status_created")
   @@index([tenantId], map: "idx_outbox_tenant")
+  @@map("event_outbox")
 }
 
 // ─── Notification Outbox (durable notification delivery) ────────────────────
 model NotificationOutbox {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
   // Recipient
-  userId       String?  @map("user_id") @db.Uuid
-  recipientEmail String? @map("recipient_email")
-  recipientPhone String? @map("recipient_phone")
+  userId         String?   @map("user_id") @db.Uuid
+  recipientEmail String?   @map("recipient_email")
+  recipientPhone String?   @map("recipient_phone")
   // Content
-  channel      String   // IN_APP, EMAIL, SMS, WHATSAPP
-  subject      String?
-  body         String
-  templateId   String?  @map("template_id")
-  templateData Json?
+  channel        String // IN_APP, EMAIL, SMS, WHATSAPP
+  subject        String?
+  body           String
+  templateId     String?   @map("template_id")
+  templateData   Json?
   // Delivery
-  status       String   @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
-  sentAt      DateTime? @map("sent_at")
-  deliveredAt DateTime? @map("delivered_at")
-  retryCount   Int      @default(0) @map("retry_count")
-  lastError    String?  @map("last_error")
+  status         String    @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
+  sentAt         DateTime? @map("sent_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  retryCount     Int       @default(0) @map("retry_count")
+  lastError      String?   @map("last_error")
   // Context
-  correlationId String  @map("correlation_id")
-  createdAt    DateTime @default(now()) @map("created_at")
+  correlationId  String    @map("correlation_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  @@map("notification_outbox")
   @@index([status, createdAt], map: "idx_notif_status_created")
   @@index([tenantId, userId], map: "idx_notif_tenant_user")
+  @@map("notification_outbox")
 }
 
 // ─── Refresh Tokens ─────────────────────────────────────────────────────────
 // Per Phase 0 Architecture §3.6: refresh tokens stored hashed in DB.
 model RefreshToken {
-  id              String   @id @default(uuid()) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
   // Token hash (SHA-256 of the raw token; raw token never stored)
-  tokenHash       String   @unique @map("token_hash")
+  tokenHash         String    @unique @map("token_hash")
   // Device info
-  deviceFingerprint String? @map("device_fingerprint")
-  deviceName      String?  @map("device_name")
-  ipAddress       String?  @map("ip_address")
-  userAgent       String?  @map("user_agent")
+  deviceFingerprint String?   @map("device_fingerprint")
+  deviceName        String?   @map("device_name")
+  ipAddress         String?   @map("ip_address")
+  userAgent         String?   @map("user_agent")
   // Lifecycle
-  issuedAt        DateTime @default(now()) @map("issued_at")
-  expiresAt       DateTime @map("expires_at")
-  revokedAt       DateTime? @map("revoked_at")
-  revokedReason   String?  @map("revoked_reason")
+  issuedAt          DateTime  @default(now()) @map("issued_at")
+  expiresAt         DateTime  @map("expires_at")
+  revokedAt         DateTime? @map("revoked_at")
+  revokedReason     String?   @map("revoked_reason")
   // Rotation chain (for replay detection)
-  previousTokenHash String? @map("previous_token_hash")
+  previousTokenHash String?   @map("previous_token_hash")
   // Audit
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
 
-  @@map("refresh_tokens")
   @@index([userId], map: "idx_refresh_user")
   @@index([tokenHash], map: "idx_refresh_token_hash")
   @@index([expiresAt], map: "idx_refresh_expires")
+  @@map("refresh_tokens")
 }
 
 // ─── Idempotency Keys ───────────────────────────────────────────────────────
 // Per API Standards §9: idempotency key store for safe retries.
 model IdempotencyKey {
-  id            String   @id @default(uuid()) @db.Uuid
-  tenantId      String   @map("tenant_id") @db.Uuid
-  key           String
-  requestHash   String   @map("request_hash")
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  key            String
+  requestHash    String   @map("request_hash")
   // Response
   responseStatus Int
   responseBody   Json     @map("response_body")
   // Metadata
-  createdAt     DateTime @default(now()) @map("created_at")
-  expiresAt     DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  expiresAt      DateTime @map("expires_at")
 
   @@unique([tenantId, key], map: "uq_idempotency_tenant_key")
-  @@map("idempotency_keys")
   @@index([expiresAt], map: "idx_idempotency_expires")
+  @@map("idempotency_keys")
 }
 
 // ─── Feature Flags (per-tenant overrides; env vars are defaults) ────────────
@@ -165,7 +165,7 @@ model FeatureFlag {
   id          String   @id @default(uuid()) @db.Uuid
   tenantId    String   @map("tenant_id") @db.Uuid
   flagName    String   @map("flag_name")
-  value       Json     // boolean or string[] (tenant allowlist)
+  value       Json // boolean or string[] (tenant allowlist)
   description String?
   // Audit
   updatedBy   String?  @map("updated_by") @db.Uuid
@@ -178,53 +178,53 @@ model FeatureFlag {
 
 // ─── Background Jobs ────────────────────────────────────────────────────────
 model BackgroundJob {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @map("tenant_id") @db.Uuid
-  jobName     String   @map("job_name")
-  payload     Json
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  jobName      String    @map("job_name")
+  payload      Json
   // Scheduling
-  scheduledFor DateTime @default(now()) @map("scheduled_for")
+  scheduledFor DateTime  @default(now()) @map("scheduled_for")
   // Execution
-  status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, DEAD_LETTER
-  attempts    Int      @default(0)
-  maxRetries  Int      @default(3) @map("max_retries")
+  status       String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED, DEAD_LETTER
+  attempts     Int       @default(0)
+  maxRetries   Int       @default(3) @map("max_retries")
   // Result
-  result      Json?
-  lastError   String?  @map("last_error")
+  result       Json?
+  lastError    String?   @map("last_error")
   // Timestamps
-  startedAt   DateTime? @map("started_at")
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  startedAt    DateTime? @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  @@map("background_jobs")
   @@index([status, scheduledFor], map: "idx_jobs_status_scheduled")
   @@index([tenantId, jobName], map: "idx_jobs_tenant_name")
+  @@map("background_jobs")
 }
 
 // ─── File Uploads ───────────────────────────────────────────────────────────
 model FileUpload {
-  id              String   @id @default(uuid()) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  filename        String
-  mimeType        String   @map("mime_type")
-  sizeBytes       Int      @map("size_bytes")
-  checksum        String
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  filename         String
+  mimeType         String    @map("mime_type")
+  sizeBytes        Int       @map("size_bytes")
+  checksum         String
   // Storage
-  storageKey      String   @map("storage_key")
-  storageDriver   String   @map("storage_driver") // local, s3
+  storageKey       String    @map("storage_key")
+  storageDriver    String    @map("storage_driver") // local, s3
   // Context
-  category        String   // COA, EVIDENCE, CALIBRATION_CERT, etc.
-  linkedEntityType String? @map("linked_entity_type")
-  linkedEntityId  String?  @map("linked_entity_id") @db.Uuid
+  category         String // COA, EVIDENCE, CALIBRATION_CERT, etc.
+  linkedEntityType String?   @map("linked_entity_type")
+  linkedEntityId   String?   @map("linked_entity_id") @db.Uuid
   // Audit
-  uploadedBy      String?  @map("uploaded_by") @db.Uuid
-  createdAt       DateTime @default(now()) @map("created_at")
-  deletedAt       DateTime? @map("deleted_at")
+  uploadedBy       String?   @map("uploaded_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at")
+  deletedAt        DateTime? @map("deleted_at")
 
-  @@map("file_uploads")
   @@index([tenantId, category], map: "idx_files_tenant_category")
   @@index([tenantId, linkedEntityType, linkedEntityId], map: "idx_files_tenant_entity")
+  @@map("file_uploads")
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -233,16 +233,16 @@ model FileUpload {
 
 // ─── Supplier Quotations ────────────────────────────────────────────────────
 model SupplierQuotation {
-  id              String   @id @default(uuid()) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  quotationNumber String   @map("quotation_number")
+  id              String @id @default(uuid()) @db.Uuid
+  tenantId        String @map("tenant_id") @db.Uuid
+  quotationNumber String @map("quotation_number")
 
   // ─── References ───
-  rfqId           String   @map("rfq_id") @db.Uuid
-  rfqNumber       String   @map("rfq_number")
-  supplierId      String   @map("supplier_id") @db.Uuid
-  supplierCode    String   @map("supplier_code")
-  supplierName    String   @map("supplier_name")
+  rfqId        String @map("rfq_id") @db.Uuid
+  rfqNumber    String @map("rfq_number")
+  supplierId   String @map("supplier_id") @db.Uuid
+  supplierCode String @map("supplier_code")
+  supplierName String @map("supplier_name")
 
   // ─── Details ───
   quotationDate   DateTime @default(now()) @map("quotation_date")
@@ -251,87 +251,87 @@ model SupplierQuotation {
   paymentTerms    String   @default("NET30") @map("payment_terms")
   deliveryTerms   String?  @map("delivery_terms")
   leadTimeDays    Int?     @map("lead_time_days")
-  taxPercent      Decimal? @db.Decimal(5, 2) @map("tax_percent")
-  discountPercent Decimal? @db.Decimal(5, 2) @map("discount_percent")
-  freightAmount   Decimal? @db.Decimal(14, 2) @map("freight_amount")
-  insuranceAmount Decimal? @db.Decimal(14, 2) @map("insurance_amount")
+  taxPercent      Decimal? @map("tax_percent") @db.Decimal(5, 2)
+  discountPercent Decimal? @map("discount_percent") @db.Decimal(5, 2)
+  freightAmount   Decimal? @map("freight_amount") @db.Decimal(14, 2)
+  insuranceAmount Decimal? @map("insurance_amount") @db.Decimal(14, 2)
   warrantyTerms   String?  @map("warranty_terms")
 
   // ─── Totals ───
-  subtotal        Decimal  @db.Decimal(14, 2) @default(0)
-  taxAmount       Decimal  @db.Decimal(14, 2) @default(0) @map("tax_amount")
-  discountAmount  Decimal  @db.Decimal(14, 2) @default(0) @map("discount_amount")
-  grandTotal      Decimal  @db.Decimal(14, 2) @default(0) @map("grand_total")
+  subtotal       Decimal @default(0) @db.Decimal(14, 2)
+  taxAmount      Decimal @default(0) @map("tax_amount") @db.Decimal(14, 2)
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  grandTotal     Decimal @default(0) @map("grand_total") @db.Decimal(14, 2)
 
   // ─── Evaluation ───
-  technicalScore  Decimal? @db.Decimal(5, 2) @map("technical_score")
-  commercialScore Decimal? @db.Decimal(5, 2) @map("commercial_score")
-  overallScore    Decimal? @db.Decimal(5, 2) @map("overall_score")
-  rank            Int?
-  isLowestPrice   Boolean  @default(false) @map("is_lowest_price")
-  isBestValue     Boolean  @default(false) @map("is_best_value")
-  recommendationNotes String? @map("recommendation_notes")
+  technicalScore      Decimal? @map("technical_score") @db.Decimal(5, 2)
+  commercialScore     Decimal? @map("commercial_score") @db.Decimal(5, 2)
+  overallScore        Decimal? @map("overall_score") @db.Decimal(5, 2)
+  rank                Int?
+  isLowestPrice       Boolean  @default(false) @map("is_lowest_price")
+  isBestValue         Boolean  @default(false) @map("is_best_value")
+  recommendationNotes String?  @map("recommendation_notes")
 
   // ─── Revision ───
-  revisionNo      Int      @default(0) @map("revision_no")
+  revisionNo        Int     @default(0) @map("revision_no")
   parentQuotationId String? @map("parent_quotation_id") @db.Uuid
 
   // ─── Status ───
-  status          String   @default("DRAFT") @map("status")
-  rejectionReason String?  @map("rejection_reason")
+  status          String  @default("DRAFT") @map("status")
+  rejectionReason String? @map("rejection_reason")
 
   // ─── Remarks ───
-  remarks         String?
-  attachments     String[]
+  remarks     String?
+  attachments String[]
 
   // ─── Reserved ───
-  version         Int      @default(0)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
-  createdBy       String?  @map("created_by") @db.Uuid
-  updatedBy       String?  @map("updated_by") @db.Uuid
+  version   Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
 
-  lines           SupplierQuotationLine[]
+  lines SupplierQuotationLine[]
 
   @@unique([tenantId, quotationNumber], map: "uq_quot_tenant_number")
-  @@map("supplier_quotations")
   @@index([tenantId, status], map: "idx_quot_tenant_status")
   @@index([tenantId, rfqId], map: "idx_quot_tenant_rfq")
   @@index([tenantId, supplierId], map: "idx_quot_tenant_supplier")
   @@index([tenantId, rfqId, status], map: "idx_quot_tenant_rfq_status")
+  @@map("supplier_quotations")
 }
 
 // ─── Quotation Lines ────────────────────────────────────────────────────────
 model SupplierQuotationLine {
-  id              String   @id @default(uuid()) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  quotationId     String   @map("quotation_id") @db.Uuid
-  lineNo          Int      @map("line_no")
+  id          String @id @default(uuid()) @db.Uuid
+  tenantId    String @map("tenant_id") @db.Uuid
+  quotationId String @map("quotation_id") @db.Uuid
+  lineNo      Int    @map("line_no")
 
-  productId       String   @map("product_id") @db.Uuid
-  productSku      String   @map("product_sku")
-  productName     String   @map("product_name")
-  rfqLineId       String?  @map("rfq_line_id") @db.Uuid
+  productId   String  @map("product_id") @db.Uuid
+  productSku  String  @map("product_sku")
+  productName String  @map("product_name")
+  rfqLineId   String? @map("rfq_line_id") @db.Uuid
 
-  quotedQty       Decimal  @db.Decimal(14, 3) @map("quoted_qty")
-  uomId           String   @map("uom_id") @db.Uuid
-  uomCode         String   @map("uom_code")
-  unitPrice       Decimal  @db.Decimal(14, 4) @map("unit_price")
-  lineTotal       Decimal  @db.Decimal(14, 2) @map("line_total")
-  currency        String   @default("INR")
+  quotedQty Decimal @map("quoted_qty") @db.Decimal(14, 3)
+  uomId     String  @map("uom_id") @db.Uuid
+  uomCode   String  @map("uom_code")
+  unitPrice Decimal @map("unit_price") @db.Decimal(14, 4)
+  lineTotal Decimal @map("line_total") @db.Decimal(14, 2)
+  currency  String  @default("INR")
 
-  moq             Decimal? @db.Decimal(14, 3) @map("moq")
+  moq             Decimal? @map("moq") @db.Decimal(14, 3)
   leadTimeDays    Int?     @map("lead_time_days")
-  discountPercent Decimal? @db.Decimal(5, 2) @map("discount_percent")
+  discountPercent Decimal? @map("discount_percent") @db.Decimal(5, 2)
   remarks         String?
 
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  quotation       SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  quotation SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
-  @@map("supplier_quotation_lines")
   @@index([tenantId, quotationId], map: "idx_quot_line_tenant_quot")
   @@index([tenantId, productId], map: "idx_quot_line_tenant_product")
+  @@map("supplier_quotation_lines")
 }
