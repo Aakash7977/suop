@@ -64,6 +64,12 @@ import { CustomerServiceRoutes } from '@/modules/customer-service/routes'
 import { ComplaintManagementRoutes } from '@/modules/complaint-management/routes'
 import { AfterSalesServiceRoutes } from '@/modules/after-sales-service/routes'
 import { CustomerPortalRoutes } from '@/modules/customer-portal/routes'
+import { EmployeeMasterRoutes } from '@/modules/employee-master/routes'
+import { AttendanceShiftRoutes } from '@/modules/attendance-shift/routes'
+import { LeaveManagementRoutes } from '@/modules/leave-management/routes'
+import { PayrollProcessingRoutes } from '@/modules/payroll-processing/routes'
+import { RecruitmentOnboardingRoutes } from '@/modules/recruitment-onboarding/routes'
+import { PerformanceManagementRoutes } from '@/modules/performance-management/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -156,6 +162,12 @@ export function createApp() {
   app.route('/api/v1/crm/complaints', ComplaintManagementRoutes)
   app.route('/api/v1/crm/service', AfterSalesServiceRoutes)
   app.route('/api/v1/crm/portal', CustomerPortalRoutes)
+  app.route('/api/v1/hrms/employees', EmployeeMasterRoutes)
+  app.route('/api/v1/hrms/attendance', AttendanceShiftRoutes)
+  app.route('/api/v1/hrms/leave', LeaveManagementRoutes)
+  app.route('/api/v1/hrms/payroll', PayrollProcessingRoutes)
+  app.route('/api/v1/hrms/recruitment', RecruitmentOnboardingRoutes)
+  app.route('/api/v1/hrms/performance', PerformanceManagementRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
