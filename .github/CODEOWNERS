@@ -1,0 +1,43 @@
+# SUOP ERP — CODEOWNERS
+# ─────────────────────────────────────────────────────────────────────────────
+# This file defines who owns which parts of the codebase.
+# GitHub uses it to automatically request reviews on pull requests.
+#
+# Format: <path pattern> @username1 @username2
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Default owner for entire repository
+*                           @Aakash7977
+
+# Critical infrastructure — require owner review
+/.github/                   @Aakash7977
+/.github/workflows/         @Aakash7977
+/infrastructure/            @Aakash7977
+/docker-compose.yml         @Aakash7977
+/Caddyfile                  @Aakash7977
+
+# Backend core (Phase 0 foundation) — changes affect entire system
+/apps/backend/src/core/     @Aakash7977
+/apps/backend/src/config/   @Aakash7977
+/apps/backend/src/middleware/ @Aakash7977
+/apps/backend/prisma/       @Aakash7977
+/apps/backend/prisma/schema.prisma @Aakash7977
+
+# Backend modules — each module can have its own owner when team grows
+/apps/backend/src/modules/  @Aakash7977
+
+# Frontend
+/src/                       @Aakash7977
+
+# Documentation
+/docs/                      @Aakash7977
+
+# Mobile app
+/mobile-app/                @Aakash7977
+
+# Mini-services
+/mini-services/             @Aakash7977
+
+# Scripts and tooling
+/scripts/                   @Aakash7977
+/apps/backend/scripts/      @Aakash7977
