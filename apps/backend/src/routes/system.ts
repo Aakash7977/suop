@@ -31,6 +31,9 @@ import { isDatabaseHealthy } from '@/core/db/pglite'
 import { freemem, totalmem, uptime as processUptime } from 'node:os'
 import { statfs } from 'node:fs/promises'
 import { join } from 'node:path'
+import { getPerformanceDashboard } from '@/core/observability/metrics'
+import { getSecurityDashboard } from '@/core/security/security-monitoring'
+import { cache } from '@/core/cache'
 
 // ─── Build Metadata ─────────────────────────────────────────────────────────
 // These are injected at build time via Docker build args (see Dockerfile).
@@ -320,4 +323,52 @@ systemRoutes.get('/_internal/version', (c) => {
       phase: 'RC1',
     })
   )
+})
+
+// ═══ RC1 Fix Pack 2: Performance & Security Dashboards ═══════════════════════
+
+/**
+ * GET /_internal/metrics — Performance Dashboard (RC1 Fix Pack 2 §B-8)
+ *
+ * Returns real-time performance metrics:
+ *   - API latency (avg, p50, p95, p99, error rate)
+ *   - Database latency (avg, slow queries)
+ *   - Cache hit ratio
+ *   - System metrics (memory, CPU, load, GC)
+ *   - Slow endpoint list
+ *   - Recent API metrics
+ *
+ * Used by the performance monitoring UI and alerting systems.
+ */
+systemRoutes.get('/_internal/metrics', async (c) => {
+  const dashboard = await getPerformanceDashboard()
+  return c.json(success(dashboard))
+})
+
+/**
+ * GET /_internal/security — Security Dashboard (RC1 Fix Pack 2 §A-11)
+ *
+ * Returns aggregated security metrics:
+ *   - Failed login counts (last hour, last day)
+ *   - Top IPs by failure count
+ *   - Top users by failure count
+ *   - Locked account count
+ *   - Impossible travel alerts
+ *   - API abuse alerts
+ *   - Privilege escalation events
+ *   - Recent security events
+ */
+systemRoutes.get('/_internal/security', async (c) => {
+  const dashboard = await getSecurityDashboard()
+  return c.json(success(dashboard))
+})
+
+/**
+ * GET /_internal/cache — Cache Statistics (RC1 Fix Pack 2 §B-1)
+ *
+ * Returns cache hit/miss stats, error count, and hit ratio.
+ */
+systemRoutes.get('/_internal/cache', (c) => {
+  const stats = cache.getStats()
+  return c.json(success(stats))
 })

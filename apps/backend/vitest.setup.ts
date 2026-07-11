@@ -38,6 +38,22 @@ const TEST_ENV: Record<string, string | undefined> = {
   FEATURE_NEW_RECALL_ENGINE: 'false',
   FEATURE_WEBSOCKET_NOTIFICATIONS: 'false',
   FEATURE_AI_PREDICTIVE_QUALITY: 'false',
+  // RC1 Fix Pack 2: Security + Performance env vars
+  CORS_ALLOWED_ORIGINS: '',
+  MAX_BODY_BYTES: '1048576',
+  MAX_UPLOAD_BYTES: '52428800',
+  REQUEST_TIMEOUT_MS: '30000',
+  CACHE_TTL_PERMISSIONS: '300',
+  CACHE_TTL_CONFIG: '60',
+  CACHE_TTL_MASTER_DATA: '600',
+  CACHE_TTL_DASHBOARD: '30',
+  CACHE_TTL_ANALYTICS: '300',
+  JOB_WORKER_ENABLED: 'false',
+  JOB_WORKER_POLL_MS: '1000',
+  JOB_MAX_CONCURRENT: '10',
+  OTEL_EXPORTER_OTLP_ENDPOINT: '',
+  OTEL_SERVICE_NAME: 'suop-backend-test',
+  OTEL_SERVICE_VERSION: '1.0.0-rc1-test',
 }
 
 // In tests, always force-set env vars for determinism.

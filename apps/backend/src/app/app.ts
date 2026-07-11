@@ -19,6 +19,20 @@ import { loggingMiddleware } from '@/middleware/logging'
 import { authMiddleware } from '@/middleware/auth'
 import { tenantMiddleware } from '@/middleware/tenant'
 import { auditMiddleware } from '@/middleware/audit'
+// RC1 Fix Pack 2: Security + Performance middleware
+import { helmetMiddleware } from '@/middleware/security/helmet'
+import { corsMiddleware } from '@/middleware/security/cors'
+import { csrfMiddleware } from '@/middleware/security/csrf'
+import { globalRateLimit } from '@/middleware/security/rate-limit'
+import {
+  payloadSizeLimit,
+  requestTimeout,
+  compressionMiddleware,
+  inputSanitizationMiddleware,
+  sqlInjectionGuard,
+  xssGuard,
+} from '@/middleware/security/api-security'
+import { performanceMiddleware } from '@/middleware/security/performance'
 import { systemRoutes } from '@/routes/system'
 import { organizationRoutes } from '@/modules/organization/routes'
 import { authRoutes } from '@/modules/auth/routes'
@@ -88,11 +102,38 @@ export function createApp() {
   // These are the standard Kubernetes liveness/readiness probe endpoints.
   app.route('/', systemRoutes)
 
-  // ─── Global Middleware ────────────────────────────────────────────────────
+  // ─── Global Middleware (RC1 Fix Pack 2: Security + Performance) ──────────
+  // Registration order is critical — outer middleware wraps inner:
+  //   1. Security headers (Helmet) — applied to every response, including errors
+  //   2. CORS — must be before auth so preflight requests are handled
+  //   3. RequestId — assigns correlation ID for log tracing
+  //   4. Performance — wraps everything for accurate timing
+  //   5. Logging — logs request start/finish with correlation ID
+  //   6. Rate limiting — reject abusive clients early
+  //   7. Payload size limit — reject oversized bodies early
+  //   8. Request timeout — cancel long-running requests
+  //   9. Input sanitization — strip null bytes, normalize unicode
+  //  10. SQL injection / XSS guards — defense-in-depth pattern detection
+  //  11. Compression — set Vary header for cache correctness
+  //  12. Auth — validates JWT
+  //  13. Tenant — loads tenant context
+  //  14. CSRF — validates double-submit cookie (after auth, only mutations)
+  //  15. Audit — records mutations
+  app.use('*', helmetMiddleware)
+  app.use('*', corsMiddleware)
   app.use('*', requestIdMiddleware)
+  app.use('*', performanceMiddleware)
   app.use('*', loggingMiddleware)
+  app.use('*', globalRateLimit)
+  app.use('*', payloadSizeLimit())
+  app.use('*', requestTimeout())
+  app.use('*', inputSanitizationMiddleware)
+  app.use('*', sqlInjectionGuard)
+  app.use('*', xssGuard)
+  app.use('*', compressionMiddleware)
   app.use('*', authMiddleware)
   app.use('*', tenantMiddleware)
+  app.use('*', csrfMiddleware)
   app.use('*', auditMiddleware)
 
   // ─── Error Handler (Hono native — catches all unhandled errors) ───────────

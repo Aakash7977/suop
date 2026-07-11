@@ -134,6 +134,43 @@ const envSchema = z.object({
   FEATURE_NEW_RECALL_ENGINE: booleanString.default('false'),
   FEATURE_WEBSOCKET_NOTIFICATIONS: booleanString.default('false'),
   FEATURE_AI_PREDICTIVE_QUALITY: booleanString.default('false'),
+
+  // ─── RC1 Fix Pack 2: Security ──────────────────────────────────────────────
+  // CORS allowed origins (comma-separated, supports wildcards)
+  CORS_ALLOWED_ORIGINS: z.string().default(''),
+
+  // Field-level encryption key (AES-256). If not set, derived from JWT_SECRET.
+  FIELD_ENCRYPTION_KEY: z.string().min(32).optional(),
+
+  // ClamAV virus scanner (optional)
+  CLAMAV_HOST: z.string().optional(),
+  CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310).optional(),
+
+  // Body size limits
+  MAX_BODY_BYTES: z.coerce.number().int().min(1).default(1048576), // 1 MB
+  MAX_UPLOAD_BYTES: z.coerce.number().int().min(1).default(52428800), // 50 MB
+
+  // Request timeout (ms)
+  REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000),
+
+  // ─── RC1 Fix Pack 2: Performance ───────────────────────────────────────────
+  // Cache TTLs (seconds) — overridable per-call
+  CACHE_TTL_PERMISSIONS: z.coerce.number().int().min(1).default(300),
+  CACHE_TTL_CONFIG: z.coerce.number().int().min(1).default(60),
+  CACHE_TTL_MASTER_DATA: z.coerce.number().int().min(1).default(600),
+  CACHE_TTL_DASHBOARD: z.coerce.number().int().min(1).default(30),
+  CACHE_TTL_ANALYTICS: z.coerce.number().int().min(1).default(300),
+
+  // Background job worker
+  JOB_WORKER_ENABLED: booleanString.default('false'),
+  JOB_WORKER_POLL_MS: z.coerce.number().int().min(100).default(1000),
+  JOB_MAX_CONCURRENT: z.coerce.number().int().min(1).default(10),
+
+  // ─── RC1 Fix Pack 2: Observability ─────────────────────────────────────────
+  // OpenTelemetry exporter (optional)
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional().or(z.literal('')),
+  OTEL_SERVICE_NAME: z.string().default('suop-backend'),
+  OTEL_SERVICE_VERSION: z.string().default('1.0.0-rc1'),
 })
 
 // ─── Type Inference ─────────────────────────────────────────────────────────
