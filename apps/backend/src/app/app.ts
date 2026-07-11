@@ -52,6 +52,12 @@ import { orderFulfillmentRoutes } from '@/modules/order-fulfillment/routes'
 import { pickPackDispatchRoutes } from '@/modules/pick-pack-dispatch/routes'
 import { deliveryManagementRoutes } from '@/modules/delivery-management/routes'
 import { customerReturnsRoutes } from '@/modules/customer-returns/routes'
+import { financialFoundationRoutes } from '@/modules/financial-foundation/routes'
+import { AccountsPayableRoutes } from '@/modules/accounts-payable/routes'
+import { AccountsReceivableRoutes } from '@/modules/accounts-receivable/routes'
+import { ProductCostingRoutes } from '@/modules/product-costing/routes'
+import { GeneralLedgerRoutes } from '@/modules/general-ledger/routes'
+import { GstTaxationRoutes } from '@/modules/gst-taxation/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -132,6 +138,12 @@ export function createApp() {
   app.route('/api/v1/sales/pick-pack-dispatch', pickPackDispatchRoutes)
   app.route('/api/v1/sales/delivery', deliveryManagementRoutes)
   app.route('/api/v1/sales/returns', customerReturnsRoutes)
+  app.route('/api/v1/finance/foundation', financialFoundationRoutes)
+  app.route('/api/v1/finance/ap', AccountsPayableRoutes)
+  app.route('/api/v1/finance/ar', AccountsReceivableRoutes)
+  app.route('/api/v1/finance/costing', ProductCostingRoutes)
+  app.route('/api/v1/finance/gl', GeneralLedgerRoutes)
+  app.route('/api/v1/finance/gst', GstTaxationRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
