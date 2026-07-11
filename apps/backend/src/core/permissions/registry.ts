@@ -34,10 +34,15 @@ export const Permission = {
   // Purchase Order
   PO_READ: 'po:read',
   PO_CREATE: 'po:create',
+  PO_UPDATE: 'po:update',
+  PO_DELETE: 'po:delete',
   PO_APPROVE: 'po:approve',
   PO_APPROVE_ANY: 'po:approve:any',
+  PO_ISSUE: 'po:issue',
+  PO_CLOSE: 'po:close',
   PO_CANCEL: 'po:cancel',
   PO_RECEIVE: 'po:receive',
+  PO_EXPORT: 'po:export',
 
   // Supplier Quotation (Phase 9)
   QUOT_READ: 'quot:read',
@@ -85,7 +90,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.AUTH_MANAGE_USERS, Permission.AUTH_MANAGE_ROLES, Permission.AUTH_RESET_PASSWORD,
     Permission.PRODUCT_READ, Permission.PRODUCT_CREATE, Permission.PRODUCT_UPDATE, Permission.PRODUCT_DELETE,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE, Permission.SUPPLIER_DELETE,
-    Permission.PO_READ, Permission.PO_CREATE, Permission.PO_APPROVE, Permission.PO_APPROVE_ANY, Permission.PO_CANCEL, Permission.PO_RECEIVE,
+    Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_DELETE, Permission.PO_APPROVE, Permission.PO_APPROVE_ANY, Permission.PO_ISSUE, Permission.PO_CLOSE, Permission.PO_CANCEL, Permission.PO_RECEIVE, Permission.PO_EXPORT,
     Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT, Permission.QUOT_AWARD,
     Permission.GRN_READ, Permission.GRN_CREATE, Permission.GRN_POST, Permission.GRN_PUTAWAY,
     Permission.IQC_INSPECT, Permission.IQC_APPROVE,
@@ -106,7 +111,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
   procurement_officer: [
     Permission.PRODUCT_READ,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE,
-    Permission.PO_READ, Permission.PO_CREATE,
+    Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_ISSUE,
     Permission.QUOT_READ, Permission.QUOT_CREATE,
     Permission.GRN_READ,
     Permission.INVENTORY_READ,
@@ -114,7 +119,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
   procurement_manager: [
     Permission.PRODUCT_READ,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE, Permission.SUPPLIER_BLACKLIST,
-    Permission.PO_READ, Permission.PO_CREATE, Permission.PO_APPROVE, Permission.PO_CANCEL,
+    Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_DELETE, Permission.PO_APPROVE, Permission.PO_ISSUE, Permission.PO_CLOSE, Permission.PO_CANCEL, Permission.PO_EXPORT,
     Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT, Permission.QUOT_AWARD,
     Permission.GRN_READ, Permission.GRN_CREATE,
     Permission.INVENTORY_READ,

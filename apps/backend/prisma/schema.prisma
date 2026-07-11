@@ -335,3 +335,361 @@ model SupplierQuotationLine {
   @@index([tenantId, productId], map: "idx_quot_line_tenant_product")
   @@map("supplier_quotation_lines")
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// Phase 10: Purchase Order Management (12 entities)
+// ════════════════════════════════════════════════════════════════════════════
+
+model PurchaseOrder {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  poNumber   String   @map("po_number")
+  poType     String   @default("STANDARD") @map("po_type")
+  poDate     DateTime @default(now()) @map("po_date")
+  revisionNo Int      @default(0) @map("revision_no")
+
+  rfqId           String? @map("rfq_id") @db.Uuid
+  rfqNumber       String? @map("rfq_number")
+  quotationId     String? @map("quotation_id") @db.Uuid
+  quotationNumber String? @map("quotation_number")
+  prId            String? @map("pr_id") @db.Uuid
+  prNumber        String? @map("pr_number")
+  supplierId      String  @map("supplier_id") @db.Uuid
+  supplierCode    String  @map("supplier_code")
+  supplierName    String  @map("supplier_name")
+  supplierGstin   String? @map("supplier_gstin")
+
+  companyId     String  @map("company_id") @db.Uuid
+  companyName   String  @map("company_name")
+  plantId       String  @map("plant_id") @db.Uuid
+  plantName     String  @map("plant_name")
+  warehouseId   String? @map("warehouse_id") @db.Uuid
+  warehouseName String? @map("warehouse_name")
+  departmentId  String? @map("department_id") @db.Uuid
+  costCenterId  String? @map("cost_center_id") @db.Uuid
+
+  buyerId   String? @map("buyer_id") @db.Uuid
+  buyerName String? @map("buyer_name")
+
+  expectedDeliveryDate DateTime? @map("expected_delivery_date")
+  deliveryTerms        String?   @map("delivery_terms")
+  deliveryLocation     String?   @map("delivery_location")
+  shippingAddress      String?   @map("shipping_address")
+  billingAddress       String?   @map("billing_address")
+
+  currency        String   @default("INR")
+  exchangeRate    Decimal  @default(1) @map("exchange_rate") @db.Decimal(14, 6)
+  subtotal        Decimal  @default(0) @db.Decimal(14, 2)
+  discountPercent Decimal? @map("discount_percent") @db.Decimal(5, 2)
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(14, 2)
+  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(14, 2)
+  freightAmount   Decimal? @map("freight_amount") @db.Decimal(14, 2)
+  insuranceAmount Decimal? @map("insurance_amount") @db.Decimal(14, 2)
+  otherCharges    Decimal? @map("other_charges") @db.Decimal(14, 2)
+  roundOff        Decimal? @map("round_off") @db.Decimal(14, 2)
+  grandTotal      Decimal  @default(0) @map("grand_total") @db.Decimal(14, 2)
+
+  paymentTerms     String   @default("NET30") @map("payment_terms")
+  paymentTermsDays Int      @default(30) @map("payment_terms_days")
+  creditPeriodDays Int      @default(30) @map("credit_period_days")
+  advancePercent   Decimal? @map("advance_percent") @db.Decimal(5, 2)
+  creditDays       Int?     @map("credit_days")
+
+  supplierAckStatus       String?   @map("supplier_ack_status")
+  supplierAckDate         DateTime? @map("supplier_ack_date")
+  supplierAckNotes        String?   @map("supplier_ack_notes")
+  supplierAckCounterTotal Decimal?  @map("supplier_ack_counter_total") @db.Decimal(14, 2)
+
+  receivedQty         Decimal?  @map("received_qty") @db.Decimal(14, 3)
+  receivedAmount      Decimal?  @map("received_amount") @db.Decimal(14, 2)
+  pendingQty          Decimal?  @map("pending_qty") @db.Decimal(14, 3)
+  pendingAmount       Decimal?  @map("pending_amount") @db.Decimal(14, 2)
+  isPartiallyReceived Boolean   @default(false) @map("is_partially_received")
+  isFullyReceived     Boolean   @default(false) @map("is_fully_received")
+  lastReceiptDate     DateTime? @map("last_receipt_date")
+
+  validityDate DateTime? @map("validity_date")
+  expiryDate   DateTime? @map("expiry_date")
+
+  status          String  @default("DRAFT")
+  rejectionReason String? @map("rejection_reason")
+  cancelReason    String? @map("cancel_reason")
+  revisionReason  String? @map("revision_reason")
+  approvalNotes   String? @map("approval_notes")
+
+  remarks         String?
+  internalNotes   String? @map("internal_notes")
+  supplierNotes   String? @map("supplier_notes")
+  attachmentCount Int     @default(0) @map("attachment_count")
+
+  version   Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
+
+  @@unique([tenantId, poNumber], map: "uq_po_tenant_number")
+  @@index([tenantId, status], map: "idx_po_tenant_status")
+  @@index([tenantId, supplierId], map: "idx_po_tenant_supplier")
+  @@index([tenantId, plantId], map: "idx_po_tenant_plant")
+  @@index([tenantId, poDate], map: "idx_po_tenant_date")
+  @@index([tenantId, poType], map: "idx_po_tenant_type")
+  @@index([tenantId, quotationId], map: "idx_po_tenant_quotation")
+  @@index([tenantId, rfqId], map: "idx_po_tenant_rfq")
+  @@index([tenantId, prId], map: "idx_po_tenant_pr")
+  @@index([tenantId, expectedDeliveryDate], map: "idx_po_tenant_expected_delivery")
+  @@index([tenantId, supplierAckStatus], map: "idx_po_tenant_ack_status")
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String    @map("tenant_id") @db.Uuid
+  poId                 String    @map("po_id") @db.Uuid
+  lineNo               Int       @map("line_no")
+  productId            String    @map("product_id") @db.Uuid
+  productSku           String    @map("product_sku")
+  productName          String    @map("product_name")
+  productDescription   String?   @map("product_description")
+  categoryId           String?   @map("category_id") @db.Uuid
+  categoryName         String?   @map("category_name")
+  uomId                String    @map("uom_id") @db.Uuid
+  uomCode              String    @map("uom_code")
+  orderedQty           Decimal   @map("ordered_qty") @db.Decimal(14, 3)
+  receivedQty          Decimal?  @map("received_qty") @db.Decimal(14, 3)
+  pendingQty           Decimal?  @map("pending_qty") @db.Decimal(14, 3)
+  rejectedQty          Decimal?  @map("rejected_qty") @db.Decimal(14, 3)
+  unitPrice            Decimal   @map("unit_price") @db.Decimal(14, 4)
+  basePrice            Decimal?  @map("base_price") @db.Decimal(14, 4)
+  discountPercent      Decimal?  @map("discount_percent") @db.Decimal(5, 2)
+  discountAmount       Decimal?  @map("discount_amount") @db.Decimal(14, 2)
+  taxPercent           Decimal?  @map("tax_percent") @db.Decimal(5, 2)
+  taxAmount            Decimal?  @map("tax_amount") @db.Decimal(14, 2)
+  lineTotal            Decimal   @default(0) @map("line_total") @db.Decimal(14, 2)
+  currency             String    @default("INR")
+  expectedDeliveryDate DateTime? @map("expected_delivery_date")
+  leadTimeDays         Int?      @map("lead_time_days")
+  deliveryLocation     String?   @map("delivery_location")
+  minOrderQty          Decimal?  @map("min_order_qty") @db.Decimal(14, 3)
+  maxOrderQty          Decimal?  @map("max_order_qty") @db.Decimal(14, 3)
+  moqViolated          Boolean?  @default(false) @map("moq_violated")
+  rfqLineId            String?   @map("rfq_line_id") @db.Uuid
+  quotationLineId      String?   @map("quotation_line_id") @db.Uuid
+  prLineId             String?   @map("pr_line_id") @db.Uuid
+  isRevised            Boolean?  @default(false) @map("is_revised")
+  revisionNotes        String?   @map("revision_notes")
+  remarks              String?
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([poId], map: "idx_pol_po")
+  @@index([productId], map: "idx_pol_product")
+  @@index([tenantId, productId], map: "idx_pol_tenant_product")
+  @@map("purchase_order_lines")
+}
+
+model PurchaseOrderTax {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  poId          String   @map("po_id") @db.Uuid
+  poLineId      String?  @map("po_line_id") @db.Uuid
+  taxType       String   @map("tax_type")
+  taxName       String   @map("tax_name")
+  taxPercent    Decimal  @map("tax_percent") @db.Decimal(5, 2)
+  taxableAmount Decimal  @map("taxable_amount") @db.Decimal(14, 2)
+  taxAmount     Decimal  @map("tax_amount") @db.Decimal(14, 2)
+  isRecoverable Boolean? @default(true) @map("is_recoverable")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_pot_po")
+  @@index([poLineId], map: "idx_pot_po_line")
+  @@map("purchase_order_taxes")
+}
+
+model PurchaseOrderCharge {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  poId       String   @map("po_id") @db.Uuid
+  chargeType String   @map("charge_type")
+  chargeName String   @map("charge_name")
+  amount     Decimal  @db.Decimal(14, 2)
+  percent    Decimal? @db.Decimal(5, 2)
+  isTaxable  Boolean? @default(false) @map("is_taxable")
+  taxPercent Decimal? @default(0) @map("tax_percent") @db.Decimal(5, 2)
+  taxAmount  Decimal? @default(0) @map("tax_amount") @db.Decimal(14, 2)
+  glAccount  String?  @map("gl_account")
+  remarks    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_poc_po")
+  @@map("purchase_order_charges")
+}
+
+model PurchaseOrderAttachment {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  poId           String    @map("po_id") @db.Uuid
+  fileName       String    @map("file_name")
+  fileType       String    @map("file_type")
+  fileSize       BigInt    @map("file_size")
+  fileUrl        String    @map("file_url")
+  category       String    @default("GENERAL")
+  uploadedBy     String?   @map("uploaded_by") @db.Uuid
+  uploadedByName String?   @map("uploaded_by_name")
+  isSigned       Boolean?  @default(false) @map("is_signed")
+  signedBy       String?   @map("signed_by") @db.Uuid
+  signedAt       DateTime? @map("signed_at")
+  remarks        String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_poa_po")
+  @@map("purchase_order_attachments")
+}
+
+model PurchaseOrderTerm {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  poId            String   @map("po_id") @db.Uuid
+  termType        String   @map("term_type")
+  termName        String   @map("term_name")
+  termDescription String   @map("term_description")
+  termValue       String?
+  isStandard      Boolean? @default(true) @map("is_standard")
+  sortOrder       Int?     @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_poterms_po")
+  @@map("purchase_order_terms")
+}
+
+model PurchaseOrderApproval {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  poId             String    @map("po_id") @db.Uuid
+  approvalLevel    String    @map("approval_level")
+  approvalSequence Int       @default(1) @map("approval_sequence")
+  approverId       String?   @map("approver_id") @db.Uuid
+  approverName     String?   @map("approver_name")
+  approverRole     String?   @map("approver_role")
+  approvalStatus   String    @map("approval_status")
+  approvalDate     DateTime? @map("approval_date")
+  approvalNotes    String?   @map("approval_notes")
+  rejectionReason  String?   @map("rejection_reason")
+  approvedAmount   Decimal?  @map("approved_amount") @db.Decimal(14, 2)
+  isCurrent        Boolean?  @default(true) @map("is_current")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_poappr_po")
+  @@index([approvalStatus], map: "idx_poappr_status")
+  @@map("purchase_order_approvals")
+}
+
+model PurchaseOrderRevision {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  poId             String    @map("po_id") @db.Uuid
+  revisionNo       Int       @map("revision_no")
+  revisionReason   String    @map("revision_reason")
+  previousSnapshot Json      @map("previous_snapshot")
+  newSnapshot      Json?     @map("new_snapshot")
+  changedFields    String[]  @map("changed_fields")
+  revisedBy        String?   @map("revised_by") @db.Uuid
+  revisedByName    String?   @map("revised_by_name")
+  revisionDate     DateTime  @default(now()) @map("revision_date")
+  approvalRequired Boolean?  @default(true) @map("approval_required")
+  approvedBy       String?   @map("approved_by") @db.Uuid
+  approvedAt       DateTime? @map("approved_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_porev_po")
+  @@map("purchase_order_revisions")
+}
+
+model PurchaseOrderHistory {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  poId          String   @map("po_id") @db.Uuid
+  action        String
+  fromStatus    String?  @map("from_status")
+  toStatus      String?  @map("to_status")
+  actionBy      String?  @map("action_by") @db.Uuid
+  actionByName  String?  @map("action_by_name")
+  actionDate    DateTime @default(now()) @map("action_date")
+  actionNotes   String?  @map("action_notes")
+  metadata      Json?
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  correlationId String?  @map("correlation_id")
+
+  @@index([poId], map: "idx_pohist_po")
+  @@index([action], map: "idx_pohist_action")
+  @@map("purchase_order_history")
+}
+
+model PurchaseOrderDeliverySchedule {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  poId           String    @map("po_id") @db.Uuid
+  poLineId       String    @map("po_line_id") @db.Uuid
+  deliveryNo     Int       @default(1) @map("delivery_no")
+  scheduledDate  DateTime  @map("scheduled_date")
+  scheduledQty   Decimal   @map("scheduled_qty") @db.Decimal(14, 3)
+  receivedQty    Decimal?  @default(0) @map("received_qty") @db.Decimal(14, 3)
+  warehouseId    String?   @map("warehouse_id") @db.Uuid
+  warehouseName  String?   @map("warehouse_name")
+  deliveryStatus String    @default("PENDING") @map("delivery_status")
+  actualDate     DateTime? @map("actual_date")
+  remarks        String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([poId], map: "idx_pods_po")
+  @@index([poLineId], map: "idx_pods_po_line")
+  @@index([scheduledDate], map: "idx_pods_scheduled_date")
+  @@map("purchase_order_delivery_schedules")
+}
+
+model PurchaseOrderMilestone {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String    @map("tenant_id") @db.Uuid
+  poId                 String    @map("po_id") @db.Uuid
+  milestoneNo          Int       @map("milestone_no")
+  milestoneName        String    @map("milestone_name")
+  milestoneDescription String?   @map("milestone_description")
+  milestoneDate        DateTime? @map("milestone_date")
+  milestoneAmount      Decimal?  @map("milestone_amount") @db.Decimal(14, 2)
+  milestoneStatus      String    @default("PENDING") @map("milestone_status")
+  completedDate        DateTime? @map("completed_date")
+  completedBy          String?   @map("completed_by") @db.Uuid
+  completionNotes      String?   @map("completion_notes")
+  sortOrder            Int?      @default(0) @map("sort_order")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([poId], map: "idx_pom_po")
+  @@map("purchase_order_milestones")
+}
+
+model PurchaseOrderCommunication {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  poId              String   @map("po_id") @db.Uuid
+  direction         String
+  channel           String
+  fromAddress       String?  @map("from_address")
+  toAddress         String?  @map("to_address")
+  subject           String?
+  message           String
+  communicationType String?  @map("communication_type")
+  isImportant       Boolean? @default(false) @map("is_important")
+  sentBy            String?  @map("sent_by") @db.Uuid
+  sentByName        String?  @map("sent_by_name")
+  sentDate          DateTime @default(now()) @map("sent_date")
+  attachments       String[]
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([poId], map: "idx_pocom_po")
+  @@index([sentDate], map: "idx_pocom_sent_date")
+  @@map("purchase_order_communications")
+}

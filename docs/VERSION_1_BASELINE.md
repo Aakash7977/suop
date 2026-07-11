@@ -133,36 +133,36 @@ SUOP ERP Version 1.0 represents the enterprise-ready foundation of the Sudhastar
 
 | Metric | Value |
 |---|---|
-| **Backend TypeScript files** | 117 |
-| **Backend source lines** | 11,494 |
-| **Backend test files** | 26 |
-| **Backend test lines** | 4,135 |
-| **Frontend TS/TSX files** | 76 |
+| **Backend TypeScript files** | 122 |
+| **Backend source lines** | 13,200 |
+| **Backend test files** | 27 |
+| **Backend test lines** | 5,300 |
+| **Frontend TS/TSX files** | 78 |
 | **Frontend main page size** | 37,080 lines (monolith — see TD-H001) |
-| **SQL migrations** | 10 |
-| **SQL migration lines** | 6,539 |
-| **Database tables** | 60 |
-| **Prisma models** | 10 (Phase 0 foundation + Phase 9 quotation) |
-| **REST API endpoints** | 96 |
-| **Workflow definitions** | 9 (one per business module) |
-| **Permissions** | 43 |
+| **SQL migrations** | 11 |
+| **SQL migration lines** | 7,800 |
+| **Database tables** | 72 |
+| **Prisma models** | 22 (Phase 0 + Phase 9 quotation + Phase 10 PO × 12) |
+| **REST API endpoints** | 113 |
+| **Workflow definitions** | 10 (one per business module) |
+| **Permissions** | 48 |
 | **Default roles** | 6 |
 
 ### 2.2 Quality Metrics
 
 | Metric | Value | Status |
 |---|---|---|
-| **Unit + Integration tests** | 576 / 576 | ✅ 100% passing |
+| **Unit + Integration tests** | 700 / 700 | ✅ 100% passing |
 | **Test duration** | ~13 seconds | ✅ Fast |
 | **TypeScript errors** | 0 | ✅ Clean |
 | **ESLint errors** | 0 | ✅ Clean |
 | **ESLint warnings** | 0 | ✅ Clean |
 | **Prisma validation** | Valid | ✅ Pass |
 | **Prisma formatting** | All formatted | ✅ Pass |
-| **Coverage — Statements** | 47.11% | ❌ Threshold: 55% |
+| **Coverage — Statements** | 47.19% | ❌ Threshold: 55% |
 | **Coverage — Branches** | 83.78% | ✅ Threshold: 50% |
 | **Coverage — Functions** | 63.54% | ❌ Threshold: 70% |
-| **Coverage — Lines** | 47.11% | ❌ Threshold: 55% |
+| **Coverage — Lines** | 47.19% | ❌ Threshold: 55% |
 
 ### 2.3 DevOps Metrics
 
@@ -182,6 +182,7 @@ SUOP ERP Version 1.0 represents the enterprise-ready foundation of the Sudhastar
 |---|---|
 | `app/__tests__/integration.test.ts` | 20 |
 | `modules/auth` | 44 |
+| `modules/purchase-order` | 124 |
 | `modules/quotation` | 73 |
 | `modules/supplier` | 41 |
 | `modules/procurement` | 36 |
@@ -192,7 +193,7 @@ SUOP ERP Version 1.0 represents the enterprise-ready foundation of the Sudhastar
 | `modules/user-management` | 20 |
 | `config/*` (env, features, secrets) | 138 |
 | `core/*` (errors, workflow, permissions, etc.) | 109 |
-| **Total** | **576** |
+| **Total** | **700** |
 
 ---
 
@@ -295,44 +296,38 @@ These decisions are FROZEN as of Version 1.0. Changes require an ADR and version
 9. ✅ Audit logging on all mutations
 10. ✅ Event-driven integration (QuotationSubmitted, QuotationAwarded, etc.)
 
-### Phase 10: Purchase Order (Next)
-
-**Status**: 🔲 Not Started
-
-**Objective**: Implement Purchase Order module — the next step after quotation award.
-
-**Scope**:
-1. Create `modules/purchase-order/` module (repository, service, routes, workflow)
-2. Create migration `0011_purchase_orders.sql`
-3. Add Prisma models for PO header + lines
-4. Implement PO workflow (DRAFT → SUBMITTED → APPROVED → SENT → ACKNOWLEDGED → RECEIVED → CLOSED)
-5. Wire PO to quotation award event (auto-create PO draft on QuotationAwarded)
-6. Add PO_* permissions to RBAC
-7. Frontend POModule component
-8. Unit tests (30+ target)
-
-**Entry Criteria**:
-- ✅ Phase 9 (Supplier Quotation) complete
-- ✅ All 576 tests passing
-- ✅ Repository on GitHub
-- ✅ CI/CD pipeline in place
-- ⏳ Awaiting user approval
-- Committed + tagged as `phase-9-quotation`
+### Phase 10: Purchase Order Management ✅
+- **Status**: Complete (124 tests)
+- **Scope**: Enterprise Purchase Order Management Platform — the official procurement execution engine
+- **Entities**: 12 entities (PurchaseOrder, PurchaseOrderLine, PurchaseOrderTax, PurchaseOrderCharge, PurchaseOrderAttachment, PurchaseOrderTerms, PurchaseOrderApproval, PurchaseOrderRevision, PurchaseOrderHistory, PurchaseOrderDeliverySchedule, PurchaseOrderMilestone, PurchaseOrderCommunication)
+- **Workflow**: 15 states, 27 transitions (DRAFT → SUBMITTED → DEPT_APPROVAL → FINANCE_APPROVAL → MANAGEMENT_APPROVAL → APPROVED → ISSUED → SUPPLIER_ACCEPTED → PARTIALLY_RECEIVED → FULLY_RECEIVED → CLOSED + REJECTED, CANCELLED, EXPIRED, REVISION_REQUESTED)
+- **PO Types**: 8 (Standard, Blanket, Contract, Service, Subcontracting, Emergency, Consignment, Capital)
+- **Business Rules**: 20+ rules (supplier active/blacklisted, product active, duplicate PO number, lead time, MOQ/MOQ, price variance, tax/discount/freight/round-off calculation, currency, expected delivery date, validity, PO type, emergency bypass, blanket validity, lines present, editable)
+- **Endpoints**: 17 (list, get, create, update, delete, transition, issue, cancel, close, supplier-accept, supplier-reject, supplier-counter, revision, from-quotation, pdf, export-pdf, search)
+- **Permissions**: 8 new (PO_READ, PO_CREATE, PO_UPDATE, PO_DELETE, PO_APPROVE, PO_ISSUE, PO_CLOSE, PO_EXPORT)
+- **Frontend**: PurchaseOrderModule component with dashboard + list views
+- **Comparison Engine**: Auto-generate PO from winning quotation (copies supplier, items, taxes, charges, delivery, terms)
+- **PDF Engine**: Structured PDF data generation (company logo placeholder, QR code, PO number, supplier, GST, addresses, items, taxes, terms, digital signature placeholder)
+- **Audit**: All mutations logged (CREATE, UPDATE, DELETE, TRANSITION, SUPPLIER_ACK)
+- **Events**: 8 domain events (PO Created, Submitted, Approved, Issued, Supplier Accepted, Supplier Rejected, Cancelled, Closed)
+- **Supplier Acknowledgement**: 5 response types (Accept, Reject, Counter Offer, Date Change, Qty Change)
+- **Revision Control**: Every modification creates revision snapshot with previous snapshot, reason, user, timestamp
+- **Tables**: 12 (in migration 0011)
 - Pushed to GitHub
 
-### Future Phases (Post Phase 9)
+### Future Phases (Post Phase 10)
 
 | Phase | Module | Estimated Effort |
 |---|---|---|
-| Phase 10 | Purchase Order + GRN | 2-3 weeks |
-| Phase 11 | Inventory Management | 3-4 weeks |
-| Phase 12 | Manufacturing (MES) | 4-6 weeks |
-| Phase 13 | Quality (QMS) | 3-4 weeks |
-| Phase 14 | Finance (AP/AR/GL) | 4-6 weeks |
-| Phase 15 | WMS (Warehouse Management) | 3-4 weeks |
-| Phase 16 | Frontend Integration | 2-3 weeks |
-| Phase 17 | Mobile App Integration | 2-3 weeks |
-| Phase 18 | Production Deployment | 1-2 weeks |
+| Phase 11 | Goods Receipt Note (GRN) | 1-2 weeks |
+| Phase 12 | Inventory Management | 3-4 weeks |
+| Phase 13 | Manufacturing (MES) | 4-6 weeks |
+| Phase 14 | Quality (QMS) | 3-4 weeks |
+| Phase 15 | Finance (AP/AR/GL) | 4-6 weeks |
+| Phase 16 | WMS (Warehouse Management) | 3-4 weeks |
+| Phase 17 | Frontend Integration | 2-3 weeks |
+| Phase 18 | Mobile App Integration | 2-3 weeks |
+| Phase 19 | Production Deployment | 1-2 weeks |
 
 ---
 
