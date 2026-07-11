@@ -226,3 +226,112 @@ model FileUpload {
   @@index([tenantId, category], map: "idx_files_tenant_category")
   @@index([tenantId, linkedEntityType, linkedEntityId], map: "idx_files_tenant_entity")
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 9 — SUPPLIER QUOTATION & BID EVALUATION
+// ════════════════════════════════════════════════════════════════════════════
+
+// ─── Supplier Quotations ────────────────────────────────────────────────────
+model SupplierQuotation {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  quotationNumber String   @map("quotation_number")
+
+  // ─── References ───
+  rfqId           String   @map("rfq_id") @db.Uuid
+  rfqNumber       String   @map("rfq_number")
+  supplierId      String   @map("supplier_id") @db.Uuid
+  supplierCode    String   @map("supplier_code")
+  supplierName    String   @map("supplier_name")
+
+  // ─── Details ───
+  quotationDate   DateTime @default(now()) @map("quotation_date")
+  validityDate    DateTime @map("validity_date")
+  currency        String   @default("INR")
+  paymentTerms    String   @default("NET30") @map("payment_terms")
+  deliveryTerms   String?  @map("delivery_terms")
+  leadTimeDays    Int?     @map("lead_time_days")
+  taxPercent      Decimal? @db.Decimal(5, 2) @map("tax_percent")
+  discountPercent Decimal? @db.Decimal(5, 2) @map("discount_percent")
+  freightAmount   Decimal? @db.Decimal(14, 2) @map("freight_amount")
+  insuranceAmount Decimal? @db.Decimal(14, 2) @map("insurance_amount")
+  warrantyTerms   String?  @map("warranty_terms")
+
+  // ─── Totals ───
+  subtotal        Decimal  @db.Decimal(14, 2) @default(0)
+  taxAmount       Decimal  @db.Decimal(14, 2) @default(0) @map("tax_amount")
+  discountAmount  Decimal  @db.Decimal(14, 2) @default(0) @map("discount_amount")
+  grandTotal      Decimal  @db.Decimal(14, 2) @default(0) @map("grand_total")
+
+  // ─── Evaluation ───
+  technicalScore  Decimal? @db.Decimal(5, 2) @map("technical_score")
+  commercialScore Decimal? @db.Decimal(5, 2) @map("commercial_score")
+  overallScore    Decimal? @db.Decimal(5, 2) @map("overall_score")
+  rank            Int?
+  isLowestPrice   Boolean  @default(false) @map("is_lowest_price")
+  isBestValue     Boolean  @default(false) @map("is_best_value")
+  recommendationNotes String? @map("recommendation_notes")
+
+  // ─── Revision ───
+  revisionNo      Int      @default(0) @map("revision_no")
+  parentQuotationId String? @map("parent_quotation_id") @db.Uuid
+
+  // ─── Status ───
+  status          String   @default("DRAFT") @map("status")
+  rejectionReason String?  @map("rejection_reason")
+
+  // ─── Remarks ───
+  remarks         String?
+  attachments     String[]
+
+  // ─── Reserved ───
+  version         Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdBy       String?  @map("created_by") @db.Uuid
+  updatedBy       String?  @map("updated_by") @db.Uuid
+
+  lines           SupplierQuotationLine[]
+
+  @@unique([tenantId, quotationNumber], map: "uq_quot_tenant_number")
+  @@map("supplier_quotations")
+  @@index([tenantId, status], map: "idx_quot_tenant_status")
+  @@index([tenantId, rfqId], map: "idx_quot_tenant_rfq")
+  @@index([tenantId, supplierId], map: "idx_quot_tenant_supplier")
+  @@index([tenantId, rfqId, status], map: "idx_quot_tenant_rfq_status")
+}
+
+// ─── Quotation Lines ────────────────────────────────────────────────────────
+model SupplierQuotationLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  quotationId     String   @map("quotation_id") @db.Uuid
+  lineNo          Int      @map("line_no")
+
+  productId       String   @map("product_id") @db.Uuid
+  productSku      String   @map("product_sku")
+  productName     String   @map("product_name")
+  rfqLineId       String?  @map("rfq_line_id") @db.Uuid
+
+  quotedQty       Decimal  @db.Decimal(14, 3) @map("quoted_qty")
+  uomId           String   @map("uom_id") @db.Uuid
+  uomCode         String   @map("uom_code")
+  unitPrice       Decimal  @db.Decimal(14, 4) @map("unit_price")
+  lineTotal       Decimal  @db.Decimal(14, 2) @map("line_total")
+  currency        String   @default("INR")
+
+  moq             Decimal? @db.Decimal(14, 3) @map("moq")
+  leadTimeDays    Int?     @map("lead_time_days")
+  discountPercent Decimal? @db.Decimal(5, 2) @map("discount_percent")
+  remarks         String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  quotation       SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_quotation_lines")
+  @@index([tenantId, quotationId], map: "idx_quot_line_tenant_quot")
+  @@index([tenantId, productId], map: "idx_quot_line_tenant_product")
+}
