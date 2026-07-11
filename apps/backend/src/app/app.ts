@@ -46,6 +46,12 @@ import { capaManagementRoutes } from '@/modules/capa-management/routes'
 import { coaManagementRoutes } from '@/modules/coa-management/routes'
 import { recallManagementRoutes } from '@/modules/recall-management/routes'
 import { supplierQualityRoutes } from '@/modules/supplier-quality/routes'
+import { salesOrderRoutes } from '@/modules/sales-order/routes'
+import { pricingEngineRoutes } from '@/modules/pricing-engine/routes'
+import { orderFulfillmentRoutes } from '@/modules/order-fulfillment/routes'
+import { pickPackDispatchRoutes } from '@/modules/pick-pack-dispatch/routes'
+import { deliveryManagementRoutes } from '@/modules/delivery-management/routes'
+import { customerReturnsRoutes } from '@/modules/customer-returns/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -120,6 +126,12 @@ export function createApp() {
   app.route('/api/v1/quality/coa', coaManagementRoutes)
   app.route('/api/v1/quality/recall', recallManagementRoutes)
   app.route('/api/v1/quality/supplier', supplierQualityRoutes)
+  app.route('/api/v1/sales/orders', salesOrderRoutes)
+  app.route('/api/v1/sales/pricing', pricingEngineRoutes)
+  app.route('/api/v1/sales/fulfillment', orderFulfillmentRoutes)
+  app.route('/api/v1/sales/pick-pack-dispatch', pickPackDispatchRoutes)
+  app.route('/api/v1/sales/delivery', deliveryManagementRoutes)
+  app.route('/api/v1/sales/returns', customerReturnsRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {

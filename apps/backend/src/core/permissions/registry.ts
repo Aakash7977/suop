@@ -31,6 +31,12 @@ export const Permission = {
   SUPPLIER_DELETE: 'supplier:delete',
   SUPPLIER_BLACKLIST: 'supplier:blacklist',
 
+  // Customer
+  CUSTOMER_READ: 'customer:read',
+  CUSTOMER_CREATE: 'customer:create',
+  CUSTOMER_UPDATE: 'customer:update',
+  CUSTOMER_DELETE: 'customer:delete',
+
   // Purchase Order
   PO_READ: 'po:read',
   PO_CREATE: 'po:create',
@@ -89,6 +95,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.ORG_READ, Permission.ORG_CREATE, Permission.ORG_UPDATE, Permission.ORG_DELETE,
     Permission.AUTH_MANAGE_USERS, Permission.AUTH_MANAGE_ROLES, Permission.AUTH_RESET_PASSWORD,
     Permission.PRODUCT_READ, Permission.PRODUCT_CREATE, Permission.PRODUCT_UPDATE, Permission.PRODUCT_DELETE,
+    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE, Permission.SUPPLIER_DELETE,
     Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_DELETE, Permission.PO_APPROVE, Permission.PO_APPROVE_ANY, Permission.PO_ISSUE, Permission.PO_CLOSE, Permission.PO_CANCEL, Permission.PO_RECEIVE, Permission.PO_EXPORT,
     Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT, Permission.QUOT_AWARD,
@@ -102,6 +109,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
   ],
   quality_manager: [
     Permission.PRODUCT_READ,
+    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
     Permission.SUPPLIER_READ,
     Permission.IQC_INSPECT, Permission.IQC_APPROVE,
     Permission.NCR_CREATE, Permission.NCR_APPROVE,
@@ -112,6 +120,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
   ],
   procurement_officer: [
     Permission.PRODUCT_READ,
+    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE,
     Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_ISSUE,
     Permission.QUOT_READ, Permission.QUOT_CREATE,
@@ -120,6 +129,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
   ],
   procurement_manager: [
     Permission.PRODUCT_READ,
+    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
     Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE, Permission.SUPPLIER_BLACKLIST,
     Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_DELETE, Permission.PO_APPROVE, Permission.PO_ISSUE, Permission.PO_CLOSE, Permission.PO_CANCEL, Permission.PO_EXPORT,
     Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT, Permission.QUOT_AWARD,
@@ -130,9 +140,11 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.INVENTORY_READ, Permission.INVENTORY_POST,
     Permission.GRN_READ, Permission.GRN_POST, Permission.GRN_PUTAWAY,
     Permission.PRODUCT_READ,
+    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
   ],
   auditor: [
     Permission.PRODUCT_READ,
+    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
     Permission.SUPPLIER_READ,
     Permission.PO_READ,
     Permission.QUOT_READ,
