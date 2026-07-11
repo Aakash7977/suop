@@ -58,6 +58,12 @@ import { AccountsReceivableRoutes } from '@/modules/accounts-receivable/routes'
 import { ProductCostingRoutes } from '@/modules/product-costing/routes'
 import { GeneralLedgerRoutes } from '@/modules/general-ledger/routes'
 import { GstTaxationRoutes } from '@/modules/gst-taxation/routes'
+import { CrmFoundationRoutes } from '@/modules/crm-foundation/routes'
+import { LeadOpportunityRoutes } from '@/modules/lead-opportunity/routes'
+import { CustomerServiceRoutes } from '@/modules/customer-service/routes'
+import { ComplaintManagementRoutes } from '@/modules/complaint-management/routes'
+import { AfterSalesServiceRoutes } from '@/modules/after-sales-service/routes'
+import { CustomerPortalRoutes } from '@/modules/customer-portal/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -144,6 +150,12 @@ export function createApp() {
   app.route('/api/v1/finance/costing', ProductCostingRoutes)
   app.route('/api/v1/finance/gl', GeneralLedgerRoutes)
   app.route('/api/v1/finance/gst', GstTaxationRoutes)
+  app.route('/api/v1/crm/foundation', CrmFoundationRoutes)
+  app.route('/api/v1/crm/leads', LeadOpportunityRoutes)
+  app.route('/api/v1/crm/tickets', CustomerServiceRoutes)
+  app.route('/api/v1/crm/complaints', ComplaintManagementRoutes)
+  app.route('/api/v1/crm/service', AfterSalesServiceRoutes)
+  app.route('/api/v1/crm/portal', CustomerPortalRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
