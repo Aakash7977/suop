@@ -1,0 +1,622 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect } from 'react'
+     4→import {
+     5→  Eye, EyeOff, Lock, Mail, AlertCircle, Loader2,
+     6→  Shield, ArrowRight, Keyboard,
+     7→  ChevronRight, ChevronDown, Plus, Search,
+     8→  Factory, Warehouse, Store, UtensilsCrossed, DollarSign,
+     9→  Users, Wrench, BarChart3, Brain, Settings, Network,
+    10→  Layers, Calendar, Package, Box,
+    11→  CheckCircle2, Tag, Scale, FileText, Filter, Download, Upload,
+    12→  GitBranch, FolderTree, FileCheck,
+    13→  History, ClipboardCheck, ShieldCheck, Archive,
+    14→  Building2, MapPin, Flag, Menu as MenuIcon, AlertTriangle,
+    15→  Server, Database, Zap, Activity, HardDrive,
+    16→  Bell, X, Menu, Star, Grid3x3, List, MoreHorizontal,
+    17→  IndianRupee, Percent, TrendingUp, TrendingDown, Clock,
+    18→  Calculator, Gift, Sparkles, PlayCircle, ArrowRightCircle,
+    19→  Users2, Handshake, Award, CreditCard, MapPinned, Phone,
+    20→  Building, Globe2, Star as StarIcon, Shield as ShieldIcon, AlertCircle as AlertIcon,
+    21→  QrCode, ScanLine, PackageCheck, Boxes, Hash, Tag as TagIcon, Printer,
+    22→  Barcode, Route, ArrowDownToLine, ArrowUpFromLine, History as HistoryIcon, Search as SearchIcon,
+    23→  GitMerge, FileCheck2, FileX2, AlertOctagon, ClipboardList, FileSpreadsheet,
+    24→  DownloadCloud, UploadCloud, ShieldAlert, Gauge, ListChecks, Workflow, RefreshCw,
+    25→  PackageOpen, ArrowLeftRight, BookOpen, Layers3, Activity as ActivityIcon,
+    26→  Truck, PackageCheck as PackageCheckIcon, FlaskConical, MapPin as MapPinIcon,
+    27→  Trash2, AlertTriangle as AlertTriangleIcon,
+    28→  Thermometer, Snowflake, Droplets, ScanLine as ScanIcon,
+    29→  Lock as LockIcon, UserCog, ArrowDownToLine as ArrowDownToLineIcon,
+    30→  Waves, Radio, Siren, UserCheck, Target, BatteryLow, Timer, Radar, Smartphone, BellRing,
+    31→  Waypoints, GitGraph, Recycle, Combine, FileWarning, CalendarClock, Stamp, Slice, BoxSearch, FileSearch,
+    32→  ShieldCheck as ShieldCheckIcon, GitFork, ArrowLeftRight as ArrowLeftRightIcon, ScanBarcode, Fingerprint,
+    33→  Beaker, Microscope, PackageX, Pause, Play, StopCircle, Camera, PenTool, Send
+    34→} from 'lucide-react'
+    35→import { Button } from '@/components/ui/button'
+    36→import { Card } from '@/components/ui/card'
+    37→import { Input } from '@/components/ui/input'
+    38→import { Label } from '@/components/ui/label'
+    39→import { Badge } from '@/components/ui/badge'
+    40→import { Separator } from '@/components/ui/separator'
+    41→import { ScrollArea } from '@/components/ui/scroll-area'
+    42→import { Switch } from '@/components/ui/switch'
+    43→import { useAuthStore } from '@/stores/auth-store'
+    44→import { cn } from '@/lib/utils'
+    45→
+    46→// ═══════════════════════════════════════════════════════
+    47→// UNIFIED SUOP ADMIN — ALL SPRINTS IN ONE APPLICATION
+    48→// Sprints 1-7: Platform Foundation + Master Data + PIM
+    49→// ═══════════════════════════════════════════════════════
+    50→
+    51→// ─── Types ──────────────────────────────────────────────
+    52→type ModuleKey =
+    53→  | 'dashboard' | 'organization' | 'rbac' | 'products' | 'pim' | 'commercial' | 'partners' | 'identification' | 'governance' | 'inventory' | 'goodsreceipt' | 'stockissue' | 'transfer' | 'adjustment' | 'reservation' | 'cyclecount' | 'batchmgmt' | 'costing'
+    54→  | 'warehouse' | 'whlocations' | 'receiving' | 'putaway' | 'fulfillment' | 'dispatch'
+    55→  | 'waveplanning' | 'taskqueue' | 'workforce' | 'equipment' | 'controltower' | 'sladashboard' | 'exceptioncenter' | 'workforceanalytics'
+    56→  | 'crossdock' | 'truckqueue' | 'dockschedule' | 'yardmap' | 'vehicletracker' | 'gateconsole' | 'yardtower' | 'crossdockanalytics'
+    57→  | 'equipmentmaster' | 'forkliftdashboard' | 'scannermgmt' | 'batterydashboard' | 'maintenanceplanner' | 'breakdownconsole' | 'certificationcenter' | 'equipmentanalytics'
+    58→  | 'missioncontrol' | 'kpidashboard' | 'operatoranalytics' | 'wareheatanalytics' | 'heatmaps' | 'costdashboard' | 'slaanalytics' | 'execreports'
+    59→  | 'wmsmissioncontrol' | 'controltower' | 'digitaltwin' | 'aioperations' | 'execdashboard' | 'alertcenter' | 'recoverydashboard' | 'enterprisenalytics'
+    60→  | 'plantmaster' | 'productiondept' | 'productionlines' | 'workcenters' | 'mfgcalendar' | 'mfgresources' | 'plantconfig' | 'productiondashboard'
+    61→  | 'recipemaster' | 'formulabuilder' | 'bombuilder' | 'recipeversions' | 'yielddashboard' | 'batchscaling' | 'nutritioncenter' | 'costrollup' | 'recipeapproval'
+    62→  | 'planningdashboard' | 'mpsconsole' | 'mrpworkbench' | 'demandplanning' | 'capacityplanner' | 'shortagecenter' | 'purchasesuggestions' | 'whatifsimulator'
+    63→  | 'productionorders' | 'workorders' | 'routingdesigner' | 'shopfloorschedule' | 'productiontraveler' | 'assignmentconsole' | 'proddashboard' | 'progressmonitor'
+    64→  | 'shopfloordashboard' | 'woconsole' | 'materialconsumption' | 'machineconsole' | 'operatordashboard' | 'wipdashboard' | 'andonboard' | 'prodexceptions'
+    65→  | 'batchmaster' | 'batchgenealogy' | 'traceabilitysearch' | 'recallcenter' | 'expirydashboard' | 'shelflifemonitor' | 'compliancedashboard' | 'batchhistory' | 'batchsplitmerge'
+    66→  | 'prodmobilecontrol' | 'womobileconsole' | 'mobilequalitycenter' | 'labelprintjobs' | 'proddevicemgr' | 'prodsyncmonitor'
+    67→  | 'packagingdashboard' | 'packagingorders' | 'packagehierarchy' | 'packaginglabels' | 'packagingquality' | 'finishedgoods' | 'packagingcost' | 'warehousehandover'
+    68→  | 'costdashboard' | 'batchcostanalysis' | 'variancedashboard' | 'laborcost' | 'machinecost' | 'utilitycost' | 'overheadallocation' | 'mfgcostrollup' | 'mfgfinance'
+    69→  | 'machinedashboard' | 'machinemaster' | 'iotgateway' | 'plcmonitor' | 'sensordashboard' | 'machinetimeline' | 'equipmenthealth' | 'productioncounters'
+    70→  | 'oeedashboard' | 'productionanalytics' | 'machineanalytics' | 'mfgoperanalytics' | 'downtimecenter' | 'mfghtemaps' | 'costanalytics' | 'execmfgdashboard'
+    71→  | 'wastedashboard' | 'scrapcenter' | 'mfgyield' | 'reworkorders' | 'disposalcenter' | 'wastecost' | 'sustainability' | 'foodloss'
+    72→  | 'schedulingdashboard' | 'machineschedule' | 'shiftplanner' | 'campaignplanner' | 'constraintcenter' | 'simulationconsole' | 'productioncalendar' | 'capacityheatmap'
+    73→  | 'mfgmissioncontrol' | 'mfgcontroltower' | 'digitalfactory' | 'mfgalertcenter' | 'mfgfactoryhealth' | 'mfgscorecard' | 'mfgexecdashboard' | 'mfgbizcontinuity'
+    74→  | 'aismartfactory' | 'airecommendations' | 'aipredictivemaint' | 'aipredictivequality' | 'airecipeopt' | 'aienergy' | 'airootcause' | 'aicontinuous'
+    75→  | 'qmsdashboard' | 'qmsstandards' | 'qmsinspection' | 'qmsspecs' | 'qmssampling' | 'qmstestmethods' | 'qmscalendar' | 'qmsdepts'
+    76→  | 'iqcdashboard' | 'iqcsuppliers' | 'iqcqueue' | 'iqchold' | 'iqcncr' | 'iqcscorecard'
+    77→  | 'ipqcdashboard' | 'ipqccheckpoints' | 'ipqcccp' | 'ipqcbatch' | 'ipqcholds' | 'ipqcalerts'
+    78→  | 'fgqcdashboard' | 'fgqcinspection' | 'fgqcrelease' | 'fgqcshelflife' | 'fgqccertificates'
+    79→  | 'limsdashboard' | 'limssamples' | 'limsworklist' | 'limsequipment' | 'limsinventory'
+    80→  | 'fsdashboard' | 'fshaccp' | 'fsccp' | 'fsenvironmental' | 'fsallergen'
+    81→  | 'ncrdashboard' | 'ncrdeviation' | 'ncrquarantine' | 'ncrinvestigation'
+    82→
+    83→  | 'capadashboard' | 'correctiveactions' | 'preventiveactions' | 'effectivenessreview' | 'continuousimprovement'
+    84→  | 'coadashboard' | 'coagenerator' | 'compliancedocs' | 'regulatorycompliance' | 'coacompliancedashboard'  | 'manufacturing' | 'quality'
+    85→  | 'procurement' | 'finance' | 'hr' | 'maintenance'
+    86→  | 'retail' | 'restaurant' | 'analytics' | 'ai' | 'settings'
+    87→
+    88→// ─── Login Screen ───────────────────────────────────────
+    89→function LoginScreen({ onLogin, onDemo }: { onLogin: (e: string, p: string, r: boolean) => void; onDemo: () => void }) {
+    90→  const [email, setEmail] = useState('')
+    91→  const [password, setPassword] = useState('')
+    92→  const [show, setShow] = useState(false)
+    93→  const [rem, setRem] = useState(false)
+    94→  const [loading, setLoading] = useState(false)
+    95→  const [loginError, setLoginError] = useState('')
+    96→
+    97→  return (
+    98→    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-3 md:p-4">
+    99→      <div className="w-full max-w-md space-y-4 md:space-y-6">
+   100→        <div className="text-center space-y-2">
+   101→          <div className="inline-flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-bold text-2xl md:text-3xl">S</div>
+   102→          <div>
+   103→            <h1 className="text-xl md:text-2xl font-bold text-white">SUOP Admin</h1>
+   104→            <p className="text-xs md:text-sm text-slate-400">Sudhastar Unified Operating Platform</p>
+   105→          </div>
+   106→          <Badge variant="outline" className="border-slate-600 text-slate-300 text-xs">
+   107→            <Shield className="mr-1 h-3 w-3" /> Sprint 55 · Parts 1-6 · 497 Tables
+   108→          </Badge>
+   109→        </div>
+   110→        <Card className="p-4 md:p-6 bg-slate-900/80 backdrop-blur border-slate-700">
+   111→          <form onSubmit={async (e) => { e.preventDefault(); setLoginError(''); setLoading(true); try { await onLogin(email, password, rem) } catch (err: any) { setLoginError(err?.message || 'Login failed. Try Demo Mode instead.') } setLoading(false) }} className="space-y-4">
+   112→            <div className="space-y-2">
+   113→              <Label className="text-slate-200">Email Address</Label>
+   114→              <div className="relative">
+   115→                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+   116→                <Input type="email" placeholder="admin@sudhastar.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+   117→              </div>
+   118→            </div>
+   119→            <div className="space-y-2">
+   120→              <Label className="text-slate-200">Password</Label>
+   121→              <div className="relative">
+   122→                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+   123→                <Input type={show ? 'text' : 'password'} placeholder="••••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="pl-10 pr-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+   124→                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">{show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+   125→              </div>
+   126→            </div>
+   127→            <div className="flex items-center space-x-2">
+   128→              <input id="rem" type="checkbox" checked={rem} onChange={(e) => setRem(e.target.checked)} className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-primary" />
+   129→              <Label htmlFor="rem" className="text-sm text-slate-300 cursor-pointer">Remember me for 30 days</Label>
+   130→            </div>
+   131→            {loginError && <div className="text-xs text-rose-400 bg-rose-950/50 border border-rose-800 rounded p-2">{loginError}</div>}
+   132→            <Button type="submit" disabled={loading} className="w-full">
+   133→              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : <>Sign In<ArrowRight className="ml-2 h-4 w-4" /></>}
+   134→            </Button>
+   135→          </form>
+   136→          <div className="relative my-4">
+   137→            <Separator className="bg-slate-700" />
+   138→            <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-slate-900 px-3 text-xs text-slate-500">OR</span>
+   139→          </div>
+   140→          <Button type="button" variant="outline" onClick={onDemo} className="w-full bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:text-white">
+   141→            <Sparkles className="mr-2 h-4 w-4 text-amber-400" /> Explore Demo Mode (No Login Required)
+   142→          </Button>
+   143→          <p className="text-center text-[10px] md:text-xs text-slate-500 mt-4">Enter any email & password to sign in, or click Demo Mode to explore all 100+ modules instantly — no setup needed.</p>
+   144→        </Card>
+   145→      </div>
+   146→    </div>
+   147→  )
+   148→}
+   149→
+   150→// ─── Sidebar Navigation (ALL Modules) ───────────────────
+   151→const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; icon: React.ReactNode; module: ModuleKey; available: boolean }> }> = [
+   152→  {
+   153→    section: 'Overview',
+   154→    items: [
+   155→      { name: 'Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'dashboard', available: true },
+   156→    ]
+   157→  },
+   158→  {
+   159→    section: 'Master Data (Sprint 6-11) — PART 2 COMPLETE',
+   160→    items: [
+   161→      { name: 'Product Master', icon: <Package className="h-4 w-4" />, module: 'products', available: true },
+   162→      { name: 'PIM Platform', icon: <Layers className="h-4 w-4" />, module: 'pim', available: true },
+   163→      { name: 'Commercial Engine', icon: <IndianRupee className="h-4 w-4" />, module: 'commercial', available: true },
+   164→      { name: 'Business Partners', icon: <Users2 className="h-4 w-4" />, module: 'partners', available: true },
+   165→      { name: 'Identification & Traceability', icon: <ScanLine className="h-4 w-4" />, module: 'identification', available: true },
+   166→      { name: 'Data Governance', icon: <ShieldCheck className="h-4 w-4" />, module: 'governance', available: true },
+   167→    ]
+   168→  },
+   169→  {
+   170→    section: 'Platform (Sprint 1-5)',
+   171→    items: [
+   172→      { name: 'Organization', icon: <Network className="h-4 w-4" />, module: 'organization', available: true },
+   173→      { name: 'RBAC & Security', icon: <Shield className="h-4 w-4" />, module: 'rbac', available: true },
+   174→      { name: 'Settings', icon: <Settings className="h-4 w-4" />, module: 'settings', available: true },
+   175→    ]
+   176→  },
+   177→  {
+   178→    section: 'Operations (Sprint 12+) — PART 4',
+   179→    items: [
+   180→      { name: 'Inventory Engine', icon: <Boxes className="h-4 w-4" />, module: 'inventory', available: true },
+   181→      { name: 'Goods Receipt', icon: <Truck className="h-4 w-4" />, module: 'goodsreceipt', available: true },
+   182→      { name: 'Stock Issue', icon: <ArrowUpFromLine className="h-4 w-4" />, module: 'stockissue', available: true },
+   183→      { name: 'Stock Transfer', icon: <ArrowLeftRight className="h-4 w-4" />, module: 'transfer', available: true },
+   184→      { name: 'Adjustments', icon: <ShieldAlert className="h-4 w-4" />, module: 'adjustment', available: true },
+   185→      { name: 'Reservations', icon: <ShieldCheck className="h-4 w-4" />, module: 'reservation', available: true },
+   186→      { name: 'Cycle Count', icon: <ClipboardCheck className="h-4 w-4" />, module: 'cyclecount', available: true },
+   187→      { name: 'Batch & Expiry', icon: <Calendar className="h-4 w-4" />, module: 'batchmgmt', available: true },
+   188→      { name: 'Costing', icon: <IndianRupee className="h-4 w-4" />, module: 'costing', available: true },
+   189→      { name: 'Mission Control', icon: <BarChart3 className="h-4 w-4" />, module: 'analytics', available: true },
+   190→      { name: 'Warehouse', icon: <Warehouse className="h-4 w-4" />, module: 'warehouse', available: true },
+   191→      { name: 'Locations & Bins', icon: <MapPinIcon className="h-4 w-4" />, module: 'whlocations', available: true },
+   192→      { name: 'Receiving', icon: <Truck className="h-4 w-4" />, module: 'receiving', available: true },
+   193→      { name: 'Putaway', icon: <PackageOpen className="h-4 w-4" />, module: 'putaway', available: true },
+   194→      { name: 'Picking & Packing', icon: <ClipboardCheck className="h-4 w-4" />, module: 'fulfillment', available: true },
+   195→      { name: 'Dispatch', icon: <Truck className="h-4 w-4" />, module: 'dispatch', available: true },
+   196→      { name: 'Wave Planning', icon: <Waves className="h-4 w-4" />, module: 'waveplanning', available: true },
+   197→      { name: 'Task Queue', icon: <ListChecks className="h-4 w-4" />, module: 'taskqueue', available: true },
+   198→      { name: 'Workforce', icon: <Users className="h-4 w-4" />, module: 'workforce', available: true },
+   199→      { name: 'Equipment', icon: <Truck className="h-4 w-4" />, module: 'equipment', available: true },
+   200→      { name: 'Control Tower', icon: <Grid3x3 className="h-4 w-4" />, module: 'controltower', available: true },
+   201→      { name: 'SLA Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'sladashboard', available: true },
+   202→      { name: 'Exception Center', icon: <AlertOctagon className="h-4 w-4" />, module: 'exceptioncenter', available: true },
+   203→      { name: 'Workforce Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'workforceanalytics', available: true },
+   204→      { name: 'Cross-Dock Console', icon: <ArrowLeftRight className="h-4 w-4" />, module: 'crossdock', available: true },
+   205→      { name: 'Truck Queue', icon: <ListChecks className="h-4 w-4" />, module: 'truckqueue', available: true },
+   206→      { name: 'Dock Schedule', icon: <Calendar className="h-4 w-4" />, module: 'dockschedule', available: true },
+   207→      { name: 'Yard Map', icon: <Grid3x3 className="h-4 w-4" />, module: 'yardmap', available: true },
+   208→      { name: 'Vehicle Tracker', icon: <Truck className="h-4 w-4" />, module: 'vehicletracker', available: true },
+   209→      { name: 'Gate Console', icon: <ShieldCheck className="h-4 w-4" />, module: 'gateconsole', available: true },
+   210→      { name: 'Yard Control Tower', icon: <Radar className="h-4 w-4" />, module: 'yardtower', available: true },
+   211→      { name: 'Cross-Dock Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'crossdockanalytics', available: true },
+   212→      { name: 'Equipment Master', icon: <Truck className="h-4 w-4" />, module: 'equipmentmaster', available: true },
+   213→      { name: 'Forklift Dashboard', icon: <Truck className="h-4 w-4" />, module: 'forkliftdashboard', available: true },
+   214→      { name: 'Scanner Management', icon: <ScanLine className="h-4 w-4" />, module: 'scannermgmt', available: true },
+   215→      { name: 'Battery Dashboard', icon: <BatteryLow className="h-4 w-4" />, module: 'batterydashboard', available: true },
+   216→      { name: 'Maintenance Planner', icon: <Wrench className="h-4 w-4" />, module: 'maintenanceplanner', available: true },
+   217→      { name: 'Breakdown Console', icon: <AlertOctagon className="h-4 w-4" />, module: 'breakdownconsole', available: true },
+   218→      { name: 'Certification Center', icon: <ShieldCheck className="h-4 w-4" />, module: 'certificationcenter', available: true },
+   219→      { name: 'Equipment Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'equipmentanalytics', available: true },
+   220→      { name: 'Manufacturing', icon: <Factory className="h-4 w-4" />, module: 'manufacturing', available: false },
+   221→      { name: 'Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'quality', available: false },
+   222→    ]
+   223→  },
+   224→  {
+   225→    section: 'Warehouse Analytics (Sprint 32) — NEW',
+   226→    items: [
+   227→      { name: 'Mission Control', icon: <Radar className="h-4 w-4" />, module: 'missioncontrol', available: true },
+   228→      { name: 'KPI Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'kpidashboard', available: true },
+   229→      { name: 'Operator Analytics', icon: <Users className="h-4 w-4" />, module: 'operatoranalytics', available: true },
+   230→      { name: 'Equipment Analytics+', icon: <Activity className="h-4 w-4" />, module: 'wareheatanalytics', available: true },
+   231→      { name: 'Heat Maps', icon: <Grid3x3 className="h-4 w-4" />, module: 'heatmaps', available: true },
+   232→      { name: 'Cost Dashboard', icon: <IndianRupee className="h-4 w-4" />, module: 'costdashboard', available: true },
+   233→      { name: 'SLA Analytics', icon: <Clock className="h-4 w-4" />, module: 'slaanalytics', available: true },
+   234→      { name: 'Executive Reports', icon: <FileText className="h-4 w-4" />, module: 'execreports', available: true },
+   235→    ]
+   236→  },
+   237→  {
+   238→    section: 'Sprint 33 — Command Center & AI Ops (FINAL)',
+   239→    items: [
+   240→      { name: 'WMS Mission Control', icon: <Radar className="h-4 w-4" />, module: 'wmsmissioncontrol', available: true },
+   241→      { name: 'Control Tower', icon: <Grid3x3 className="h-4 w-4" />, module: 'controltower', available: true },
+   242→      { name: 'Digital Twin', icon: <Boxes className="h-4 w-4" />, module: 'digitaltwin', available: true },
+   243→      { name: 'AI Operations', icon: <Brain className="h-4 w-4" />, module: 'aioperations', available: true },
+   244→      { name: 'Executive Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'execdashboard', available: true },
+   245→      { name: 'Alert Center', icon: <BellRing className="h-4 w-4" />, module: 'alertcenter', available: true },
+   246→      { name: 'Recovery Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'recoverydashboard', available: true },
+   247→      { name: 'Enterprise Analytics', icon: <Activity className="h-4 w-4" />, module: 'enterprisenalytics', available: true },
+   248→    ]
+   249→  },
+   250→  {
+   251→    section: 'Part 5 — Manufacturing (Sprint 34) — NEW',
+   252→    items: [
+   253→      { name: 'Plant Master', icon: <Factory className="h-4 w-4" />, module: 'plantmaster', available: true },
+   254→      { name: 'Departments', icon: <Layers3 className="h-4 w-4" />, module: 'productiondept', available: true },
+   255→      { name: 'Production Lines', icon: <GitBranch className="h-4 w-4" />, module: 'productionlines', available: true },
+   256→      { name: 'Work Centers', icon: <Grid3x3 className="h-4 w-4" />, module: 'workcenters', available: true },
+   257→      { name: 'Mfg Calendar', icon: <Calendar className="h-4 w-4" />, module: 'mfgcalendar', available: true },
+   258→      { name: 'Resources', icon: <Wrench className="h-4 w-4" />, module: 'mfgresources', available: true },
+   259→      { name: 'Plant Config', icon: <Settings className="h-4 w-4" />, module: 'plantconfig', available: true },
+   260→      { name: 'Production Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'productiondashboard', available: true },
+   261→      { name: 'Recipe Master', icon: <FileText className="h-4 w-4" />, module: 'recipemaster', available: true },
+   262→      { name: 'Formula Builder', icon: <Layers3 className="h-4 w-4" />, module: 'formulabuilder', available: true },
+   263→      { name: 'BOM Builder', icon: <GitBranch className="h-4 w-4" />, module: 'bombuilder', available: true },
+   264→      { name: 'Recipe Versions', icon: <History className="h-4 w-4" />, module: 'recipeversions', available: true },
+   265→      { name: 'Yield Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'yielddashboard', available: true },
+   266→      { name: 'Batch Scaling', icon: <Calculator className="h-4 w-4" />, module: 'batchscaling', available: true },
+   267→      { name: 'Nutrition Center', icon: <FlaskConical className="h-4 w-4" />, module: 'nutritioncenter', available: true },
+   268→      { name: 'Cost Roll-Up', icon: <IndianRupee className="h-4 w-4" />, module: 'costrollup', available: true },
+   269→      { name: 'Recipe Approval', icon: <ShieldCheck className="h-4 w-4" />, module: 'recipeapproval', available: true },
+   270→      { name: 'Planning Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'planningdashboard', available: true },
+   271→      { name: 'MPS Console', icon: <Calendar className="h-4 w-4" />, module: 'mpsconsole', available: true },
+   272→      { name: 'MRP Workbench', icon: <Calculator className="h-4 w-4" />, module: 'mrpworkbench', available: true },
+   273→      { name: 'Demand Planning', icon: <TrendingUp className="h-4 w-4" />, module: 'demandplanning', available: true },
+   274→      { name: 'Capacity Planner', icon: <Gauge className="h-4 w-4" />, module: 'capacityplanner', available: true },
+   275→      { name: 'Material Shortage', icon: <AlertTriangle className="h-4 w-4" />, module: 'shortagecenter', available: true },
+   276→      { name: 'Purchase Suggestions', icon: <Package className="h-4 w-4" />, module: 'purchasesuggestions', available: true },
+   277→      { name: 'What-if Simulator', icon: <Sparkles className="h-4 w-4" />, module: 'whatifsimulator', available: true },
+   278→      { name: 'Production Orders', icon: <Factory className="h-4 w-4" />, module: 'productionorders', available: true },
+   279→      { name: 'Work Orders', icon: <ListChecks className="h-4 w-4" />, module: 'workorders', available: true },
+   280→      { name: 'Routing Designer', icon: <GitBranch className="h-4 w-4" />, module: 'routingdesigner', available: true },
+   281→      { name: 'Shop Floor Schedule', icon: <Calendar className="h-4 w-4" />, module: 'shopfloorschedule', available: true },
+   282→      { name: 'Production Traveler', icon: <QrCode className="h-4 w-4" />, module: 'productiontraveler', available: true },
+   283→      { name: 'Assignment Console', icon: <UserCog className="h-4 w-4" />, module: 'assignmentconsole', available: true },
+   284→      { name: 'Prod Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'proddashboard', available: true },
+   285→      { name: 'Progress Monitor', icon: <Activity className="h-4 w-4" />, module: 'progressmonitor', available: true },
+   286→      { name: 'Shop Floor Dashboard', icon: <Activity className="h-4 w-4" />, module: 'shopfloordashboard', available: true },
+   287→      { name: 'WO Console', icon: <ListChecks className="h-4 w-4" />, module: 'woconsole', available: true },
+   288→      { name: 'Material Consumption', icon: <Package className="h-4 w-4" />, module: 'materialconsumption', available: true },
+   289→      { name: 'Machine Console', icon: <Server className="h-4 w-4" />, module: 'machineconsole', available: true },
+   290→      { name: 'Operator Dashboard', icon: <Users className="h-4 w-4" />, module: 'operatordashboard', available: true },
+   291→      { name: 'WIP Dashboard', icon: <Boxes className="h-4 w-4" />, module: 'wipdashboard', available: true },
+   292→      { name: 'Andon Board', icon: <Grid3x3 className="h-4 w-4" />, module: 'andonboard', available: true },
+   293→      { name: 'Prod Exceptions', icon: <AlertTriangle className="h-4 w-4" />, module: 'prodexceptions', available: true },
+   294→    ]
+   295→  },
+   296→  {
+   297→    section: 'Part 5 — Batch Traceability (Sprint 39)',
+   298→    items: [
+   299→      { name: 'Batch Master', icon: <Boxes className="h-4 w-4" />, module: 'batchmaster', available: true },
+   300→      { name: 'Genealogy Viewer', icon: <GitGraph className="h-4 w-4" />, module: 'batchgenealogy', available: true },
+   301→      { name: 'Traceability Search', icon: <Waypoints className="h-4 w-4" />, module: 'traceabilitysearch', available: true },
+   302→      { name: 'Recall Center', icon: <FileWarning className="h-4 w-4" />, module: 'recallcenter', available: true },
+   303→      { name: 'Expiry Dashboard', icon: <CalendarClock className="h-4 w-4" />, module: 'expirydashboard', available: true },
+   304→      { name: 'Shelf-Life Monitor', icon: <Timer className="h-4 w-4" />, module: 'shelflifemonitor', available: true },
+   305→      { name: 'Compliance Center', icon: <Stamp className="h-4 w-4" />, module: 'compliancedashboard', available: true },
+   306→      { name: 'Batch History', icon: <History className="h-4 w-4" />, module: 'batchhistory', available: true },
+   307→      { name: 'Split & Merge', icon: <GitFork className="h-4 w-4" />, module: 'batchsplitmerge', available: true },
+   308→    ]
+   309→  },
+   310→  {
+   311→    section: 'Part 5 — Production Mobile (Sprint 40)',
+   312→    items: [
+   313→      { name: 'Prod Mobile Control', icon: <Smartphone className="h-4 w-4" />, module: 'prodmobilecontrol', available: true },
+   314→      { name: 'WO Mobile Console', icon: <ListChecks className="h-4 w-4" />, module: 'womobileconsole', available: true },
+   315→      { name: 'Quality Center', icon: <ShieldCheck className="h-4 w-4" />, module: 'mobilequalitycenter', available: true },
+   316→      { name: 'Label Print Jobs', icon: <Printer className="h-4 w-4" />, module: 'labelprintjobs', available: true },
+   317→      { name: 'Device Manager', icon: <Smartphone className="h-4 w-4" />, module: 'proddevicemgr', available: true },
+   318→      { name: 'Sync Monitor', icon: <RefreshCw className="h-4 w-4" />, module: 'prodsyncmonitor', available: true },
+   319→    ]
+   320→  },
+   321→  {
+   322→    section: 'Part 5 — Packaging & FG (Sprint 41)',
+   323→    items: [
+   324→      { name: 'Packaging Dashboard', icon: <PackageCheck className="h-4 w-4" />, module: 'packagingdashboard', available: true },
+   325→      { name: 'Packaging Orders', icon: <Package className="h-4 w-4" />, module: 'packagingorders', available: true },
+   326→      { name: 'Package Hierarchy', icon: <GitGraph className="h-4 w-4" />, module: 'packagehierarchy', available: true },
+   327→      { name: 'Packaging Labels', icon: <Printer className="h-4 w-4" />, module: 'packaginglabels', available: true },
+   328→      { name: 'Packaging Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'packagingquality', available: true },
+   329→      { name: 'Finished Goods', icon: <PackageCheck className="h-4 w-4" />, module: 'finishedgoods', available: true },
+   330→      { name: 'Packaging Cost', icon: <IndianRupee className="h-4 w-4" />, module: 'packagingcost', available: true },
+   331→      { name: 'WH Handover', icon: <ArrowRight className="h-4 w-4" />, module: 'warehousehandover', available: true },
+   332→    ]
+   333→  },
+   334→  {
+   335→    section: 'Part 5 — Mfg Cost & Finance (Sprint 42)',
+   336→    items: [
+   337→      { name: 'Cost Dashboard', icon: <IndianRupee className="h-4 w-4" />, module: 'costdashboard', available: true },
+   338→      { name: 'Batch Cost Analysis', icon: <Boxes className="h-4 w-4" />, module: 'batchcostanalysis', available: true },
+   339→      { name: 'Variance Dashboard', icon: <TrendingUp className="h-4 w-4" />, module: 'variancedashboard', available: true },
+   340→      { name: 'Labor Cost', icon: <Users className="h-4 w-4" />, module: 'laborcost', available: true },
+   341→      { name: 'Machine Cost', icon: <Server className="h-4 w-4" />, module: 'machinecost', available: true },
+   342→      { name: 'Utility Cost', icon: <Zap className="h-4 w-4" />, module: 'utilitycost', available: true },
+   343→      { name: 'Overhead Allocation', icon: <Building2 className="h-4 w-4" />, module: 'overheadallocation', available: true },
+   344→      { name: 'Cost Roll-Up', icon: <Calculator className="h-4 w-4" />, module: 'mfgcostrollup', available: true },
+   345→      { name: 'Mfg Finance', icon: <FileText className="h-4 w-4" />, module: 'mfgfinance', available: true },
+   346→    ]
+   347→  },
+   348→  {
+   349→    section: 'Part 5 — Machine & IoT (Sprint 43)',
+   350→    items: [
+   351→      { name: 'Machine Dashboard', icon: <Server className="h-4 w-4" />, module: 'machinedashboard', available: true },
+   352→      { name: 'Machine Master', icon: <Server className="h-4 w-4" />, module: 'machinemaster', available: true },
+   353→      { name: 'IoT Gateway', icon: <Network className="h-4 w-4" />, module: 'iotgateway', available: true },
+   354→      { name: 'PLC Monitor', icon: <Server className="h-4 w-4" />, module: 'plcmonitor', available: true },
+   355→      { name: 'Sensor Dashboard', icon: <Activity className="h-4 w-4" />, module: 'sensordashboard', available: true },
+   356→      { name: 'Machine Timeline', icon: <Clock className="h-4 w-4" />, module: 'machinetimeline', available: true },
+   357→      { name: 'Equipment Health', icon: <ShieldCheck className="h-4 w-4" />, module: 'equipmenthealth', available: true },
+   358→      { name: 'Production Counters', icon: <Hash className="h-4 w-4" />, module: 'productioncounters', available: true },
+   359→    ]
+   360→  },
+   361→  {
+   362→    section: 'Part 5 — OEE & Analytics (Sprint 44)',
+   363→    items: [
+   364→      { name: 'OEE Dashboard', icon: <Gauge className="h-4 w-4" />, module: 'oeedashboard', available: true },
+   365→      { name: 'Production Analytics', icon: <BarChart3 className="h-4 w-4" />, module: 'productionanalytics', available: true },
+   366→      { name: 'Machine Analytics', icon: <Server className="h-4 w-4" />, module: 'machineanalytics', available: true },
+   367→      { name: 'Operator Analytics', icon: <Users className="h-4 w-4" />, module: 'mfgoperanalytics', available: true },
+   368→      { name: 'Downtime Center', icon: <AlertTriangle className="h-4 w-4" />, module: 'downtimecenter', available: true },
+   369→      { name: 'Mfg Heat Maps', icon: <Grid3x3 className="h-4 w-4" />, module: 'mfghtemaps', available: true },
+   370→      { name: 'Cost Analytics', icon: <IndianRupee className="h-4 w-4" />, module: 'costanalytics', available: true },
+   371→      { name: 'Exec Mfg Dashboard', icon: <Radar className="h-4 w-4" />, module: 'execmfgdashboard', available: true },
+   372→    ]
+   373→  },
+   374→  {
+   375→    section: 'Part 5 — Waste & Yield (Sprint 45)',
+   376→    items: [
+   377→      { name: 'Waste Dashboard', icon: <Trash2 className="h-4 w-4" />, module: 'wastedashboard', available: true },
+   378→      { name: 'Scrap Center', icon: <Trash2 className="h-4 w-4" />, module: 'scrapcenter', available: true },
+   379→      { name: 'Yield Dashboard', icon: <Percent className="h-4 w-4" />, module: 'mfgyield', available: true },
+   380→      { name: 'Rework Orders', icon: <Recycle className="h-4 w-4" />, module: 'reworkorders', available: true },
+   381→      { name: 'Disposal Center', icon: <Archive className="h-4 w-4" />, module: 'disposalcenter', available: true },
+   382→      { name: 'Waste Cost', icon: <IndianRupee className="h-4 w-4" />, module: 'wastecost', available: true },
+   383→      { name: 'Sustainability', icon: <Globe2 className="h-4 w-4" />, module: 'sustainability', available: true },
+   384→      { name: 'Food Loss', icon: <AlertCircle className="h-4 w-4" />, module: 'foodloss', available: true },
+   385→    ]
+   386→  },
+   387→  {
+   388→    section: 'Part 5 — Scheduling (Sprint 46)',
+   389→    items: [
+   390→      { name: 'Scheduling Dashboard', icon: <Calendar className="h-4 w-4" />, module: 'schedulingdashboard', available: true },
+   391→      { name: 'Machine Schedule', icon: <Server className="h-4 w-4" />, module: 'machineschedule', available: true },
+   392→      { name: 'Shift Planner', icon: <Clock className="h-4 w-4" />, module: 'shiftplanner', available: true },
+   393→      { name: 'Campaign Planner', icon: <Boxes className="h-4 w-4" />, module: 'campaignplanner', available: true },
+   394→      { name: 'Constraint Center', icon: <ShieldAlert className="h-4 w-4" />, module: 'constraintcenter', available: true },
+   395→      { name: 'Simulation Console', icon: <PlayCircle className="h-4 w-4" />, module: 'simulationconsole', available: true },
+   396→      { name: 'Production Calendar', icon: <Calendar className="h-4 w-4" />, module: 'productioncalendar', available: true },
+   397→      { name: 'Capacity Heat Map', icon: <Grid3x3 className="h-4 w-4" />, module: 'capacityheatmap', available: true },
+   398→    ]
+   399→  },
+   400→  {
+   401→    section: 'Part 5 — Mission Control (Sprint 47)',
+   402→    items: [
+   403→      { name: 'Mission Control', icon: <Radar className="h-4 w-4" />, module: 'mfgmissioncontrol', available: true },
+   404→      { name: 'Control Tower', icon: <Building2 className="h-4 w-4" />, module: 'mfgcontroltower', available: true },
+   405→      { name: 'Digital Factory', icon: <Factory className="h-4 w-4" />, module: 'digitalfactory', available: true },
+   406→      { name: 'Alert Center', icon: <BellRing className="h-4 w-4" />, module: 'mfgalertcenter', available: true },
+   407→      { name: 'Factory Health', icon: <ShieldCheck className="h-4 w-4" />, module: 'mfgfactoryhealth', available: true },
+   408→      { name: 'Scorecard', icon: <Target className="h-4 w-4" />, module: 'mfgscorecard', available: true },
+   409→      { name: 'Exec Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'mfgexecdashboard', available: true },
+   410→      { name: 'Biz Continuity', icon: <ShieldAlert className="h-4 w-4" />, module: 'mfgbizcontinuity', available: true },
+   411→    ]
+   412→  },
+   413→  {
+   414→    section: 'Part 5 — AI Smart Factory (Sprint 48)',
+   415→    items: [
+   416→      { name: 'AI Smart Factory', icon: <Brain className="h-4 w-4" />, module: 'aismartfactory', available: true },
+   417→      { name: 'AI Recommendations', icon: <Lightbulb className="h-4 w-4" />, module: 'airecommendations', available: true },
+   418→      { name: 'Predictive Maint', icon: <Wrench className="h-4 w-4" />, module: 'aipredictivemaint', available: true },
+   419→      { name: 'Predictive Quality', icon: <ShieldCheck className="h-4 w-4" />, module: 'aipredictivequality', available: true },
+   420→      { name: 'Recipe Optimizer', icon: <FlaskConical className="h-4 w-4" />, module: 'airecipeopt', available: true },
+   421→      { name: 'AI Energy', icon: <Zap className="h-4 w-4" />, module: 'aienergy', available: true },
+   422→      { name: 'Root Cause AI', icon: <AlertCircle className="h-4 w-4" />, module: 'airootcause', available: true },
+   423→      { name: 'Continuous Imp.', icon: <TrendingUp className="h-4 w-4" />, module: 'aicontinuous', available: true },
+   424→    ]
+   425→  },
+   426→  {
+   427→    section: 'Part 6 — Quality Foundation (Sprint 49)',
+   428→    items: [
+   429→      { name: 'Quality Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'qmsdashboard', available: true },
+   430→      { name: 'Standards', icon: <FileText className="h-4 w-4" />, module: 'qmsstandards', available: true },
+   431→      { name: 'Inspection Master', icon: <ClipboardCheck className="h-4 w-4" />, module: 'qmsinspection', available: true },
+   432→      { name: 'Specifications', icon: <FileCheck className="h-4 w-4" />, module: 'qmsspecs', available: true },
+   433→      { name: 'Sampling Plans', icon: <ClipboardCheck className="h-4 w-4" />, module: 'qmssampling', available: true },
+   434→      { name: 'Test Methods', icon: <Beaker className="h-4 w-4" />, module: 'qmstestmethods', available: true },
+   435→      { name: 'Quality Calendar', icon: <Calendar className="h-4 w-4" />, module: 'qmscalendar', available: true },
+   436→      { name: 'QMS Departments', icon: <Building2 className="h-4 w-4" />, module: 'qmsdepts', available: true },
+   437→    ]
+   438→  },
+   439→  {
+   440→    section: 'Part 6 — Supplier Quality (Sprint 50)',
+   441→    items: [
+   442→      { name: 'IQC Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'iqcdashboard', available: true },
+   443→      { name: 'Supplier Quality', icon: <Building2 className="h-4 w-4" />, module: 'iqcsuppliers', available: true },
+   444→      { name: 'Inspection Queue', icon: <ClipboardCheck className="h-4 w-4" />, module: 'iqcqueue', available: true },
+   445→      { name: 'Quality Hold', icon: <Package className="h-4 w-4" />, module: 'iqchold', available: true },
+   446→      { name: 'Supplier NCR', icon: <FileWarning className="h-4 w-4" />, module: 'iqcncr', available: true },
+   447→      { name: 'Vendor Scorecard', icon: <Award className="h-4 w-4" />, module: 'iqcscorecard', available: true },
+   448→    ]
+   449→  },
+   450→  {
+   451→    section: 'Part 6 — IPQC (Sprint 51)',
+   452→    items: [
+   453→      { name: 'IPQC Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'ipqcdashboard', available: true },
+   454→      { name: 'Checkpoints', icon: <ClipboardCheck className="h-4 w-4" />, module: 'ipqccheckpoints', available: true },
+   455→      { name: 'CCP Monitor', icon: <AlertTriangle className="h-4 w-4" />, module: 'ipqcccp', available: true },
+   456→      { name: 'Batch Quality', icon: <FileText className="h-4 w-4" />, module: 'ipqcbatch', available: true },
+   457→      { name: 'Quality Holds', icon: <Pause className="h-4 w-4" />, module: 'ipqcholds', available: true },
+   458→      { name: 'Quality Alerts', icon: <BellRing className="h-4 w-4" />, module: 'ipqcalerts', available: true },
+   459→    ]
+   460→  },
+   461→  {
+   462→    section: 'Part 6 — FGQC (Sprint 52)',
+   463→    items: [
+   464→      { name: 'FGQC Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'fgqcdashboard', available: true },
+   465→      { name: 'FG Inspection', icon: <ClipboardCheck className="h-4 w-4" />, module: 'fgqcinspection', available: true },
+   466→      { name: 'Batch Release', icon: <PackageCheck className="h-4 w-4" />, module: 'fgqcrelease', available: true },
+   467→      { name: 'Shelf-Life', icon: <Calendar className="h-4 w-4" />, module: 'fgqcshelflife', available: true },
+   468→      { name: 'Certificates', icon: <Stamp className="h-4 w-4" />, module: 'fgqccertificates', available: true },
+   469→    ]
+   470→  },
+   471→  {
+   472→    section: 'Part 6 — LIMS (Sprint 53)',
+   473→    items: [
+   474→      { name: 'LIMS Dashboard', icon: <FlaskConical className="h-4 w-4" />, module: 'limsdashboard', available: true },
+   475→      { name: 'Samples', icon: <QrCode className="h-4 w-4" />, module: 'limssamples', available: true },
+   476→      { name: 'Worklist', icon: <ClipboardCheck className="h-4 w-4" />, module: 'limsworklist', available: true },
+   477→      { name: 'Equipment', icon: <Microscope className="h-4 w-4" />, module: 'limsequipment', available: true },
+   478→      { name: 'Lab Inventory', icon: <Beaker className="h-4 w-4" />, module: 'limsinventory', available: true },
+   479→    ]
+   480→  },
+   481→  {
+   482→    section: 'Part 6 — Food Safety (Sprint 54)',
+   483→    items: [
+   484→      { name: 'Food Safety Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'fsdashboard', available: true },
+   485→      { name: 'HACCP Plan', icon: <FileText className="h-4 w-4" />, module: 'fshaccp', available: true },
+   486→      { name: 'CCP Monitor', icon: <AlertTriangle className="h-4 w-4" />, module: 'fsccp', available: true },
+   487→      { name: 'Environmental', icon: <Beaker className="h-4 w-4" />, module: 'fsenvironmental', available: true },
+   488→      { name: 'Allergen Matrix', icon: <ShieldAlert className="h-4 w-4" />, module: 'fsallergen', available: true },
+   489→    ]
+   490→  },
+   491→  {
+   492→    section: 'Part 6 — NCR (Sprint 55) — NEW',
+   493→    items: [
+   494→      { name: 'NCR Dashboard', icon: <FileWarning className="h-4 w-4" />, module: 'ncrdashboard', available: true },
+   495→      { name: 'Deviations', icon: <AlertTriangle className="h-4 w-4" />, module: 'ncrdeviation', available: true },
+   496→      { name: 'Quarantine', icon: <PackageX className="h-4 w-4" />, module: 'ncrquarantine', available: true },
+   497→      { name: 'Investigation', icon: <Search className="h-4 w-4" />, module: 'ncrinvestigation', available: true },
+   498→    ]
+   499→  },
+   500→  {
+   501→    section: 'Part 6 — CAPA & Continuous Improvement (Sprint 56) — NEW',
+   502→    items: [
+   503→      { name: 'CAPA Dashboard', icon: <ShieldCheck className="h-4 w-4" />, module: 'capadashboard', available: true },
+   504→      { name: 'Corrective Actions', icon: <Wrench className="h-4 w-4" />, module: 'correctiveactions', available: true },
+   505→      { name: 'Preventive Actions', icon: <ShieldCheck className="h-4 w-4" />, module: 'preventiveactions', available: true },
+   506→      { name: 'Effectiveness Review', icon: <CheckCircle2 className="h-4 w-4" />, module: 'effectivenessreview', available: true },
+   507→      { name: 'Continuous Improvement', icon: <Activity className="h-4 w-4" />, module: 'continuousimprovement', available: true },
+   508→    ]
+   509→  },
+   510→  {
+   511→    section: 'Part 6 — COA & Compliance (Sprint 57) — NEW',
+   512→    items: [
+   513→      { name: 'COA Dashboard', icon: <FileCheck2 className="h-4 w-4" />, module: 'coadashboard', available: true },
+   514→      { name: 'COA Generator', icon: <FileText className="h-4 w-4" />, module: 'coagenerator', available: true },
+   515→      { name: 'Document Library', icon: <Archive className="h-4 w-4" />, module: 'compliancedocs', available: true },
+   516→      { name: 'Regulatory Compliance', icon: <ShieldCheck className="h-4 w-4" />, module: 'regulatorycompliance', available: true },
+   517→      { name: 'Compliance Dashboard', icon: <BarChart3 className="h-4 w-4" />, module: 'coacompliancedashboard', available: true },
+   518→    ]
+   519→  },
+   520→
+   521→  {
+   522→    section: 'Business (Planned)',
+   523→    items: [
+   524→      { name: 'Procurement', icon: <Package className="h-4 w-4" />, module: 'procurement', available: false },
+   525→      { name: 'Finance', icon: <DollarSign className="h-4 w-4" />, module: 'finance', available: false },
+   526→      { name: 'Workforce', icon: <Users className="h-4 w-4" />, module: 'hr', available: false },
+   527→      { name: 'Maintenance', icon: <Wrench className="h-4 w-4" />, module: 'maintenance', available: false },
+   528→    ]
+   529→  },
+   530→  {
+   531→    section: 'Channels (Planned)',
+   532→    items: [
+   533→      { name: 'Retail POS', icon: <Store className="h-4 w-4" />, module: 'retail', available: false },
+   534→      { name: 'Restaurant POS', icon: <UtensilsCrossed className="h-4 w-4" />, module: 'restaurant', available: false },
+   535→    ]
+   536→  },
+   537→  {
+   538→    section: 'Intelligence (Planned)',
+   539→    items: [
+   540→      { name: 'AI Copilot', icon: <Brain className="h-4 w-4" />, module: 'ai', available: false },
+   541→    ]
+   542→  },
+   543→]
+   544→
+   545→// ─── Dashboard Module (Sprint 1 + All Stats) ────────────
+   546→function DashboardModule() {
+   547→  const sprintData = [
+   548→    { sprint: 'Sprint 1', name: 'Project Bootstrap', status: 'done', desc: 'Repository, Docker, Admin shell, Backend' },
+   549→    { sprint: 'Sprint 2', name: 'Core Infrastructure', status: 'done', desc: 'Config, Database, Redis, RabbitMQ, Logging, SDK, CI/CD' },
+   550→    { sprint: 'Sprint 3', name: 'Identity Platform', status: 'done', desc: 'Auth, JWT, Password, Sessions, Devices, Audit' },
+   551→    { sprint: 'Sprint 4', name: 'Organization Platform', status: 'done', desc: 'Enterprise, Company, BU, Branch, Plant, Warehouse, Dept' },
+   552→    { sprint: 'Sprint 5', name: 'Authorization Platform', status: 'done', desc: 'RBAC, Permissions, Feature Flags, Approval Matrix' },
+   553→    { sprint: 'Sprint 6', name: 'Product Foundation', status: 'done', desc: 'Products, Categories, Brands, UOMs, Variants, UPI' },
+   554→    { sprint: 'Sprint 7', name: 'PIM Platform', status: 'done', desc: 'Families, Collections, Compliance, Versioning, Approvals' },
+   555→    { sprint: 'Sprint 8', name: 'Commercial Engine', status: 'done', desc: 'Pricing, GST, Discounts, Promotions, Future Prices, Resolution' },
+   556→    { sprint: 'Sprint 9', name: 'Business Partner Platform', status: 'done', desc: 'Unified Customers, Suppliers, Transporters, Franchisees, Scorecards' },
+   557→    { sprint: 'Sprint 10', name: 'Identification & Traceability', status: 'done', desc: 'Barcodes, QR, Batches, Lots, Serials, GS1, Labels, Traceability Engine' },
+   558→    { sprint: 'Sprint 11', name: 'Data Governance & Quality', status: 'done', desc: 'Lifecycle, Approvals, Import/Export, Validation, Duplicates, Audit, Quality' },
+   559→    { sprint: 'Sprint 12', name: 'Inventory Foundation', status: 'done', desc: 'Universal Stock Ledger, Transactions, Journal, Availability Service' },
+   560→    { sprint: 'Sprint 13', name: 'Goods Receipt & Putaway', status: 'done', desc: 'GRN, Barcode Receiving, Batch Creation, Putaway Engine, Quality Hold' },
+   561→    { sprint: 'Sprint 14', name: 'Stock Issue & Outbound', status: 'done', desc: 'Material Issue, Picking, Consumption, Scrap, Damage, Outbound Dashboard' },
+   562→    { sprint: 'Sprint 15', name: 'Stock Transfer & Transit', status: 'done', desc: 'Warehouse/Branch/Bin Transfers, In-Transit Inventory, Receiving Verification' },
+   563→    { sprint: 'Sprint 16', name: 'Adjustment & Reconciliation', status: 'done', desc: 'Inventory Adjustments, Damage Reports, Expiry Disposal, Root Cause Analysis' },
+   564→    { sprint: 'Sprint 17', name: 'Reservation & Allocation', status: 'done', desc: 'Inventory Reservations, Allocation Rules, Availability Snapshots, Priority Matrix' },
+   565→    { sprint: 'Sprint 18', name: 'Cycle Count & Audit', status: 'done', desc: 'Physical Inventory, Cycle Count Plans, Count Teams, Variance Management, ABC Strategy' },
+   566→    { sprint: 'Sprint 19', name: 'Batch & Expiry Management', status: 'done', desc: 'Batch Lifecycle, Shelf-Life Rules, Expiry Alerts, Product Recall Engine, Batch Genealogy' },
+   567→    { sprint: 'Sprint 20', name: 'Costing & Valuation', status: 'done', desc: 'Cost Layers, Landed Cost, Revaluation, GL Integration, Inventory Valuation (ABC/XYZ)' },
+   568→    { sprint: 'Sprint 21', name: 'Inventory Analytics & Mission Control', status: 'done', desc: 'Inventory KPIs, Ageing Analysis, ABC/XYZ/FSN Classification, Reorder Rules, Mission Control Dashboard, Executive Reports — PART 3 COMPLETE' },
+   569→    { sprint: 'Sprint 22', name: 'Warehouse Foundation — PART 4 BEGUN', status: 'done', desc: 'Warehouse Master, Zones, Temperature Zones & Logs, Capacity, Calendar, Access Rules, Warehouse Rules — 6-warehouse Mumbai architecture' },
+   570→    { sprint: 'Sprint 23', name: 'Warehouse Location & Bin Management', status: 'done', desc: 'Aisles, Racks, Shelves, Bins, Bin Capacity Logs — 6-level hierarchy (Warehouse→Zone→Aisle→Rack→Shelf→Bin), scanner-first workflow, bin capacity alerts' },
+   571→    { sprint: 'Sprint 24', name: 'Receiving Operations, Dock Management & ASN Engine', status: 'done', desc: 'Advanced Shipping Notices, Receiving Appointments, Gate Entries, Loading Docks, Receiving Exceptions — 9-step receiving flow (Supplier→ASN→Appt→Gate→Dock→Unload→Verify→GRN→Putaway), pallet-level receiving' },
+   572→    { sprint: 'Sprint 25', name: 'Directed Putaway, Storage Optimization & Bin Intelligence Engine', status: 'done', desc: 'WmsPutawayTask, PutawayRules (FEFO/FIFO/ABC/CLOSEST_EMPTY/FAST_MOVING_ZONE), WarehousePallet, ForkliftTask — system-directed bin recommendation, 5-factor bin scoring (Capacity + Distance + Compatibility + Temperature + Picking Efficiency), pallet-level putaway, cross-dock & cold-storage flows' },
+   573→    { sprint: 'Sprint 26', name: 'Picking, Packing & Order Fulfillment Engine', status: 'done', desc: 'WmsPickingTask, WmsPickingTaskLine, PackingStation, PackingJob, CartonType, Carton, ShippingLabel — 6 fulfillment types (RETAIL/WHOLESALE/DISTRIBUTOR/RESTAURANT/BRANCH_TRANSFER/EXPORT), 8 picking strategies (SINGLE_ORDER/BATCH/WAVE/ZONE/PICK_AND_PASS/CART/CLUSTER/PALLET), two-stage barcode verification (Pick: Scan Bin→Product→Batch→Tote; Pack: second-scan verification→pack→label→dispatch), cartonization engine, multi-carrier shipping label generation (Shiprocket, Blue Dart, Delhivery, DTDC, FedEx, DHL)' },
+   574→    { sprint: 'Sprint 27', name: 'Dispatch, Shipping & Load Management Engine', status: 'done', desc: 'DispatchOrder, DispatchOrderLine, DispatchVehicle, LoadPlan, ShippingDocument, VehicleSeal, GateExitLog — 9 dispatch types (RETAIL/DISTRIBUTOR/RESTAURANT/BRANCH_TRANSFER/EXPORT/COURIER/DIRECT_DELIVERY/CUSTOMER_PICKUP/VENDOR_RETURN), 5 vehicle types (TRUCK/CONTAINER/REFRIGERATED/TEMPO/FLATBED), 4 ownership models (OWN_FLEET/THIRD_PARTY/COURIER/RENTAL), load planning (weight/volume/pallet utilization, loading sequence), 7 shipping document types (DELIVERY_CHALLAN/PACKING_LIST/DELIVERY_MANIFEST/E_WAY_BILL_REF/etc), 4 seal types (BOLT/CABLE/ELECTRONIC/TAMPER_PROOF), gate exit verification (seal+docs+vehicle inspection), Vehicle Load Verification (Chief Architect: Loading Complete→Scan Every Pallet→Scan Vehicle→Verify Dispatch Plan→Generate Manifest→Apply Seal→Security Gate Verification→Vehicle Exit)' },
+   575→  ]
+   576→
+   577→  return (
+   578→    <div className="space-y-6">
+   579→      <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
+   580→        <h2 className="text-2xl font-bold mb-1">Welcome to SUOP Admin</h2>
+   581→        <p className="text-slate-300 text-sm max-w-3xl">
+   582→          Sudhastar Unified Operating Platform — Enterprise Operating System for Food Manufacturing,
+   583→          Warehouse, Retail & Restaurant Operations. <span className="font-semibold text-emerald-400">Part 4: WMS (Sprint 27 of 33)</span>.
+   584→        </p>
+   585→        <div className="flex items-center gap-6 mt-4">
+   586→          <div className="text-center"><p className="text-3xl font-bold">223</p><p className="text-xs text-slate-400">Database Tables</p></div>
+   587→          <Separator orientation="vertical" className="h-12 bg-slate-700" />
+   588→          <div className="text-center"><p className="text-3xl font-bold">821</p><p className="text-xs text-slate-400">Architecture Entities</p></div>
+   589→          <Separator orientation="vertical" className="h-12 bg-slate-700" />
+   590→          <div className="text-center"><p className="text-3xl font-bold">249</p><p className="text-xs text-slate-400">Arch. Decisions</p></div>
+   591→          <Separator orientation="vertical" className="h-12 bg-slate-700" />
+   592→          <div className="text-center"><p className="text-3xl font-bold text-emerald-400">27</p><p className="text-xs text-slate-400">Sprints Done · Part 4 WMS</p></div>
+   593→        </div>
+   594→      </Card>
+   595→
+   596→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+   597→        {[
+   598→          { label: 'Products', value: 12, icon: <Package className="h-5 w-5 text-blue-600" />, module: 'products' as ModuleKey },
+   599→          { label: 'Roles', value: 15, icon: <Shield className="h-5 w-5 text-purple-600" />, module: 'rbac' as ModuleKey },
+   600→          { label: 'Branches', value: 8, icon: <MapPin className="h-5 w-5 text-emerald-600" />, module: 'organization' as ModuleKey },
+   601→          { label: 'Compliance', value: 6, icon: <ShieldCheck className="h-5 w-5 text-amber-600" />, module: 'pim' as ModuleKey },
+   602→        ].map(s => (
+   603→          <Card key={s.label} className="p-4">
+   604→            <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+   605→            <p className="text-2xl font-bold">{s.value}</p>
+   606→          </Card>
+   607→        ))}
+   608→      </div>
+   609→
+   610→      <Card className="p-6">
+   611→        <h3 className="font-semibold mb-4">Implementation Progress — All Sprints</h3>
+   612→        <div className="space-y-3">
+   613→          {sprintData.map(s => (
+   614→            <div key={s.sprint} className="flex items-center gap-3 text-sm">
+   615→              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+   616→              <Badge variant="outline" className="font-mono text-xs flex-shrink-0">{s.sprint}</Badge>
+   617→              <span className="font-medium flex-shrink-0">{s.name}</span>
+   618→              <span className="text-muted-foreground text-xs flex-1 truncate hidden sm:inline">{s.desc}</span>
+   619→              <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-xs flex-shrink-0">Done</Badge>
+   620→            </div>
+
+[showing lines 1-620 of 37081; use offset=621 with limit to continue reading]
