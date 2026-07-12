@@ -544,6 +544,43 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
 
 // ─── Dashboard Module (Sprint 1 + All Stats) ────────────
 function DashboardModule() {
+  const { isDemoMode, hasPermission } = useAuthStore()
+  const [stats, setStats] = useState({ products: 0, roles: 0, companies: 0, compliance: 0 })
+  const [statsLoading, setStatsLoading] = useState(!isDemoMode)
+  const [statsError, setStatsError] = useState('')
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030'
+
+  useEffect(() => {
+    if (isDemoMode) { setStatsLoading(false); return }
+    let cancelled = false
+    async function loadStats() {
+      setStatsLoading(true); setStatsError('')
+      try {
+        const token = localStorage.getItem('suop_access_token')
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const [prodRes, roleRes, orgRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/v1/catalog/products?pageSize=1`, { headers }).then(r => r.json()),
+          fetch(`${API_BASE}/api/v1/admin/roles?pageSize=1`, { headers }).then(r => r.json()),
+          fetch(`${API_BASE}/api/v1/organization/companies?pageSize=1`, { headers }).then(r => r.json()),
+        ])
+        if (cancelled) return
+        setStats({
+          products: prodRes.status === 'fulfilled' ? (prodRes.value?.meta?.total ?? 0) : 0,
+          roles: roleRes.status === 'fulfilled' ? (roleRes.value?.meta?.total ?? 0) : 0,
+          companies: orgRes.status === 'fulfilled' ? (orgRes.value?.meta?.total ?? 0) : 0,
+          compliance: 0,
+        })
+      } catch (err: any) {
+        if (!cancelled) setStatsError(err?.message || 'Failed to load stats')
+      } finally {
+        if (!cancelled) setStatsLoading(false)
+      }
+    }
+    loadStats()
+    return () => { cancelled = true }
+  }, [isDemoMode])
+
   const sprintData = [
     { sprint: 'Sprint 1', name: 'Project Bootstrap', status: 'done', desc: 'Repository, Docker, Admin shell, Backend' },
     { sprint: 'Sprint 2', name: 'Core Infrastructure', status: 'done', desc: 'Config, Database, Redis, RabbitMQ, Logging, SDK, CI/CD' },
@@ -595,10 +632,10 @@ function DashboardModule() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Products', value: 12, icon: <Package className="h-5 w-5 text-blue-600" />, module: 'products' as ModuleKey },
-          { label: 'Roles', value: 15, icon: <Shield className="h-5 w-5 text-purple-600" />, module: 'rbac' as ModuleKey },
-          { label: 'Branches', value: 8, icon: <MapPin className="h-5 w-5 text-emerald-600" />, module: 'organization' as ModuleKey },
-          { label: 'Compliance', value: 6, icon: <ShieldCheck className="h-5 w-5 text-amber-600" />, module: 'pim' as ModuleKey },
+          { label: 'Products', value: statsLoading ? '...' : isDemoMode ? 12 : stats.products, icon: <Package className="h-5 w-5 text-blue-600" />, module: 'products' as ModuleKey },
+          { label: 'Roles', value: statsLoading ? '...' : isDemoMode ? 15 : stats.roles, icon: <Shield className="h-5 w-5 text-purple-600" />, module: 'rbac' as ModuleKey },
+          { label: 'Companies', value: statsLoading ? '...' : isDemoMode ? 8 : stats.companies, icon: <MapPin className="h-5 w-5 text-emerald-600" />, module: 'organization' as ModuleKey },
+          { label: 'Compliance', value: isDemoMode ? 6 : stats.compliance, icon: <ShieldCheck className="h-5 w-5 text-amber-600" />, module: 'pim' as ModuleKey },
         ].map(s => (
           <Card key={s.label} className="p-4">
             <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
@@ -627,35 +664,155 @@ function DashboardModule() {
 
 // ─── Organization Module (Sprint 4) ─────────────────────
 function OrganizationModule() {
+  const { isDemoMode, hasPermission } = useAuthStore()
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
-  const tree = [
-    { code: 'SUDHASTAR', name: 'Sudhastar Group', type: 'ENTERPRISE', level: 0, children: [
-      { code: 'SFL', name: 'Sudhastar Foods Ltd.', type: 'COMPANY', level: 1, children: [
-        { code: 'MFG-BU', name: 'Manufacturing BU', type: 'BU', level: 2, children: [
-          { code: 'MUM-PLT', name: 'Mumbai Plant', type: 'BRANCH', level: 3 },
-          { code: 'PUN-PLT', name: 'Pune Plant', type: 'BRANCH', level: 3 },
+  const [tree, setTree] = useState<any[]>([])
+  const [loading, setLoading] = useState(!isDemoMode)
+  const [error, setError] = useState('')
+  const [nodeDetail, setNodeDetail] = useState<any | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030'
+
+  // Fallback tree for demo mode
+  const demoTree = [
+    { id: 'demo-1', code: 'SUDHASTAR', name: 'Sudhastar Group', type: 'ENTERPRISE', status: 'ACTIVE', children: [
+      { id: 'demo-2', code: 'SFL', name: 'Sudhastar Foods Ltd.', type: 'Company', status: 'ACTIVE', children: [
+        { id: 'demo-3', code: 'MFG-BU', name: 'Manufacturing BU', type: 'BusinessUnit', status: 'ACTIVE', children: [
+          { id: 'demo-4', code: 'MUM-PLT', name: 'Mumbai Plant', type: 'Plant', status: 'ACTIVE' },
+          { id: 'demo-5', code: 'PUN-PLT', name: 'Pune Plant', type: 'Plant', status: 'ACTIVE' },
         ]},
-        { code: 'RTL-BU', name: 'Retail BU', type: 'BU', level: 2, children: [
-          { code: 'MUM-STR-01', name: 'Mumbai Store 01', type: 'BRANCH', level: 3 },
-          { code: 'PUN-STR-01', name: 'Pune Store 01', type: 'BRANCH', level: 3 },
-        ]},
-        { code: 'RST-BU', name: 'Restaurant BU', type: 'BU', level: 2, children: [
-          { code: 'MUM-RST-01', name: 'Mumbai Restaurant', type: 'BRANCH', level: 3 },
-        ]},
-      ]},
-      { code: 'SLL', name: 'Sudhastar Logistics Ltd.', type: 'COMPANY', level: 1, children: [
-        { code: 'DIST-BU', name: 'Distribution BU', type: 'BU', level: 2, children: [
-          { code: 'MUM-DC', name: 'Mumbai DC', type: 'BRANCH', level: 3 },
+        { id: 'demo-6', code: 'RTL-BU', name: 'Retail BU', type: 'BusinessUnit', status: 'ACTIVE', children: [
+          { id: 'demo-7', code: 'MUM-STR-01', name: 'Mumbai Store 01', type: 'Plant', status: 'ACTIVE' },
         ]},
       ]},
     ]}
   ]
 
+  useEffect(() => {
+    if (isDemoMode) { setTree(demoTree); setLoading(false); return }
+    let cancelled = false
+    async function loadTree() {
+      setLoading(true); setError('')
+      try {
+        const token = localStorage.getItem('suop_access_token')
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const res = await fetch(`${API_BASE}/api/v1/organization/hierarchy`, { headers })
+        const json = await res.json()
+        if (cancelled) return
+        if (json.success && json.data) {
+          setTree(Array.isArray(json.data) ? json.data : [json.data])
+        } else {
+          setTree(demoTree)
+        }
+      } catch (err: any) {
+        if (!cancelled) { setError(err?.message || 'Failed to load organization tree'); setTree(demoTree) }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    loadTree()
+    return () => { cancelled = true }
+  }, [isDemoMode])
+
+  // Load node detail when selected
+  useEffect(() => {
+    if (!selectedNode || isDemoMode) { setNodeDetail(null); return }
+    let cancelled = false
+    async function loadDetail() {
+      setDetailLoading(true)
+      try {
+        const token = localStorage.getItem('suop_access_token')
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const res = await fetch(`${API_BASE}/api/v1/organization/companies/${selectedNode}`, { headers })
+        const json = await res.json()
+        if (cancelled) return
+        if (json.success) setNodeDetail(json.data)
+      } catch {
+        // Node may not be a company — ignore error
+      } finally {
+        if (!cancelled) setDetailLoading(false)
+      }
+    }
+    loadDetail()
+    return () => { cancelled = true }
+  }, [selectedNode, isDemoMode])
+
+  // Create company handler
+  async function handleCreate(data: { code: string; name: string; gstin?: string; pan?: string; email?: string; phone?: string; city?: string; state?: string }) {
+    setCreateLoading(true); setCreateError('')
+    try {
+      const token = localStorage.getItem('suop_access_token')
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch(`${API_BASE}/api/v1/organization/companies`, {
+        method: 'POST', headers, body: JSON.stringify(data),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error?.message || 'Failed to create company')
+      setShowCreate(false)
+      // Reload tree
+      const treeRes = await fetch(`${API_BASE}/api/v1/organization/hierarchy`, { headers })
+      const treeJson = await treeRes.json()
+      if (treeJson.success && treeJson.data) setTree(Array.isArray(treeJson.data) ? treeJson.data : [treeJson.data])
+    } catch (err: any) {
+      setCreateError(err?.message || 'Failed to create company')
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  // Filter tree by search
+  function filterTree(nodes: any[], query: string): any[] {
+    if (!query) return nodes
+    const q = query.toLowerCase()
+    return nodes.map(n => {
+      const match = n.name?.toLowerCase().includes(q) || n.code?.toLowerCase().includes(q)
+      const children = n.children ? filterTree(n.children, query) : []
+      if (match || children.length > 0) return { ...n, children }
+      return null
+    }).filter(Boolean) as any[]
+  }
+
+  const displayTree = searchQuery ? filterTree(tree, searchQuery) : tree
+
+  // Count nodes by type
+  function countByType(nodes: any[], type: string): number {
+    let count = 0
+    for (const n of nodes) {
+      if (n.type === type || n.type?.toUpperCase() === type) count++
+      if (n.children) count += countByType(n.children, type)
+    }
+    return count
+  }
+  const stats = {
+    enterprises: countByType(tree, 'ENTERPRISE') || (tree.length > 0 ? 1 : 0),
+    companies: countByType(tree, 'COMPANY') || countByType(tree, 'Company'),
+    branches: countByType(tree, 'PLANT') || countByType(tree, 'Plant'),
+    warehouses: countByType(tree, 'WAREHOUSE') || countByType(tree, 'Warehouse'),
+  }
+
   const icons: Record<string, React.ReactNode> = {
     ENTERPRISE: <Network className="h-4 w-4 text-blue-600" />,
+    Enterprise: <Network className="h-4 w-4 text-blue-600" />,
     COMPANY: <Building2 className="h-4 w-4 text-purple-600" />,
+    Company: <Building2 className="h-4 w-4 text-purple-600" />,
     BU: <Layers className="h-4 w-4 text-indigo-600" />,
+    BusinessUnit: <Layers className="h-4 w-4 text-indigo-600" />,
+    DIVISION: <Layers className="h-4 w-4 text-indigo-600" />,
+    Division: <Layers className="h-4 w-4 text-indigo-600" />,
+    REGION: <MapPin className="h-4 w-4 text-teal-600" />,
+    Region: <MapPin className="h-4 w-4 text-teal-600" />,
     BRANCH: <MapPin className="h-4 w-4 text-emerald-600" />,
+    Plant: <Factory className="h-4 w-4 text-emerald-600" />,
+    PLANT: <Factory className="h-4 w-4 text-emerald-600" />,
+    Warehouse: <Warehouse className="h-4 w-4 text-amber-600" />,
+    WAREHOUSE: <Warehouse className="h-4 w-4 text-amber-600" />,
   }
 
   function TreeItem({ node, depth }: { node: any; depth: number }) {
@@ -663,13 +820,14 @@ function OrganizationModule() {
     const has = node.children && node.children.length > 0
     return (
       <div>
-        <div className={cn('flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted/50', selectedNode === node.code && 'bg-primary/10')} style={{ paddingLeft: `${depth * 20 + 8}px` }} onClick={() => setSelectedNode(node.code)}>
+        <div className={cn('flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted/50', selectedNode === (node.id || node.code) && 'bg-primary/10')} style={{ paddingLeft: `${depth * 20 + 8}px` }} onClick={() => setSelectedNode(node.id || node.code)}>
           {has ? <button onClick={(e) => { e.stopPropagation(); setExp(!exp) }}>{exp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}</button> : <div className="w-3" />}
           {icons[node.type] || <Package className="h-4 w-4" />}
           <span className="text-sm font-medium flex-1 truncate">{node.name}</span>
+          {node.status && <Badge variant={node.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-xs">{node.status}</Badge>}
           <Badge variant="outline" className="text-xs font-mono">{node.code}</Badge>
         </div>
-        {exp && has && node.children.map((c: any) => <TreeItem key={c.code} node={c} depth={depth + 1} />)}
+        {exp && has && node.children.map((c: any) => <TreeItem key={c.id || c.code} node={c} depth={depth + 1} />)}
       </div>
     )
   }
@@ -682,19 +840,80 @@ function OrganizationModule() {
       </Card>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Enterprises', value: 1, icon: <Network className="h-5 w-5 text-blue-600" /> },
-          { label: 'Companies', value: 2, icon: <Building2 className="h-5 w-5 text-purple-600" /> },
-          { label: 'Branches', value: 8, icon: <MapPin className="h-5 w-5 text-emerald-600" /> },
-          { label: 'Warehouses', value: 4, icon: <Warehouse className="h-5 w-5 text-amber-600" /> },
+          { label: 'Enterprises', value: loading ? '...' : stats.enterprises, icon: <Network className="h-5 w-5 text-blue-600" /> },
+          { label: 'Companies', value: loading ? '...' : stats.companies, icon: <Building2 className="h-5 w-5 text-purple-600" /> },
+          { label: 'Plants', value: loading ? '...' : stats.branches, icon: <Factory className="h-5 w-5 text-emerald-600" /> },
+          { label: 'Warehouses', value: loading ? '...' : stats.warehouses, icon: <Warehouse className="h-5 w-5 text-amber-600" /> },
         ].map(s => <Card key={s.label} className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div><p className="text-2xl font-bold">{s.value}</p></Card>)}
       </div>
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold flex items-center gap-2"><Network className="h-5 w-5" /> Organization Tree</h3>
-          <Button size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />Add Entity</Button>
+      {error && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-md p-3 flex items-center gap-2"><AlertCircle className="h-4 w-4 flex-shrink-0" />{error}<Button size="sm" variant="ghost" className="ml-auto" onClick={() => { setError(''); setLoading(true); setTimeout(() => window.location.reload(), 100) }}>Retry</Button></div>}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="p-4 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 className="font-semibold flex items-center gap-2"><Network className="h-5 w-5" /> Organization Tree</h3>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <Input placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 w-40 pl-7 text-xs" />
+              </div>
+              {hasPermission('org:create') && <Button size="sm" variant="outline" onClick={() => setShowCreate(true)}><Plus className="mr-1 h-3 w-3" />Add Entity</Button>}
+            </div>
+          </div>
+          {loading ? <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-muted/50 rounded animate-pulse" style={{ marginLeft: `${i * 20}px` }} />)}</div> : <ScrollArea className="h-[500px]">{displayTree.map(n => <TreeItem key={n.id || n.code} node={n} depth={0} />)}</ScrollArea>}
+        </Card>
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3 flex items-center gap-2"><Building2 className="h-5 w-5" /> Details</h3>
+          {selectedNode ? (detailLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-muted/50 rounded animate-pulse" />)}</div> : nodeDetail ? (
+            <div className="space-y-3 text-sm">
+              <div><p className="text-xs text-muted-foreground">Code</p><p className="font-mono font-medium">{nodeDetail.code || '-'}</p></div>
+              <div><p className="text-xs text-muted-foreground">Name</p><p className="font-medium">{nodeDetail.name || '-'}</p></div>
+              {nodeDetail.legal_name && <div><p className="text-xs text-muted-foreground">Legal Name</p><p className="font-medium">{nodeDetail.legal_name}</p></div>}
+              {nodeDetail.status && <div><p className="text-xs text-muted-foreground">Status</p><Badge variant={nodeDetail.status === 'ACTIVE' ? 'default' : 'secondary'}>{nodeDetail.status}</Badge></div>}
+              {nodeDetail.gstin && <div><p className="text-xs text-muted-foreground">GSTIN</p><p className="font-mono">{nodeDetail.gstin}</p></div>}
+              {nodeDetail.pan && <div><p className="text-xs text-muted-foreground">PAN</p><p className="font-mono">{nodeDetail.pan}</p></div>}
+              {nodeDetail.email && <div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{nodeDetail.email}</p></div>}
+              {nodeDetail.phone && <div><p className="text-xs text-muted-foreground">Phone</p><p className="font-medium">{nodeDetail.phone}</p></div>}
+              {nodeDetail.city && <div><p className="text-xs text-muted-foreground">City</p><p className="font-medium">{nodeDetail.city}, {nodeDetail.state || ''}</p></div>}
+              <div className="pt-2 border-t"><p className="text-xs text-muted-foreground">Version</p><p className="font-mono">{nodeDetail.version ?? 0}</p></div>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>Selected: <span className="font-mono font-medium">{selectedNode}</span></p>
+              <p className="text-xs">Node detail unavailable (may not be a company entity).</p>
+            </div>
+          )) : <p className="text-sm text-muted-foreground">Select a node from the tree to view details.</p>}
+        </Card>
+      </div>
+      {showCreate && hasPermission('org:create') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !createLoading && setShowCreate(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Add Company</h3><Button size="icon" variant="ghost" onClick={() => setShowCreate(false)} disabled={createLoading}><X className="h-4 w-4" /></Button></div>
+            {createError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{createError}</div>}
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleCreate({ code: fd.get('code') as string, name: fd.get('name') as string, gstin: fd.get('gstin') as string || undefined, pan: fd.get('pan') as string || undefined, email: fd.get('email') as string || undefined, phone: fd.get('phone') as string || undefined, city: fd.get('city') as string || undefined, state: fd.get('state') as string || undefined }) }} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Code *</Label><Input name="code" required placeholder="SFL" className="h-8" /></div>
+                <div className="space-y-1"><Label className="text-xs">Name *</Label><Input name="name" required placeholder="Sudhastar Foods Ltd." className="h-8" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">GSTIN</Label><Input name="gstin" placeholder="27ABCDE1234F1Z5" className="h-8" /></div>
+                <div className="space-y-1"><Label className="text-xs">PAN</Label><Input name="pan" placeholder="ABCDE1234F" className="h-8" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Email</Label><Input name="email" type="email" placeholder="info@company.com" className="h-8" /></div>
+                <div className="space-y-1"><Label className="text-xs">Phone</Label><Input name="phone" placeholder="+91..." className="h-8" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">City</Label><Input name="city" placeholder="Mumbai" className="h-8" /></div>
+                <div className="space-y-1"><Label className="text-xs">State</Label><Input name="state" placeholder="Maharashtra" className="h-8" /></div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowCreate(false)} disabled={createLoading}>Cancel</Button>
+                <Button type="submit" size="sm" disabled={createLoading}>{createLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Creating...</> : 'Create Company'}</Button>
+              </div>
+            </form>
+          </Card>
         </div>
-        <ScrollArea className="h-[500px]">{tree.map(n => <TreeItem key={n.code} node={n} depth={0} />)}</ScrollArea>
-      </Card>
+      )}
     </div>
   )
 }
