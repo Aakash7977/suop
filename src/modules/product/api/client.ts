@@ -26,9 +26,10 @@ export interface Brand { id: string; code: string; name: string }
 export interface UOM { id: string; code: string; name: string; symbol: string; uom_type: string }
 
 export const productApi = {
-  list: (params?: { page?: number; search?: string; productType?: string; status?: string }) => {
+  list: (params?: { page?: number; pageSize?: number; search?: string; productType?: string; status?: string }) => {
     const qs = new URLSearchParams()
     if (params?.page) qs.set('page', String(params.page))
+    if (params?.pageSize) qs.set('pageSize', String(params.pageSize))
     if (params?.search) qs.set('search', params.search)
     if (params?.productType) qs.set('productType', params.productType)
     if (params?.status) qs.set('status', params.status)

@@ -43,6 +43,19 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 
+// ─── Section 03 — Master Data Management (extracted to src/sections/03-master-data/) ─
+import {
+  ProductMasterModule as Section03ProductMasterModule,
+  PIMModule as Section03PIMModule,
+  CommercialEngineModule as Section03CommercialEngineModule,
+  BusinessPartnerModule as Section03BusinessPartnerModule,
+  IdentificationModule as Section03IdentificationModule,
+  GovernanceModule as Section03GovernanceModule,
+  WarehouseModule as Section03WarehouseModule,
+  WarehouseLocationModule as Section03WarehouseLocationModule,
+  PlantMasterModule as Section03PlantMasterModule,
+} from '@/sections/03-master-data'
+
 // ═══════════════════════════════════════════════════════
 // UNIFIED SUOP ADMIN — ALL SPRINTS IN ONE APPLICATION
 // Sprints 1-7: Platform Foundation + Master Data + PIM
@@ -1830,219 +1843,23 @@ function RBACModule() {
 }
 
 // ─── Product Master Module (Sprint 6) ───────────────────
+// ProductMasterModule — extracted to src/sections/03-master-data/components/
 function ProductMasterModule() {
-  const products = [
-    { upi: 'UPI-000001', code: 'KK-001', sku: 'KAJU-KATLI-250', name: 'Kaju Katli 250g', type: 'FINISHED_GOODS', status: 'ACTIVE', brand: 'Sudhamrit', mrp: 450, stock: 1250 },
-    { upi: 'UPI-000002', code: 'KK-002', sku: 'KAJU-KATLI-500', name: 'Kaju Katli 500g', type: 'FINISHED_GOODS', status: 'ACTIVE', brand: 'Sudhamrit', mrp: 850, stock: 850 },
-    { upi: 'UPI-000003', code: 'BP-001', sku: 'BADAM-PISTA-250', name: 'Badam Pista Roll 250g', type: 'FINISHED_GOODS', status: 'ACTIVE', brand: 'Sudhamrit', mrp: 520, stock: 650 },
-    { upi: 'UPI-000004', code: 'CW-001', sku: 'CHOCO-WAFER-100', name: 'Chocolate Wafer 100g', type: 'FINISHED_GOODS', status: 'ACTIVE', brand: 'Shwet', mrp: 50, stock: 5200 },
-    { upi: 'UPI-000005', code: 'RM-001', sku: 'SUGAR-RAW-50KG', name: 'Raw Sugar 50kg Bag', type: 'RAW_MATERIAL', status: 'ACTIVE', brand: 'Imported', mrp: 0, stock: 12500 },
-    { upi: 'UPI-000006', code: 'PK-001', sku: 'BOX-250G-GIFT', name: 'Gift Box 250g', type: 'PACKAGING', status: 'ACTIVE', brand: 'Private Label', mrp: 0, stock: 15000 },
-  ]
-  const [search, setSearch] = useState('')
-
-  const filtered = products.filter(p =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()) || p.upi.toLowerCase().includes(search.toLowerCase())
-  )
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1">Product Master</h2>
-            <p className="text-slate-300 text-sm">Single source of truth for every product with Universal Product Identity (UPI)</p>
-          </div>
-          <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white"><GitBranch className="mr-1 h-3 w-3" />UPI Active</Badge>
-        </div>
-      </Card>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Total Products', value: 12, icon: <Package className="h-5 w-5 text-blue-600" /> },
-          { label: 'Active', value: 10, icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" /> },
-          { label: 'Product Types', value: 11, icon: <Layers className="h-5 w-5 text-purple-600" /> },
-          { label: 'With UPI', value: 12, icon: <GitBranch className="h-5 w-5 text-indigo-600" /> },
-        ].map(s => <Card key={s.label} className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div><p className="text-2xl font-bold">{s.value}</p></Card>)}
-      </div>
-      <Card className="p-4">
-        <div className="flex items-center gap-4 mb-4 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name, SKU, code, or UPI..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
-          </div>
-          <Button variant="outline" size="sm"><Upload className="mr-1 h-3 w-3" />Import</Button>
-          <Button variant="outline" size="sm"><Download className="mr-1 h-3 w-3" />Export</Button>
-          <Button size="sm"><Plus className="mr-1 h-3 w-3" />New Product</Button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr className="text-xs font-semibold text-muted-foreground uppercase">
-                <th className="text-left px-4 py-3">UPI</th><th className="text-left px-4 py-3">Product</th><th className="text-left px-4 py-3">SKU</th>
-                <th className="text-left px-4 py-3">Brand</th><th className="text-right px-4 py-3">MRP</th><th className="text-right px-4 py-3">Stock</th><th className="text-center px-4 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => (
-                <tr key={p.upi} className="border-t hover:bg-muted/30">
-                  <td className="px-4 py-3"><Badge variant="outline" className="font-mono text-xs">{p.upi}</Badge></td>
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{p.sku}</td>
-                  <td className="px-4 py-3 text-sm">{p.brand}</td>
-                  <td className="px-4 py-3 text-right font-mono text-sm">{p.mrp > 0 ? `₹${p.mrp}` : '—'}</td>
-                  <td className="px-4 py-3 text-right font-mono text-sm">{p.stock.toLocaleString('en-IN')}</td>
-                  <td className="px-4 py-3 text-center"><Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-xs">{p.status}</Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  )
+  return <Section03ProductMasterModule />
 }
 
 // ─── PIM Module (Sprint 7) ──────────────────────────────
+// PIMModule — extracted to src/sections/03-master-data/components/
 function PIMModule() {
-  const families = [
-    { code: 'INDIAN_SWEETS', name: 'Indian Sweets', products: 6 },
-    { code: 'NAMKEEN', name: 'Namkeen', products: 4 },
-    { code: 'BAKERY', name: 'Bakery', products: 8 },
-    { code: 'BEVERAGES', name: 'Beverages', products: 3 },
-  ]
-  const compliance = [
-    { product: 'Kaju Katli 250g', type: 'FSSAI', cert: 'FSS-12345678', status: 'APPROVED', expiry: '2027-03-15' },
-    { product: 'Chocolate Wafer 100g', type: 'FSSAI', cert: 'FSS-12345681', status: 'PENDING', expiry: null },
-    { product: 'Kaju Katli 250g', type: 'HACCP', cert: 'HACCP-2026-045', status: 'EXPIRED', expiry: '2026-03-01' },
-  ]
-  const approvals = [
-    { req: 'PAR-2026-001', product: 'Kaju Katli 100g', stage: 'QA_REVIEW', status: 'IN_REVIEW' },
-    { req: 'PAR-2026-002', product: 'Milk Burfi 250g', stage: 'COMPLIANCE_REVIEW', status: 'IN_REVIEW' },
-    { req: 'PAR-2026-004', product: 'Kaju Katli 1kg', stage: 'PUBLISHED', status: 'PUBLISHED' },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-indigo-950 to-purple-900 text-white border-0">
-        <h2 className="text-2xl font-bold mb-1">Enterprise PIM Platform</h2>
-        <p className="text-indigo-300 text-sm">Product Information Management — Families, Collections, Compliance, Versioning, Approval Workflow, Usage Matrix</p>
-      </Card>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Families', value: 6, icon: <FolderTree className="h-5 w-5 text-blue-600" /> },
-          { label: 'Collections', value: 5, icon: <Archive className="h-5 w-5 text-purple-600" /> },
-          { label: 'Pending Approvals', value: 2, icon: <ClipboardCheck className="h-5 w-5 text-amber-600" /> },
-          { label: 'Compliance Records', value: 6, icon: <ShieldCheck className="h-5 w-5 text-emerald-600" /> },
-        ].map(s => <Card key={s.label} className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div><p className="text-2xl font-bold">{s.value}</p></Card>)}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4 flex items-center gap-2"><FolderTree className="h-5 w-5" /> Product Families</h3>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {families.map(f => <div key={f.code} className="flex items-center gap-2 p-2 rounded-lg border"><FolderTree className="h-4 w-4 text-blue-600" /><span className="text-sm font-medium flex-1">{f.name}</span><Badge variant="outline" className="text-xs">{f.products}</Badge></div>)}
-          </div>
-        </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4 flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Compliance</h3>
-          <div className="space-y-2">
-            {compliance.map((c, i) => <div key={i} className="flex items-center gap-2 p-2 rounded-lg border text-sm"><span className="flex-1 font-medium">{c.product}</span><Badge variant="outline" className="text-xs">{c.type}</Badge><Badge className={cn('text-xs', c.status === 'APPROVED' ? 'bg-emerald-600 text-white' : c.status === 'PENDING' ? 'bg-amber-500 text-white' : 'bg-red-600 text-white')}>{c.status}</Badge></div>)}
-          </div>
-        </Card>
-      </div>
-      <Card className="p-4">
-        <h3 className="font-semibold mb-4 flex items-center gap-2"><ClipboardCheck className="h-5 w-5" /> Approval Queue</h3>
-        <div className="space-y-2">
-          {approvals.map(a => <div key={a.req} className="flex items-center gap-3 p-2 rounded-lg border text-sm"><Badge variant="outline" className="font-mono text-xs">{a.req}</Badge><span className="font-medium flex-1">{a.product}</span><Badge className={cn('text-xs', a.status === 'PUBLISHED' ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white')}>{a.stage.replace(/_/g, ' ')}</Badge></div>)}
-        </div>
-      </Card>
-      <Card className="p-4">
-        <h3 className="font-semibold mb-4 flex items-center gap-2"><GitBranch className="h-5 w-5" /> Product Usage Matrix</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted/50"><tr className="text-xs font-semibold text-muted-foreground uppercase">
-              <th className="text-left px-4 py-3">Product</th><th className="text-center px-4 py-3">Mfg</th><th className="text-center px-4 py-3">Warehouse</th><th className="text-center px-4 py-3">Retail</th><th className="text-center px-4 py-3">Restaurant</th><th className="text-center px-4 py-3">E-com</th>
-            </tr></thead>
-            <tbody>
-              {[
-                { name: 'Kaju Katli 250g', mfg: true, wh: true, ret: true, rst: false, eco: true },
-                { name: 'Sugar 50kg', mfg: true, wh: true, ret: false, rst: true, eco: false },
-                { name: 'Gift Box', mfg: true, wh: true, ret: false, rst: false, eco: false },
-              ].map(p => (
-                <tr key={p.name} className="border-t">
-                  <td className="px-4 py-3 font-medium text-sm">{p.name}</td>
-                  <td className="px-4 py-3 text-center">{p.mfg ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-4 py-3 text-center">{p.wh ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-4 py-3 text-center">{p.ret ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-4 py-3 text-center">{p.rst ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-4 py-3 text-center">{p.eco ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  )
+  return <Section03PIMModule />
 }
 
 // ─── Commercial Engine Module (Sprint 8) ────────────────
 type CommercialTab = 'overview' | 'priceLists' | 'tax' | 'discounts' | 'promotions' | 'futurePrices' | 'approvals' | 'cost' | 'rules' | 'resolution'
 
+// CommercialEngineModule — extracted to src/sections/03-master-data/components/
 function CommercialEngineModule() {
-  const [tab, setTab] = useState<CommercialTab>('overview')
-  const tabs: Array<{ key: CommercialTab; label: string; icon: React.ReactNode }> = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
-    { key: 'priceLists', label: 'Price Lists', icon: <Tag className="h-4 w-4" /> },
-    { key: 'tax', label: 'GST & Tax', icon: <Percent className="h-4 w-4" /> },
-    { key: 'discounts', label: 'Discounts', icon: <Calculator className="h-4 w-4" /> },
-    { key: 'promotions', label: 'Promotions', icon: <Gift className="h-4 w-4" /> },
-    { key: 'futurePrices', label: 'Future Prices', icon: <Clock className="h-4 w-4" /> },
-    { key: 'approvals', label: 'Approvals', icon: <ClipboardCheck className="h-4 w-4" /> },
-    { key: 'cost', label: 'Cost & Margin', icon: <TrendingUp className="h-4 w-4" /> },
-    { key: 'rules', label: 'Commercial Rules', icon: <ShieldCheck className="h-4 w-4" /> },
-    { key: 'resolution', label: 'Price Resolution', icon: <Sparkles className="h-4 w-4" /> },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-amber-950 via-orange-900 to-red-900 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              <IndianRupee className="h-7 w-7" /> Enterprise Commercial Engine
-            </h2>
-            <p className="text-amber-200 text-sm max-w-3xl">
-              Unified pricing, taxation, discount, promotion, and margin engine. Every channel
-              (Retail POS, Restaurant POS, ERP, E-commerce) consumes the same pricing logic via the
-              Price Resolution Service. No module calculates prices independently.
-            </p>
-          </div>
-          <Badge className="bg-amber-500 text-amber-950 hover:bg-amber-500">Sprint 8</Badge>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap gap-2 border-b pb-3">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' && <CommercialOverviewTab />}
-      {tab === 'priceLists' && <PriceListsTab />}
-      {tab === 'tax' && <TaxTab />}
-      {tab === 'discounts' && <DiscountsTab />}
-      {tab === 'promotions' && <PromotionsTab />}
-      {tab === 'futurePrices' && <FuturePricesTab />}
-      {tab === 'approvals' && <ApprovalsTab />}
-      {tab === 'cost' && <CostMarginTab />}
-      {tab === 'rules' && <RulesTab />}
-      {tab === 'resolution' && <ResolutionTab />}
-    </div>
-  )
+  return <Section03CommercialEngineModule />
 }
 
 function CommercialOverviewTab() {
@@ -2613,61 +2430,9 @@ function ResolutionTab() {
 // ─── Business Partner Module (Sprint 9) ─────────────────
 type BPTab = 'overview' | 'partners' | 'addresses' | 'contacts' | 'financial' | 'compliance' | 'groups' | 'banking' | 'relationships' | 'scorecards'
 
+// BusinessPartnerModule — extracted to src/sections/03-master-data/components/
 function BusinessPartnerModule() {
-  const [tab, setTab] = useState<BPTab>('overview')
-  const tabs: Array<{ key: BPTab; label: string; icon: React.ReactNode }> = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
-    { key: 'partners', label: 'Partners', icon: <Users2 className="h-4 w-4" /> },
-    { key: 'addresses', label: 'Addresses', icon: <MapPinned className="h-4 w-4" /> },
-    { key: 'contacts', label: 'Contacts', icon: <Phone className="h-4 w-4" /> },
-    { key: 'financial', label: 'Financial', icon: <CreditCard className="h-4 w-4" /> },
-    { key: 'compliance', label: 'Compliance', icon: <ShieldCheck className="h-4 w-4" /> },
-    { key: 'groups', label: 'Groups', icon: <FolderTree className="h-4 w-4" /> },
-    { key: 'banking', label: 'Banking', icon: <IndianRupee className="h-4 w-4" /> },
-    { key: 'relationships', label: 'Relationships', icon: <Handshake className="h-4 w-4" /> },
-    { key: 'scorecards', label: 'Scorecards', icon: <Award className="h-4 w-4" /> },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-indigo-950 via-blue-900 to-cyan-900 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              <Users2 className="h-7 w-7" /> Enterprise Business Partner Platform
-            </h2>
-            <p className="text-blue-200 text-sm max-w-3xl">
-              Unified master for Customers, Suppliers, Transporters, Franchisees, Corporate Clients,
-              Delivery Partners, and Service Providers. One partner can play multiple roles — no duplication.
-              Every module (Finance, Inventory, Sales, Purchase) references the same partner record.
-            </p>
-          </div>
-          <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Sprint 9</Badge>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap gap-2 border-b pb-3">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' && <BPOverviewTab />}
-      {tab === 'partners' && <BPPartnersTab />}
-      {tab === 'addresses' && <BPAddressesTab />}
-      {tab === 'contacts' && <BPContactsTab />}
-      {tab === 'financial' && <BPFinancialTab />}
-      {tab === 'compliance' && <BPComplianceTab />}
-      {tab === 'groups' && <BPGroupsTab />}
-      {tab === 'banking' && <BPBankingTab />}
-      {tab === 'relationships' && <BPRelationshipsTab />}
-      {tab === 'scorecards' && <BPScorecardsTab />}
-    </div>
-  )
+  return <Section03BusinessPartnerModule />
 }
 
 function BPOverviewTab() {
@@ -3156,61 +2921,9 @@ function BPScorecardsTab() {
 // ─── Identification & Traceability Module (Sprint 10) ────
 type IDTab = 'overview' | 'barcodes' | 'qrcodes' | 'batches' | 'lots' | 'serials' | 'gs1' | 'labels' | 'print' | 'traceability'
 
+// IdentificationModule — extracted to src/sections/03-master-data/components/
 function IdentificationModule() {
-  const [tab, setTab] = useState<IDTab>('overview')
-  const tabs: Array<{ key: IDTab; label: string; icon: React.ReactNode }> = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
-    { key: 'barcodes', label: 'Barcodes', icon: <Barcode className="h-4 w-4" /> },
-    { key: 'qrcodes', label: 'QR Codes', icon: <QrCode className="h-4 w-4" /> },
-    { key: 'batches', label: 'Batches', icon: <Boxes className="h-4 w-4" /> },
-    { key: 'lots', label: 'Lots', icon: <PackageCheck className="h-4 w-4" /> },
-    { key: 'serials', label: 'Serial Numbers', icon: <Hash className="h-4 w-4" /> },
-    { key: 'gs1', label: 'GS1 Standards', icon: <Globe2 className="h-4 w-4" /> },
-    { key: 'labels', label: 'Label Templates', icon: <FileText className="h-4 w-4" /> },
-    { key: 'print', label: 'Print Queue', icon: <Printer className="h-4 w-4" /> },
-    { key: 'traceability', label: 'Traceability', icon: <Route className="h-4 w-4" /> },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-emerald-950 via-teal-900 to-cyan-900 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              <ScanLine className="h-7 w-7" /> Enterprise Identification & Traceability Platform
-            </h2>
-            <p className="text-teal-200 text-sm max-w-3xl">
-              Complete identification layer: barcodes, QR codes, batches, lots, serial numbers, GS1 standards,
-              label templates, print jobs, and end-to-end forward/backward traceability. Every Kaju Katli can be
-              traced from customer complaint back to the cashew supplier in Konkan.
-            </p>
-          </div>
-          <Badge className="bg-teal-500 text-teal-950 hover:bg-teal-500">Sprint 10</Badge>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap gap-2 border-b pb-3">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' && <IDOverviewTab />}
-      {tab === 'barcodes' && <IDBarcodesTab />}
-      {tab === 'qrcodes' && <IDQRCodesTab />}
-      {tab === 'batches' && <IDBatchesTab />}
-      {tab === 'lots' && <IDLotsTab />}
-      {tab === 'serials' && <IDSerialsTab />}
-      {tab === 'gs1' && <IDGS1Tab />}
-      {tab === 'labels' && <IDLabelsTab />}
-      {tab === 'print' && <IDPrintTab />}
-      {tab === 'traceability' && <IDTraceabilityTab />}
-    </div>
-  )
+  return <Section03IdentificationModule />
 }
 
 function IDOverviewTab() {
@@ -3810,61 +3523,9 @@ function IDTraceabilityTab() {
 // ─── Data Governance Module (Sprint 11) ─────────────────
 type GovTab = 'overview' | 'lifecycle' | 'approvals' | 'import' | 'export' | 'validation' | 'duplicates' | 'audit' | 'quality' | 'history'
 
+// GovernanceModule — extracted to src/sections/03-master-data/components/
 function GovernanceModule() {
-  const [tab, setTab] = useState<GovTab>('overview')
-  const tabs: Array<{ key: GovTab; label: string; icon: React.ReactNode }> = [
-    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
-    { key: 'lifecycle', label: 'Lifecycle', icon: <Workflow className="h-4 w-4" /> },
-    { key: 'approvals', label: 'Approvals', icon: <ClipboardList className="h-4 w-4" /> },
-    { key: 'import', label: 'Import', icon: <UploadCloud className="h-4 w-4" /> },
-    { key: 'export', label: 'Export', icon: <DownloadCloud className="h-4 w-4" /> },
-    { key: 'validation', label: 'Validation', icon: <ListChecks className="h-4 w-4" /> },
-    { key: 'duplicates', label: 'Duplicates', icon: <GitMerge className="h-4 w-4" /> },
-    { key: 'audit', label: 'Audit Trail', icon: <HistoryIcon className="h-4 w-4" /> },
-    { key: 'quality', label: 'Quality', icon: <ShieldAlert className="h-4 w-4" /> },
-    { key: 'history', label: 'Change History', icon: <History className="h-4 w-4" /> },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-violet-950 via-purple-900 to-fuchsia-900 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              <ShieldCheck className="h-7 w-7" /> Data Governance & Master Data Quality
-            </h2>
-            <p className="text-violet-200 text-sm max-w-3xl">
-              Enterprise-grade governance: product lifecycle enforcement, multi-level approval workflows,
-              bulk import/export with rollback, validation framework, duplicate detection & merge,
-              complete audit trail, and real-time data quality scoring.
-            </p>
-          </div>
-          <Badge className="bg-violet-500 text-violet-950 hover:bg-violet-500">Sprint 11 · Part 2 ✓</Badge>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap gap-2 border-b pb-3">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'overview' && <GovOverviewTab />}
-      {tab === 'lifecycle' && <GovLifecycleTab />}
-      {tab === 'approvals' && <GovApprovalsTab />}
-      {tab === 'import' && <GovImportTab />}
-      {tab === 'export' && <GovExportTab />}
-      {tab === 'validation' && <GovValidationTab />}
-      {tab === 'duplicates' && <GovDuplicatesTab />}
-      {tab === 'audit' && <GovAuditTab />}
-      {tab === 'quality' && <GovQualityTab />}
-      {tab === 'history' && <GovHistoryTab />}
-    </div>
-  )
+  return <Section03GovernanceModule />
 }
 
 function GovOverviewTab() {
@@ -8407,49 +8068,9 @@ const WHM_RECOMMENDED = [
   { code: 'WH-SCR-MUM-DC', name: 'Scrap Warehouse', type: 'SCRAP', purpose: 'Expired, damaged, recalled & condemned stock pending disposal. Requires finance approval.' },
 ]
 
+// WarehouseModule — extracted to src/sections/03-master-data/components/
 function WarehouseModule() {
-  const [tab, setTab] = useState<WarehouseTab>('overview')
-  const tabs: Array<{ key: WarehouseTab; label: string; icon: React.ReactNode }> = [
-    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
-    { key: 'warehouses', label: 'Warehouses', icon: <Warehouse className="h-4 w-4" /> },
-    { key: 'zones', label: 'Zones', icon: <Layers3 className="h-4 w-4" /> },
-    { key: 'temperature', label: 'Temperature', icon: <Thermometer className="h-4 w-4" /> },
-    { key: 'rules', label: 'Rules', icon: <ShieldCheck className="h-4 w-4" /> },
-  ]
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-amber-950 via-orange-900 to-red-900 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              <Warehouse className="h-7 w-7" /> Warehouse Management System
-            </h2>
-            <p className="text-amber-200 text-sm max-w-3xl">
-              Multi-warehouse architecture covering the full physical lifecycle of stock —
-              inbound (Raw Material + Quarantine), production support (Packaging), outbound (Finished Goods),
-              reverse logistics (Returns), and disposal (Scrap). 6 warehouses · 10 zones · 4 temperature zones ·
-              8 database tables. PART 4 BEGUN.
-            </p>
-          </div>
-          <Badge className="bg-orange-500 text-orange-950 hover:bg-orange-500">Sprint 22 · PART 4 BEGUN</Badge>
-        </div>
-      </Card>
-      <div className="flex flex-wrap gap-2 border-b pb-3">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-      {tab === 'overview' && <WarehouseOverviewTab />}
-      {tab === 'warehouses' && <WarehouseWarehousesTab />}
-      {tab === 'zones' && <WarehouseZonesTab />}
-      {tab === 'temperature' && <WarehouseTemperatureTab />}
-      {tab === 'rules' && <WarehouseRulesTab />}
-    </div>
-  )
+  return <Section03WarehouseModule />
 }
 
 function WarehouseOverviewTab() {
@@ -8888,48 +8509,9 @@ function utilizationTextColor(p: number): string {
   return 'text-slate-500'
 }
 
+// WarehouseLocationModule — extracted to src/sections/03-master-data/components/
 function WarehouseLocationModule() {
-  const [tab, setTab] = useState<WhLocTab>('overview')
-  const tabs: Array<{ key: WhLocTab; label: string; icon: React.ReactNode }> = [
-    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
-    { key: 'bins', label: 'Bins', icon: <Hash className="h-4 w-4" /> },
-    { key: 'aisles', label: 'Aisles', icon: <Route className="h-4 w-4" /> },
-    { key: 'racks', label: 'Racks', icon: <Grid3x3 className="h-4 w-4" /> },
-    { key: 'capacity', label: 'Capacity', icon: <Gauge className="h-4 w-4" /> },
-  ]
-  return (
-    <div className="space-y-6">
-      <Card className="p-6 bg-gradient-to-r from-indigo-950 via-purple-900 to-fuchsia-900 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              <MapPinIcon className="h-7 w-7" /> Warehouse Location & Bin Management
-            </h2>
-            <p className="text-indigo-200 text-sm max-w-3xl">
-              The digital map of the warehouse — 6-level hierarchy (Warehouse → Zone → Aisle → Rack → Shelf → Bin) with
-              scanner-first workflow. 6 aisles · 8 racks · 12 shelves · 15 bins · 4 capacity alerts. Every putaway, pick,
-              count, and transfer resolves to a specific bin via barcode/QR scan.
-            </p>
-          </div>
-          <Badge className="bg-fuchsia-500 text-fuchsia-950 hover:bg-fuchsia-500">Sprint 23 · Part 4 WMS</Badge>
-        </div>
-      </Card>
-      <div className="flex flex-wrap gap-2 border-b pb-3">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-      {tab === 'overview' && <WhLocOverviewTab />}
-      {tab === 'bins' && <WhLocBinsTab />}
-      {tab === 'aisles' && <WhLocAislesTab />}
-      {tab === 'racks' && <WhLocRacksTab />}
-      {tab === 'capacity' && <WhLocCapacityTab />}
-    </div>
-  )
+  return <Section03WarehouseLocationModule />
 }
 
 function WhLocOverviewTab() {
@@ -16339,103 +15921,9 @@ function EnterpriseAnalyticsModule() {
 // ═════════════════════════════════════════════════════════
 
 // ─── Epic 1: Plant Master Module ────────────────────────
+// PlantMasterModule — extracted to src/sections/03-master-data/components/
 function PlantMasterModule() {
-  const [showCreate, setShowCreate] = useState(false)
-  const plants = [
-    { id: 'P1', code: 'PLANT-THANE-01', name: 'Thane Sweet Manufacturing Plant', type: 'SWEET_MANUFACTURING', manager: 'Rajesh Patil', city: 'Thane', state: 'Maharashtra', capacity: 2500, operatingStart: '06:00', operatingEnd: '22:00', status: 'ACTIVE', departments: 5, lines: 8, resources: 42 },
-    { id: 'P2', code: 'PLANT-THANE-02', name: 'Thane Namkeen Plant', type: 'NAMKEEN_MANUFACTURING', manager: 'Suresh Iyer', city: 'Thane', state: 'Maharashtra', capacity: 1800, operatingStart: '06:00', operatingEnd: '22:00', status: 'ACTIVE', departments: 4, lines: 6, resources: 28 },
-    { id: 'P3', code: 'PLANT-BLR-01', name: 'Bangalore Batter Production', type: 'BATTER_PRODUCTION', manager: 'Anil Reddy', city: 'Bangalore', state: 'Karnataka', capacity: 1200, operatingStart: '05:00', operatingEnd: '20:00', status: 'ACTIVE', departments: 3, lines: 4, resources: 18 },
-    { id: 'P4', code: 'PLANT-MUM-01', name: 'Mumbai Central Kitchen', type: 'CENTRAL_KITCHEN', manager: 'Priya Nair', city: 'Mumbai', state: 'Maharashtra', capacity: 800, operatingStart: '04:00', operatingEnd: '18:00', status: 'ACTIVE', departments: 4, lines: 5, resources: 22 },
-    { id: 'P5', code: 'PLANT-PUN-01', name: 'Pune Packaging Plant', type: 'PACKAGING_PLANT', manager: 'Mahesh Desai', city: 'Pune', state: 'Maharashtra', capacity: 3000, operatingStart: '08:00', operatingEnd: '20:00', status: 'MAINTENANCE', departments: 2, lines: 3, resources: 15 },
-  ]
-
-  const typeColors: Record<string, string> = { SWEET_MANUFACTURING: 'bg-amber-100 text-amber-700', NAMKEEN_MANUFACTURING: 'bg-orange-100 text-orange-700', BATTER_PRODUCTION: 'bg-blue-100 text-blue-700', CENTRAL_KITCHEN: 'bg-purple-100 text-purple-700', PACKAGING_PLANT: 'bg-emerald-100 text-emerald-700' }
-  const typeIcons: Record<string, React.ReactNode> = { SWEET_MANUFACTURING: '🍬', NAMKEEN_MANUFACTURING: '🥜', BATTER_PRODUCTION: '🥣', CENTRAL_KITCHEN: '🍳', PACKAGING_PLANT: '📦' }
-
-  const stats = [
-    { label: 'Total Plants', value: plants.length, color: 'text-blue-600' },
-    { label: 'Active', value: plants.filter(p => p.status === 'ACTIVE').length, color: 'text-emerald-600' },
-    { label: 'Maintenance', value: plants.filter(p => p.status === 'MAINTENANCE').length, color: 'text-orange-600' },
-    { label: 'Total Capacity (kg/day)', value: plants.reduce((a, p) => a + p.capacity, 0).toLocaleString('en-IN'), color: 'text-purple-600' },
-    { label: 'Total Departments', value: plants.reduce((a, p) => a + p.departments, 0), color: 'text-cyan-600' },
-    { label: 'Total Lines', value: plants.reduce((a, p) => a + p.lines, 0), color: 'text-amber-600' },
-  ]
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div><h2 className="text-2xl font-bold">Manufacturing Plant Master</h2><p className="text-sm text-muted-foreground mt-1">Multi-plant management · Company → Branch → Plant → Department → Line → Work Center</p></div>
-        <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Plant</Button>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
-      </div>
-
-      {/* Manufacturing Hierarchy Diagram */}
-      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
-        <h3 className="font-semibold mb-3 text-sm">Manufacturing Hierarchy — Sudhamrit Example</h3>
-        <div className="flex items-center gap-2 text-xs overflow-x-auto">
-          {['Sudhamrit Foods', 'Thane Plant', 'Production Building', 'Sweet Dept', 'Kaju Katli Line', 'Mixing → Cooking → Cooling → Cutting → Packing'].map((step, i, arr) => (
-            <div key={i} className="flex items-center gap-2 flex-shrink-0">
-              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
-              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-amber-600" />}
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {showCreate && (
-        <Card className="p-4 border-amber-300 bg-amber-50/50">
-          <h3 className="font-semibold mb-3">Register New Plant</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div><Label className="text-xs">Plant Code</Label><Input className="mt-1" placeholder="PLANT-XXX-01" /></div>
-            <div><Label className="text-xs">Plant Name</Label><Input className="mt-1" placeholder="Thane Sweet Plant" /></div>
-            <div><Label className="text-xs">Plant Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>SWEET_MANUFACTURING</option><option>NAMKEEN_MANUFACTURING</option><option>BATTER_PRODUCTION</option><option>CENTRAL_KITCHEN</option><option>PACKAGING_PLANT</option></select></div>
-            <div><Label className="text-xs">Manager</Label><Input className="mt-1" placeholder="Plant manager name" /></div>
-            <div><Label className="text-xs">City</Label><Input className="mt-1" placeholder="Thane" /></div>
-            <div><Label className="text-xs">Daily Capacity (kg)</Label><Input type="number" className="mt-1" placeholder="2500" /></div>
-            <div><Label className="text-xs">Operating Start</Label><Input type="time" className="mt-1" defaultValue="06:00" /></div>
-            <div><Label className="text-xs">Operating End</Label><Input type="time" className="mt-1" defaultValue="22:00" /></div>
-            <div className="md:col-span-4 flex gap-2"><Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Create Plant</Button><Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button></div>
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {plants.map(p => {
-          const b = s28BadgeForStatus(p.status)
-          return (
-            <Card key={p.id} className={`p-4 ${p.status === 'MAINTENANCE' ? 'border-orange-300 bg-orange-50/30' : ''}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-2xl">{typeIcons[p.type] || '🏭'}</div>
-                  <div>
-                    <div className="font-mono text-xs font-semibold text-blue-700">{p.code}</div>
-                    <div className="font-semibold text-sm">{p.name}</div>
-                  </div>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
-              </div>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">Type:</span><span className={`px-1.5 py-0.5 rounded font-medium ${typeColors[p.type] || 'bg-slate-100'}`}>{p.type.replace(/_/g, ' ')}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Manager:</span><span>{p.manager}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Location:</span><span className="font-mono">{p.city}, {p.state}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Capacity:</span><span className="font-mono font-bold">{p.capacity.toLocaleString('en-IN')} kg/day</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Operating:</span><span className="font-mono">{p.operatingStart} - {p.operatingEnd}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Hierarchy:</span><span className="font-mono">{p.departments} depts · {p.lines} lines · {p.resources} resources</span></div>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <div className="text-center p-2 bg-muted/50 rounded"><p className="text-lg font-bold text-blue-600">{p.departments}</p><p className="text-[10px] text-muted-foreground">DEPTS</p></div>
-                <div className="text-center p-2 bg-muted/50 rounded"><p className="text-lg font-bold text-purple-600">{p.lines}</p><p className="text-[10px] text-muted-foreground">LINES</p></div>
-                <div className="text-center p-2 bg-muted/50 rounded"><p className="text-lg font-bold text-amber-600">{p.resources}</p><p className="text-[10px] text-muted-foreground">RESOURCES</p></div>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-    </div>
-  )
+  return <Section03PlantMasterModule />
 }
 
 // ─── Epic 2: Production Departments ─────────────────────
