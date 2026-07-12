@@ -921,8 +921,12 @@ function OrganizationModule() {
 // ─── RBAC Module (Sprint 5) — Section 02: User + Role + Permission Management ────
 function RBACModule() {
   const { isDemoMode, hasPermission } = useAuthStore()
-  const [tab, setTab] = useState<'users' | 'roles' | 'permissions' | 'flags' | 'approvals'>('users')
+  const [tab, setTab] = useState<'users' | 'roles' | 'permissions' | 'delegations' | 'flags' | 'approvals'>('users')
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030'
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => Promise<void> } | null>(null)
+
+  function showToast(type: 'success' | 'error', msg: string) { setToast({ type, msg }); setTimeout(() => setToast(null), 4000) }
 
   // ─── Users State ───
   const [users, setUsers] = useState<any[]>([])
@@ -943,6 +947,15 @@ function RBACModule() {
   const [showEditUser, setShowEditUser] = useState(false)
   const [editUserLoading, setEditUserLoading] = useState(false)
   const [editUserError, setEditUserError] = useState('')
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetPwdLoading, setResetPwdLoading] = useState(false)
+  const [resetPwdError, setResetPwdError] = useState('')
+  const [showAssignRole, setShowAssignRole] = useState(false)
+  const [assignRoleLoading, setAssignRoleLoading] = useState(false)
+  const [assignRoleError, setAssignRoleError] = useState('')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [sortField, setSortField] = useState<string>('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   // ─── Roles State ───
   const [roles, setRoles] = useState<any[]>([])
@@ -957,6 +970,12 @@ function RBACModule() {
   const [createRoleLoading, setCreateRoleLoading] = useState(false)
   const [createRoleError, setCreateRoleError] = useState('')
   const [showCloneRole, setShowCloneRole] = useState<string | null>(null)
+  const [showEditRole, setShowEditRole] = useState(false)
+  const [editRoleLoading, setEditRoleLoading] = useState(false)
+  const [editRoleError, setEditRoleError] = useState('')
+  const [showPermAssign, setShowPermAssign] = useState(false)
+  const [permAssignLoading, setPermAssignLoading] = useState(false)
+  const [permAssignError, setPermAssignError] = useState('')
 
   // ─── Permissions State ───
   const [permissions, setPermissions] = useState<any[]>([])
@@ -966,25 +985,33 @@ function RBACModule() {
   const [permModuleFilter, setPermModuleFilter] = useState('')
   const [permSearch, setPermSearch] = useState('')
 
+  // ─── Delegations State ───
+  const [delegations, setDelegations] = useState<any[]>([])
+  const [delegationsLoading, setDelegationsLoading] = useState(!isDemoMode)
+  const [delegationsError, setDelegationsError] = useState('')
+  const [showCreateDelegation, setShowCreateDelegation] = useState(false)
+  const [delegationLoading, setDelegationLoading] = useState(false)
+  const [delegationError, setDelegationError] = useState('')
+
   // ─── Stats ───
   const [stats, setStats] = useState({ roles: 0, permissions: 0, users: 0 })
   const [statsLoading, setStatsLoading] = useState(!isDemoMode)
 
   // ─── Demo data ───
   const demoUsers = [
-    { id: 'demo-1', username: 'admin', email: 'admin@sudhastar.com', status: 'ACTIVE', first_name: 'Admin', last_name: 'User', designation: 'System Admin', last_login_at: new Date().toISOString(), mfa_enabled: true },
-    { id: 'demo-2', username: 'finmgr', email: 'finance@sudhastar.com', status: 'ACTIVE', first_name: 'Finance', last_name: 'Manager', designation: 'Finance Head', last_login_at: new Date(Date.now() - 86400000).toISOString(), mfa_enabled: false },
-    { id: 'demo-3', username: 'whmgr', email: 'warehouse@sudhastar.com', status: 'ACTIVE', first_name: 'Warehouse', last_name: 'Manager', designation: 'WH In-Charge', last_login_at: new Date(Date.now() - 172800000).toISOString(), mfa_enabled: false },
-    { id: 'demo-4', username: 'cashier1', email: 'cashier@sudhastar.com', status: 'ACTIVE', first_name: 'Cashier', last_name: 'One', designation: 'POS Operator', last_login_at: null, mfa_enabled: false },
-    { id: 'demo-5', username: 'auditor', email: 'audit@sudhastar.com', status: 'LOCKED', first_name: 'Audit', last_name: 'Officer', designation: 'Internal Audit', last_login_at: new Date(Date.now() - 604800000).toISOString(), mfa_enabled: true },
+    { id: 'demo-1', username: 'admin', email: 'admin@sudhastar.com', status: 'ACTIVE', first_name: 'Admin', last_name: 'User', designation: 'System Admin', last_login_at: new Date().toISOString(), mfa_enabled: true, roles: ['SUPER_ADMIN'] },
+    { id: 'demo-2', username: 'finmgr', email: 'finance@sudhastar.com', status: 'ACTIVE', first_name: 'Finance', last_name: 'Manager', designation: 'Finance Head', last_login_at: new Date(Date.now() - 86400000).toISOString(), mfa_enabled: false, roles: ['FIN_MGR'] },
+    { id: 'demo-3', username: 'whmgr', email: 'warehouse@sudhastar.com', status: 'ACTIVE', first_name: 'Warehouse', last_name: 'Manager', designation: 'WH In-Charge', last_login_at: new Date(Date.now() - 172800000).toISOString(), mfa_enabled: false, roles: ['WH_MGR'] },
+    { id: 'demo-4', username: 'cashier1', email: 'cashier@sudhastar.com', status: 'ACTIVE', first_name: 'Cashier', last_name: 'One', designation: 'POS Operator', last_login_at: null, mfa_enabled: false, roles: ['CASHIER'] },
+    { id: 'demo-5', username: 'auditor', email: 'audit@sudhastar.com', status: 'LOCKED', first_name: 'Audit', last_name: 'Officer', designation: 'Internal Audit', last_login_at: new Date(Date.now() - 604800000).toISOString(), mfa_enabled: true, roles: ['AUDITOR'] },
   ]
   const demoRoles = [
-    { id: 'demo-r1', name: 'SUPER_ADMIN', display_name: 'Super Administrator', description: 'Full system access', category: 'EXECUTIVE', is_system: true, status: 'ACTIVE' },
-    { id: 'demo-r2', name: 'FIN_MGR', display_name: 'Finance Manager', description: 'Finance department access', category: 'MANAGEMENT', is_system: false, status: 'ACTIVE' },
-    { id: 'demo-r3', name: 'HR_MGR', display_name: 'HR Manager', description: 'HR department access', category: 'MANAGEMENT', is_system: false, status: 'ACTIVE' },
-    { id: 'demo-r4', name: 'WH_MGR', display_name: 'Warehouse Manager', description: 'Warehouse operations access', category: 'MANAGER', is_system: false, status: 'ACTIVE' },
-    { id: 'demo-r5', name: 'CASHIER', display_name: 'Cashier', description: 'POS operations', category: 'OPERATOR', is_system: false, status: 'ACTIVE' },
-    { id: 'demo-r6', name: 'AUDITOR', display_name: 'Auditor', description: 'Read-only audit access', category: 'CLERK', is_system: false, status: 'ACTIVE' },
+    { id: 'demo-r1', name: 'SUPER_ADMIN', display_name: 'Super Administrator', description: 'Full system access', category: 'EXECUTIVE', is_system: true, status: 'ACTIVE', version: 1, permissions: [] },
+    { id: 'demo-r2', name: 'FIN_MGR', display_name: 'Finance Manager', description: 'Finance department access', category: 'MANAGEMENT', is_system: false, status: 'ACTIVE', version: 1, permissions: [] },
+    { id: 'demo-r3', name: 'HR_MGR', display_name: 'HR Manager', description: 'HR department access', category: 'MANAGEMENT', is_system: false, status: 'ACTIVE', version: 1, permissions: [] },
+    { id: 'demo-r4', name: 'WH_MGR', display_name: 'Warehouse Manager', description: 'Warehouse operations access', category: 'MANAGER', is_system: false, status: 'ACTIVE', version: 1, permissions: [] },
+    { id: 'demo-r5', name: 'CASHIER', display_name: 'Cashier', description: 'POS operations', category: 'OPERATOR', is_system: false, status: 'ACTIVE', version: 1, permissions: [] },
+    { id: 'demo-r6', name: 'AUDITOR', display_name: 'Auditor', description: 'Read-only audit access', category: 'CLERK', is_system: false, status: 'ACTIVE', version: 1, permissions: [] },
   ]
   const demoPerms = [
     { id: 'p1', module: 'org', feature: 'Organization', action: 'read', code: 'org:read', display_name: 'View Organization', permission_group: 'Organization' },
@@ -995,6 +1022,9 @@ function RBACModule() {
     { id: 'p6', module: 'auth', feature: 'Auth', action: 'manage_users', code: 'auth:manage_users', display_name: 'Manage Users', permission_group: 'Auth' },
     { id: 'p7', module: 'auth', feature: 'Auth', action: 'manage_roles', code: 'auth:manage_roles', display_name: 'Manage Roles', permission_group: 'Auth' },
     { id: 'p8', module: 'audit', feature: 'Audit', action: 'read', code: 'audit:read', display_name: 'View Audit Logs', permission_group: 'Audit' },
+  ]
+  const demoDelegations = [
+    { id: 'demo-d1', delegator_name: 'Finance Manager', delegate_name: 'Assistant FM', approval_type: 'PO_APPROVAL', status: 'ACTIVE', effective_from: new Date().toISOString(), effective_to: new Date(Date.now() + 604800000).toISOString(), reason: 'Vacation' },
   ]
   const demoFlags = [
     { key: 'ai_copilot', name: 'AI Copilot', state: 'PILOT' },
@@ -1020,6 +1050,28 @@ function RBACModule() {
     return json as T
   }
 
+  // ─── Reload helpers ───
+  async function reloadUsers() {
+    if (isDemoMode) return
+    try {
+      const qs = new URLSearchParams()
+      qs.set('page', String(usersPage))
+      if (userSearch) qs.set('search', userSearch)
+      if (userStatusFilter) qs.set('status', userStatusFilter)
+      const json = await apiFetch<any>(`/api/v1/admin/users?${qs}`)
+      setUsers(json.data || []); setUsersTotal(json.meta?.total ?? 0)
+    } catch {}
+  }
+  async function reloadRoles() {
+    if (isDemoMode) return
+    try {
+      const qs = new URLSearchParams()
+      if (roleSearch) qs.set('search', roleSearch)
+      const json = await apiFetch<any>(`/api/v1/admin/roles?${qs}`)
+      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
+    } catch {}
+  }
+
   // ─── Load Users ───
   useEffect(() => {
     if (isDemoMode) { setUsers(demoUsers); setUsersTotal(demoUsers.length); setUsersLoading(false); return }
@@ -1033,13 +1085,10 @@ function RBACModule() {
         if (userStatusFilter) qs.set('status', userStatusFilter)
         const json = await apiFetch<any>(`/api/v1/admin/users?${qs}`)
         if (cancelled) return
-        setUsers(json.data || [])
-        setUsersTotal(json.meta?.total ?? 0)
+        setUsers(json.data || []); setUsersTotal(json.meta?.total ?? 0)
       } catch (err: any) {
         if (!cancelled) { setUsersError(err?.message || 'Failed to load users'); setUsers(demoUsers); setUsersTotal(demoUsers.length) }
-      } finally {
-        if (!cancelled) setUsersLoading(false)
-      }
+      } finally { if (!cancelled) setUsersLoading(false) }
     }
     loadUsers()
     return () => { cancelled = true }
@@ -1056,13 +1105,10 @@ function RBACModule() {
         if (roleSearch) qs.set('search', roleSearch)
         const json = await apiFetch<any>(`/api/v1/admin/roles?${qs}`)
         if (cancelled) return
-        setRoles(json.data || [])
-        setRolesTotal(json.meta?.total ?? 0)
+        setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
       } catch (err: any) {
         if (!cancelled) { setRolesError(err?.message || 'Failed to load roles'); setRoles(demoRoles); setRolesTotal(demoRoles.length) }
-      } finally {
-        if (!cancelled) setRolesLoading(false)
-      }
+      } finally { if (!cancelled) setRolesLoading(false) }
     }
     loadRoles()
     return () => { cancelled = true }
@@ -1084,13 +1130,29 @@ function RBACModule() {
         if (modsJson.status === 'fulfilled') setPermModules(modsJson.value.data || [])
       } catch (err: any) {
         if (!cancelled) { setPermsError(err?.message || 'Failed to load permissions'); setPermissions(demoPerms); setPermModules(['org', 'product', 'po', 'inventory', 'auth', 'audit']) }
-      } finally {
-        if (!cancelled) setPermsLoading(false)
-      }
+      } finally { if (!cancelled) setPermsLoading(false) }
     }
     loadPerms()
     return () => { cancelled = true }
   }, [isDemoMode, permModuleFilter])
+
+  // ─── Load Delegations ───
+  useEffect(() => {
+    if (isDemoMode) { setDelegations(demoDelegations); setDelegationsLoading(false); return }
+    let cancelled = false
+    async function loadDelegations() {
+      setDelegationsLoading(true); setDelegationsError('')
+      try {
+        const json = await apiFetch<any>('/api/v1/admin/delegations')
+        if (cancelled) return
+        setDelegations(json.data || [])
+      } catch (err: any) {
+        if (!cancelled) { setDelegationsError(err?.message || 'Failed to load delegations'); setDelegations(demoDelegations) }
+      } finally { if (!cancelled) setDelegationsLoading(false) }
+    }
+    loadDelegations()
+    return () => { cancelled = true }
+  }, [isDemoMode])
 
   // ─── Load Stats ───
   useEffect(() => {
@@ -1110,9 +1172,7 @@ function RBACModule() {
           permissions: permsRes.status === 'fulfilled' ? (permsRes.value?.data?.length ?? 0) : 0,
           users: usersRes.status === 'fulfilled' ? (usersRes.value?.meta?.total ?? 0) : 0,
         })
-      } finally {
-        if (!cancelled) setStatsLoading(false)
-      }
+      } finally { if (!cancelled) setStatsLoading(false) }
     }
     loadStats()
     return () => { cancelled = true }
@@ -1134,9 +1194,7 @@ function RBACModule() {
         if (detailRes.status === 'fulfilled') setUserDetail(detailRes.value.data)
         if (historyRes.status === 'fulfilled') setUserLoginHistory(historyRes.value.data || [])
         if (sessionsRes.status === 'fulfilled') setUserSessions(sessionsRes.value.data || [])
-      } finally {
-        if (!cancelled) setUserDetailLoading(false)
-      }
+      } finally { if (!cancelled) setUserDetailLoading(false) }
     }
     loadUserDetail()
     return () => { cancelled = true }
@@ -1152,11 +1210,8 @@ function RBACModule() {
         const json = await apiFetch<any>(`/api/v1/admin/roles/${selectedRole}`)
         if (cancelled) return
         setRoleDetail(json.data)
-      } catch {
-        if (!cancelled) setRoleDetail(null)
-      } finally {
-        if (!cancelled) setRoleDetailLoading(false)
-      }
+      } catch { if (!cancelled) setRoleDetail(null) }
+      finally { if (!cancelled) setRoleDetailLoading(false) }
     }
     loadRoleDetail()
     return () => { cancelled = true }
@@ -1164,72 +1219,141 @@ function RBACModule() {
 
   // ─── Actions ───
   async function handleLockUser(id: string) {
-    try { await apiFetch(`/api/v1/admin/users/${id}/lock`, { method: 'POST' }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'LOCKED' } : u)) } catch {}
+    setConfirmAction({ title: 'Lock User', message: 'This will prevent the user from logging in. Continue?', onConfirm: async () => {
+      try { await apiFetch(`/api/v1/admin/users/${id}/lock`, { method: 'POST' }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'LOCKED' } : u)); showToast('success', 'User locked successfully') }
+      catch (err: any) { showToast('error', err?.message || 'Failed to lock user') }
+    } })
   }
   async function handleUnlockUser(id: string) {
-    try { await apiFetch(`/api/v1/admin/users/${id}/unlock`, { method: 'POST' }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'ACTIVE' } : u)) } catch {}
+    try { await apiFetch(`/api/v1/admin/users/${id}/unlock`, { method: 'POST' }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'ACTIVE' } : u)); showToast('success', 'User unlocked successfully') }
+    catch (err: any) { showToast('error', err?.message || 'Failed to unlock user') }
+  }
+  async function handleDisableUser(id: string) {
+    setConfirmAction({ title: 'Disable User', message: 'This will deactivate the user account. They will not be able to log in. Continue?', onConfirm: async () => {
+      try { await apiFetch(`/api/v1/admin/users/${id}`, { method: 'PATCH', headers: { 'If-Match': String(userDetail?.version ?? 0) }, body: JSON.stringify({ status: 'DISABLED' }) }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'DISABLED' } : u)); showToast('success', 'User disabled successfully') }
+      catch (err: any) { showToast('error', err?.message || 'Failed to disable user') }
+    } })
+  }
+  async function handleEnableUser(id: string) {
+    try { await apiFetch(`/api/v1/admin/users/${id}`, { method: 'PATCH', headers: { 'If-Match': String(userDetail?.version ?? 0) }, body: JSON.stringify({ status: 'ACTIVE' }) }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'ACTIVE' } : u)); showToast('success', 'User enabled successfully') }
+    catch (err: any) { showToast('error', err?.message || 'Failed to enable user') }
   }
   async function handleRevokeAllSessions(id: string) {
-    try { await apiFetch(`/api/v1/admin/users/${id}/sessions/revoke-all`, { method: 'POST' }); setUserSessions([]) } catch {}
+    setConfirmAction({ title: 'Revoke All Sessions', message: 'This will sign out the user from all devices. Continue?', onConfirm: async () => {
+      try { await apiFetch(`/api/v1/admin/users/${id}/sessions/revoke-all`, { method: 'POST' }); setUserSessions([]); showToast('success', 'All sessions revoked') }
+      catch (err: any) { showToast('error', err?.message || 'Failed to revoke sessions') }
+    } })
   }
   async function handleAssignRole(userId: string, roleName: string) {
-    try { await apiFetch(`/api/v1/admin/users/${userId}/roles/${roleName}`, { method: 'POST' }) } catch {}
+    setAssignRoleLoading(true); setAssignRoleError('')
+    try { await apiFetch(`/api/v1/admin/users/${userId}/roles/${roleName}`, { method: 'POST' }); showToast('success', `Role '${roleName}' assigned`); setShowAssignRole(false); reloadUsers() }
+    catch (err: any) { setAssignRoleError(err?.message || 'Failed to assign role') }
+    finally { setAssignRoleLoading(false) }
   }
   async function handleRevokeRole(userId: string, roleName: string) {
-    try { await apiFetch(`/api/v1/admin/users/${userId}/roles/${roleName}`, { method: 'DELETE' }) } catch {}
+    try { await apiFetch(`/api/v1/admin/users/${userId}/roles/${roleName}`, { method: 'DELETE' }); showToast('success', `Role '${roleName}' revoked`); reloadUsers() }
+    catch (err: any) { showToast('error', err?.message || 'Failed to revoke role') }
   }
   async function handleInvite(data: { email: string; firstName?: string; lastName?: string; designation?: string; roles: string[] }) {
     setInviteLoading(true); setInviteError('')
-    try {
-      await apiFetch('/api/v1/auth/invite', { method: 'POST', body: JSON.stringify(data) })
-      setShowInvite(false)
-    } catch (err: any) { setInviteError(err?.message || 'Failed to invite user') }
+    try { await apiFetch('/api/v1/auth/invite', { method: 'POST', body: JSON.stringify(data) }); setShowInvite(false); showToast('success', `Invitation sent to ${data.email}`); reloadUsers() }
+    catch (err: any) { setInviteError(err?.message || 'Failed to invite user') }
     finally { setInviteLoading(false) }
   }
   async function handleUpdateUser(id: string, data: { firstName?: string; lastName?: string; designation?: string; phone?: string; timezone?: string; locale?: string }, version: number) {
     setEditUserLoading(true); setEditUserError('')
-    try {
-      await apiFetch(`/api/v1/admin/users/${id}`, { method: 'PATCH', headers: { 'If-Match': String(version) }, body: JSON.stringify(data) })
-      setShowEditUser(false)
-      // Refresh user detail
-      const json = await apiFetch<any>(`/api/v1/admin/users/${id}`)
-      setUserDetail(json.data)
-    } catch (err: any) { setEditUserError(err?.message || 'Failed to update user') }
+    try { await apiFetch(`/api/v1/admin/users/${id}`, { method: 'PATCH', headers: { 'If-Match': String(version) }, body: JSON.stringify(data) }); setShowEditUser(false); showToast('success', 'User updated successfully'); const json = await apiFetch<any>(`/api/v1/admin/users/${id}`); setUserDetail(json.data) }
+    catch (err: any) { setEditUserError(err?.message || 'Failed to update user') }
     finally { setEditUserLoading(false) }
+  }
+  async function handleResetPassword(userId: string, newPassword: string) {
+    setResetPwdLoading(true); setResetPwdError('')
+    try { await apiFetch('/api/v1/auth/reset-password', { method: 'POST', body: JSON.stringify({ token: 'admin-reset-' + userId, newPassword }) }); setShowResetPassword(false); showToast('success', 'Password reset successfully') }
+    catch (err: any) { setResetPwdError(err?.message || 'Failed to reset password') }
+    finally { setResetPwdLoading(false) }
   }
   async function handleCreateRole(data: { name: string; displayName: string; description?: string; permissionCodes?: string[] }) {
     setCreateRoleLoading(true); setCreateRoleError('')
-    try {
-      await apiFetch('/api/v1/admin/roles', { method: 'POST', body: JSON.stringify(data) })
-      setShowCreateRole(false)
-      // Reload roles
-      const json = await apiFetch<any>('/api/v1/admin/roles')
-      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
-    } catch (err: any) { setCreateRoleError(err?.message || 'Failed to create role') }
+    try { await apiFetch('/api/v1/admin/roles', { method: 'POST', body: JSON.stringify(data) }); setShowCreateRole(false); showToast('success', 'Role created successfully'); reloadRoles() }
+    catch (err: any) { setCreateRoleError(err?.message || 'Failed to create role') }
     finally { setCreateRoleLoading(false) }
   }
+  async function handleUpdateRole(id: string, data: { displayName?: string; description?: string; status?: string }, version: number) {
+    setEditRoleLoading(true); setEditRoleError('')
+    try { await apiFetch(`/api/v1/admin/roles/${id}`, { method: 'PATCH', headers: { 'If-Match': String(version) }, body: JSON.stringify(data) }); setShowEditRole(false); showToast('success', 'Role updated successfully'); const json = await apiFetch<any>(`/api/v1/admin/roles/${id}`); setRoleDetail(json.data); reloadRoles() }
+    catch (err: any) { setEditRoleError(err?.message || 'Failed to update role') }
+    finally { setEditRoleLoading(false) }
+  }
   async function handleCloneRole(sourceId: string, newName: string, newDisplayName: string) {
-    try {
-      await apiFetch(`/api/v1/admin/roles/${sourceId}/clone`, { method: 'POST', body: JSON.stringify({ newName, newDisplayName }) })
-      setShowCloneRole(null)
-      const json = await apiFetch<any>('/api/v1/admin/roles')
-      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
-    } catch {}
+    try { await apiFetch(`/api/v1/admin/roles/${sourceId}/clone`, { method: 'POST', body: JSON.stringify({ newName, newDisplayName }) }); setShowCloneRole(null); showToast('success', 'Role cloned successfully'); reloadRoles() }
+    catch (err: any) { showToast('error', err?.message || 'Failed to clone role') }
   }
   async function handleDeleteRole(id: string, version: number) {
-    try {
-      await apiFetch(`/api/v1/admin/roles/${id}`, { method: 'DELETE', headers: { 'If-Match': String(version) } })
-      setSelectedRole(null); setRoleDetail(null)
-      const json = await apiFetch<any>('/api/v1/admin/roles')
-      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
-    } catch {}
+    try { await apiFetch(`/api/v1/admin/roles/${id}`, { method: 'DELETE', headers: { 'If-Match': String(version) } }); setSelectedRole(null); setRoleDetail(null); showToast('success', 'Role deleted'); reloadRoles() }
+    catch (err: any) { showToast('error', err?.message || 'Failed to delete role') }
   }
   async function handleAssignPermission(roleId: string, permCode: string) {
-    try { await apiFetch(`/api/v1/admin/roles/${roleId}/permissions/${permCode}`, { method: 'POST' }) } catch {}
+    setPermAssignLoading(true); setPermAssignError('')
+    try { await apiFetch(`/api/v1/admin/roles/${roleId}/permissions/${permCode}`, { method: 'POST' }); showToast('success', `Permission '${permCode}' assigned`); const json = await apiFetch<any>(`/api/v1/admin/roles/${roleId}`); setRoleDetail(json.data) }
+    catch (err: any) { setPermAssignError(err?.message || 'Failed to assign permission') }
+    finally { setPermAssignLoading(false) }
   }
   async function handleRevokePermission(roleId: string, permCode: string) {
-    try { await apiFetch(`/api/v1/admin/roles/${roleId}/permissions/${permCode}`, { method: 'DELETE' }) } catch {}
+    try { await apiFetch(`/api/v1/admin/roles/${roleId}/permissions/${permCode}`, { method: 'DELETE' }); showToast('success', `Permission '${permCode}' revoked`); const json = await apiFetch<any>(`/api/v1/admin/roles/${roleId}`); setRoleDetail(json.data) }
+    catch (err: any) { showToast('error', err?.message || 'Failed to revoke permission') }
   }
+  async function handleCreateDelegation(data: { delegatorId: string; delegateId: string; approvalType: string; effectiveFrom: string; effectiveTo: string; reason?: string }) {
+    setDelegationLoading(true); setDelegationError('')
+    try { await apiFetch('/api/v1/admin/delegations', { method: 'POST', body: JSON.stringify(data) }); setShowCreateDelegation(false); showToast('success', 'Delegation created'); const json = await apiFetch<any>('/api/v1/admin/delegations'); setDelegations(json.data || []) }
+    catch (err: any) { setDelegationError(err?.message || 'Failed to create delegation') }
+    finally { setDelegationLoading(false) }
+  }
+  async function handleRevokeDelegation(id: string) {
+    setConfirmAction({ title: 'Revoke Delegation', message: 'This will cancel the approval delegation. Continue?', onConfirm: async () => {
+      try { await apiFetch(`/api/v1/admin/delegations/${id}`, { method: 'DELETE' }); showToast('success', 'Delegation revoked'); const json = await apiFetch<any>('/api/v1/admin/delegations'); setDelegations(json.data || []) }
+      catch (err: any) { showToast('error', err?.message || 'Failed to revoke delegation') }
+    } })
+  }
+  function handleExportUsers() {
+    const headers = ['Username', 'Email', 'First Name', 'Last Name', 'Designation', 'Status', 'MFA', 'Last Login']
+    const rows = (isDemoMode ? demoUsers : users).map(u => [u.username, u.email, u.first_name || '', u.last_name || '', u.designation || '', u.status, u.mfa_enabled ? 'Yes' : 'No', u.last_login_at ? new Date(u.last_login_at).toISOString() : 'Never'])
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'users-export.csv'; a.click(); URL.revokeObjectURL(url); showToast('success', `${rows.length} users exported`)
+  }
+  function handleExportRoles() {
+    const headers = ['Name', 'Display Name', 'Description', 'Category', 'Status', 'System']
+    const rows = (isDemoMode ? demoRoles : roles).map(r => [r.name, r.display_name, r.description || '', r.category || '', r.status, r.is_system ? 'Yes' : 'No'])
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'roles-export.csv'; a.click(); URL.revokeObjectURL(url); showToast('success', `${rows.length} roles exported`)
+  }
+  function handleBulkLock() {
+    setConfirmAction({ title: `Bulk Lock ${selectedUsers.size} Users`, message: 'This will lock all selected users. Continue?', onConfirm: async () => {
+      for (const id of selectedUsers) { try { await apiFetch(`/api/v1/admin/users/${id}/lock`, { method: 'POST' }) } catch {} }
+      showToast('success', `${selectedUsers.size} users locked`); setSelectedUsers(new Set()); reloadUsers()
+    } })
+  }
+  function handleBulkUnlock() {
+    setConfirmAction({ title: `Bulk Unlock ${selectedUsers.size} Users`, message: 'This will unlock all selected users. Continue?', onConfirm: async () => {
+      for (const id of selectedUsers) { try { await apiFetch(`/api/v1/admin/users/${id}/unlock`, { method: 'POST' }) } catch {} }
+      showToast('success', `${selectedUsers.size} users unlocked`); setSelectedUsers(new Set()); reloadUsers()
+    } })
+  }
+  function toggleUserSelection(id: string) {
+    setSelectedUsers(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  }
+  function toggleSelectAll() {
+    if (selectedUsers.size === users.length) setSelectedUsers(new Set())
+    else setSelectedUsers(new Set(users.map(u => u.id)))
+  }
+  function handleSort(field: string) {
+    if (sortField === field) setSortDir(prev => prev === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
+  const sortedUsers = [...users].sort((a, b) => {
+    if (!sortField) return 0
+    const av = (a[sortField] || '').toString().toLowerCase(); const bv = (b[sortField] || '').toString().toLowerCase()
+    return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+  })
 
   // ─── Filtered permissions ───
   const filteredPerms = permissions.filter(p => {
@@ -1237,16 +1361,35 @@ function RBACModule() {
     return true
   })
 
+  // ─── Role permissions not yet assigned ───
+  const assignedPermCodes = new Set((roleDetail?.permissions || []).map((p: any) => p.code))
+  const availablePerms = permissions.filter(p => !assignedPermCodes.has(p.code))
+
   const tabs: Array<{ key: typeof tab; label: string; icon: React.ReactNode }> = [
     { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
     { key: 'roles', label: 'Roles', icon: <Shield className="h-4 w-4" /> },
     { key: 'permissions', label: 'Permissions', icon: <ShieldCheck className="h-4 w-4" /> },
+    { key: 'delegations', label: 'Delegations', icon: <ArrowRightCircle className="h-4 w-4" /> },
     { key: 'flags', label: 'Feature Flags', icon: <Flag className="h-4 w-4" /> },
     { key: 'approvals', label: 'Approvals', icon: <CheckCircle2 className="h-4 w-4" /> },
   ]
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast && <div className={cn('fixed top-4 right-4 z-[60] px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-in fade-in slide-in-from-top-2', toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white')} onClick={() => setToast(null)}>{toast.msg}</div>}
+
+      {/* Confirmation Dialog */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/50 z-[55] flex items-center justify-center p-4" onClick={() => setConfirmAction(null)}>
+          <Card className="p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-500" />{confirmAction.title}</h3>
+            <p className="text-sm text-muted-foreground">{confirmAction.message}</p>
+            <div className="flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => setConfirmAction(null)}>Cancel</Button><Button size="sm" variant="destructive" onClick={async () => { await confirmAction.onConfirm(); setConfirmAction(null) }}>Confirm</Button></div>
+          </Card>
+        </div>
+      )}
+
       <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
         <h2 className="text-2xl font-bold mb-1">Authorization Platform (RBAC)</h2>
         <p className="text-slate-300 text-sm">Roles, Permissions, Feature Flags, Approval Authority, Security Policies</p>
@@ -1279,23 +1422,39 @@ function RBACModule() {
               <Input placeholder="Search users by name, email, username..." value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setUsersPage(1) }} className="pl-8" />
             </div>
             <select value={userStatusFilter} onChange={(e) => { setUserStatusFilter(e.target.value); setUsersPage(1) }} className="h-9 rounded-md border bg-background px-3 text-sm">
-              <option value="">All Status</option>
-              <option value="ACTIVE">Active</option>
-              <option value="LOCKED">Locked</option>
-              <option value="DISABLED">Disabled</option>
-              <option value="INVITED">Invited</option>
+              <option value="">All Status</option><option value="ACTIVE">Active</option><option value="LOCKED">Locked</option><option value="DISABLED">Disabled</option><option value="INVITED">Invited</option>
             </select>
+            {hasPermission('auth:manage_users') && <Button size="sm" variant="outline" onClick={handleExportUsers}><Download className="mr-1 h-3 w-3" />Export</Button>}
             {hasPermission('auth:manage_users') && <Button size="sm" onClick={() => setShowInvite(true)}><Plus className="mr-1 h-3 w-3" />Invite User</Button>}
           </div>
+          {/* Bulk Actions */}
+          {selectedUsers.size > 0 && (
+            <div className="flex items-center gap-2 p-2 bg-primary/10 rounded-md text-sm">
+              <span className="font-medium">{selectedUsers.size} selected</span>
+              {hasPermission('auth:manage_users') && <Button size="sm" variant="outline" onClick={handleBulkLock}><Lock className="mr-1 h-3 w-3" />Bulk Lock</Button>}
+              {hasPermission('auth:manage_users') && <Button size="sm" variant="outline" onClick={handleBulkUnlock}><ShieldCheck className="mr-1 h-3 w-3" />Bulk Unlock</Button>}
+              <Button size="sm" variant="ghost" onClick={() => setSelectedUsers(new Set())}>Clear</Button>
+            </div>
+          )}
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="p-4 lg:col-span-2">
               {usersLoading ? <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-muted/50 rounded animate-pulse" />)}</div> : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b text-xs text-muted-foreground uppercase"><th className="text-left py-2 px-2">User</th><th className="text-left py-2 px-2">Email</th><th className="text-left py-2 px-2">Designation</th><th className="text-left py-2 px-2">Status</th><th className="text-left py-2 px-2">MFA</th><th className="text-left py-2 px-2">Last Login</th><th className="text-left py-2 px-2">Actions</th></tr></thead>
+                    <thead><tr className="border-b text-xs text-muted-foreground uppercase">
+                      <th className="text-left py-2 px-2"><input type="checkbox" checked={selectedUsers.size === users.length && users.length > 0} onChange={toggleSelectAll} className="h-3 w-3 rounded" /></th>
+                      <th className="text-left py-2 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('username')}>User {sortField === 'username' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                      <th className="text-left py-2 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('email')}>Email {sortField === 'email' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                      <th className="text-left py-2 px-2">Designation</th>
+                      <th className="text-left py-2 px-2 cursor-pointer hover:bg-muted/50" onClick={() => handleSort('status')}>Status {sortField === 'status' && (sortDir === 'asc' ? '↑' : '↓')}</th>
+                      <th className="text-left py-2 px-2">MFA</th>
+                      <th className="text-left py-2 px-2">Last Login</th>
+                      <th className="text-left py-2 px-2">Actions</th>
+                    </tr></thead>
                     <tbody>
-                      {users.map(u => (
+                      {sortedUsers.map(u => (
                         <tr key={u.id} className={cn('border-b cursor-pointer hover:bg-muted/50', selectedUser === u.id && 'bg-primary/10')} onClick={() => setSelectedUser(u.id)}>
+                          <td className="py-2 px-2" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selectedUsers.has(u.id)} onChange={() => toggleUserSelection(u.id)} className="h-3 w-3 rounded" /></td>
                           <td className="py-2 px-2"><p className="font-medium">{u.first_name || u.username} {u.last_name || ''}</p><p className="text-xs text-muted-foreground font-mono">{u.username}</p></td>
                           <td className="py-2 px-2 text-muted-foreground">{u.email}</td>
                           <td className="py-2 px-2 text-muted-foreground">{u.designation || '-'}</td>
@@ -1306,20 +1465,22 @@ function RBACModule() {
                             <div className="flex items-center gap-1">
                               {u.status === 'ACTIVE' && hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleLockUser(u.id)} title="Lock"><Lock className="h-3 w-3" /></Button>}
                               {u.status === 'LOCKED' && hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleUnlockUser(u.id)} title="Unlock"><ShieldCheck className="h-3 w-3" /></Button>}
+                              {u.status === 'ACTIVE' && hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleDisableUser(u.id)} title="Disable"><AlertTriangle className="h-3 w-3" /></Button>}
+                              {(u.status === 'DISABLED' || u.status === 'LOCKED') && hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleEnableUser(u.id)} title="Enable"><CheckCircle2 className="h-3 w-3" /></Button>}
                               {hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setSelectedUser(u.id); setShowEditUser(true) }} title="Edit"><Settings className="h-3 w-3" /></Button>}
+                              {hasPermission('auth:reset_password') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setSelectedUser(u.id); setShowResetPassword(true) }} title="Reset Password"><LockIcon className="h-3 w-3" /></Button>}
+                              {hasPermission('auth:manage_roles') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setSelectedUser(u.id); setShowAssignRole(true) }} title="Assign Role"><Shield className="h-3 w-3" /></Button>}
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  {sortedUsers.length === 0 && <div className="text-center py-8 text-muted-foreground text-sm"><Users className="h-8 w-8 mx-auto mb-2 opacity-50" />No users found</div>}
                   {!isDemoMode && usersTotal > 25 && (
                     <div className="flex items-center justify-between mt-4 text-sm">
                       <p className="text-muted-foreground">{usersTotal} users · Page {usersPage}</p>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" disabled={usersPage <= 1} onClick={() => setUsersPage(p => p - 1)}>Previous</Button>
-                        <Button size="sm" variant="outline" disabled={users.length < 25} onClick={() => setUsersPage(p => p + 1)}>Next</Button>
-                      </div>
+                      <div className="flex gap-2"><Button size="sm" variant="outline" disabled={usersPage <= 1} onClick={() => setUsersPage(p => p - 1)}>Previous</Button><Button size="sm" variant="outline" disabled={users.length < 25} onClick={() => setUsersPage(p => p + 1)}>Next</Button></div>
                     </div>
                   )}
                 </div>
@@ -1339,19 +1500,21 @@ function RBACModule() {
                   <div><p className="text-xs text-muted-foreground">MFA Enabled</p><p>{userDetail.mfa_enabled ? '✅ Yes' : '❌ No'}</p></div>
                   {userDetail.roles && <div><p className="text-xs text-muted-foreground">Roles</p><div className="flex flex-wrap gap-1 mt-1">{(userDetail.roles || []).map((r: string) => <Badge key={r} variant="outline" className="text-xs">{r}</Badge>)}</div></div>}
                   {userDetail.last_login_at && <div><p className="text-xs text-muted-foreground">Last Login</p><p className="text-xs">{new Date(userDetail.last_login_at).toLocaleString()}</p></div>}
+                  {userSessions.length > 0 && <div><p className="text-xs text-muted-foreground mb-1">Active Sessions ({userSessions.length})</p><div className="space-y-1 max-h-24 overflow-y-auto">{userSessions.slice(0, 3).map((s: any, i: number) => <div key={i} className="text-xs flex items-center gap-2"><span className="text-emerald-600">●</span><span>{s.device_name || s.user_agent?.slice(0, 30) || 'Unknown device'}</span></div>)}</div></div>}
                   {hasPermission('auth:manage_users') && <div className="pt-2 border-t flex gap-2 flex-wrap">
                     {userDetail.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={() => handleLockUser(selectedUser)}><Lock className="mr-1 h-3 w-3" />Lock</Button>}
                     {userDetail.status === 'LOCKED' && <Button size="sm" variant="outline" onClick={() => handleUnlockUser(selectedUser)}><ShieldCheck className="mr-1 h-3 w-3" />Unlock</Button>}
+                    {userDetail.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={() => handleDisableUser(selectedUser)}><AlertTriangle className="mr-1 h-3 w-3" />Disable</Button>}
+                    {(userDetail.status === 'DISABLED' || userDetail.status === 'LOCKED') && <Button size="sm" variant="outline" onClick={() => handleEnableUser(selectedUser)}><CheckCircle2 className="mr-1 h-3 w-3" />Enable</Button>}
                     <Button size="sm" variant="outline" onClick={() => handleRevokeAllSessions(selectedUser)}><X className="mr-1 h-3 w-3" />Revoke Sessions</Button>
                     <Button size="sm" variant="outline" onClick={() => setShowEditUser(true)}><Settings className="mr-1 h-3 w-3" />Edit</Button>
+                    {hasPermission('auth:reset_password') && <Button size="sm" variant="outline" onClick={() => setShowResetPassword(true)}><LockIcon className="mr-1 h-3 w-3" />Reset Pwd</Button>}
+                    {hasPermission('auth:manage_roles') && <Button size="sm" variant="outline" onClick={() => setShowAssignRole(true)}><Shield className="mr-1 h-3 w-3" />Assign Role</Button>}
                   </div>}
                   {userLoginHistory.length > 0 && <div className="pt-2 border-t"><p className="text-xs text-muted-foreground mb-2">Login History ({userLoginHistory.length})</p><div className="space-y-1 max-h-32 overflow-y-auto">{userLoginHistory.slice(0, 5).map((h: any, i: number) => <div key={i} className="text-xs flex items-center gap-2"><span className={h.success ? 'text-emerald-600' : 'text-rose-500'}>{h.success ? '✓' : '✗'}</span><span>{new Date(h.timestamp || h.created_at).toLocaleString()}</span><span className="text-muted-foreground">{h.ip_address || ''}</span></div>)}</div></div>}
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Selected: <span className="font-mono">{selectedUser}</span></p>
-                  <p className="text-xs">User detail unavailable (may be in demo mode or API error).</p>
-                </div>
+                <div className="text-sm text-muted-foreground space-y-1"><p>Selected: <span className="font-mono">{selectedUser}</span></p><p className="text-xs">User detail unavailable (may be in demo mode or API error).</p></div>
               )) : <p className="text-sm text-muted-foreground">Select a user from the table to view details.</p>}
             </Card>
           </div>
@@ -1366,19 +1529,18 @@ function RBACModule() {
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search roles..." value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} className="pl-8" />
             </div>
+            {hasPermission('auth:manage_roles') && <Button size="sm" variant="outline" onClick={handleExportRoles}><Download className="mr-1 h-3 w-3" />Export</Button>}
             {hasPermission('auth:manage_roles') && <Button size="sm" onClick={() => setShowCreateRole(true)}><Plus className="mr-1 h-3 w-3" />Create Role</Button>}
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="p-4 lg:col-span-2">
               {rolesLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-muted/50 rounded animate-pulse" />)}</div> : (
                 <div className="space-y-2">
+                  {roles.length === 0 && <div className="text-center py-8 text-muted-foreground text-sm"><Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />No roles found</div>}
                   {roles.map(r => (
                     <div key={r.id} className={cn('flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 text-sm', selectedRole === r.id && 'bg-primary/10 border-primary')} onClick={() => setSelectedRole(r.id)}>
                       <Shield className={cn('h-5 w-5 flex-shrink-0', r.is_system ? 'text-blue-600' : 'text-muted-foreground')} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{r.display_name || r.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{r.name}</p>
-                      </div>
+                      <div className="flex-1 min-w-0"><p className="font-medium truncate">{r.display_name || r.name}</p><p className="text-xs text-muted-foreground font-mono">{r.name}</p></div>
                       <Badge variant="outline" className="text-xs">{r.category || 'CUSTOM'}</Badge>
                       <Badge variant={r.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-xs">{r.status}</Badge>
                       {r.is_system && <Badge variant="outline" className="text-xs">SYSTEM</Badge>}
@@ -1397,10 +1559,17 @@ function RBACModule() {
                   <div><p className="text-xs text-muted-foreground">Category</p><Badge variant="outline">{roleDetail.category || 'CUSTOM'}</Badge></div>
                   <div><p className="text-xs text-muted-foreground">Status</p><Badge variant={roleDetail.status === 'ACTIVE' ? 'default' : 'secondary'}>{roleDetail.status}</Badge></div>
                   {roleDetail.permissions && <div><p className="text-xs text-muted-foreground">Permissions ({roleDetail.permissions.length})</p><div className="flex flex-wrap gap-1 mt-1 max-h-32 overflow-y-auto">{roleDetail.permissions.map((p: any) => <Badge key={p.code || p.id} variant="outline" className="text-xs font-mono">{p.code || p.display_name}</Badge>)}</div></div>}
-                  {hasPermission('auth:manage_roles') && !roleDetail.is_system && <div className="pt-2 border-t flex gap-2 flex-wrap">
-                    <Button size="sm" variant="outline" onClick={() => setShowCloneRole(selectedRole)}><GitBranch className="mr-1 h-3 w-3" />Clone</Button>
-                    <Button size="sm" variant="destructive" onClick={() => { if (confirm('Delete this role? This cannot be undone.')) handleDeleteRole(selectedRole, roleDetail.version ?? 0) }}><Trash2 className="mr-1 h-3 w-3" />Delete</Button>
+                  {hasPermission('auth:manage_roles') && <div className="pt-2 border-t flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => setShowEditRole(true)}><Settings className="mr-1 h-3 w-3" />Edit</Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowPermAssign(true)}><Plus className="mr-1 h-3 w-3" />Add Permission</Button>
+                    {!roleDetail.is_system && <Button size="sm" variant="outline" onClick={() => setShowCloneRole(selectedRole)}><GitBranch className="mr-1 h-3 w-3" />Clone</Button>}
+                    {!roleDetail.is_system && <Button size="sm" variant="destructive" onClick={() => setConfirmAction({ title: 'Delete Role', message: 'This will permanently delete the role. Users assigned to this role will lose the associated permissions. Continue?', onConfirm: async () => { await handleDeleteRole(selectedRole, roleDetail.version ?? 0) } })}><Trash2 className="mr-1 h-3 w-3" />Delete</Button>}
                   </div>}
+                  {roleDetail.permissions && roleDetail.permissions.length > 0 && hasPermission('auth:manage_roles') && (
+                    <div className="pt-2 border-t"><p className="text-xs text-muted-foreground mb-1">Manage Permissions</p><div className="space-y-1 max-h-40 overflow-y-auto">{roleDetail.permissions.map((p: any) => (
+                      <div key={p.code} className="flex items-center gap-2 text-xs"><span className="font-mono flex-1 truncate">{p.code}</span><Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-rose-500" onClick={() => handleRevokePermission(selectedRole, p.code)}><X className="h-3 w-3" /></Button></div>
+                    ))}</div></div>
+                  )}
                 </div>
               ) : <p className="text-sm text-muted-foreground">Role detail unavailable.</p>) : <p className="text-sm text-muted-foreground">Select a role to view details.</p>}
             </Card>
@@ -1417,8 +1586,7 @@ function RBACModule() {
               <Input placeholder="Search permissions..." value={permSearch} onChange={(e) => setPermSearch(e.target.value)} className="pl-8" />
             </div>
             <select value={permModuleFilter} onChange={(e) => setPermModuleFilter(e.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm">
-              <option value="">All Modules</option>
-              {permModules.map(m => <option key={m} value={m}>{m}</option>)}
+              <option value="">All Modules</option>{permModules.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
           {permsLoading ? <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-muted/50 rounded animate-pulse" />)}</div> : (
@@ -1427,10 +1595,10 @@ function RBACModule() {
                 <table className="w-full text-sm">
                   <thead><tr className="border-b text-xs text-muted-foreground uppercase"><th className="text-left py-2 px-2">Code</th><th className="text-left py-2 px-2">Display Name</th><th className="text-left py-2 px-2">Module</th><th className="text-left py-2 px-2">Feature</th><th className="text-left py-2 px-2">Action</th><th className="text-left py-2 px-2">Group</th></tr></thead>
                   <tbody>
+                    {filteredPerms.length === 0 && <tr><td colSpan={6} className="text-center py-8 text-muted-foreground"><ShieldCheck className="h-8 w-8 mx-auto mb-2 opacity-50" />No permissions found</td></tr>}
                     {filteredPerms.map(p => (
                       <tr key={p.id || p.code} className="border-b hover:bg-muted/50">
-                        <td className="py-2 px-2 font-mono text-xs">{p.code}</td>
-                        <td className="py-2 px-2 font-medium">{p.display_name}</td>
+                        <td className="py-2 px-2 font-mono text-xs">{p.code}</td><td className="py-2 px-2 font-medium">{p.display_name}</td>
                         <td className="py-2 px-2"><Badge variant="outline" className="text-xs">{p.module}</Badge></td>
                         <td className="py-2 px-2 text-muted-foreground">{p.feature}</td>
                         <td className="py-2 px-2"><Badge variant="secondary" className="text-xs">{p.action}</Badge></td>
@@ -1441,6 +1609,36 @@ function RBACModule() {
                 </table>
               </div>
               <p className="text-xs text-muted-foreground mt-3">{filteredPerms.length} permissions{permModuleFilter ? ` in module '${permModuleFilter}'` : ''}</p>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ─── Delegations Tab ─── */}
+      {tab === 'delegations' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold flex items-center gap-2"><ArrowRightCircle className="h-5 w-5" /> Approval Delegations</h3>
+            {hasPermission('auth:manage_users') && <Button size="sm" onClick={() => setShowCreateDelegation(true)}><Plus className="mr-1 h-3 w-3" />New Delegation</Button>}
+          </div>
+          {delegationsError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-md p-3">{delegationsError}</div>}
+          {delegationsLoading ? <div className="space-y-2">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-muted/50 rounded animate-pulse" />)}</div> : (
+            <Card className="p-4">
+              {delegations.length === 0 && <div className="text-center py-8 text-muted-foreground text-sm"><ArrowRightCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />No delegations found</div>}
+              <div className="space-y-2">
+                {delegations.map((d: any) => (
+                  <div key={d.id} className="flex items-center gap-3 p-3 rounded-lg border text-sm">
+                    <ArrowRightCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">{d.delegator_name || d.delegator_id}</p>
+                      <p className="text-xs text-muted-foreground">→ {d.delegate_name || d.delegate_id} · {d.approval_type}</p>
+                    </div>
+                    <Badge variant={d.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-xs">{d.status}</Badge>
+                    {d.effective_from && <span className="text-xs text-muted-foreground hidden md:inline">{new Date(d.effective_from).toLocaleDateString()} → {new Date(d.effective_to).toLocaleDateString()}</span>}
+                    {hasPermission('auth:manage_users') && d.status === 'ACTIVE' && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-rose-500" onClick={() => handleRevokeDelegation(d.id)}>Revoke</Button>}
+                  </div>
+                ))}
+              </div>
             </Card>
           )}
         </div>
@@ -1466,13 +1664,9 @@ function RBACModule() {
       {tab === 'approvals' && (
         <Card className="p-4">
           <h3 className="font-semibold mb-4 flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> Approval Authority Matrix</h3>
-          <div className="grid grid-cols-4 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
-            <span>Level</span><span>Approver</span><span>Min</span><span>Max</span>
-          </div>
+          <div className="grid grid-cols-4 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase"><span>Level</span><span>Approver</span><span>Min</span><span>Max</span></div>
           {demoApprovals.map(a => (
-            <div key={a.level} className="grid grid-cols-4 gap-2 px-4 py-3 border-t text-sm">
-              <Badge variant="outline">Level {a.level}</Badge><span className="font-medium">{a.role}</span><span className="font-mono">{a.min}</span><span className="font-mono">{a.max}</span>
-            </div>
+            <div key={a.level} className="grid grid-cols-4 gap-2 px-4 py-3 border-t text-sm"><Badge variant="outline">Level {a.level}</Badge><span className="font-medium">{a.role}</span><span className="font-mono">{a.min}</span><span className="font-mono">{a.max}</span></div>
           ))}
         </Card>
       )}
@@ -1511,6 +1705,37 @@ function RBACModule() {
         </div>
       )}
 
+      {/* ─── Reset Password Dialog ─── */}
+      {showResetPassword && selectedUser && hasPermission('auth:reset_password') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !resetPwdLoading && setShowResetPassword(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Reset Password</h3><Button size="icon" variant="ghost" onClick={() => setShowResetPassword(false)} disabled={resetPwdLoading}><X className="h-4 w-4" /></Button></div>
+            {resetPwdError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{resetPwdError}</div>}
+            <p className="text-xs text-muted-foreground">Set a new password for <span className="font-mono font-medium">{userDetail?.email || selectedUser}</span>. The user will need to change it on next login.</p>
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleResetPassword(selectedUser, fd.get('newPassword') as string) }} className="space-y-3">
+              <div className="space-y-1"><Label className="text-xs">New Password * (min 12 chars)</Label><Input name="newPassword" type="password" required minLength={12} placeholder="••••••••••••" /></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowResetPassword(false)} disabled={resetPwdLoading}>Cancel</Button><Button type="submit" size="sm" disabled={resetPwdLoading}>{resetPwdLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Resetting...</> : 'Reset Password'}</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Assign Role Dialog ─── */}
+      {showAssignRole && selectedUser && hasPermission('auth:manage_roles') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !assignRoleLoading && setShowAssignRole(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Assign Role</h3><Button size="icon" variant="ghost" onClick={() => setShowAssignRole(false)} disabled={assignRoleLoading}><X className="h-4 w-4" /></Button></div>
+            {assignRoleError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{assignRoleError}</div>}
+            <p className="text-xs text-muted-foreground">Assign a role to <span className="font-mono font-medium">{userDetail?.email || selectedUser}</span></p>
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleAssignRole(selectedUser, fd.get('roleName') as string) }} className="space-y-3">
+              <div className="space-y-1"><Label className="text-xs">Role *</Label><select name="roleName" required className="w-full h-9 rounded-md border bg-background px-3 text-sm">{roles.filter(r => r.status === 'ACTIVE').map(r => <option key={r.id} value={r.name}>{r.display_name || r.name}</option>)}</select></div>
+              {(userDetail?.roles || []).length > 0 && <div><p className="text-xs text-muted-foreground mb-1">Current Roles</p><div className="space-y-1">{(userDetail?.roles || []).map((r: string) => <div key={r} className="flex items-center gap-2 text-xs"><Badge variant="outline" className="font-mono">{r}</Badge><Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs text-rose-500" onClick={() => handleRevokeRole(selectedUser, r)}>Revoke</Button></div>)}</div></div>}
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowAssignRole(false)} disabled={assignRoleLoading}>Cancel</Button><Button type="submit" size="sm" disabled={assignRoleLoading}>{assignRoleLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Assigning...</> : 'Assign Role'}</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
       {/* ─── Create Role Dialog ─── */}
       {showCreateRole && hasPermission('auth:manage_roles') && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !createRoleLoading && setShowCreateRole(false)}>
@@ -1518,11 +1743,48 @@ function RBACModule() {
             <div className="flex items-center justify-between"><h3 className="font-semibold">Create Role</h3><Button size="icon" variant="ghost" onClick={() => setShowCreateRole(false)} disabled={createRoleLoading}><X className="h-4 w-4" /></Button></div>
             {createRoleError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{createRoleError}</div>}
             <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleCreateRole({ name: fd.get('name') as string, displayName: fd.get('displayName') as string, description: fd.get('description') as string || undefined }) }} className="space-y-3">
-              <div className="space-y-1"><Label className="text-xs">Role Name (code) *</Label><Input name="name" required placeholder="WH_OPERATOR" className="font-mono" /></div>
-              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required placeholder="Warehouse Operator" /></div>
-              <div className="space-y-1"><Label className="text-xs">Description</Label><Input name="description" placeholder="Warehouse floor operations" /></div>
+              <div className="space-y-1"><Label className="text-xs">Role Name (code) *</Label><Input name="name" required minLength={2} maxLength={50} placeholder="WH_OPERATOR" className="font-mono" /></div>
+              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required minLength={1} maxLength={100} placeholder="Warehouse Operator" /></div>
+              <div className="space-y-1"><Label className="text-xs">Description</Label><Input name="description" maxLength={500} placeholder="Warehouse floor operations" /></div>
               <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowCreateRole(false)} disabled={createRoleLoading}>Cancel</Button><Button type="submit" size="sm" disabled={createRoleLoading}>{createRoleLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Creating...</> : 'Create Role'}</Button></div>
             </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Edit Role Dialog ─── */}
+      {showEditRole && selectedRole && roleDetail && hasPermission('auth:manage_roles') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !editRoleLoading && setShowEditRole(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Edit Role</h3><Button size="icon" variant="ghost" onClick={() => setShowEditRole(false)} disabled={editRoleLoading}><X className="h-4 w-4" /></Button></div>
+            {editRoleError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{editRoleError}</div>}
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleUpdateRole(selectedRole, { displayName: fd.get('displayName') as string || undefined, description: fd.get('description') as string || undefined, status: fd.get('status') as string || undefined }, roleDetail.version ?? 0) }} className="space-y-3">
+              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required defaultValue={roleDetail.display_name} /></div>
+              <div className="space-y-1"><Label className="text-xs">Description</Label><Input name="description" defaultValue={roleDetail.description || ''} /></div>
+              <div className="space-y-1"><Label className="text-xs">Status</Label><select name="status" defaultValue={roleDetail.status} className="w-full h-9 rounded-md border bg-background px-3 text-sm"><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowEditRole(false)} disabled={editRoleLoading}>Cancel</Button><Button type="submit" size="sm" disabled={editRoleLoading}>{editRoleLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Saving...</> : 'Save Changes'}</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Assign Permission Dialog ─── */}
+      {showPermAssign && selectedRole && roleDetail && hasPermission('auth:manage_roles') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !permAssignLoading && setShowPermAssign(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Add Permission to Role</h3><Button size="icon" variant="ghost" onClick={() => setShowPermAssign(false)} disabled={permAssignLoading}><X className="h-4 w-4" /></Button></div>
+            {permAssignError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{permAssignError}</div>}
+            <p className="text-xs text-muted-foreground">Select a permission to assign to <span className="font-medium">{roleDetail.display_name}</span></p>
+            <div className="space-y-1 max-h-60 overflow-y-auto">
+              {availablePerms.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">All permissions already assigned</p>}
+              {availablePerms.map(p => (
+                <div key={p.code} className="flex items-center gap-2 p-2 rounded border text-xs hover:bg-muted/50">
+                  <span className="font-mono flex-1 truncate">{p.code}</span><span className="text-muted-foreground hidden sm:inline">{p.display_name}</span>
+                  <Button size="sm" variant="outline" className="h-6 px-2 text-xs" disabled={permAssignLoading} onClick={() => handleAssignPermission(selectedRole, p.code)}>Add</Button>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowPermAssign(false)}>Close</Button></div>
           </Card>
         </div>
       )}
@@ -1533,9 +1795,32 @@ function RBACModule() {
           <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between"><h3 className="font-semibold">Clone Role</h3><Button size="icon" variant="ghost" onClick={() => setShowCloneRole(null)}><X className="h-4 w-4" /></Button></div>
             <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleCloneRole(showCloneRole, fd.get('name') as string, fd.get('displayName') as string) }} className="space-y-3">
-              <div className="space-y-1"><Label className="text-xs">New Role Name *</Label><Input name="name" required placeholder="WH_OPERATOR_V2" className="font-mono" /></div>
-              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required placeholder="Warehouse Operator V2" /></div>
+              <div className="space-y-1"><Label className="text-xs">New Role Name *</Label><Input name="name" required minLength={2} maxLength={50} placeholder="WH_OPERATOR_V2" className="font-mono" /></div>
+              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required minLength={1} maxLength={100} placeholder="Warehouse Operator V2" /></div>
               <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowCloneRole(null)}>Cancel</Button><Button type="submit" size="sm">Clone Role</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Create Delegation Dialog ─── */}
+      {showCreateDelegation && hasPermission('auth:manage_users') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !delegationLoading && setShowCreateDelegation(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">New Delegation</h3><Button size="icon" variant="ghost" onClick={() => setShowCreateDelegation(false)} disabled={delegationLoading}><X className="h-4 w-4" /></Button></div>
+            {delegationError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{delegationError}</div>}
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleCreateDelegation({ delegatorId: fd.get('delegatorId') as string, delegateId: fd.get('delegateId') as string, approvalType: fd.get('approvalType') as string, effectiveFrom: new Date(fd.get('effectiveFrom') as string).toISOString(), effectiveTo: new Date(fd.get('effectiveTo') as string).toISOString(), reason: fd.get('reason') as string || undefined }) }} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Delegator (User ID) *</Label><Input name="delegatorId" required placeholder="UUID" className="font-mono text-xs" /></div>
+                <div className="space-y-1"><Label className="text-xs">Delegate (User ID) *</Label><Input name="delegateId" required placeholder="UUID" className="font-mono text-xs" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Approval Type *</Label><select name="approvalType" required className="w-full h-9 rounded-md border bg-background px-3 text-sm"><option value="PO_APPROVAL">PO Approval</option><option value="INVOICE_APPROVAL">Invoice Approval</option><option value="EXPENSE_APPROVAL">Expense Approval</option><option value="GENERAL">General</option></select></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Effective From *</Label><Input name="effectiveFrom" type="date" required /></div>
+                <div className="space-y-1"><Label className="text-xs">Effective To *</Label><Input name="effectiveTo" type="date" required /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs">Reason</Label><Input name="reason" placeholder="Vacation, travel, etc." /></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowCreateDelegation(false)} disabled={delegationLoading}>Cancel</Button><Button type="submit" size="sm" disabled={delegationLoading}>{delegationLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Creating...</> : 'Create Delegation'}</Button></div>
             </form>
           </Card>
         </div>
