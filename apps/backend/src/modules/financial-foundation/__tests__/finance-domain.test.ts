@@ -19,7 +19,7 @@ type JEStatus = 'DRAFT' | 'POSTED' | 'REVERSED' | 'CANCELLED'
 interface JEEntity extends WorkflowEntity { id: string; status: JEStatus; version: number }
 
 describe('Journal Entry Workflow', () => {
-  const machine = workflowRegistry.get<JEStatus, JEEntity>('JournalEntryLifecycle')
+  const machine = workflowRegistry.get<JEStatus, JEEntity>('FinancialFoundationJournalEntryLifecycle')
   it('has correct initial state', () => { expect(machine.definition.initialState).toBe('DRAFT') })
   it('has 4 states', () => { expect(machine.definition.states).toHaveLength(4) })
   it('has 5 transitions', () => { expect(machine.definition.transitions).toHaveLength(5) })

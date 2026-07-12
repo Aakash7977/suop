@@ -404,9 +404,46 @@ export async function quarantineFile(params: {
     size: params.buffer.length,
   })
 
-  // In production, write to S3 quarantine bucket
-  // For now, just log the quarantine event
-  // TODO: implement S3 quarantine bucket upload
+  // Write quarantined file to S3 quarantine bucket (if configured)
+  // The quarantine bucket has a restricted IAM policy that prevents public read access
+  // and enforces lifecycle rules (auto-delete after 90 days).
+  // If S3 is not configured, the file metadata is logged for manual handling.
+  if (process.env.S3_QUARANTINE_BUCKET) {
+    try {
+      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
+      const s3 = new S3Client({
+        endpoint: process.env.S3_ENDPOINT,
+        region: process.env.S3_REGION ?? 'ap-south-1',
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY!,
+          secretAccessKey: process.env.S3_SECRET_KEY!,
+        },
+        forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+      })
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.S3_QUARANTINE_BUCKET,
+        Key: `quarantine/${quarantineId}/${params.filename}`,
+        Body: Buffer.from(params.buffer),
+        ContentType: 'application/octet-stream',
+        Metadata: {
+          'original-filename': params.filename,
+          'upload-reason': params.reason,
+          'uploaded-by': params.uploadedBy,
+        },
+        ServerSideEncryption: 'AES256',
+      }))
+      logger.info('Quarantined file uploaded to S3', {
+        quarantineId,
+        bucket: process.env.S3_QUARANTINE_BUCKET,
+        filename: params.filename,
+      })
+    } catch (s3Err) {
+      logger.error('S3 quarantine upload failed — file metadata logged only', {
+        quarantineId,
+        error: (s3Err as Error).message,
+      })
+    }
+  }
 
   return { quarantineId }
 }
