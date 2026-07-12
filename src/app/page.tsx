@@ -918,27 +918,331 @@ function OrganizationModule() {
   )
 }
 
-// ─── RBAC Module (Sprint 5) ─────────────────────────────
+// ─── RBAC Module (Sprint 5) — Section 02: User + Role + Permission Management ────
 function RBACModule() {
-  const roles = [
-    { code: 'SUPER_ADMIN', name: 'Super Administrator', category: 'EXECUTIVE', users: 1, perms: 250 },
-    { code: 'FIN_MGR', name: 'Finance Manager', category: 'MANAGEMENT', users: 3, perms: 85 },
-    { code: 'HR_MGR', name: 'HR Manager', category: 'MANAGEMENT', users: 2, perms: 75 },
-    { code: 'WH_MGR', name: 'Warehouse Manager', category: 'MANAGER', users: 6, perms: 55 },
-    { code: 'CASHIER', name: 'Cashier', category: 'OPERATOR', users: 25, perms: 15 },
-    { code: 'AUDITOR', name: 'Auditor', category: 'CLERK', users: 2, perms: 30 },
+  const { isDemoMode, hasPermission } = useAuthStore()
+  const [tab, setTab] = useState<'users' | 'roles' | 'permissions' | 'flags' | 'approvals'>('users')
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030'
+
+  // ─── Users State ───
+  const [users, setUsers] = useState<any[]>([])
+  const [usersLoading, setUsersLoading] = useState(!isDemoMode)
+  const [usersError, setUsersError] = useState('')
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersTotal, setUsersTotal] = useState(0)
+  const [userSearch, setUserSearch] = useState('')
+  const [userStatusFilter, setUserStatusFilter] = useState('')
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [userDetail, setUserDetail] = useState<any | null>(null)
+  const [userDetailLoading, setUserDetailLoading] = useState(false)
+  const [userLoginHistory, setUserLoginHistory] = useState<any[]>([])
+  const [userSessions, setUserSessions] = useState<any[]>([])
+  const [showInvite, setShowInvite] = useState(false)
+  const [inviteLoading, setInviteLoading] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+  const [showEditUser, setShowEditUser] = useState(false)
+  const [editUserLoading, setEditUserLoading] = useState(false)
+  const [editUserError, setEditUserError] = useState('')
+
+  // ─── Roles State ───
+  const [roles, setRoles] = useState<any[]>([])
+  const [rolesLoading, setRolesLoading] = useState(!isDemoMode)
+  const [rolesError, setRolesError] = useState('')
+  const [rolesTotal, setRolesTotal] = useState(0)
+  const [roleSearch, setRoleSearch] = useState('')
+  const [selectedRole, setSelectedRole] = useState<string | null>(null)
+  const [roleDetail, setRoleDetail] = useState<any | null>(null)
+  const [roleDetailLoading, setRoleDetailLoading] = useState(false)
+  const [showCreateRole, setShowCreateRole] = useState(false)
+  const [createRoleLoading, setCreateRoleLoading] = useState(false)
+  const [createRoleError, setCreateRoleError] = useState('')
+  const [showCloneRole, setShowCloneRole] = useState<string | null>(null)
+
+  // ─── Permissions State ───
+  const [permissions, setPermissions] = useState<any[]>([])
+  const [permsLoading, setPermsLoading] = useState(!isDemoMode)
+  const [permsError, setPermsError] = useState('')
+  const [permModules, setPermModules] = useState<string[]>([])
+  const [permModuleFilter, setPermModuleFilter] = useState('')
+  const [permSearch, setPermSearch] = useState('')
+
+  // ─── Stats ───
+  const [stats, setStats] = useState({ roles: 0, permissions: 0, users: 0 })
+  const [statsLoading, setStatsLoading] = useState(!isDemoMode)
+
+  // ─── Demo data ───
+  const demoUsers = [
+    { id: 'demo-1', username: 'admin', email: 'admin@sudhastar.com', status: 'ACTIVE', first_name: 'Admin', last_name: 'User', designation: 'System Admin', last_login_at: new Date().toISOString(), mfa_enabled: true },
+    { id: 'demo-2', username: 'finmgr', email: 'finance@sudhastar.com', status: 'ACTIVE', first_name: 'Finance', last_name: 'Manager', designation: 'Finance Head', last_login_at: new Date(Date.now() - 86400000).toISOString(), mfa_enabled: false },
+    { id: 'demo-3', username: 'whmgr', email: 'warehouse@sudhastar.com', status: 'ACTIVE', first_name: 'Warehouse', last_name: 'Manager', designation: 'WH In-Charge', last_login_at: new Date(Date.now() - 172800000).toISOString(), mfa_enabled: false },
+    { id: 'demo-4', username: 'cashier1', email: 'cashier@sudhastar.com', status: 'ACTIVE', first_name: 'Cashier', last_name: 'One', designation: 'POS Operator', last_login_at: null, mfa_enabled: false },
+    { id: 'demo-5', username: 'auditor', email: 'audit@sudhastar.com', status: 'LOCKED', first_name: 'Audit', last_name: 'Officer', designation: 'Internal Audit', last_login_at: new Date(Date.now() - 604800000).toISOString(), mfa_enabled: true },
   ]
-  const flags = [
+  const demoRoles = [
+    { id: 'demo-r1', name: 'SUPER_ADMIN', display_name: 'Super Administrator', description: 'Full system access', category: 'EXECUTIVE', is_system: true, status: 'ACTIVE' },
+    { id: 'demo-r2', name: 'FIN_MGR', display_name: 'Finance Manager', description: 'Finance department access', category: 'MANAGEMENT', is_system: false, status: 'ACTIVE' },
+    { id: 'demo-r3', name: 'HR_MGR', display_name: 'HR Manager', description: 'HR department access', category: 'MANAGEMENT', is_system: false, status: 'ACTIVE' },
+    { id: 'demo-r4', name: 'WH_MGR', display_name: 'Warehouse Manager', description: 'Warehouse operations access', category: 'MANAGER', is_system: false, status: 'ACTIVE' },
+    { id: 'demo-r5', name: 'CASHIER', display_name: 'Cashier', description: 'POS operations', category: 'OPERATOR', is_system: false, status: 'ACTIVE' },
+    { id: 'demo-r6', name: 'AUDITOR', display_name: 'Auditor', description: 'Read-only audit access', category: 'CLERK', is_system: false, status: 'ACTIVE' },
+  ]
+  const demoPerms = [
+    { id: 'p1', module: 'org', feature: 'Organization', action: 'read', code: 'org:read', display_name: 'View Organization', permission_group: 'Organization' },
+    { id: 'p2', module: 'org', feature: 'Organization', action: 'create', code: 'org:create', display_name: 'Create Organization', permission_group: 'Organization' },
+    { id: 'p3', module: 'product', feature: 'Product', action: 'read', code: 'product:read', display_name: 'View Products', permission_group: 'Product' },
+    { id: 'p4', module: 'po', feature: 'Purchase Order', action: 'approve', code: 'po:approve', display_name: 'Approve PO', permission_group: 'Purchase Order' },
+    { id: 'p5', module: 'inventory', feature: 'Inventory', action: 'adjust', code: 'inventory:adjust', display_name: 'Adjust Inventory', permission_group: 'Inventory' },
+    { id: 'p6', module: 'auth', feature: 'Auth', action: 'manage_users', code: 'auth:manage_users', display_name: 'Manage Users', permission_group: 'Auth' },
+    { id: 'p7', module: 'auth', feature: 'Auth', action: 'manage_roles', code: 'auth:manage_roles', display_name: 'Manage Roles', permission_group: 'Auth' },
+    { id: 'p8', module: 'audit', feature: 'Audit', action: 'read', code: 'audit:read', display_name: 'View Audit Logs', permission_group: 'Audit' },
+  ]
+  const demoFlags = [
     { key: 'ai_copilot', name: 'AI Copilot', state: 'PILOT' },
     { key: 'offline_pos', name: 'Offline POS', state: 'ENABLED' },
     { key: 'digital_twin', name: 'Digital Twin', state: 'BETA' },
     { key: 'auto_reorder', name: 'Auto Reorder', state: 'GRADUAL_ROLLOUT' },
   ]
-  const approvals = [
+  const demoApprovals = [
     { level: 1, role: 'Department Head', min: '₹0', max: '₹25,000' },
     { level: 2, role: 'Finance Manager', min: '₹25,000', max: '₹2,00,000' },
     { level: 3, role: 'Director', min: '₹2,00,000', max: '₹10,00,000' },
     { level: 4, role: 'CEO', min: '₹10,00,000', max: 'Unlimited' },
+  ]
+
+  // ─── Fetch helper ───
+  async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const token = localStorage.getItem('suop_access_token')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...((options.headers as Record<string, string>) || {}) }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+    const json = await res.json()
+    if (!res.ok || !json.success) throw new Error(json.error?.message || `HTTP ${res.status}`)
+    return json as T
+  }
+
+  // ─── Load Users ───
+  useEffect(() => {
+    if (isDemoMode) { setUsers(demoUsers); setUsersTotal(demoUsers.length); setUsersLoading(false); return }
+    let cancelled = false
+    async function loadUsers() {
+      setUsersLoading(true); setUsersError('')
+      try {
+        const qs = new URLSearchParams()
+        qs.set('page', String(usersPage))
+        if (userSearch) qs.set('search', userSearch)
+        if (userStatusFilter) qs.set('status', userStatusFilter)
+        const json = await apiFetch<any>(`/api/v1/admin/users?${qs}`)
+        if (cancelled) return
+        setUsers(json.data || [])
+        setUsersTotal(json.meta?.total ?? 0)
+      } catch (err: any) {
+        if (!cancelled) { setUsersError(err?.message || 'Failed to load users'); setUsers(demoUsers); setUsersTotal(demoUsers.length) }
+      } finally {
+        if (!cancelled) setUsersLoading(false)
+      }
+    }
+    loadUsers()
+    return () => { cancelled = true }
+  }, [isDemoMode, usersPage, userSearch, userStatusFilter])
+
+  // ─── Load Roles ───
+  useEffect(() => {
+    if (isDemoMode) { setRoles(demoRoles); setRolesTotal(demoRoles.length); setRolesLoading(false); return }
+    let cancelled = false
+    async function loadRoles() {
+      setRolesLoading(true); setRolesError('')
+      try {
+        const qs = new URLSearchParams()
+        if (roleSearch) qs.set('search', roleSearch)
+        const json = await apiFetch<any>(`/api/v1/admin/roles?${qs}`)
+        if (cancelled) return
+        setRoles(json.data || [])
+        setRolesTotal(json.meta?.total ?? 0)
+      } catch (err: any) {
+        if (!cancelled) { setRolesError(err?.message || 'Failed to load roles'); setRoles(demoRoles); setRolesTotal(demoRoles.length) }
+      } finally {
+        if (!cancelled) setRolesLoading(false)
+      }
+    }
+    loadRoles()
+    return () => { cancelled = true }
+  }, [isDemoMode, roleSearch])
+
+  // ─── Load Permissions ───
+  useEffect(() => {
+    if (isDemoMode) { setPermissions(demoPerms); setPermModules(['org', 'product', 'po', 'inventory', 'auth', 'audit']); setPermsLoading(false); return }
+    let cancelled = false
+    async function loadPerms() {
+      setPermsLoading(true); setPermsError('')
+      try {
+        const [permsJson, modsJson] = await Promise.allSettled([
+          apiFetch<any>(`/api/v1/admin/permissions${permModuleFilter ? `?module=${permModuleFilter}` : ''}`),
+          apiFetch<any>('/api/v1/admin/permissions/modules'),
+        ])
+        if (cancelled) return
+        if (permsJson.status === 'fulfilled') setPermissions(permsJson.value.data || [])
+        if (modsJson.status === 'fulfilled') setPermModules(modsJson.value.data || [])
+      } catch (err: any) {
+        if (!cancelled) { setPermsError(err?.message || 'Failed to load permissions'); setPermissions(demoPerms); setPermModules(['org', 'product', 'po', 'inventory', 'auth', 'audit']) }
+      } finally {
+        if (!cancelled) setPermsLoading(false)
+      }
+    }
+    loadPerms()
+    return () => { cancelled = true }
+  }, [isDemoMode, permModuleFilter])
+
+  // ─── Load Stats ───
+  useEffect(() => {
+    if (isDemoMode) { setStats({ roles: 6, permissions: 54, users: 5 }); setStatsLoading(false); return }
+    let cancelled = false
+    async function loadStats() {
+      setStatsLoading(true)
+      try {
+        const [rolesRes, permsRes, usersRes] = await Promise.allSettled([
+          apiFetch<any>('/api/v1/admin/roles?pageSize=1'),
+          apiFetch<any>('/api/v1/admin/permissions'),
+          apiFetch<any>('/api/v1/admin/users?pageSize=1'),
+        ])
+        if (cancelled) return
+        setStats({
+          roles: rolesRes.status === 'fulfilled' ? (rolesRes.value?.meta?.total ?? 0) : 0,
+          permissions: permsRes.status === 'fulfilled' ? (permsRes.value?.data?.length ?? 0) : 0,
+          users: usersRes.status === 'fulfilled' ? (usersRes.value?.meta?.total ?? 0) : 0,
+        })
+      } finally {
+        if (!cancelled) setStatsLoading(false)
+      }
+    }
+    loadStats()
+    return () => { cancelled = true }
+  }, [isDemoMode])
+
+  // ─── Load User Detail ───
+  useEffect(() => {
+    if (!selectedUser || isDemoMode) { setUserDetail(null); setUserLoginHistory([]); setUserSessions([]); return }
+    let cancelled = false
+    async function loadUserDetail() {
+      setUserDetailLoading(true)
+      try {
+        const [detailRes, historyRes, sessionsRes] = await Promise.allSettled([
+          apiFetch<any>(`/api/v1/admin/users/${selectedUser}`),
+          apiFetch<any>(`/api/v1/admin/users/${selectedUser}/login-history`),
+          apiFetch<any>(`/api/v1/admin/users/${selectedUser}/sessions`),
+        ])
+        if (cancelled) return
+        if (detailRes.status === 'fulfilled') setUserDetail(detailRes.value.data)
+        if (historyRes.status === 'fulfilled') setUserLoginHistory(historyRes.value.data || [])
+        if (sessionsRes.status === 'fulfilled') setUserSessions(sessionsRes.value.data || [])
+      } finally {
+        if (!cancelled) setUserDetailLoading(false)
+      }
+    }
+    loadUserDetail()
+    return () => { cancelled = true }
+  }, [selectedUser, isDemoMode])
+
+  // ─── Load Role Detail ───
+  useEffect(() => {
+    if (!selectedRole || isDemoMode) { setRoleDetail(null); return }
+    let cancelled = false
+    async function loadRoleDetail() {
+      setRoleDetailLoading(true)
+      try {
+        const json = await apiFetch<any>(`/api/v1/admin/roles/${selectedRole}`)
+        if (cancelled) return
+        setRoleDetail(json.data)
+      } catch {
+        if (!cancelled) setRoleDetail(null)
+      } finally {
+        if (!cancelled) setRoleDetailLoading(false)
+      }
+    }
+    loadRoleDetail()
+    return () => { cancelled = true }
+  }, [selectedRole, isDemoMode])
+
+  // ─── Actions ───
+  async function handleLockUser(id: string) {
+    try { await apiFetch(`/api/v1/admin/users/${id}/lock`, { method: 'POST' }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'LOCKED' } : u)) } catch {}
+  }
+  async function handleUnlockUser(id: string) {
+    try { await apiFetch(`/api/v1/admin/users/${id}/unlock`, { method: 'POST' }); setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'ACTIVE' } : u)) } catch {}
+  }
+  async function handleRevokeAllSessions(id: string) {
+    try { await apiFetch(`/api/v1/admin/users/${id}/sessions/revoke-all`, { method: 'POST' }); setUserSessions([]) } catch {}
+  }
+  async function handleAssignRole(userId: string, roleName: string) {
+    try { await apiFetch(`/api/v1/admin/users/${userId}/roles/${roleName}`, { method: 'POST' }) } catch {}
+  }
+  async function handleRevokeRole(userId: string, roleName: string) {
+    try { await apiFetch(`/api/v1/admin/users/${userId}/roles/${roleName}`, { method: 'DELETE' }) } catch {}
+  }
+  async function handleInvite(data: { email: string; firstName?: string; lastName?: string; designation?: string; roles: string[] }) {
+    setInviteLoading(true); setInviteError('')
+    try {
+      await apiFetch('/api/v1/auth/invite', { method: 'POST', body: JSON.stringify(data) })
+      setShowInvite(false)
+    } catch (err: any) { setInviteError(err?.message || 'Failed to invite user') }
+    finally { setInviteLoading(false) }
+  }
+  async function handleUpdateUser(id: string, data: { firstName?: string; lastName?: string; designation?: string; phone?: string; timezone?: string; locale?: string }, version: number) {
+    setEditUserLoading(true); setEditUserError('')
+    try {
+      await apiFetch(`/api/v1/admin/users/${id}`, { method: 'PATCH', headers: { 'If-Match': String(version) }, body: JSON.stringify(data) })
+      setShowEditUser(false)
+      // Refresh user detail
+      const json = await apiFetch<any>(`/api/v1/admin/users/${id}`)
+      setUserDetail(json.data)
+    } catch (err: any) { setEditUserError(err?.message || 'Failed to update user') }
+    finally { setEditUserLoading(false) }
+  }
+  async function handleCreateRole(data: { name: string; displayName: string; description?: string; permissionCodes?: string[] }) {
+    setCreateRoleLoading(true); setCreateRoleError('')
+    try {
+      await apiFetch('/api/v1/admin/roles', { method: 'POST', body: JSON.stringify(data) })
+      setShowCreateRole(false)
+      // Reload roles
+      const json = await apiFetch<any>('/api/v1/admin/roles')
+      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
+    } catch (err: any) { setCreateRoleError(err?.message || 'Failed to create role') }
+    finally { setCreateRoleLoading(false) }
+  }
+  async function handleCloneRole(sourceId: string, newName: string, newDisplayName: string) {
+    try {
+      await apiFetch(`/api/v1/admin/roles/${sourceId}/clone`, { method: 'POST', body: JSON.stringify({ newName, newDisplayName }) })
+      setShowCloneRole(null)
+      const json = await apiFetch<any>('/api/v1/admin/roles')
+      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
+    } catch {}
+  }
+  async function handleDeleteRole(id: string, version: number) {
+    try {
+      await apiFetch(`/api/v1/admin/roles/${id}`, { method: 'DELETE', headers: { 'If-Match': String(version) } })
+      setSelectedRole(null); setRoleDetail(null)
+      const json = await apiFetch<any>('/api/v1/admin/roles')
+      setRoles(json.data || []); setRolesTotal(json.meta?.total ?? 0)
+    } catch {}
+  }
+  async function handleAssignPermission(roleId: string, permCode: string) {
+    try { await apiFetch(`/api/v1/admin/roles/${roleId}/permissions/${permCode}`, { method: 'POST' }) } catch {}
+  }
+  async function handleRevokePermission(roleId: string, permCode: string) {
+    try { await apiFetch(`/api/v1/admin/roles/${roleId}/permissions/${permCode}`, { method: 'DELETE' }) } catch {}
+  }
+
+  // ─── Filtered permissions ───
+  const filteredPerms = permissions.filter(p => {
+    if (permSearch) { const q = permSearch.toLowerCase(); return p.code?.toLowerCase().includes(q) || p.display_name?.toLowerCase().includes(q) || p.feature?.toLowerCase().includes(q) }
+    return true
+  })
+
+  const tabs: Array<{ key: typeof tab; label: string; icon: React.ReactNode }> = [
+    { key: 'users', label: 'Users', icon: <Users className="h-4 w-4" /> },
+    { key: 'roles', label: 'Roles', icon: <Shield className="h-4 w-4" /> },
+    { key: 'permissions', label: 'Permissions', icon: <ShieldCheck className="h-4 w-4" /> },
+    { key: 'flags', label: 'Feature Flags', icon: <Flag className="h-4 w-4" /> },
+    { key: 'approvals', label: 'Approvals', icon: <CheckCircle2 className="h-4 w-4" /> },
   ]
 
   return (
@@ -949,30 +1253,205 @@ function RBACModule() {
       </Card>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Roles', value: 15, icon: <Shield className="h-5 w-5 text-blue-600" /> },
-          { label: 'Permissions', value: 325, icon: <ShieldCheck className="h-5 w-5 text-emerald-600" /> },
-          { label: 'Feature Flags', value: 8, icon: <Flag className="h-5 w-5 text-amber-600" /> },
-          { label: 'Policies', value: 5, icon: <AlertTriangle className="h-5 w-5 text-red-600" /> },
+          { label: 'Users', value: statsLoading ? '...' : isDemoMode ? 5 : stats.users, icon: <Users className="h-5 w-5 text-blue-600" /> },
+          { label: 'Roles', value: statsLoading ? '...' : isDemoMode ? 6 : stats.roles, icon: <Shield className="h-5 w-5 text-purple-600" /> },
+          { label: 'Permissions', value: statsLoading ? '...' : isDemoMode ? 54 : stats.permissions, icon: <ShieldCheck className="h-5 w-5 text-emerald-600" /> },
+          { label: 'Feature Flags', value: isDemoMode ? 4 : 4, icon: <Flag className="h-5 w-5 text-amber-600" /> },
         ].map(s => <Card key={s.label} className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div><p className="text-2xl font-bold">{s.value}</p></Card>)}
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4 flex items-center gap-2"><Shield className="h-5 w-5" /> Roles</h3>
-          <div className="space-y-2">
-            {roles.map(r => (
-              <div key={r.code} className="flex items-center gap-3 p-2 rounded-lg border text-sm">
-                <span className="font-mono text-xs text-muted-foreground w-24">{r.code}</span>
-                <span className="font-medium flex-1">{r.name}</span>
-                <Badge variant="outline" className="text-xs">{r.users} users</Badge>
-                <Badge variant="outline" className="text-xs">{r.perms} perms</Badge>
-              </div>
-            ))}
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b pb-1 overflow-x-auto">
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={cn('flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap', tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted/50')}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── Users Tab ─── */}
+      {tab === 'users' && (
+        <div className="space-y-4">
+          {(usersError || rolesError || permsError) && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-md p-3">{usersError || rolesError || permsError}</div>}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search users by name, email, username..." value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setUsersPage(1) }} className="pl-8" />
+            </div>
+            <select value={userStatusFilter} onChange={(e) => { setUserStatusFilter(e.target.value); setUsersPage(1) }} className="h-9 rounded-md border bg-background px-3 text-sm">
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="LOCKED">Locked</option>
+              <option value="DISABLED">Disabled</option>
+              <option value="INVITED">Invited</option>
+            </select>
+            {hasPermission('auth:manage_users') && <Button size="sm" onClick={() => setShowInvite(true)}><Plus className="mr-1 h-3 w-3" />Invite User</Button>}
           </div>
-        </Card>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="p-4 lg:col-span-2">
+              {usersLoading ? <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-muted/50 rounded animate-pulse" />)}</div> : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b text-xs text-muted-foreground uppercase"><th className="text-left py-2 px-2">User</th><th className="text-left py-2 px-2">Email</th><th className="text-left py-2 px-2">Designation</th><th className="text-left py-2 px-2">Status</th><th className="text-left py-2 px-2">MFA</th><th className="text-left py-2 px-2">Last Login</th><th className="text-left py-2 px-2">Actions</th></tr></thead>
+                    <tbody>
+                      {users.map(u => (
+                        <tr key={u.id} className={cn('border-b cursor-pointer hover:bg-muted/50', selectedUser === u.id && 'bg-primary/10')} onClick={() => setSelectedUser(u.id)}>
+                          <td className="py-2 px-2"><p className="font-medium">{u.first_name || u.username} {u.last_name || ''}</p><p className="text-xs text-muted-foreground font-mono">{u.username}</p></td>
+                          <td className="py-2 px-2 text-muted-foreground">{u.email}</td>
+                          <td className="py-2 px-2 text-muted-foreground">{u.designation || '-'}</td>
+                          <td className="py-2 px-2"><Badge variant={u.status === 'ACTIVE' ? 'default' : u.status === 'LOCKED' ? 'destructive' : 'secondary'} className="text-xs">{u.status}</Badge></td>
+                          <td className="py-2 px-2">{u.mfa_enabled ? <ShieldCheck className="h-4 w-4 text-emerald-600" /> : <span className="text-xs text-muted-foreground">No</span>}</td>
+                          <td className="py-2 px-2 text-xs text-muted-foreground">{u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'Never'}</td>
+                          <td className="py-2 px-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1">
+                              {u.status === 'ACTIVE' && hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleLockUser(u.id)} title="Lock"><Lock className="h-3 w-3" /></Button>}
+                              {u.status === 'LOCKED' && hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => handleUnlockUser(u.id)} title="Unlock"><ShieldCheck className="h-3 w-3" /></Button>}
+                              {hasPermission('auth:manage_users') && <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setSelectedUser(u.id); setShowEditUser(true) }} title="Edit"><Settings className="h-3 w-3" /></Button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!isDemoMode && usersTotal > 25 && (
+                    <div className="flex items-center justify-between mt-4 text-sm">
+                      <p className="text-muted-foreground">{usersTotal} users · Page {usersPage}</p>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" disabled={usersPage <= 1} onClick={() => setUsersPage(p => p - 1)}>Previous</Button>
+                        <Button size="sm" variant="outline" disabled={users.length < 25} onClick={() => setUsersPage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Users className="h-5 w-5" /> User Details</h3>
+              {selectedUser ? (userDetailLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-muted/50 rounded animate-pulse" />)}</div> : userDetail ? (
+                <div className="space-y-3 text-sm">
+                  <div><p className="text-xs text-muted-foreground">Username</p><p className="font-mono font-medium">{userDetail.username || '-'}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{userDetail.email || '-'}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Name</p><p className="font-medium">{userDetail.first_name || ''} {userDetail.last_name || ''}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Status</p><Badge variant={userDetail.status === 'ACTIVE' ? 'default' : 'destructive'}>{userDetail.status}</Badge></div>
+                  {userDetail.designation && <div><p className="text-xs text-muted-foreground">Designation</p><p className="font-medium">{userDetail.designation}</p></div>}
+                  {userDetail.phone && <div><p className="text-xs text-muted-foreground">Phone</p><p className="font-medium">{userDetail.phone}</p></div>}
+                  {userDetail.timezone && <div><p className="text-xs text-muted-foreground">Timezone</p><p className="font-medium">{userDetail.timezone}</p></div>}
+                  <div><p className="text-xs text-muted-foreground">MFA Enabled</p><p>{userDetail.mfa_enabled ? '✅ Yes' : '❌ No'}</p></div>
+                  {userDetail.roles && <div><p className="text-xs text-muted-foreground">Roles</p><div className="flex flex-wrap gap-1 mt-1">{(userDetail.roles || []).map((r: string) => <Badge key={r} variant="outline" className="text-xs">{r}</Badge>)}</div></div>}
+                  {userDetail.last_login_at && <div><p className="text-xs text-muted-foreground">Last Login</p><p className="text-xs">{new Date(userDetail.last_login_at).toLocaleString()}</p></div>}
+                  {hasPermission('auth:manage_users') && <div className="pt-2 border-t flex gap-2 flex-wrap">
+                    {userDetail.status === 'ACTIVE' && <Button size="sm" variant="outline" onClick={() => handleLockUser(selectedUser)}><Lock className="mr-1 h-3 w-3" />Lock</Button>}
+                    {userDetail.status === 'LOCKED' && <Button size="sm" variant="outline" onClick={() => handleUnlockUser(selectedUser)}><ShieldCheck className="mr-1 h-3 w-3" />Unlock</Button>}
+                    <Button size="sm" variant="outline" onClick={() => handleRevokeAllSessions(selectedUser)}><X className="mr-1 h-3 w-3" />Revoke Sessions</Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowEditUser(true)}><Settings className="mr-1 h-3 w-3" />Edit</Button>
+                  </div>}
+                  {userLoginHistory.length > 0 && <div className="pt-2 border-t"><p className="text-xs text-muted-foreground mb-2">Login History ({userLoginHistory.length})</p><div className="space-y-1 max-h-32 overflow-y-auto">{userLoginHistory.slice(0, 5).map((h: any, i: number) => <div key={i} className="text-xs flex items-center gap-2"><span className={h.success ? 'text-emerald-600' : 'text-rose-500'}>{h.success ? '✓' : '✗'}</span><span>{new Date(h.timestamp || h.created_at).toLocaleString()}</span><span className="text-muted-foreground">{h.ip_address || ''}</span></div>)}</div></div>}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>Selected: <span className="font-mono">{selectedUser}</span></p>
+                  <p className="text-xs">User detail unavailable (may be in demo mode or API error).</p>
+                </div>
+              )) : <p className="text-sm text-muted-foreground">Select a user from the table to view details.</p>}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Roles Tab ─── */}
+      {tab === 'roles' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search roles..." value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} className="pl-8" />
+            </div>
+            {hasPermission('auth:manage_roles') && <Button size="sm" onClick={() => setShowCreateRole(true)}><Plus className="mr-1 h-3 w-3" />Create Role</Button>}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="p-4 lg:col-span-2">
+              {rolesLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-muted/50 rounded animate-pulse" />)}</div> : (
+                <div className="space-y-2">
+                  {roles.map(r => (
+                    <div key={r.id} className={cn('flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 text-sm', selectedRole === r.id && 'bg-primary/10 border-primary')} onClick={() => setSelectedRole(r.id)}>
+                      <Shield className={cn('h-5 w-5 flex-shrink-0', r.is_system ? 'text-blue-600' : 'text-muted-foreground')} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{r.display_name || r.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{r.name}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">{r.category || 'CUSTOM'}</Badge>
+                      <Badge variant={r.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-xs">{r.status}</Badge>
+                      {r.is_system && <Badge variant="outline" className="text-xs">SYSTEM</Badge>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Shield className="h-5 w-5" /> Role Details</h3>
+              {selectedRole ? (roleDetailLoading ? <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-6 bg-muted/50 rounded animate-pulse" />)}</div> : roleDetail ? (
+                <div className="space-y-3 text-sm">
+                  <div><p className="text-xs text-muted-foreground">Name</p><p className="font-mono font-medium">{roleDetail.name}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Display Name</p><p className="font-medium">{roleDetail.display_name}</p></div>
+                  {roleDetail.description && <div><p className="text-xs text-muted-foreground">Description</p><p>{roleDetail.description}</p></div>}
+                  <div><p className="text-xs text-muted-foreground">Category</p><Badge variant="outline">{roleDetail.category || 'CUSTOM'}</Badge></div>
+                  <div><p className="text-xs text-muted-foreground">Status</p><Badge variant={roleDetail.status === 'ACTIVE' ? 'default' : 'secondary'}>{roleDetail.status}</Badge></div>
+                  {roleDetail.permissions && <div><p className="text-xs text-muted-foreground">Permissions ({roleDetail.permissions.length})</p><div className="flex flex-wrap gap-1 mt-1 max-h-32 overflow-y-auto">{roleDetail.permissions.map((p: any) => <Badge key={p.code || p.id} variant="outline" className="text-xs font-mono">{p.code || p.display_name}</Badge>)}</div></div>}
+                  {hasPermission('auth:manage_roles') && !roleDetail.is_system && <div className="pt-2 border-t flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => setShowCloneRole(selectedRole)}><GitBranch className="mr-1 h-3 w-3" />Clone</Button>
+                    <Button size="sm" variant="destructive" onClick={() => { if (confirm('Delete this role? This cannot be undone.')) handleDeleteRole(selectedRole, roleDetail.version ?? 0) }}><Trash2 className="mr-1 h-3 w-3" />Delete</Button>
+                  </div>}
+                </div>
+              ) : <p className="text-sm text-muted-foreground">Role detail unavailable.</p>) : <p className="text-sm text-muted-foreground">Select a role to view details.</p>}
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Permissions Tab ─── */}
+      {tab === 'permissions' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search permissions..." value={permSearch} onChange={(e) => setPermSearch(e.target.value)} className="pl-8" />
+            </div>
+            <select value={permModuleFilter} onChange={(e) => setPermModuleFilter(e.target.value)} className="h-9 rounded-md border bg-background px-3 text-sm">
+              <option value="">All Modules</option>
+              {permModules.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          {permsLoading ? <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-muted/50 rounded animate-pulse" />)}</div> : (
+            <Card className="p-4">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b text-xs text-muted-foreground uppercase"><th className="text-left py-2 px-2">Code</th><th className="text-left py-2 px-2">Display Name</th><th className="text-left py-2 px-2">Module</th><th className="text-left py-2 px-2">Feature</th><th className="text-left py-2 px-2">Action</th><th className="text-left py-2 px-2">Group</th></tr></thead>
+                  <tbody>
+                    {filteredPerms.map(p => (
+                      <tr key={p.id || p.code} className="border-b hover:bg-muted/50">
+                        <td className="py-2 px-2 font-mono text-xs">{p.code}</td>
+                        <td className="py-2 px-2 font-medium">{p.display_name}</td>
+                        <td className="py-2 px-2"><Badge variant="outline" className="text-xs">{p.module}</Badge></td>
+                        <td className="py-2 px-2 text-muted-foreground">{p.feature}</td>
+                        <td className="py-2 px-2"><Badge variant="secondary" className="text-xs">{p.action}</Badge></td>
+                        <td className="py-2 px-2 text-muted-foreground">{p.permission_group || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">{filteredPerms.length} permissions{permModuleFilter ? ` in module '${permModuleFilter}'` : ''}</p>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ─── Feature Flags Tab (preserved from original) ─── */}
+      {tab === 'flags' && (
         <Card className="p-4">
           <h3 className="font-semibold mb-4 flex items-center gap-2"><Flag className="h-5 w-5" /> Feature Flags</h3>
           <div className="space-y-2">
-            {flags.map(f => (
+            {demoFlags.map(f => (
               <div key={f.key} className="flex items-center gap-3 p-2 rounded-lg border">
                 <Switch checked={f.state === 'ENABLED' || f.state === 'BETA' || f.state === 'PILOT'} />
                 <span className="text-sm font-medium flex-1">{f.name}</span>
@@ -981,18 +1460,86 @@ function RBACModule() {
             ))}
           </div>
         </Card>
-      </div>
-      <Card className="p-4">
-        <h3 className="font-semibold mb-4 flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> Approval Authority Matrix</h3>
-        <div className="grid grid-cols-4 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
-          <span>Level</span><span>Approver</span><span>Min</span><span>Max</span>
-        </div>
-        {approvals.map(a => (
-          <div key={a.level} className="grid grid-cols-4 gap-2 px-4 py-3 border-t text-sm">
-            <Badge variant="outline">Level {a.level}</Badge><span className="font-medium">{a.role}</span><span className="font-mono">{a.min}</span><span className="font-mono">{a.max}</span>
+      )}
+
+      {/* ─── Approvals Tab (preserved from original) ─── */}
+      {tab === 'approvals' && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-4 flex items-center gap-2"><CheckCircle2 className="h-5 w-5" /> Approval Authority Matrix</h3>
+          <div className="grid grid-cols-4 gap-2 px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase">
+            <span>Level</span><span>Approver</span><span>Min</span><span>Max</span>
           </div>
-        ))}
-      </Card>
+          {demoApprovals.map(a => (
+            <div key={a.level} className="grid grid-cols-4 gap-2 px-4 py-3 border-t text-sm">
+              <Badge variant="outline">Level {a.level}</Badge><span className="font-medium">{a.role}</span><span className="font-mono">{a.min}</span><span className="font-mono">{a.max}</span>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* ─── Invite User Dialog ─── */}
+      {showInvite && hasPermission('auth:manage_users') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !inviteLoading && setShowInvite(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Invite User</h3><Button size="icon" variant="ghost" onClick={() => setShowInvite(false)} disabled={inviteLoading}><X className="h-4 w-4" /></Button></div>
+            {inviteError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{inviteError}</div>}
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleInvite({ email: fd.get('email') as string, firstName: fd.get('firstName') as string || undefined, lastName: fd.get('lastName') as string || undefined, designation: fd.get('designation') as string || undefined, roles: [(fd.get('role') as string)] }) }} className="space-y-3">
+              <div className="space-y-1"><Label className="text-xs">Email *</Label><Input name="email" type="email" required placeholder="user@sudhastar.com" /></div>
+              <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">First Name</Label><Input name="firstName" placeholder="John" /></div><div className="space-y-1"><Label className="text-xs">Last Name</Label><Input name="lastName" placeholder="Doe" /></div></div>
+              <div className="space-y-1"><Label className="text-xs">Designation</Label><Input name="designation" placeholder="Manager" /></div>
+              <div className="space-y-1"><Label className="text-xs">Role *</Label><select name="role" required className="w-full h-9 rounded-md border bg-background px-3 text-sm">{roles.map(r => <option key={r.id} value={r.name}>{r.display_name || r.name}</option>)}</select></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowInvite(false)} disabled={inviteLoading}>Cancel</Button><Button type="submit" size="sm" disabled={inviteLoading}>{inviteLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Inviting...</> : 'Send Invitation'}</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Edit User Dialog ─── */}
+      {showEditUser && selectedUser && hasPermission('auth:manage_users') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !editUserLoading && setShowEditUser(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Edit User</h3><Button size="icon" variant="ghost" onClick={() => setShowEditUser(false)} disabled={editUserLoading}><X className="h-4 w-4" /></Button></div>
+            {editUserError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{editUserError}</div>}
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleUpdateUser(selectedUser, { firstName: fd.get('firstName') as string || undefined, lastName: fd.get('lastName') as string || undefined, designation: fd.get('designation') as string || undefined, phone: fd.get('phone') as string || undefined, timezone: fd.get('timezone') as string || undefined, locale: fd.get('locale') as string || undefined }, (userDetail?.version ?? 0)) }} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">First Name</Label><Input name="firstName" defaultValue={userDetail?.first_name || ''} /></div><div className="space-y-1"><Label className="text-xs">Last Name</Label><Input name="lastName" defaultValue={userDetail?.last_name || ''} /></div></div>
+              <div className="space-y-1"><Label className="text-xs">Designation</Label><Input name="designation" defaultValue={userDetail?.designation || ''} /></div>
+              <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">Phone</Label><Input name="phone" defaultValue={userDetail?.phone || ''} /></div><div className="space-y-1"><Label className="text-xs">Timezone</Label><Input name="timezone" defaultValue={userDetail?.timezone || 'Asia/Kolkata'} /></div></div>
+              <div className="space-y-1"><Label className="text-xs">Locale</Label><Input name="locale" defaultValue={userDetail?.locale || 'en-IN'} /></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowEditUser(false)} disabled={editUserLoading}>Cancel</Button><Button type="submit" size="sm" disabled={editUserLoading}>{editUserLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Saving...</> : 'Save Changes'}</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Create Role Dialog ─── */}
+      {showCreateRole && hasPermission('auth:manage_roles') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !createRoleLoading && setShowCreateRole(false)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Create Role</h3><Button size="icon" variant="ghost" onClick={() => setShowCreateRole(false)} disabled={createRoleLoading}><X className="h-4 w-4" /></Button></div>
+            {createRoleError && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded p-2">{createRoleError}</div>}
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleCreateRole({ name: fd.get('name') as string, displayName: fd.get('displayName') as string, description: fd.get('description') as string || undefined }) }} className="space-y-3">
+              <div className="space-y-1"><Label className="text-xs">Role Name (code) *</Label><Input name="name" required placeholder="WH_OPERATOR" className="font-mono" /></div>
+              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required placeholder="Warehouse Operator" /></div>
+              <div className="space-y-1"><Label className="text-xs">Description</Label><Input name="description" placeholder="Warehouse floor operations" /></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowCreateRole(false)} disabled={createRoleLoading}>Cancel</Button><Button type="submit" size="sm" disabled={createRoleLoading}>{createRoleLoading ? <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Creating...</> : 'Create Role'}</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── Clone Role Dialog ─── */}
+      {showCloneRole && hasPermission('auth:manage_roles') && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCloneRole(null)}>
+          <Card className="p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between"><h3 className="font-semibold">Clone Role</h3><Button size="icon" variant="ghost" onClick={() => setShowCloneRole(null)}><X className="h-4 w-4" /></Button></div>
+            <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await handleCloneRole(showCloneRole, fd.get('name') as string, fd.get('displayName') as string) }} className="space-y-3">
+              <div className="space-y-1"><Label className="text-xs">New Role Name *</Label><Input name="name" required placeholder="WH_OPERATOR_V2" className="font-mono" /></div>
+              <div className="space-y-1"><Label className="text-xs">Display Name *</Label><Input name="displayName" required placeholder="Warehouse Operator V2" /></div>
+              <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="outline" size="sm" onClick={() => setShowCloneRole(null)}>Cancel</Button><Button type="submit" size="sm">Clone Role</Button></div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
