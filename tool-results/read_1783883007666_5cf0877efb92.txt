@@ -1,0 +1,402 @@
+   301→
+   302→> Repository also accepts (not in zod schema, will be stripped): `tan`, `fssaiLicense`, `secondaryEmail`, `fax`, `salesRepId`, `outstandingBalance`, `creditHold`. The repository INSERT statement sets `status='LEAD'`, `outstanding_balance=0`, `credit_hold=false` defaults.
+   303→
+   304→### 4.4 DTO: `transitionSchema` (Customer)
+   305→
+   306→```json
+   307→{ "targetStatus": "LEAD|PROSPECT|APPROVED|ACTIVE|BLOCKED|INACTIVE|ARCHIVED", "version": 0 }
+   308→```
+   309→
+   310→### 4.5 DTO: `contactSchema`
+   311→
+   312→| Field          | Type    | Validation             | Default |
+   313→|----------------|---------|------------------------|---------|
+   314→| `name`         | string  | min 1, max 200         | required|
+   315→| `designation`  | string  | optional               | —       |
+   316→| `email`        | string  | email, optional        | —       |
+   317→| `phone`        | string  | optional               | —       |
+   318→| `mobile`       | string  | optional               | —       |
+   319→| `isPrimary`    | boolean |                        | `false` |
+   320→
+   321→### 4.6 DTO: `addressSchema`
+   322→
+   323→| Field            | Type    | Validation                                       | Default   |
+   324→|------------------|---------|--------------------------------------------------|-----------|
+   325→| `addressType`    | enum    | `BILLING`/`SHIPPING`/`REGISTERED_OFFICE`        | `BILLING` |
+   326→| `addressLine1`   | string  | min 1                                            | required  |
+   327→| `city`           | string  | min 1                                            | required  |
+   328→| `state`          | string  | optional                                         | —         |
+   329→| `country`        | string  |                                                  | `India`   |
+   330→| `postalCode`     | string  | optional                                         | —         |
+   331→| `isPrimary`      | boolean |                                                  | `false`   |
+   332→
+   333→### 4.7 DTO: `groupSchema` (Customer Group)
+   334→
+   335→| Field          | Type   | Validation             |
+   336→|----------------|--------|------------------------|
+   337→| `code`         | string | min 1, max 50          |
+   338→| `name`         | string | min 1, max 200         |
+   339→| `description`  | string | optional               |
+   340→
+   341→### 4.8 Business rules (service layer)
+   342→
+   343→1. `customerCode` must be unique per tenant.
+   344→2. `gstin` must be unique across all tenants (global lookup).
+   345→3. GSTIN format validated twice (zod schema + service regex).
+   346→4. PAN format validated.
+   347→5. Cannot modify `BLOCKED` customer (must unblock first).
+   348→6. Cannot delete `ACTIVE` customer (must block/archive first).
+   349→7. Cannot delete customer with `outstanding_balance > 0`.
+   350→
+   351→### 4.9 Credit status response shape (GET /customers/:id/credit)
+   352→
+   353→```json
+   354→{
+   355→  "customerId": "uuid",
+   356→  "customerCode": "string",
+   357→  "tradeName": "string",
+   358→  "creditLimit": "decimal|null",
+   359→  "outstandingBalance": "decimal",
+   360→  "creditDays": "int",
+   361→  "creditHold": "boolean",
+   362→  "riskRating": "LOW|MEDIUM|HIGH|CRITICAL",
+   363→  "availableCredit": "decimal|null",
+   364→  "creditUtilizationPct": "number"
+   365→}
+   366→```
+   367→
+   368→### 4.10 Repository methods
+   369→
+   370→`customerRepository`: `create`, `findById`, `findByCode`, `findByGstin`, `list`, `update`, `softDelete`, `updateStatus`
+   371→`customerContactRepository`: `create`, `listForCustomer`
+   372→`customerAddressRepository`: `create`, `listForCustomer`
+   373→`customerGroupRepository`: `list`, `create`
+   374→
+   375→### 4.11 Database tables touched (raw SQL)
+   376→
+   377→`customers`, `customer_contacts`, `customer_addresses`, `customer_groups`
+   378→
+   379→---
+   380→
+   381→## 5. Module: `supplier` — Supplier Master
+   382→
+   383→**Mount**: `/api/v1/procurement`
+   384→**File**: `apps/backend/src/modules/supplier/routes/index.ts` (144 lines)
+   385→**Permission family**: `supplier:read|create|update|delete|blacklist`
+   386→**Workflow**: `SupplierLifecycle` (registered in `supplier/workflow/index.ts`)
+   387→- States: `DRAFT`, `VERIFICATION`, `APPROVED`, `ACTIVE`, `PROBATION`, `BLOCKED`, `BLACKLISTED`, `ARCHIVED`
+   388→- (Note: the zod `transitionSchema` for supplier lists these 8 states; the workflow file itself was not explicitly read but the routes use `SupplierLifecycle` per service code.)
+   389→
+   390→### 5.1 Endpoints
+   391→
+   392→| Method | Path                                              | Permission           | Description                              | Audit | Event                          |
+   393→|--------|---------------------------------------------------|----------------------|------------------------------------------|-------|--------------------------------|
+   394→| GET    | `/api/v1/procurement/suppliers`                   | `supplier:read`      | List suppliers (paginated)               | No    | No                             |
+   395→| GET    | `/api/v1/procurement/suppliers/:id`               | `supplier:read`      | Get supplier (+ contacts+addresses+compliances+products) | No | No                          |
+   396→| POST   | `/api/v1/procurement/suppliers`                   | `supplier:create`    | Create supplier                          | Yes   | `SupplierCreated`              |
+   397→| PATCH  | `/api/v1/procurement/suppliers/:id`               | `supplier:update`    | Update supplier (If-Match)               | Yes   | `SupplierUpdated`              |
+   398→| DELETE | `/api/v1/procurement/suppliers/:id`               | `supplier:delete`    | Soft-delete supplier (If-Match)          | Yes   | No                             |
+   399→| POST   | `/api/v1/procurement/suppliers/:id/transition`    | `supplier:update`    | Lifecycle state transition               | Yes   | `SupplierApproved`/`SupplierBlocked` |
+   400→| POST   | `/api/v1/procurement/suppliers/:id/blacklist`     | `supplier:blacklist` | Blacklist supplier (with reason)         | Yes (CRITICAL severity) | `SupplierBlacklisted` |
+   401→| GET    | `/api/v1/procurement/suppliers/gst/:gstin`        | `supplier:read`      | Lookup supplier by GSTIN                 | No    | No                             |
+   402→| GET    | `/api/v1/procurement/suppliers/:id/contacts`      | `supplier:read`      | List supplier contacts (via getById)     | No    | No                             |
+   403→| POST   | `/api/v1/procurement/suppliers/:id/contacts`      | `supplier:update`    | Add contact                              | Yes   | No                             |
+   404→| POST   | `/api/v1/procurement/suppliers/:id/addresses`     | `supplier:update`    | Add address                              | Yes   | No                             |
+   405→| POST   | `/api/v1/procurement/suppliers/:id/compliances`   | `supplier:update`    | Add compliance record                    | Yes   | No                             |
+   406→| POST   | `/api/v1/procurement/suppliers/:id/products`      | `supplier:update`    | Assign product to supplier (with preferred flag, MOQ, lead time, price) | Yes | No |
+   407→| GET    | `/api/v1/procurement/supplier-categories`         | `supplier:read`      | List supplier categories                 | No    | No                             |
+   408→| POST   | `/api/v1/procurement/supplier-categories`         | `supplier:create`    | Create supplier category                 | Yes   | No                             |
+   409→
+   410→### 5.2 Query parameters for `GET /api/v1/procurement/suppliers`
+   411→
+   412→| Param         | Type    | Notes                                                          |
+   413→|---------------|---------|----------------------------------------------------------------|
+   414→| `page`        | number  | default 1                                                      |
+   415→| `pageSize`    | number  | default 25                                                     |
+   416→| `search`      | string  | matches `vendor_code`/`legal_name`/`trade_name`/`gstin` ILIKE  |
+   417→| `status`      | enum    | `DRAFT`/`VERIFICATION`/`APPROVED`/`ACTIVE`/`PROBATION`/`BLOCKED`/`BLACKLISTED`/`ARCHIVED` |
+   418→| `vendorType`  | enum    | `MANUFACTURER`/`DISTRIBUTOR`/`TRADER`/`SERVICE_PROVIDER`/`TRANSPORTER`/`CONTRACTOR`/`IMPORTER` |
+   419→| `categoryId`  | uuid    |                                                                |
+   420→| `isPreferred` | boolean | `?isPreferred=true`                                            |
+   421→
+   422→### 5.3 DTO: `supplierSchema` (POST /api/v1/procurement/suppliers)
+   423→
+   424→| Field            | Type    | Validation                                     | Default        |
+   425→|------------------|---------|------------------------------------------------|----------------|
+   426→| `vendorCode`     | string  | min 1, max 50                                  | required       |
+   427→| `legalName`      | string  | min 1, max 200                                 | required       |
+   428→| `tradeName`      | string  | min 1, max 200                                 | required       |
+   429→| `shortName`      | string  | optional                                       | —              |
+   430→| `description`    | string  | optional                                       | —              |
+   431→| `categoryId`     | uuid    | optional                                       | —              |
+   432→| `supplierType`   | enum    | `DOMESTIC`/`INTERNATIONAL`/`LOCAL`             | `DOMESTIC`     |
+   433→| `vendorType`     | enum    | 7 values (see §5.2)                            | `MANUFACTURER` |
+   434→| `gstin`          | string  | regex GSTIN format, optional                   | —              |
+   435→| `pan`            | string  | regex PAN format, optional                     | —              |
+   436→| `cin`            | string  | optional                                       | —              |
+   437→| `fssaiLicense`   | string  | optional                                       | —              |
+   438→| `msmeRegNo`      | string  | optional                                       | —              |
+   439→| `iecCode`        | string  | optional                                       | —              |
+   440→| `primaryEmail`   | string  | email, optional                                | —              |
+   441→| `phone`          | string  | optional                                       | —              |
+   442→| `website`        | string  | optional                                       | —              |
+   443→| `bankName`       | string  | optional                                       | —              |
+   444→| `accountNumber`  | string  | optional                                       | —              |
+   445→| `ifscCode`       | string  | optional                                       | —              |
+   446→| `paymentTerms`   | enum    | `NET15`/`NET30`/`NET45`/`NET60`/`IMMEDIATE`/`ADVANCE` | `NET30` |
+   447→| `creditLimit`    | number  | non-negative, optional                         | —              |
+   448→| `creditDays`     | number  | int, min 0                                     | 30             |
+   449→| `currency`       | string  |                                                | `INR`          |
+   450→| `riskLevel`      | enum    | `LOW`/`MEDIUM`/`HIGH`/`CRITICAL`               | `MEDIUM`       |
+   451→| `isPreferred`    | boolean |                                                | `false`        |
+   452→| `isStrategic`    | boolean |                                                | `false`        |
+   453→
+   454→> Repository also accepts (not in zod schema): `tan`, `secondaryEmail`, `fax`, `bankBranch`, `accountType`, `upiId`, `paymentMethod`, `msmeType`. The repository INSERT sets `status='DRAFT'` default.
+   455→
+   456→### 5.4 DTO: `blacklistSchema`
+   457→
+   458→```json
+   459→{ "reason": "string (min 1, max 500)" }
+   460→```
+   461→
+   462→### 5.5 DTO: `contactSchema` (Supplier contact)
+   463→
+   464→Same shape as customer contact (§4.5).
+   465→
+   466→### 5.6 DTO: `addressSchema` (Supplier address)
+   467→
+   468→| Field            | Type    | Validation                                                                  | Default   |
+   469→|------------------|---------|-----------------------------------------------------------------------------|-----------|
+   470→| `addressType`    | enum    | `BILLING`/`SHIPPING`/`FACTORY`/`WAREHOUSE`/`REGISTERED_OFFICE`            | `BILLING` |
+   471→| `addressLine1`   | string  | min 1                                                                       | required  |
+   472→| `city`           | string  | min 1                                                                       | required  |
+   473→| `state`          | string  | optional                                                                    | —         |
+   474→| `country`        | string  |                                                                             | `India`   |
+   475→| `postalCode`     | string  | optional                                                                    | —         |
+   476→| `isPrimary`      | boolean |                                                                             | `false`   |
+   477→
+   478→### 5.7 DTO: `complianceSchema`
+   479→
+   480→| Field                | Type    | Validation                                                                                          |
+   481→|----------------------|---------|-----------------------------------------------------------------------------------------------------|
+   482→| `complianceType`     | enum    | `FSSAI`/`ISO_22000`/`HACCP`/`GST_REG`/`PAN`/`MSME`/`INSURANCE`/`NDA`/`VENDOR_AGREEMENT`           |
+   483→| `licenseNumber`      | string  | optional                                                                                            |
+   484→| `issuingAuthority`   | string  | optional                                                                                            |
+   485→| `issuedDate`         | string  | datetime, optional                                                                                  |
+   486→| `expiryDate`         | string  | datetime, optional                                                                                  |
+   487→| `documentUrl`        | string  | optional                                                                                            |
+   488→| `notes`              | string  | optional                                                                                            |
+   489→
+   490→### 5.8 DTO: `productMappingSchema` (Supplier ↔ Product)
+   491→
+   492→| Field             | Type    | Validation             | Default |
+   493→|-------------------|---------|------------------------|---------|
+   494→| `productId`       | uuid    | required               | —       |
+   495→| `supplierSku`     | string  | optional               | —       |
+   496→| `unitPrice`       | number  | non-negative, optional | —       |
+   497→| `moq`             | number  | non-negative, optional | —       |
+   498→| `leadTimeDays`    | number  | int, positive, optional| —       |
+   499→| `isPreferred`     | boolean |                        | `false` |
+   500→
+   501→### 5.9 DTO: `categorySchema` (Supplier category)
+   502→
+   503→| Field           | Type    | Validation                                       | Default        |
+   504→|-----------------|---------|--------------------------------------------------|----------------|
+   505→| `code`          | string  | min 1, max 50                                    | required       |
+   506→| `name`          | string  | min 1, max 200                                   | required       |
+   507→| `description`   | string  | optional                                         | —              |
+   508→| `supplierType`  | enum    | `DOMESTIC`/`INTERNATIONAL`/`LOCAL`              | `DOMESTIC`     |
+   509→| `vendorType`    | string  |                                                  | `MANUFACTURER` |
+   510→
+   511→### 5.10 Business rules
+   512→
+   513→1. `vendorCode` unique per tenant.
+   514→2. GSTIN unique globally.
+   515→3. GSTIN + PAN format validated.
+   516→4. Cannot modify `BLACKLISTED` supplier.
+   517→5. Cannot delete `ACTIVE` supplier (must block/archive first).
+   518→6. Blacklisting is **CRITICAL severity** audit log entry.
+   519→7. Preferred supplier assignment revokes previous preferred mappings for same product.
+   520→
+   521→### 5.11 Repository methods
+   522→
+   523→`supplierRepository`: `create`, `findById`, `findByVendorCode`, `findByGstin`, `list`, `update`, `softDelete`, `updateStatus`, `blacklist`
+   524→`supplierContactRepository`: `create`, `listForSupplier`
+   525→`supplierAddressRepository`: `create`, `listForSupplier`
+   526→`supplierComplianceRepository`: `create`, `listForSupplier`, `findExpiring(tenantId, withinDays=30)`, `updateStatus`
+   527→`supplierProductMappingRepository`: `create`, `listForSupplier` (joins products), `listForProduct` (joins suppliers), `revoke`
+   528→`supplierCategoryRepository`: `list`, `create`
+   529→
+   530→### 5.12 Database tables touched (raw SQL)
+   531→
+   532→`suppliers`, `supplier_contacts`, `supplier_addresses`, `supplier_compliances`, `supplier_product_mappings`, `supplier_categories`
+   533→
+   534→---
+   535→
+   536→## 6. Module: `organization` — Company / Plant / Warehouse / Department / Cost Center / Financial Year / Hierarchy
+   537→
+   538→**Mount**: `/api/v1/organization`
+   539→**File**: `apps/backend/src/modules/organization/routes/index.ts` (291 lines)
+   540→**Permission family**: `org:read|create|update|delete`
+   541→**Workflow**: `OrganizationLifecycle` (registered in `organization/workflow/index.ts`)
+   542→- States: `DRAFT`, `CONFIGURED`, `ACTIVE`, `SUSPENDED`, `ARCHIVED`
+   543→- Transitions: DRAFT→CONFIGURED, CONFIGURED→ACTIVE, CONFIGURED→DRAFT, ACTIVE→SUSPENDED, SUSPENDED→ACTIVE, SUSPENDED→ARCHIVED, ACTIVE→ARCHIVED
+   544→
+   545→### 6.1 Endpoints — Companies
+   546→
+   547→| Method | Path                                              | Permission       | Description                              | Audit | Event                  |
+   548→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|------------------------|
+   549→| GET    | `/api/v1/organization/companies`                  | `org:read`       | List companies (paginated)               | No    | No                     |
+   550→| GET    | `/api/v1/organization/companies/:id`              | `org:read`       | Get company                              | No    | No                     |
+   551→| POST   | `/api/v1/organization/companies`                  | `org:create`     | Create company                           | Yes   | `CompanyCreated`       |
+   552→| PATCH  | `/api/v1/organization/companies/:id`              | `org:update`     | Update company (If-Match)                | Yes   | No                     |
+   553→| DELETE | `/api/v1/organization/companies/:id`              | `org:delete`     | Soft-delete company (If-Match)           | Yes   | No                     |
+   554→| POST   | `/api/v1/organization/companies/:id/transition`   | `org:update`     | Lifecycle state transition               | Yes   | No                     |
+   555→| POST   | `/api/v1/organization/companies/:id/restore`      | `org:update`     | Restore from soft delete                 | Yes   | No                     |
+   556→| DELETE | `/api/v1/organization/companies/:id/hard`         | `org:delete`     | Permanent delete (requires `system:tenant:cross`) | Yes (CRITICAL) | No |
+   557→
+   558→### 6.2 Endpoints — Plants
+   559→
+   560→| Method | Path                                              | Permission       | Description                              | Audit | Event                  |
+   561→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|------------------------|
+   562→| GET    | `/api/v1/organization/plants`                     | `org:read`       | List plants (paginated)                  | No    | No                     |
+   563→| GET    | `/api/v1/organization/plants/:id`                 | `org:read`       | Get plant                                | No    | No                     |
+   564→| POST   | `/api/v1/organization/plants`                     | `org:create`     | Create plant                             | Yes   | No                     |
+   565→| POST   | `/api/v1/organization/plants/:id/transition`      | `org:update`     | Lifecycle state transition               | Yes   | `PlantActivated` (when targetStatus=ACTIVE) |
+   566→
+   567→### 6.3 Endpoints — Warehouses
+   568→
+   569→| Method | Path                                              | Permission       | Description                              | Audit | Event |
+   570→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|-------|
+   571→| GET    | `/api/v1/organization/warehouses`                 | `org:read`       | List warehouses (filterable by plantId)  | No    | No    |
+   572→| GET    | `/api/v1/organization/warehouses/:id`             | `org:read`       | Get warehouse                            | No    | No    |
+   573→| POST   | `/api/v1/organization/warehouses`                 | `org:create`     | Create warehouse                         | Yes   | No    |
+   574→
+   575→### 6.4 Endpoints — Departments
+   576→
+   577→| Method | Path                                              | Permission       | Description                              | Audit | Event |
+   578→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|-------|
+   579→| GET    | `/api/v1/organization/departments`                | `org:read`       | List departments                         | No    | No    |
+   580→| POST   | `/api/v1/organization/departments`                | `org:create`     | Create department                        | Yes   | No    |
+   581→
+   582→### 6.5 Endpoints — Cost Centers
+   583→
+   584→| Method | Path                                              | Permission       | Description                              | Audit | Event |
+   585→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|-------|
+   586→| GET    | `/api/v1/organization/cost-centers`               | `org:read`       | List cost centers                        | No    | No    |
+   587→| POST   | `/api/v1/organization/cost-centers`               | `org:create`     | Create cost center                       | Yes   | No    |
+   588→
+   589→### 6.6 Endpoints — Financial Years
+   590→
+   591→| Method | Path                                              | Permission       | Description                              | Audit | Event |
+   592→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|-------|
+   593→| GET    | `/api/v1/organization/financial-years`            | `org:read`       | List financial years                     | No    | No    |
+   594→| GET    | `/api/v1/organization/financial-years/current`    | `org:read`       | Get current financial year               | No    | No    |
+   595→| POST   | `/api/v1/organization/financial-years`            | `org:create`     | Create financial year                    | Yes   | No    |
+   596→
+   597→### 6.7 Endpoints — Hierarchy
+   598→
+   599→| Method | Path                                              | Permission       | Description                              | Audit | Event |
+   600→|--------|---------------------------------------------------|------------------|------------------------------------------|-------|-------|
+   601→| GET    | `/api/v1/organization/hierarchy`                  | `org:read`       | Get full hierarchy tree (Company→BU→Division→Region→Plant→Warehouse) | No | No |
+   602→
+   603→### 6.8 DTO: `companySchema`
+   604→
+   605→| Field               | Type    | Validation             | Default   |
+   606→|---------------------|---------|------------------------|-----------|
+   607→| `code`              | string  | min 1, max 50          | required  |
+   608→| `name`              | string  | min 1, max 200         | required  |
+   609→| `legalName`         | string  | max 200, optional      | —         |
+   610→| `description`       | string  | max 1000, optional     | —         |
+   611→| `parentId`          | uuid    | optional               | —         |
+   612→| `gstin`             | string  | regex GSTIN, optional  | —         |
+   613→| `pan`               | string  | regex PAN, optional    | —         |
+   614→| `cin`               | string  | optional               | —         |
+   615→| `email`             | string  | email, optional        | —         |
+   616→| `phone`             | string  | optional               | —         |
+   617→| `website`           | string  | url, optional          | —         |
+   618→| `addressLine1`      | string  | optional               | —         |
+   619→| `city`              | string  | optional               | —         |
+   620→| `state`             | string  | optional               | —         |
+   621→| `country`           | string  |                        | `India`   |
+   622→| `postalCode`        | string  | optional               | —         |
+   623→| `defaultTimezone`   | string  | optional               | —         |
+   624→| `defaultCurrency`   | string  | optional               | —         |
+   625→
+   626→### 6.9 DTO: `plantSchema`
+   627→
+   628→| Field            | Type    | Validation                                                    | Default          |
+   629→|------------------|---------|---------------------------------------------------------------|------------------|
+   630→| `regionId`       | uuid    | required                                                      | —                |
+   631→| `code`           | string  | min 1, max 50                                                 | required         |
+   632→| `name`           | string  | min 1, max 200                                                | required         |
+   633→| `description`    | string  | optional                                                      | —                |
+   634→| `plantType`      | enum    | `MANUFACTURING`/`DISTRIBUTION`/`WAREHOUSE`/`RETAIL`/`RESTAURANT` | `MANUFACTURING`  |
+   635→| `addressLine1`   | string  | optional                                                      | —                |
+   636→| `city`           | string  | optional                                                      | —                |
+   637→| `state`          | string  | optional                                                      | —                |
+   638→| `country`        | string  |                                                               | `India`          |
+   639→| `postalCode`     | string  | optional                                                      | —                |
+   640→| `timezone`       | string  |                                                               | `Asia/Kolkata`   |
+   641→| `currency`       | string  |                                                               | `INR`            |
+   642→| `email`          | string  | email, optional                                               | —                |
+   643→| `phone`          | string  | optional                                                      | —                |
+   644→
+   645→### 6.10 DTO: `warehouseSchema`
+   646→
+   647→| Field             | Type    | Validation                                                    | Default          |
+   648→|-------------------|---------|---------------------------------------------------------------|------------------|
+   649→| `plantId`         | uuid    | required                                                      | —                |
+   650→| `code`            | string  | min 1, max 50                                                 | required         |
+   651→| `name`            | string  | min 1, max 200                                                | required         |
+   652→| `description`     | string  | optional                                                      | —                |
+   653→| `warehouseType`   | enum    | `RAW_MATERIAL`/`FINISHED_GOODS`/`PACKAGING`/`DISTRIBUTION`/`QUARANTINE` | `DISTRIBUTION` |
+   654→| `addressLine1`    | string  | optional                                                      | —                |
+   655→| `city`            | string  | optional                                                      | —                |
+   656→| `state`           | string  | optional                                                      | —                |
+   657→| `country`         | string  |                                                               | `India`          |
+   658→| `timezone`        | string  |                                                               | `Asia/Kolkata`   |
+   659→| `isDefault`       | boolean |                                                               | `false`          |
+   660→| `totalAreaSqft`   | number  | positive, optional                                            | —                |
+   661→
+   662→### 6.11 DTO: `departmentSchema`
+   663→
+   664→| Field             | Type   | Validation   |
+   665→|-------------------|--------|--------------|
+   666→| `code`            | string | min 1, max 50|
+   667→| `name`            | string | min 1, max 200|
+   668→| `description`     | string | optional     |
+   669→| `companyId`       | uuid   | optional     |
+   670→| `businessUnitId`  | uuid   | optional     |
+   671→| `plantId`         | uuid   | optional     |
+   672→| `parentId`        | uuid   | optional     |
+   673→
+   674→### 6.12 DTO: `costCenterSchema`
+   675→
+   676→| Field             | Type    | Validation                                                    | Default      |
+   677→|-------------------|---------|---------------------------------------------------------------|--------------|
+   678→| `code`            | string  | min 1, max 50                                                 | required     |
+   679→| `name`            | string  | min 1, max 200                                                | required     |
+   680→| `description`     | string  | optional                                                      | —            |
+   681→| `plantId`         | uuid    | optional                                                      | —            |
+   682→| `departmentId`    | uuid    | optional                                                      | —            |
+   683→| `costCenterType`  | enum    | `PRODUCTION`/`SERVICE`/`ADMIN`/`SALES`                       | `PRODUCTION` |
+   684→
+   685→### 6.13 DTO: `financialYearSchema`
+   686→
+   687→| Field        | Type    | Validation       |
+   688→|--------------|---------|------------------|
+   689→| `code`       | string  | min 1, max 20    |
+   690→| `name`       | string  | min 1, max 100   |
+   691→| `startDate`  | string  | datetime         |
+   692→| `endDate`    | string  | datetime         |
+   693→| `isCurrent`  | boolean | default `false`  |
+   694→
+   695→### 6.14 DTO: `transitionSchema` (Organization)
+   696→
+   697→```json
+   698→{ "targetStatus": "DRAFT|CONFIGURED|ACTIVE|SUSPENDED|ARCHIVED", "version": 0 }
+   699→```
+   700→
+
+[showing lines 301-700 of 2232; use offset=701 with limit to continue reading]

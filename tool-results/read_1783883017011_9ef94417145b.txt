@@ -1,0 +1,402 @@
+  1100→| `discountType`        | string  | min 1                                          | required |
+  1101→| `discountValue`       | number  | positive                                       | required |
+  1102→| `minQty`              | number  | positive, optional                             | —        |
+  1103→| `maxQty`              | number  | positive, optional                             | —        |
+  1104→| `minOrderValue`       | number  | positive, optional                             | —        |
+  1105→| `maxDiscountAmount`   | number  | positive, optional                             | —        |
+  1106→| `buyQty`              | number  | positive, optional                             | —        |
+  1107→| `getQty`              | number  | positive, optional                             | —        |
+  1108→| `startDate`           | string  | required                                       | —        |
+  1109→| `endDate`             | string  | required                                       | —        |
+  1110→| `usageLimit`          | number  | int, positive, optional                        | —        |
+  1111→| `description`         | string  | optional                                       | —        |
+  1112→| `termsConditions`     | string  | optional                                       | —        |
+  1113→
+  1114→### 9.4 DTO: `couponSchema`
+  1115→
+  1116→| Field                 | Type    | Validation                          | Default |
+  1117→|-----------------------|---------|-------------------------------------|---------|
+  1118→| `couponCode`          | string  | min 1                               | required|
+  1119→| `couponName`          | string  | min 1                               | required|
+  1120→| `couponType`          | string  | min 1                               | required|
+  1121→| `discountType`        | string  | min 1                               | required|
+  1122→| `discountValue`       | number  | positive                            | required|
+  1123→| `minOrderValue`       | number  | positive, optional                  | —       |
+  1124→| `maxDiscountAmount`   | number  | positive, optional                  | —       |
+  1125→| `startDate`           | string  | required                            | —       |
+  1126→| `endDate`             | string  | required                            | —       |
+  1127→| `usageLimit`          | number  | int, positive                       | 1       |
+  1128→| `perCustomerLimit`    | number  | int, positive                       | 1       |
+  1129→| `description`         | string  | optional                            | —       |
+  1130→
+  1131→### 9.5 DTO: `taxSchema` (Tax Config)
+  1132→
+  1133→| Field               | Type    | Validation             | Default |
+  1134→|---------------------|---------|------------------------|---------|
+  1135→| `taxCode`           | string  | min 1                  | required|
+  1136→| `taxName`           | string  | min 1                  | required|
+  1137→| `taxType`           | string  | min 1                  | required|
+  1138→| `taxPercent`        | number  | 0–100                  | required|
+  1139→| `hsnCode`           | string  | optional               | —       |
+  1140→| `sacCode`           | string  | optional               | —       |
+  1141→| `isReverseCharge`   | boolean |                        | `false` |
+  1142→| `description`       | string  | optional               | —       |
+  1143→
+  1144→### 9.6 DTO: `calcSchema` (Calculate Price)
+  1145→
+  1146→| Field         | Type    | Validation             |
+  1147→|---------------|---------|------------------------|
+  1148→| `productId`   | uuid    | required               |
+  1149→| `customerId`  | uuid    | optional               |
+  1150→| `channel`     | string  | optional               |
+  1151→| `quantity`    | number  | positive               |
+  1152→| `uomCode`     | string  | min 1                  |
+  1153→| `couponCode`  | string  | optional               |
+  1154→
+  1155→### 9.7 Calculate Price response shape
+  1156→
+  1157→```json
+  1158→{
+  1159→  "productId": "uuid",
+  1160→  "quantity": 1,
+  1161→  "basePrice": 100.00,
+  1162→  "listPrice": 100.00,
+  1163→  "customerDiscountPercent": 5,
+  1164→  "customerDiscountAmount": 5.00,
+  1165→  "appliedPromo": "PROMO_CODE|null",
+  1166→  "promoDiscountAmount": 0.00,
+  1167→  "appliedCoupon": "COUPON_CODE|null",
+  1168→  "couponDiscountAmount": 0.00,
+  1169→  "subtotal": 100.00,
+  1170→  "totalDiscount": 5.00,
+  1171→  "afterDiscount": 95.00,
+  1172→  "taxPercent": 18,
+  1173→  "taxAmount": 17.10,
+  1174→  "grandTotal": 112.10
+  1175→}
+  1176→```
+  1177→
+  1178→### 9.8 Pricing calculation flow
+  1179→
+  1180→1. Get base price from active `price_list_items` joined with `price_lists` (filtered by channel).
+  1181→2. Fallback to product's `price` column if no price list item.
+  1182→3. Apply customer-specific discount from `customer_price_agreements` table.
+  1183→4. Find applicable promotion (max `discountValue`) from `promotions` where today ∈ [startDate, endDate] and product/customer/qty match.
+  1184→5. Apply coupon if provided (validates `usage_count < usage_limit`, min_order_value).
+  1185→6. Sum discounts, compute subtotal, after_discount, tax (from `tax_configurations` table), grand total.
+  1186→
+  1187→### 9.9 Database tables touched (raw SQL via `genRepo`)
+  1188→
+  1189→`price_lists`, `promotions`, `coupons`, `tax_configurations`, `price_list_items` (read-only via raw SQL in `calculatePrice`), `products` (read-only), `customer_price_agreements` (read-only)
+  1190→
+  1191→> Note: No endpoints exist for managing `price_list_items`, `customer_price_agreements`, or `discount_rules`. These are referenced by the calculate engine but have no CRUD endpoints.
+  1192→
+  1193→---
+  1194→
+  1195→## 10. Module: `gst-taxation` — GST Configuration (Prisma-backed)
+  1196→
+  1197→**Mount**: `/api/v1/finance/gst`
+  1198→**File**: `apps/backend/src/modules/gst-taxation/routes/index.ts` (95 lines)
+  1199→**Permission family**: PROXY — `READ_PERM = AUDIT_READ = 'audit:read'`, `WRITE_PERM = AUDIT_READ` (same!)
+  1200→**Workflow**: Workflow file at `gst-taxation/workflow/index.ts` is for **TaxReturnLifecycle** (DRAFT → READY_TO_FILE → FILED → AMENDED), NOT for the GST configuration entity. The service references workflow `'GstConfigurationLifecycle'` but no such workflow file exists in this module's workflow directory.
+  1201→
+  1202→### 10.1 Endpoints
+  1203→
+  1204→| Method | Path                                       | Permission (effective) | Description                              | Audit | Event                                  |
+  1205→|--------|--------------------------------------------|------------------------|------------------------------------------|-------|----------------------------------------|
+  1206→| GET    | `/api/v1/finance/gst`                      | `audit:read`           | List gst_configurations (paginated)      | No    | No                                     |
+  1207→| GET    | `/api/v1/finance/gst/count`                | `audit:read`           | Count gst_configurations                 | No    | No                                     |
+  1208→| GET    | `/api/v1/finance/gst/exists/:code`         | `audit:read`           | Check if config_code exists              | No    | No                                     |
+  1209→| GET    | `/api/v1/finance/gst/:id`                  | `audit:read`           | Get GST config by ID                     | No    | No                                     |
+  1210→| POST   | `/api/v1/finance/gst`                      | `audit:read`           | Create GST config (NO body validation)   | Yes   | `GstConfigCreated`                     |
+  1211→| PUT    | `/api/v1/finance/gst/:id`                  | `audit:read`           | Update GST config                        | Yes   | No                                     |
+  1212→| DELETE | `/api/v1/finance/gst/:id`                  | `audit:read`           | Soft-delete (?reason=)                   | Yes   | No                                     |
+  1213→| POST   | `/api/v1/finance/gst/:id/transition`       | `audit:read`           | Workflow transition (targetState, reason)| Yes   | `GstConfigurationTransitioned`         |
+  1214→
+  1215→### 10.2 Schema
+  1216→
+  1217→The route accepts **arbitrary JSON** — no zod validation. The service layer only validates that `config_code` is present (else `ValidationError`). All other fields are passed through.
+  1218→
+  1219→Prisma model `GstConfigurations` (referenced as `(db as any).GstConfigurations`) is referenced but NOT explicitly defined in `schema.prisma`. This is a gap.
+  1220→
+  1221→### 10.3 Permission/RBAC gap (Critical)
+  1222→
+  1223→Both READ and WRITE permissions resolve to `audit:read`. Any user with audit read access can create/update/delete GST configurations. This is a serious security gap.
+  1224→
+  1225→### 10.4 Workflow gap
+  1226→
+  1227→The service calls `workflowRegistry.get('GstConfigurationLifecycle')` but no workflow with that name is registered (the workflow file registers `TaxReturnLifecycle` instead). The transition endpoint will throw `BusinessRuleError` with code `WORKFLOW.NOT_REGISTERED` on every call.
+  1228→
+  1229→---
+  1230→
+  1231→## 11. Module: `recipe-bom` — Recipes, BOMs, Routings
+  1232→
+  1233→**Mount**: `/api/v1/manufacturing/recipes`
+  1234→**File**: `apps/backend/src/modules/recipe-bom/routes/index.ts` (133 lines)
+  1235→**Permission family**: `product:read|create|update` (no recipe/bom-specific permissions)
+  1236→**Workflow**: `RecipeLifecycle` (registered in `recipe-bom/workflow/index.ts`)
+  1237→- States: `DRAFT`, `IN_REVIEW`, `APPROVED`, `DEPRECATED`
+  1238→- Transitions: DRAFT→IN_REVIEW, IN_REVIEW→APPROVED, IN_REVIEW→DRAFT, APPROVED→DEPRECATED, DEPRECATED→APPROVED
+  1239→
+  1240→> Note: BOM transitions use the same 4 states but the service does NOT use the workflow registry — it validates the status string manually (lines 177–179 of service). Recipe transitions DO use the workflow registry.
+  1241→
+  1242→### 11.1 Endpoints — Recipes
+  1243→
+  1244→| Method | Path                                                       | Permission       | Description                              | Audit | Event                |
+  1245→|--------|------------------------------------------------------------|------------------|------------------------------------------|-------|----------------------|
+  1246→| GET    | `/api/v1/manufacturing/recipes/recipes`                    | `product:read`   | List recipes                             | No    | No                   |
+  1247→| GET    | `/api/v1/manufacturing/recipes/recipes/:id`                | `product:read`   | Get recipe (+ items + byproducts)        | No    | No                   |
+  1248→| POST   | `/api/v1/manufacturing/recipes/recipes`                    | `product:create` | Create recipe (with items + byproducts)  | Yes   | `RecipeCreated` / `RecipeApproved` |
+  1249→| POST   | `/api/v1/manufacturing/recipes/recipes/:id/transition`     | `product:update` | Recipe lifecycle transition              | Yes (`RECIPE_TRANSITION`) | `RecipeApproved` |
+  1250→
+  1251→### 11.2 Endpoints — BOMs
+  1252→
+  1253→| Method | Path                                                       | Permission       | Description                              | Audit | Event |
+  1254→|--------|------------------------------------------------------------|------------------|------------------------------------------|-------|-------|
+  1255→| GET    | `/api/v1/manufacturing/recipes/boms`                       | `product:read`   | List BOMs                                | No    | No    |
+  1256→| GET    | `/api/v1/manufacturing/recipes/boms/:id`                   | `product:read`   | Get BOM (+ lines)                        | No    | No    |
+  1257→| POST   | `/api/v1/manufacturing/recipes/boms`                       | `product:create` | Create BOM (with lines, supports multi-level) | Yes | No    |
+  1258→| POST   | `/api/v1/manufacturing/recipes/boms/:id/transition`        | `product:update` | BOM lifecycle transition                 | Yes (`BOM_TRANSITION`) | No |
+  1259→| GET    | `/api/v1/manufacturing/recipes/boms/:id/explode`           | `product:read`   | Multi-level BOM explosion (recursive)    | No    | No    |
+  1260→
+  1261→### 11.3 Endpoints — Routings
+  1262→
+  1263→| Method | Path                                                       | Permission       | Description                              | Audit | Event |
+  1264→|--------|------------------------------------------------------------|------------------|------------------------------------------|-------|-------|
+  1265→| GET    | `/api/v1/manufacturing/recipes/routings`                   | `product:read`   | List routings (?productId=)              | No    | No    |
+  1266→| GET    | `/api/v1/manufacturing/recipes/routings/:id`               | `product:read`   | Get routing (+ operations)               | No    | No    |
+  1267→| POST   | `/api/v1/manufacturing/recipes/routings`                   | `product:create` | Create routing (with operations)         | Yes   | No    |
+  1268→
+  1269→### 11.4 DTO: `recipeSchema`
+  1270→
+  1271→| Field                 | Type     | Validation                            | Default |
+  1272→|-----------------------|----------|---------------------------------------|---------|
+  1273→| `recipeCode`          | string   | min 1                                 | required|
+  1274→| `recipeName`          | string   | min 1                                 | required|
+  1275→| `productId`           | uuid     | required                              | —       |
+  1276→| `productSku`          | string   | optional                              | —       |
+  1277→| `productName`         | string   | optional                              | —       |
+  1278→| `version`             | string   |                                       | `1.0`   |
+  1279→| `yieldPercent`        | number   | 0–100                                 | 100     |
+  1280→| `expectedLossPercent` | number   | 0–100                                 | 0       |
+  1281→| `batchSize`           | number   | positive, optional                    | —       |
+  1282→| `batchUomId`          | uuid     | optional                              | —       |
+  1283→| `batchUomCode`        | string   | optional                              | —       |
+  1284→| `productionTimeHours` | number   | positive, optional                    | —       |
+  1285→| `description`         | string   | optional                              | —       |
+  1286→| `items`               | array    | min 1, of `recipeItemSchema`          | required|
+  1287→| `byproducts`          | array    | optional, of byproduct object         | —       |
+  1288→
+  1289→### 11.5 DTO: `recipeItemSchema`
+  1290→
+  1291→| Field           | Type    | Validation                                                                | Default      |
+  1292→|-----------------|---------|---------------------------------------------------------------------------|--------------|
+  1293→| `itemType`      | enum    | `RAW_MATERIAL`/`PACKAGING`/`CONSUMABLE`                                 | `RAW_MATERIAL` |
+  1294→| `productId`     | uuid    | required                                                                  | —            |
+  1295→| `productSku`    | string  | optional                                                                  | —            |
+  1296→| `productName`   | string  | optional                                                                  | —            |
+  1297→| `uomId`         | uuid    | optional                                                                  | —            |
+  1298→| `uomCode`       | string  | optional                                                                  | —            |
+  1299→| `quantity`      | number  | positive                                                                  | required     |
+  1300→| `scrapPercent`  | number  | non-negative                                                              | 0            |
+  1301→| `isCritical`    | boolean |                                                                           | `false`      |
+  1302→| `unitCost`      | number  | non-negative, optional                                                    | —            |
+  1303→| `remarks`       | string  | optional                                                                  | —            |
+  1304→
+  1305→### 11.6 DTO: `bomSchema`
+  1306→
+  1307→| Field         | Type   | Validation                       | Default     |
+  1308→|---------------|--------|----------------------------------|-------------|
+  1309→| `bomCode`     | string | min 1                            | required    |
+  1310→| `bomName`     | string | min 1                            | required    |
+  1311→| `productId`   | uuid   | required                         | —           |
+  1312→| `productSku`  | string | optional                         | —           |
+  1313→| `productName` | string | optional                         | —           |
+  1314→| `bomType`     | string |                                  | `STANDARD`  |
+  1315→| `description` | string | optional                         | —           |
+  1316→| `lines`       | array  | min 1, of `bomLineSchema`        | required    |
+  1317→
+  1318→### 11.7 DTO: `bomLineSchema`
+  1319→
+  1320→| Field                | Type    | Validation             | Default |
+  1321→|----------------------|---------|------------------------|---------|
+  1322→| `parentBomLineId`    | uuid    | optional               | —       |
+  1323→| `productId`          | uuid    | required               | —       |
+  1324→| `productSku`         | string  | optional               | —       |
+  1325→| `productName`        | string  | optional               | —       |
+  1326→| `uomId`              | uuid    | optional               | —       |
+  1327→| `uomCode`            | string  | optional               | —       |
+  1328→| `quantity`           | number  | positive               | required|
+  1329→| `scrapPercent`       | number  | non-negative           | 0       |
+  1330→| `isPhantom`          | boolean |                        | `false` |
+  1331→| `isCritical`         | boolean |                        | `false` |
+  1332→| `leadTimeOffsetDays` | number  | int                    | 0       |
+  1333→| `level`              | number  | int, min 1             | 1       |
+  1334→| `remarks`            | string  | optional               | —       |
+  1335→
+  1336→### 11.8 DTO: `routingSchema`
+  1337→
+  1338→| Field           | Type   | Validation                  |
+  1339→|-----------------|--------|-----------------------------|
+  1340→| `routingCode`   | string | min 1                       |
+  1341→| `routingName`   | string | min 1                       |
+  1342→| `productId`     | uuid   | optional                    |
+  1343→| `bomId`         | uuid   | optional                    |
+  1344→| `description`   | string | optional                    |
+  1345→| `operations`    | array  | min 1, of operation object  |
+  1346→
+  1347→### 11.9 DTO: routing operation (nested)
+  1348→
+  1349→| Field                  | Type    | Validation             | Default |
+  1350→|------------------------|---------|------------------------|---------|
+  1351→| `operationNo`          | number  | int, positive, optional| auto    |
+  1352→| `operationName`        | string  | min 1                  | required|
+  1353→| `operationDescription` | string  | optional               | —       |
+  1354→| `workCenterId`         | uuid    | optional               | —       |
+  1355→| `workCenterCode`       | string  | optional               | —       |
+  1356→| `machineId`            | uuid    | optional               | —       |
+  1357→| `machineCode`          | string  | optional               | —       |
+  1358→| `setupTimeMinutes`     | number  | int, non-negative      | 0       |
+  1359→| `runTimeMinutes`       | number  | int, non-negative      | 0       |
+  1360→| `laborRequired`        | boolean |                        | `true`  |
+  1361→| `skillLevel`           | string  | optional               | —       |
+  1362→
+  1363→### 11.10 Business rules
+  1364→
+  1365→1. Recipe must have at least one item.
+  1366→2. `yieldPercent + expectedLossPercent ≤ 100`.
+  1367→3. Recipe cost auto-calculated from items (unitCost × quantity).
+  1368→4. BOM must have at least one line.
+  1369→5. BOM supports multi-level via `parentBomLineId` and `level`.
+  1370→6. Phantom BOM lines are exploded recursively in `explodeBom`.
+  1371→7. Recipe approval sets `approvedBy`, `approvedByName`, `approvedAt`.
+  1372→
+  1373→### 11.11 Database tables touched (raw SQL)
+  1374→
+  1375→`recipes`, `recipe_items`, `recipe_byproducts`, `bom_headers`, `bom_lines`, `routings`, `routing_operations`
+  1376→
+  1377→---
+  1378→
+  1379→## 12. Module: `product-costing` — Product Cost (Prisma-backed)
+  1380→
+  1381→**Mount**: `/api/v1/finance/costing`
+  1382→**File**: `apps/backend/src/modules/product-costing/routes/index.ts` (95 lines)
+  1383→**Permission family**: PROXY — `READ_PERM = AUDIT_READ`, `WRITE_PERM = AUDIT_READ` (same!)
+  1384→**Workflow**: Service references `'ProductCostLifecycle'` but no workflow file exists in this module. Transition endpoint will fail.
+  1385→
+  1386→### 12.1 Endpoints
+  1387→
+  1388→| Method | Path                                       | Permission (effective) | Description                              | Audit | Event                                |
+  1389→|--------|--------------------------------------------|------------------------|------------------------------------------|-------|--------------------------------------|
+  1390→| GET    | `/api/v1/finance/costing`                  | `audit:read`           | List product_costs                       | No    | No                                   |
+  1391→| GET    | `/api/v1/finance/costing/count`            | `audit:read`           | Count                                    | No    | No                                   |
+  1392→| GET    | `/api/v1/finance/costing/exists/:code`     | `audit:read`           | Check existence by `cost_id`             | No    | No                                   |
+  1393→| GET    | `/api/v1/finance/costing/:id`              | `audit:read`           | Get by ID                                | No    | No                                   |
+  1394→| POST   | `/api/v1/finance/costing`                  | `audit:read`           | Create (requires `cost_id` field)        | Yes   | `ProductCostCalculated`              |
+  1395→| PUT    | `/api/v1/finance/costing/:id`              | `audit:read`           | Update (optimistic concurrency)          | Yes   | No                                   |
+  1396→| DELETE | `/api/v1/finance/costing/:id`              | `audit:read`           | Soft-delete (?reason=)                   | Yes   | No                                   |
+  1397→| POST   | `/api/v1/finance/costing/:id/transition`   | `audit:read`           | Workflow transition (targetState, reason)| Yes   | `ProductCostTransitioned`            |
+  1398→
+  1399→### 12.2 Schema
+  1400→
+  1401→Route accepts arbitrary JSON. Service only validates that `cost_id` field is present. Prisma model `ProductCosts` is referenced but NOT explicitly defined in `schema.prisma` (gap).
+  1402→
+  1403→### 12.3 Same RBAC + workflow gaps as gst-taxation (§10.3, §10.4)
+  1404→
+  1405→---
+  1406→
+  1407→## 13. Module: `financial-foundation` — Chart of Accounts, Fiscal Years/Periods, Cost Centers, Profit Centers, Currencies, Exchange Rates
+  1408→
+  1409→**Mount**: `/api/v1/finance/foundation`
+  1410→**File**: `apps/backend/src/modules/financial-foundation/routes/index.ts` (29 lines, condensed one-liners)
+  1411→**Permission family**: PROXY — `FR = AUDIT_READ = 'audit:read'`, `FU = AUDIT_READ_CRITICAL = 'audit:read:critical'`
+  1412→**Workflow**: `FinancialFoundationJournalEntryLifecycle` (DRAFT→POSTED→REVERSED→CANCELLED) — but no endpoints expose JE transitions.
+  1413→
+  1414→### 13.1 Endpoints
+  1415→
+  1416→| Method | Path                                                  | Permission (effective) | Description                          | Audit | Event |
+  1417→|--------|-------------------------------------------------------|------------------------|--------------------------------------|-------|-------|
+  1418→| GET    | `/api/v1/finance/foundation/accounts`                 | `audit:read`           | List chart of accounts               | No    | No    |
+  1419→| POST   | `/api/v1/finance/foundation/accounts`                 | `audit:read:critical`  | Create account                       | Yes   | No    |
+  1420→| GET    | `/api/v1/finance/foundation/fiscal-years`             | `audit:read`           | List fiscal years                    | No    | No    |
+  1421→| POST   | `/api/v1/finance/foundation/fiscal-years`             | `audit:read:critical`  | Create fiscal year (auto-creates 12 periods) | Yes | No |
+  1422→| GET    | `/api/v1/finance/foundation/fiscal-periods`           | `audit:read`           | List fiscal periods                  | No    | No    |
+  1423→| POST   | `/api/v1/finance/foundation/fiscal-periods/close`     | `audit:read:critical`  | Close a fiscal period                | Yes (`PERIOD_CLOSED`) | No |
+  1424→| GET    | `/api/v1/finance/foundation/cost-centers`             | `audit:read`           | List cost centers                    | No    | No    |
+  1425→| POST   | `/api/v1/finance/foundation/cost-centers`             | `audit:read:critical`  | Create cost center                   | Yes   | No    |
+  1426→| GET    | `/api/v1/finance/foundation/profit-centers`           | `audit:read`           | List profit centers                  | No    | No    |
+  1427→| POST   | `/api/v1/finance/foundation/profit-centers`           | `audit:read:critical`  | Create profit center                 | Yes   | No    |
+  1428→| GET    | `/api/v1/finance/foundation/currencies`               | `audit:read`           | List currencies                      | No    | No    |
+  1429→| POST   | `/api/v1/finance/foundation/currencies`               | `audit:read:critical`  | Create currency                      | Yes   | No    |
+  1430→| GET    | `/api/v1/finance/foundation/exchange-rates`           | `audit:read`           | List exchange rates                  | No    | No    |
+  1431→| POST   | `/api/v1/finance/foundation/exchange-rates`           | `audit:read:critical`  | Set exchange rate                    | Yes (`SET_EXCHANGE_RATE`) | No |
+  1432→
+  1433→### 13.2 DTO: `accSchema` (Chart of Accounts)
+  1434→
+  1435→| Field               | Type    | Validation                                                                          | Default |
+  1436→|---------------------|---------|-------------------------------------------------------------------------------------|---------|
+  1437→| `accountCode`       | string  | min 1                                                                               | required|
+  1438→| `accountName`       | string  | min 1                                                                               | required|
+  1439→| `accountType`       | enum    | `ASSET`/`LIABILITY`/`EQUITY`/`REVENUE`/`EXPENSE`/`COGS`                            | required|
+  1440→| `accountSubtype`    | string  | optional                                                                            | —       |
+  1441→| `parentAccountId`   | uuid    | optional                                                                            | —       |
+  1442→| `isPostable`        | boolean |                                                                                     | `true`  |
+  1443→| `openingBalance`    | number  |                                                                                     | 0       |
+  1444→| `currency`          | string  |                                                                                     | `INR`   |
+  1445→| `description`       | string  | optional                                                                            | —       |
+  1446→
+  1447→### 13.3 DTO: `fySchema` (Fiscal Year)
+  1448→
+  1449→| Field          | Type   | Validation    |
+  1450→|----------------|--------|---------------|
+  1451→| `fiscalYear`   | string | min 1         |
+  1452→| `startDate`    | string | required      |
+  1453→| `endDate`      | string | required      |
+  1454→| `description`  | string | optional      |
+  1455→
+  1456→### 13.4 DTO: `ccSchema` (Cost Center)
+  1457→
+  1458→| Field          | Type   | Validation   |
+  1459→|----------------|--------|--------------|
+  1460→| `ccCode`       | string | min 1        |
+  1461→| `ccName`       | string | min 1        |
+  1462→| `parentCcId`   | uuid   | optional     |
+  1463→| `companyId`    | uuid   | optional     |
+  1464→| `companyName`  | string | optional     |
+  1465→| `plantId`      | uuid   | optional     |
+  1466→| `plantName`    | string | optional     |
+  1467→| `description`  | string | optional     |
+  1468→
+  1469→### 13.5 DTO: `pcSchema` (Profit Center)
+  1470→
+  1471→| Field          | Type   | Validation   |
+  1472→|----------------|--------|--------------|
+  1473→| `pcCode`       | string | min 1        |
+  1474→| `pcName`       | string | min 1        |
+  1475→| `parentPcId`   | uuid   | optional     |
+  1476→| `companyId`    | uuid   | optional     |
+  1477→| `companyName`  | string | optional     |
+  1478→| `description`  | string | optional     |
+  1479→
+  1480→### 13.6 DTO: `currSchema` (Currency)
+  1481→
+  1482→| Field             | Type    | Validation | Default |
+  1483→|-------------------|---------|------------|---------|
+  1484→| `currencyCode`    | string  | min 1      | required|
+  1485→| `currencyName`    | string  | min 1      | required|
+  1486→| `symbol`          | string  | optional   | —       |
+  1487→| `decimalPlaces`   | number  | int        | 2       |
+  1488→| `isBaseCurrency`  | boolean |            | `false` |
+  1489→
+  1490→### 13.7 DTO: `erSchema` (Exchange Rate)
+  1491→
+  1492→| Field          | Type   | Validation             | Default |
+  1493→|----------------|--------|------------------------|---------|
+  1494→| `fromCurrency` | string | min 1                  | required|
+  1495→| `toCurrency`   | string | min 1                  | required|
+  1496→| `rate`         | number | positive               | required|
+  1497→| `rateDate`     | string | required               | —       |
+  1498→| `rateType`     | string |                        | `DAILY` |
+  1499→
+
+[showing lines 1100-1499 of 2232; use offset=1500 with limit to continue reading]

@@ -1,0 +1,937 @@
+     1→# Section 03 — Master Data Management Frontend Exploration Findings
+     2→
+     3→**Task ID**: SECTION03-FE-EXPLORE
+     4→**Date**: 2026-07-12
+     5→**Source file**: `/home/z/my-project/src/app/page.tsx` (38,131 lines)
+     6→**Explorer agent**: Section 03 Frontend Explore
+     7→
+     8→---
+     9→
+    10→## 1. Executive Summary
+    11→
+    12→Section 03 — Master Data Management in the SUOP frontend is implemented as **6 large "super modules"** under the sidebar group `"Master Data (Sprint 6-11) — PART 2 COMPLETE"`, plus **3 related modules** in other sidebar sections that hold master entities (Organization tree, Warehouse + Locations, Plant Master). The 6 super modules consolidate **19 conceptual master sub-domains** (Product, Categories, Brand, UOM, HSN/SAC, Tax, Customer, Supplier, Company, Plant, Warehouse, Storage Location, Cost Center, Department, Currency, Payment Terms, Shipping Terms, Price Lists, Reference Masters) into a tab-based UI.
+    13→
+    14→**Critical finding**: Only **1 of 9** master-related modules is wired to a real backend API (OrganizationModule). The other 8 use **hardcoded inline mock data arrays**. Backend API clients exist for product, customer, supplier, warehouse, organization, inventory (in `/src/modules/*/api/client.ts`) but **NONE are imported into page.tsx**. The modular React components in `/src/modules/*/components/*.tsx` (ProductModule.tsx, CustomerModule.tsx, SupplierModule.tsx, WarehouseModule.tsx, OrganizationModule.tsx) are also **NOT imported into page.tsx** — they exist as dead/orphan code.
+    15→
+    16→**Overall Section 03 Production Readiness Score**: **3.2 / 10**
+    17→- Organization Module: 7.5/10 (only one with real API + create flow)
+    18→- Product Master: 2/10 (mock only, no create, no detail)
+    19→- PIM: 2/10 (mock only)
+    20→- Commercial Engine (incl. Price Lists, Tax, Discounts, Promotions): 3/10 (mock + 1 mini-service endpoint)
+    21→- Business Partner (incl. Customer, Supplier, Groups, Banking, Compliance, Scorecards): 2.5/10 (mock only)
+    22→- Identification (incl. Barcodes, QR, Batches, Lots, Serials, GS1, Labels, Print, Traceability): 3/10 (mock + 1 mini-service endpoint)
+    23→- Data Governance: 2/10 (mock only)
+    24→- Warehouse: 2/10 (mock only, large `WHM_*` const arrays)
+    25→- Warehouse Locations & Bins: 2/10 (mock only, large `WH_LOC_*` const arrays)
+    26→- Plant Master: 2.5/10 (mock + create form state but no API call)
+    27→
+    28→**Section 03 total line range in page.tsx**:
+    29→- Primary block: **lines 1833 – 4378** (2,546 lines, the 6 master super modules)
+    30→- Related master modules elsewhere:
+    31→  - Warehouse Master + Locations: **lines 8410 – 9392** (983 lines, Sprint 22/23 Part 4 WMS)
+    32→  - Plant Master: **lines 16342 – 16439** (98 lines, Part 5 Manufacturing)
+    33→  - Organization Module (Company + Plant + Warehouse + Department + Cost Center unified hierarchy): **lines 666 – 919** (254 lines, Section 01)
+    34→
+    35→---
+    36→
+    37→## 2. Sidebar Navigation — Master Data Items
+    38→
+    39→`SIDEBAR_SECTIONS` is defined starting at **line 151**.
+    40→
+    41→### Master Data sidebar group (lines 159-167)
+    42→```ts
+    43→section: 'Master Data (Sprint 6-11) — PART 2 COMPLETE'
+    44→items: [
+    45→  { name: 'Product Master',           module: 'products',        icon: Package },
+    46→  { name: 'PIM Platform',             module: 'pim',             icon: Layers },
+    47→  { name: 'Commercial Engine',        module: 'commercial',      icon: IndianRupee },
+    48→  { name: 'Business Partners',        module: 'partners',        icon: Users2 },
+    49→  { name: 'Identification & Traceability', module: 'identification', icon: ScanLine },
+    50→  { name: 'Data Governance',          module: 'governance',      icon: ShieldCheck },
+    51→]
+    52→```
+    53→
+    54→### Platform sidebar group (lines 170-176) — also masters
+    55→- `organization` → `OrganizationModule` (Company + Plant + Warehouse tree)
+    56→- `rbac` → `RBACModule` (Section 02)
+    57→- `settings` → `SettingsModule`
+    58→
+    59→### Operations sidebar group (lines 178-222) — masters for warehouse/storage
+    60→- `warehouse` → `WarehouseModule` (Warehouse Master + Zones + Temp Zones + Rules)
+    61→- `whlocations` → `WarehouseLocationModule` (Storage Bins + Aisles + Racks)
+    62→
+    63→### Manufacturing sidebar group (lines 250-294) — Plant Master
+    64→- `plantmaster` → `PlantMasterModule`
+    65→
+    66→### Module dispatch (lines 36528-36762)
+    67→```tsx
+    68→{activeModule === 'organization'    && <OrganizationModule />}    // line 36528
+    69→{activeModule === 'products'        && <ProductMasterModule />}   // line 36530
+    70→{activeModule === 'pim'             && <PIMModule />}             // line 36531
+    71→{activeModule === 'commercial'      && <CommercialEngineModule />}// line 36532
+    72→{activeModule === 'partners'        && <BusinessPartnerModule />}// line 36533
+    73→{activeModule === 'identification'  && <IdentificationModule />}  // line 36534
+    74→{activeModule === 'governance'      && <GovernanceModule />}      // line 36535
+    75→{activeModule === 'warehouse'       && <WarehouseModule />}       // line 36546
+    76→{activeModule === 'whlocations'     && <WarehouseLocationModule />}// line 36547
+    77→{activeModule === 'plantmaster'     && <PlantMasterModule />}     // line 36592
+    78→```
+    79→
+    80→---
+    81→
+    82→## 3. Module-by-Module Breakdown
+    83→
+    84→### 3.1 Product Master — `ProductMasterModule()`
+    85→
+    86→| Attribute | Value |
+    87→|---|---|
+    88→| Line range | **1833 – 1903** |
+    89→| Sidebar item | "Product Master" → module `products` |
+    90→| State hooks | `useState` × 1 (`search`) |
+    91→| useEffect | 0 |
+    92→| API calls | **0** (pure mock) |
+    93→| Permission checks | **0** (no `hasPermission` calls) |
+    94→| Backend wiring | ❌ NONE |
+    95→| Production readiness | **2/10** |
+    96→
+    97→**Mock data arrays** (hardcoded inline):
+    98→- `products` (line 1834) — 6 items: Kaju Katli 250g/500g, Badam Pista Roll, Chocolate Wafer, Raw Sugar 50kg, Gift Box 250g. Fields: `upi, code, sku, name, type, status, brand, mrp, stock`.
+    99→
+   100→**Functions**: 0 named functions inside (just one filter expression `filtered`).
+   101→
+   102→**Form fields / validation**: NONE — no create/edit form. The "New Product" button (line 1875) has no `onClick`.
+   103→
+   104→**Table columns** (line 1881): UPI, Product, SKU, Brand, MRP, Stock, Status.
+   105→
+   106→**UI elements**:
+   107→- 4 stat cards (Total Products=12, Active=10, Product Types=11, With UPI=12) — hardcoded values, not from `products.length`
+   108→- Search input (`search` state)
+   109→- Import button (no handler), Export button (no handler), New Product button (no handler)
+   110→- 1 read-only table
+   111→
+   112→**Critical issues**:
+   113→- 100% mock data, no API
+   114→- No create/edit/detail flow — completely non-functional
+   115→- Stats hardcoded (12, 10, 11, 12) — not derived from data
+   116→- The richer `src/modules/product/components/ProductModule.tsx` (221 lines) with real API calls exists but is **not imported** into page.tsx
+   117→
+   118→---
+   119→
+   120→### 3.2 PIM Platform — `PIMModule()`
+   121→
+   122→| Attribute | Value |
+   123→|---|---|
+   124→| Line range | **1906 – 1986** |
+   125→| Sidebar item | "PIM Platform" → module `pim` |
+   126→| State hooks | 0 |
+   127→| API calls | **0** |
+   128→| Backend wiring | ❌ NONE |
+   129→| Production readiness | **2/10** |
+   130→
+   131→**Mock data arrays**:
+   132→- `families` (line 1907) — 4 product families (Indian Sweets, Namkeen, Bakery, Beverages)
+   133→- `compliance` (line 1913) — 3 compliance records (FSSAI/HACCP for Kaju Katli + Chocolate Wafer)
+   134→- `approvals` (line 1918) — 3 approval queue items
+   135→
+   136→**Functions**: 0.
+   137→
+   138→**UI elements**:
+   139→- 4 stat cards (Families=6, Collections=5, Pending Approvals=2, Compliance Records=6) — hardcoded
+   140→- Product Families card grid (4 items)
+   141→- Compliance list (3 items)
+   142→- Approval Queue list (3 items)
+   143→- Product Usage Matrix table (3 hardcoded rows: Kaju Katli 250g, Sugar 50kg, Gift Box)
+   144→
+   145→**Critical issues**: 100% mock, no API, no create flows.
+   146→
+   147→---
+   148→
+   149→### 3.3 Commercial Engine — `CommercialEngineModule()` + 10 sub-tabs
+   150→
+   151→| Attribute | Value |
+   152→|---|---|
+   153→| Line range | **1991 – 2611** (sub-tabs span 2048-2611) |
+   154→| Sidebar item | "Commercial Engine" → module `commercial` |
+   155→| Tab type | `CommercialTab = 'overview' \| 'priceLists' \| 'tax' \| 'discounts' \| 'promotions' \| 'futurePrices' \| 'approvals' \| 'cost' \| 'rules' \| 'resolution'` (line 1989) |
+   156→| State hooks | 1 in shell + 5 in `ResolutionTab` |
+   157→| API calls | **1 real** (POST `http://localhost:3030/api/commercial/resolve-price` from `ResolutionTab.resolve()` at line 2463) |
+   158→| Backend wiring | ⚠️ PARTIAL — 1 mini-service endpoint (NOT `/api/v1/...`) |
+   159→| Production readiness | **3/10** |
+   160→
+   161→**Tab components**:
+   162→
+   163→| Tab | Function | Lines | Mock array | Items |
+   164→|---|---|---|---|---|
+   165→| overview | `CommercialOverviewTab` | 2048-2096 | `stats` | 8 stat cards |
+   166→| priceLists | `PriceListsTab` | 2098-2147 | `lists` | 6 price lists |
+   167→| tax | `TaxTab` | 2149-2193 | `groups` | 6 GST groups |
+   168→| discounts | `DiscountsTab` | 2195-2238 | `discounts` | 5 discounts |
+   169→| promotions | `PromotionsTab` | 2240-2280 | `promos` | 5 promotions |
+   170→| futurePrices | `FuturePricesTab` | 2282-2319 | `prices` | 4 future prices |
+   171→| approvals | `ApprovalsTab` | 2321-2367 | `approvals` | 5 approval workflows |
+   172→| cost | `CostMarginTab` | 2369-2411 | `profiles` | 4 cost profiles |
+   173→| rules | `RulesTab` | 2413-2450 | `rules` | 5 commercial rules |
+   174→| resolution | `ResolutionTab` | 2452-2611 | (live API + fallback `mockChain`) | live |
+   175→
+   176→**Price Lists mock data fields** (`lists` line 2099):
+   177→- code, name, type (RETAIL/WHOLESALE/RESTAURANT/CORPORATE/FESTIVAL/EXPORT), currency (INR/USD), validFrom, priority, status, taxMode (INCLUSIVE/EXCLUSIVE), items (count)
+   178→
+   179→**Tax mock data fields** (`groups` line 2150):
+   180→- code (GST-0, GST-5, GST-12, GST-18, GST-28, CESS-5), name, type (EXEMPT/GST/CESS), rates [{c, r}], status
+   181→- Hardcoded GST slabs: 0/5/12/18/28% + 5% Cess
+   182→
+   183→**Discounts mock** (`discounts` line 2196): 5 types — PERCENTAGE, FLAT, VOLUME, CUSTOMER (+ COUPON supported but not shown). Fields: code, name, type, value, kind, max, stackable, status.
+   184→
+   185→**Promotions mock** (`promos` line 2241): 5 promos. Fields: code, name, type (AUTOMATIC/COUPON), offer (PERCENT_OFF/FLAT_OFF/BUY_X_GET_Y), value, channels, validFrom, validTo, used, max, priority, status.
+   186→
+   187→**Approvals mock** (`approvals` line 2322): 5 workflows with stages DRAFT → PRICING_TEAM → FINANCE → MANAGEMENT → APPROVED → PUBLISHED. SLA tracking.
+   188→
+   189→**Cost & Margin mock** (`profiles` line 2370): 4 products × 4 costing methods (FIFO/WEIGHTED_AVERAGE/STANDARD/LAST_PURCHASE). Tracks purchase/average/fifo/weighted/standard/last/total/selling/margin%.
+   190→
+   191→**Rules mock** (`rules` line 2414): 5 rules. Enforcement types: HARD_BLOCK, OVERRIDE_WITH_REASON, WARN.
+   192→
+   193→**Resolution Tab** (lines 2452-2611):
+   194→- State: `productId`, `quantity`, `channel` (RETAIL_POS/RESTAURANT_POS/ERP/ECOMMERCE/CUSTOMER_PORTAL), `customerId`, `result`, `loading`
+   195→- `resolve()` function (line 2460) POSTs to `http://localhost:3030/api/commercial/resolve-price` (NOT `/api/v1/...` — this is the mini-service endpoint)
+   196→- Try/catch falls back to a fully simulated response object with `resolutionTrace` audit trail (lines 2476-2500). The fallback note explicitly says: `'Backend offline — showing simulated resolution. Start backend: cd mini-services/suop-backend && bun run index.ts'`
+   197→
+   198→**Critical issues**:
+   199→- 9 of 10 tabs are 100% mock
+   200→- The 1 real API call hits `/api/commercial/resolve-price` (mini-service, NOT the main `/api/v1/...` REST API)
+   201→- Hardcoded fallback logic that fabricates a plausible response with mock discount/promo codes (DISC-5PCT, PROMO-WEEKEND)
+   202→- The buttons "New Price List", "New Tax Group", "New Discount", "New Promotion", "Schedule Price Change", "New Rule" have **no onClick handlers** — purely decorative
+   203→
+   204→---
+   205→
+   206→### 3.4 Business Partner Platform — `BusinessPartnerModule()` + 10 sub-tabs
+   207→
+   208→| Attribute | Value |
+   209→|---|---|
+   210→| Line range | **2616 – 3154** |
+   211→| Sidebar item | "Business Partners" → module `partners` |
+   212→| Tab type | `BPTab = 'overview' \| 'partners' \| 'addresses' \| 'contacts' \| 'financial' \| 'compliance' \| 'groups' \| 'banking' \| 'relationships' \| 'scorecards'` (line 2614) |
+   213→| State hooks | 1 in shell |
+   214→| API calls | **0** |
+   215→| Backend wiring | ❌ NONE |
+   216→| Production readiness | **2.5/10** |
+   217→
+   218→**IMPORTANT**: This module consolidates Customer Master + Supplier Master + Transporter + Franchisee + Corporate + Delivery Partner + Service Provider into a single unified "Business Partner" entity (the SAP-style approach explicitly described at lines 2722-2744). There is **NO separate Customer Master or Supplier Master** in page.tsx.
+   219→
+   220→**Tab components**:
+   221→
+   222→| Tab | Function | Lines | Mock array | Items |
+   223→|---|---|---|---|---|
+   224→| overview | `BPOverviewTab` | 2673-2747 | `stats`, `roleBreakdown` | 8 stats + 10 roles |
+   225→| partners | `BPPartnersTab` | 2749-2810 | `partners` | 10 partners |
+   226→| addresses | `BPAddressesTab` | 2812-2847 | `addresses` | 8 addresses |
+   227→| contacts | `BPContactsTab` | 2849-2889 | `contacts` | 7 contacts |
+   228→| financial | `BPFinancialTab` | 2891-2935 | `profiles` | 10 financial profiles |
+   229→| compliance | `BPComplianceTab` | 2937-2981 | `compliance` | 9 compliance records |
+   230→| groups | `BPGroupsTab` | 2983-3024 | `groups` | 10 groups |
+   231→| banking | `BPBankingTab` | 3026-3068 | `accounts` | 8 bank accounts |
+   232→| relationships | `BPRelationshipsTab` | 3070-3106 | `relationships` | 5 relationships |
+   233→| scorecards | `BPScorecardsTab` | 3108-3154 | `scorecards` | 6 scorecards |
+   234→
+   235→**Partners mock data** (`partners` line 2750) — 10 partners across 10 roles:
+   236→- Tata Consumer Products (CUSTOMER + CORPORATE, ₹50L credit, LOW risk 12.5)
+   237→- Konkan Cashew Processors (SUPPLIER + MANUFACTURER, ₹10L credit, LOW risk 18)
+   238→- Sri Balaji Sugar (SUPPLIER, ₹25L credit, MEDIUM risk 35)
+   239→- Blue Dart Express (TRANSPORTER + DELIVERY_PARTNER, ₹5L credit, LOW risk 15)
+   240→- Reliance Retail (CUSTOMER + DISTRIBUTOR + RETAIL_OUTLET, ₹80L credit, LOW risk 8)
+   241→- Sudhamrit Franchise Andheri (FRANCHISE + RETAIL_OUTLET, ₹5L credit, MEDIUM risk 28)
+   242→- Amul (SUPPLIER + DISTRIBUTOR, ₹30L credit, LOW risk 10)
+   243→- Infosys (CUSTOMER + CORPORATE + SERVICE_PROVIDER, ₹20L credit, LOW risk 5)
+   244→- Mumbai Packaging Solutions (SUPPLIER, ₹8L credit, MEDIUM risk 32)
+   245→- Zomato (DELIVERY_PARTNER + SERVICE_PROVIDER, ₹3L credit, LOW risk 20)
+   246→
+   247→Each partner has: `id, code, name, type, roles[], gst, credit, risk, riskScore, status`
+   248→
+   249→**Addresses mock** (line 2813): 9 address types supported (REGISTERED_OFFICE, BILLING, SHIPPING, FACTORY, WAREHOUSE, BRANCH, RESTAURANT, PICKUP, RETURN). 8 addresses shown.
+   250→
+   251→**Contacts mock** (line 2850): 7 contacts. Fields: partner, name, designation, email, mobile, primary.
+   252→
+   253→**Financial Profiles mock** (line 2892): 10 partners with creditLimit, outstanding, available, creditDays, currency (all INR), paymentMode (CREDIT), paymentTerms (NET_15/30/45/60, CASH, ADVANCE), taxCategory (REGISTERED/COMPOSITION), risk.
+   254→
+   255→**Compliance mock** (line 2938): 9 records. 8 compliance types: GST, PAN, MSME, FSSAI, IEC, ISO, Agreements, Insurance.
+   256→
+   257→**Groups mock** (line 2984): 10 groups (5 customer groups: Retail/Wholesale/Corporate/VIP/Export, 5 supplier groups: Raw Material/Packaging/Transport/Maintenance/Utility).
+   258→
+   259→**Banking mock** (line 3027): 8 bank accounts. Account numbers masked (**** **** **** 4521). Verified flag.
+   260→
+   261→**Relationships mock** (line 3071): 5 relationships (CUSTOMER_OF, SUBSIDIARY, PREFERRED_SUPPLIER, STRATEGIC_PARTNER, FRANCHISE).
+   262→
+   263→**Scorecards mock** (line 3109): 6 quarterly scorecards with onTime, accuracy, quality, complaints, payment, response metrics + composite overall + letter grade (A+/A/B/C/D).
+   264→
+   265→**Critical issues**:
+   266→- 100% mock data, no API
+   267→- No create/edit/detail flow — buttons "New Partner", "New Address", "New Contact", "Add Compliance", "New Group", "Add Bank Account", "New Relationship", "New Scorecard" all have no onClick handlers
+   268→- No permission checks (`hasPermission` never called)
+   269→- Backend has `customerApi` and `supplierApi` clients ready, but unused
+   270→- The richer `src/modules/customer/components/CustomerModule.tsx` (171 lines) and `src/modules/supplier/components/SupplierModule.tsx` (177 lines) exist but are **not imported** into page.tsx
+   271→
+   272→---
+   273→
+   274→### 3.5 Identification & Traceability — `IdentificationModule()` + 10 sub-tabs
+   275→
+   276→| Attribute | Value |
+   277→|---|---|
+   278→| Line range | **3159 – 3808** |
+   279→| Sidebar item | "Identification & Traceability" → module `identification` |
+   280→| Tab type | `IDTab = 'overview' \| 'barcodes' \| 'qrcodes' \| 'batches' \| 'lots' \| 'serials' \| 'gs1' \| 'labels' \| 'print' \| 'traceability'` (line 3157) |
+   281→| State hooks | 1 in shell + 4 in `IDTraceabilityTab` |
+   282→| API calls | **1 real** (POST `http://localhost:3030/api/identification/trace` from `IDTraceabilityTab.trace()` at line 3706) |
+   283→| Backend wiring | ⚠️ PARTIAL — 1 mini-service endpoint |
+   284→| Production readiness | **3/10** |
+   285→
+   286→**Tab components**:
+   287→
+   288→| Tab | Function | Lines | Mock array | Items |
+   289→|---|---|---|---|---|
+   290→| overview | `IDOverviewTab` | 3216-3274 | `stats` | 8 stats + alerts |
+   291→| barcodes | `IDBarcodesTab` | 3276-3322 | `barcodes` | 8 barcodes |
+   292→| qrcodes | `IDQRCodesTab` | 3324-3366 | `qrcodes` | 6 QR codes |
+   293→| batches | `IDBatchesTab` | 3368-3430 | `batches` | 8 batches |
+   294→| lots | `IDLotsTab` | 3432-3481 | `lots` | 7 lots |
+   295→| serials | `IDSerialsTab` | 3483-3537 | `serials` | 5 serials |
+   296→| gs1 | `IDGS1Tab` | 3539-3578 | `gs1` | 6 GS1 IDs |
+   297→| labels | `IDLabelsTab` | 3581-3630 | `templates` | 8 label templates |
+   298→| print | `IDPrintTab` | 3632-3678 | `jobs` | 6 print jobs |
+   299→| traceability | `IDTraceabilityTab` | 3680-3808 | (live API + fallback `mockChain`) | live |
+   300→
+   301→**Barcodes mock** (line 3277): 9 supported types (EAN_13, EAN_8, UPC_A, UPC_E, CODE_128, CODE_39, GS1_128, ITF_14, INTERNAL). 8 barcodes shown for Kaju Katli 250g/500g, Soan Cake, Mixed Namkeen, Gulab Jamun.
+   302→
+   303→**QR Codes mock** (line 3325): 7 purposes (PRODUCT, BATCH, WAREHOUSE, LOCATION, ASSET, INVOICE, ORDER). 6 QR codes shown. Tracks scan count + last scan timestamp.
+   304→
+   305→**Batches mock** (line 3369): 8 batches. 7 statuses: PLANNED, PRODUCED, RELEASED, QUARANTINED, BLOCKED, CONSUMED, EXPIRED. Quality grades A/B/C/REJECT.
+   306→
+   307→**Lots mock** (line 3433): 7 lots. 5 lot types: SUPPLIER_LOT, PRODUCTION_LOT, WAREHOUSE_LOT, RETURN_LOT, INSPECTION_LOT. Quality: PASSED/FAILED/PENDING/QUARANTINED.
+   308→
+   309→**Serials mock** (line 3484): 5 serials for machines/equipment/electronics. Tracks warranty + service history.
+   310→
+   311→**GS1 mock** (line 3540): 6 GS1 IDs (GTIN, GLN, SSCC, GS1-128). Company prefix `8901234` hardcoded.
+   312→
+   313→**Labels mock** (line 3582): 8 label templates. 8 types (Product, Shelf, Pallet, Batch, Location, Shipping, QR, Barcode). 5 formats (A4, Thermal, Zebra, Brother, PDF).
+   314→
+   315→**Print Jobs mock** (line 3633): 6 print jobs. 5 modes (Single, Bulk, Auto, Scheduled, Reprint). 5 printer types (Thermal, Laser, Inkjet, Bluetooth, Network).
+   316→
+   317→**Traceability Tab** (lines 3680-3808):
+   318→- State: `batchNumber` (default 'KK-2607-01'), `direction` ('forward' | 'backward'), `result`, `loading`
+   319→- `trace()` function (line 3703) POSTs to `http://localhost:3030/api/identification/trace`
+   320→- `mockChain` (lines 3686-3701) — hardcoded forward/backward trace chains
+   321→- Fallback note (line 3715): `'Backend offline — showing simulated trace. Start backend: cd mini-services/suop-backend && bun run index.ts'`
+   322→
+   323→**Critical issues**:
+   324→- 9 of 10 tabs 100% mock
+   325→- The 1 real API call hits `/api/identification/trace` (mini-service)
+   326→- No create/edit/detail flows — buttons "Generate Barcode", "Generate QR", "New Batch", "New Lot", "Assign Serial", "New GS1 ID", "New Template", "New Print Job" have no onClick handlers
+   327→- No permission checks
+   328→
+   329→---
+   330→
+   331→### 3.6 Data Governance — `GovernanceModule()` + 10 sub-tabs
+   332→
+   333→| Attribute | Value |
+   334→|---|---|
+   335→| Line range | **3813 – 4378** |
+   336→| Sidebar item | "Data Governance" → module `governance` |
+   337→| Tab type | `GovTab = 'overview' \| 'lifecycle' \| 'approvals' \| 'import' \| 'export' \| 'validation' \| 'duplicates' \| 'audit' \| 'quality' \| 'history'` (line 3811) |
+   338→| State hooks | 1 in shell |
+   339→| API calls | **0** |
+   340→| Backend wiring | ❌ NONE |
+   341→| Production readiness | **2/10** |
+   342→
+   343→**Tab components**:
+   344→
+   345→| Tab | Function | Lines | Mock array | Items |
+   346→|---|---|---|---|---|
+   347→| overview | `GovOverviewTab` | 3870-3934 | `stats` | 8 stats + data quality score 91.6 |
+   348→| lifecycle | `GovLifecycleTab` | 3936-3995 | `lifecycles` | 8 product lifecycles |
+   349→| approvals | `GovApprovalsTab` | 3997-4050 | `workflows` | 5 approval workflows |
+   350→| import | `GovImportTab` | 4052-4097 | `jobs` | 5 import jobs |
+   351→| export | `GovExportTab` | 4099-4140 | `jobs` | 4 export jobs |
+   352→| validation | `GovValidationTab` | 4142-4190 | `rules` | 10 validation rules |
+   353→| duplicates | `GovDuplicatesTab` | 4192-4245 | `duplicates` | 6 duplicates |
+   354→| audit | `GovAuditTab` | 4247-4288 | `audit` | 8 audit entries |
+   355→| quality | `GovQualityTab` | 4290-4334 | `metrics` | 12 quality metrics |
+   356→| history | `GovHistoryTab` | 4336-4378 | `history` | 6 change history entries |
+   357→
+   358→**Lifecycle mock** (line 3937): 8 lifecycle states enforced (DRAFT → UNDER_REVIEW → APPROVED → PUBLISHED → ACTIVE → INACTIVE → DISCONTINUED → ARCHIVED).
+   359→
+   360→**Approvals mock** (line 3998): 6-stage workflow (CREATOR → REVIEWER → QA → COMPLIANCE → FINANCE → PUBLISHER → COMPLETED). 3 workflow types: STANDARD, PARALLEL, CONDITIONAL.
+   361→
+   362→**Import jobs mock** (line 4053): 5 jobs with rollback support. Statuses: COMPLETED, PREVIEWING, QUEUED, ROLLBACK, FAILED. One rollback case shown.
+   363→
+   364→**Validation Rules mock** (line 4143): 10 rules across 6 types (REQUIRED, UNIQUE, RANGE, REGEX, BUSINESS_RULE, CROSS_REFERENCE) and 3 enforcement modes (BLOCK, WARN, LOG). Notable rules reference HSN regex (line 4148) and UOM required (line 4153).
+   365→
+   366→**Duplicates mock** (line 4193): 6 detection rules (Name, SKU, Barcode, HSN, Brand, Similar Names). 4 statuses (PENDING, MERGED, IGNORED, FALSE_POSITIVE).
+   367→
+   368→**Audit mock** (line 4248): 8 audit entries with action types (CREATE, UPDATE, ARCHIVE, MERGE). Tracks user, role, IP, time, fields changed, reason.
+   369→
+   370→**Quality metrics mock** (line 4291): 12 metrics across PRODUCT + BUSINESS_PARTNER entities. Overall score: 91.6 (Grade A).
+   371→
+   372→**Critical issues**:
+   373→- 100% mock, no API
+   374→- All buttons (Transition, New Workflow, New Import, New Export, New Rule, Scan Duplicates, Rollback) have no onClick handlers
+   375→- This module is supposed to be the **governance layer over all master data** but it doesn't actually interact with any of the other master modules
+   376→
+   377→---
+   378→
+   379→### 3.7 Organization Module (Company + Plant + Warehouse + Department + Cost Center hierarchy) — `OrganizationModule()`
+   380→
+   381→| Attribute | Value |
+   382→|---|---|
+   383→| Line range | **666 – 919** |
+   384→| Sidebar item | "Organization" → module `organization` (under Platform section) |
+   385→| State hooks | 9 (`selectedNode`, `tree`, `loading`, `error`, `nodeDetail`, `detailLoading`, `showCreate`, `createLoading`, `createError`, `searchQuery`) + nested `exp` in `TreeItem` |
+   386→| useEffect | 2 (load tree at line 695, load node detail at line 723) |
+   387→| API calls | **4 real** (GET hierarchy, GET company detail, POST create company, GET hierarchy reload) |
+   388→| Permission checks | **2** (`hasPermission('org:create')` at lines 859, 887) |
+   389→| Backend wiring | ✅ REAL — `http://localhost:3030/api/v1/organization/hierarchy` + `/api/v1/organization/companies` |
+   390→| Production readiness | **7.5/10** (the only fully-wired master module) |
+   391→
+   392→**Functions**:
+   393→- `handleCreate(data)` (line 747) — POSTs to `/api/v1/organization/companies` with code, name, gstin, pan, email, phone, city, state
+   394→- `filterTree(nodes, query)` (line 771) — recursive tree search by name or code
+   395→- `countByType(nodes, type)` (line 785) — recursive counter for stats
+   396→- `TreeItem({ node, depth })` (line 818) — recursive tree renderer
+   397→
+   398→**API base**: `process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3030'`
+   399→
+   400→**Endpoints used**:
+   401→1. `GET /api/v1/organization/hierarchy` (line 704) — fetch org tree
+   402→2. `GET /api/v1/organization/companies/{id}` (line 732) — fetch company detail
+   403→3. `POST /api/v1/organization/companies` (line 753) — create company
+   404→4. `GET /api/v1/organization/hierarchy` (line 760) — reload tree after create
+   405→
+   406→**Demo fallback tree** (line 681): `demoTree` with 1 enterprise, 1 company, 2 BUs, 3 plants.
+   407→
+   408→**Form fields** (Create Company dialog, line 892):
+   409→- code* (text), name* (text), gstin (15-char), pan (10-char), email, phone, city, state
+   410→- 2-column grid layout
+   411→
+   412→**Stats displayed**: enterprises, companies, plants (counted as `Plant` type), warehouses (counted as `Warehouse` type) — derived live from tree.
+   413→
+   414→**Tree node types** supported: ENTERPRISE, COMPANY, BU, BusinessUnit, DIVISION, REGION, BRANCH, Plant, PLANT, Warehouse, WAREHOUSE (each with icon mapping at line 800).
+   415→
+   416→**Critical issues**:
+   417→- Only company create flow — no edit, no delete, no create for other entity types (Plant, Warehouse, BU, etc.)
+   418→- Token sourced from `localStorage.getItem('suop_access_token')` (line 701) — works but bypasses the `getAuthToken()` helper in `src/modules/organization/api/client.ts`
+   419→- The richer `src/modules/organization/components/OrganizationModule.tsx` (749 lines) and `src/modules/organization/api/client.ts` (358 lines) with `companyApi`, `plantApi`, `warehouseApi`, `departmentApi`, `costCenterApi`, `financialYearApi`, `hierarchyApi` all exist but are **not imported** into page.tsx
+   420→- The Cost Center, Department, Financial Year masters are **only available via the unused API client** — they have no UI in page.tsx
+   421→
+   422→---
+   423→
+   424→### 3.8 Warehouse Master — `WarehouseModule()` + 5 sub-tabs
+   425→
+   426→| Attribute | Value |
+   427→|---|---|
+   428→| Line range | **8410 – 8890** (incl. mock data consts at 8340-8399) |
+   429→| Sidebar item | "Warehouse" → module `warehouse` (under Operations section) |
+   430→| Tab type | `WarehouseTab = 'overview' \| 'warehouses' \| 'zones' \| 'temperature' \| 'rules'` (inferred, not explicitly typed) |
+   431→| State hooks | 1 (`tab`) |
+   432→| API calls | **0** |
+   433→| Backend wiring | ❌ NONE |
+   434→| Production readiness | **2/10** |
+   435→
+   436→**Mock data const arrays** (defined at top of module, lines 8340-8399):
+   437→
+   438→| Array | Line | Items | Purpose |
+   439→|---|---|---|---|
+   440→| `ZONE_TYPE_COLORS` | (above 8340) | 10 types | Color map |
+   441→| `TEMP_ZONE_COLORS` | 8343 | 5 types | Color map |
+   442→| `WAREHOUSE_STATUS_COLORS` | 8351 | 4 statuses | Color map |
+   443→| `ENFORCEMENT_COLORS` | 8358 | 3 modes | Color map |
+   444→| `WHM_WAREHOUSES` | 8364 | **6 warehouses** | WH-RM-MUM, WH-PKG-MUM, WH-FG-MUM, WH-QUA-MUM, WH-RET-MUM-DC, WH-SCR-MUM-DC |
+   445→| `WHM_ZONES` | 8373 | **10 zones** | Z-RM-01..04, Z-FG-01..03, Z-QU-01..02, Z-RT-01 |
+   446→| `WHM_TEMP_ZONES` | 8386 | **4 temp zones** | TZ-AMB-01, TZ-CHL-01 (alert active), TZ-FRZ-01, TZ-HUM-01 (alert active) |
+   447→| `WHM_RULES` | 8393 | **5 rules** | MAX_BIN_WEIGHT, FEFO_ENABLED, BARCODE_MANDATORY, QUALITY_INSPECTION_REQUIRED, MAX_STACK_HEIGHT |
+   448→
+   449→**Tab components**:
+   450→
+   451→| Tab | Function | Lines | Description |
+   452→|---|---|---|---|
+   453→| overview | `WarehouseOverviewTab` | 8455-8556 | Stats (8 cards) + 8-level hierarchy diagram + PART 4 BEGUN celebration banner |
+   454→| warehouses | `WarehouseWarehousesTab` | 8557-8605 | Table of 6 warehouses from `WHM_WAREHOUSES` |
+   455→| zones | `WarehouseZonesTab` | 8607-8654 | Grid of 10 zones from `WHM_ZONES` |
+   456→| temperature | `WarehouseTemperatureTab` | 8656-8720 | 4 temp zones with sensor readings + alerts |
+   457→| rules | `WarehouseRulesTab` | 8722-8771 | 5 operating rules with enforcement modes |
+   458→
+   459→**Warehouse fields**: `id, code, name, type, company, branch, manager, city, volumeM3, weightKg, pallets, bins, hours, status, workingDays`. 11 supported types (RAW_MATERIAL, PACKAGING, FINISHED_GOODS, COLD_STORAGE, DEEP_FREEZE, RETURNS, TRANSIT, QUARANTINE, SCRAP, DISTRIBUTION_CENTER, DARK_STORE).
+   460→
+   461→**Critical issues**:
+   462→- 100% mock, no API
+   463→- No create/edit flow for warehouses, zones, temp zones, or rules
+   464→- The richer `src/modules/warehouse/components/WarehouseModule.tsx` (37 lines, just imports) and `src/modules/warehouse/api/client.ts` (51 lines with `warehouseApi.listZones/listAisles/listRacks/listBins/createBin/...`) exist but are **not imported** into page.tsx
+   465→- 1 warehouse (`WH-SCR-MUM-DC`) is in `MAINTENANCE` status — shows status handling works
+   466→
+   467→---
+   468→
+   469→### 3.9 Warehouse Location & Bins — `WarehouseLocationModule()` + 5 sub-tabs
+   470→
+   471→| Attribute | Value |
+   472→|---|---|
+   473→| Line range | **8891 – 9392** (incl. mock data consts at 8776-8856+) |
+   474→| Sidebar item | "Locations & Bins" → module `whlocations` (under Operations section) |
+   475→| Tab type | `WhLocTab = 'overview' \| 'bins' \| 'aisles' \| 'racks' \| 'capacity'` (line 8774) |
+   476→| State hooks | 1 (`tab`) |
+   477→| API calls | **0** |
+   478→| Backend wiring | ❌ NONE |
+   479→| Production readiness | **2/10** |
+   480→
+   481→**Mock data const arrays**:
+   482→
+   483→| Array | Line | Items |
+   484→|---|---|---|
+   485→| `TRAFFIC_DIRECTION_COLORS` | 8776 | 4 (ONE_WAY, TWO_WAY, FORKLIFT_ONLY, WALKING_ONLY) |
+   486→| `PICKING_LEVEL_COLORS` | 8783 | 4 (GROUND, MID, HIGH, TOP) |
+   487→| `ACCESSIBILITY_COLORS` | 8790 | 4 (EASY, MODERATE, DIFFICULT, LADDER_REQUIRED) |
+   488→| `BIN_TYPE_COLORS` | 8797 | 5 (STANDARD, BULK, PICK_FACE, CROSS_DOCK, QUARANTINE) |
+   489→| `BIN_STATUS_COLORS` | 8805 | 7 (AVAILABLE, OCCUPIED, RESERVED, BLOCKED, MAINTENANCE, CLEANING, DISABLED) |
+   490→| `BIN_TEMP_ZONE_COLORS` | 8815 | 5 (AMBIENT, CHILLED, FROZEN, DEEP_FREEZE, HUMIDITY_CONTROLLED) |
+   491→| `ALERT_TYPE_COLORS` | 8823 | 4 (FULL, OVERLOADED, UNDERUTILIZED, NEAR_FULL) |
+   492→| `WH_LOC_AISLES` | 8830 | **6 aisles** (A-F) |
+   493→| `WH_LOC_RACKS` | 8839 | **8 racks** (R-01..R-08) |
+   494→| `WH_LOC_BINS` | 8850 | **~15 bins** (bin-001..bin-015ish) with full hierarchy Warehouse→Zone→Aisle→Rack→Shelf→Bin |
+   495→
+   496→**Bin fields**: `id, warehouseCode, zoneCode, aisleCode, rackCode, shelfCode, binCode, barcode, qrCode, maxWeightKg, maxVolumeM3, currentWeightKg, currentVolumeM3, utilizationPercent, temperatureZone, binType, status, statusReason, currentItemTypes`
+   497→
+   498→**Tab components**:
+   499→
+   500→| Tab | Function | Lines | Description |
+   501→|---|---|---|---|
+   502→| overview | `WhLocOverviewTab` | 8935-9039 | 8 stats + 7-level hierarchy (Warehouse→Zone→Aisle→Rack→Shelf→Bin→Inventory) + bin naming convention (A-05-03-12) + 4-step scanner workflow |
+   503→| bins | `WhLocBinsTab` | 9040-9112 | Table of bins from `WH_LOC_BINS` with utilization bars + status badges |
+   504→| aisles | `WhLocAislesTab` | 9113-9161 | Grid of 6 aisles with traffic direction |
+   505→| racks | `WhLocRacksTab` | 9162-9214 | Grid of 8 racks with fire zones + max weight |
+   506→| capacity | `WhLocCapacityTab` | 9215-9392 | Capacity alerts dashboard with 4 alert types |
+   507→
+   508→**Critical issues**:
+   509→- 100% mock, no API
+   510→- No create/edit flow for bins, aisles, racks
+   511→- The `warehouseApi.listBins/createBin` etc. are available but unused
+   512→
+   513→---
+   514→
+   515→### 3.10 Plant Master — `PlantMasterModule()`
+   516→
+   517→| Attribute | Value |
+   518→|---|---|
+   519→| Line range | **16342 – 16439** |
+   520→| Sidebar item | "Plant Master" → module `plantmaster` (under Part 5 Manufacturing section) |
+   521→| State hooks | 1 (`showCreate`) |
+   522→| API calls | **0** |
+   523→| Permission checks | 0 |
+   524→| Backend wiring | ❌ NONE |
+   525→| Production readiness | **2.5/10** |
+   526→
+   527→**Mock data**: `plants` (line 16344) — 5 plants:
+   528→- P1 PLANT-THANE-01 (SWEET_MANUFACTURING, 2500 kg/day capacity)
+   529→- P2 PLANT-THANE-02 (NAMKEEN_MANUFACTURING, 1800 kg/day)
+   530→- P3 PLANT-BLR-01 (BATTER_PRODUCTION, 1200 kg/day)
+   531→- P4 PLANT-MUM-01 (CENTRAL_KITCHEN, 800 kg/day)
+   532→- P5 PLANT-PUN-01 (PACKAGING_PLANT, 3000 kg/day, MAINTENANCE status)
+   533→
+   534→**Fields**: `id, code, name, type, manager, city, state, capacity, operatingStart, operatingEnd, status, departments, lines, resources`
+   535→
+   536→**Functions**: 0 (uses helper `s28BadgeForStatus` defined at line 11575).
+   537→
+   538→**Stats computed live**: 6 stats (Total Plants, Active, Maintenance, Total Capacity kg/day, Total Departments, Total Lines) derived from `plants` array via `.length`, `.filter`, `.reduce` — this is one of the few places where stats are computed from data.
+   539→
+   540→**Create form** (lines 16388-16403): `showCreate` toggles a form with fields: Plant Code, Plant Name, Plant Type (select with 5 options), Manager, City, Daily Capacity (kg), Operating Start (time), Operating End (time). **"Create Plant" button has no `onClick` handler** — the form is decorative.
+   541→
+   542→**Hierarchy diagram** (lines 16375-16386): Company → Plant → Building → Department → Line → Work Center.
+   543→
+   544→**Critical issues**:
+   545→- 100% mock, no API
+   546→- Create form has no submit handler — purely visual
+   547→- The `plantApi` client in `src/modules/organization/api/client.ts` (lines 240-263) with `list`, `get`, `create`, `transition` methods exists but is **not imported** into page.tsx
+   548→- No edit/delete/transition flows
+   549→
+   550→---
+   551→
+   552→## 4. Modules from Task Description That Are NOT in page.tsx
+   553→
+   554→The task description listed 19 conceptual master modules. The following **have no UI in page.tsx**:
+   555→
+   556→| Module | Status | Backend API available? | Notes |
+   557→|---|---|---|---|
+   558→| Product Categories | ❌ No UI | ✅ `productApi.listCategories()` | Only mentioned as "Product Families" in PIM (4 families) + Validation Rule PROD-CAT-XREF |
+   559→| Brand Master | ❌ No UI | ✅ `productApi.listBrands()` | Only mentioned as Product.brand field + discount type + duplicate detection rule |
+   560→| UOM Master | ❌ No UI | ✅ `productApi.listUOMs()` | Only mentioned in Validation Rule PROD-UOM-REQ + Cycle Count varianceType WRONG_UOM |
+   561→| HSN / SAC | ❌ No UI | (not in productApi) | Only mentioned in Tax engine description + Validation Rule PROD-HSN-REGEX + duplicate detection |
+   562→| Customer Master (standalone) | ❌ No UI (consolidated) | ✅ `customerApi.list/get/create/...` | Consolidated into Business Partner Module; the dedicated `src/modules/customer/components/CustomerModule.tsx` exists but is NOT imported |
+   563→| Supplier Master (standalone) | ❌ No UI (consolidated) | ✅ `supplierApi.list/get/create/...` | Consolidated into Business Partner Module; the dedicated `src/modules/supplier/components/SupplierModule.tsx` exists but is NOT imported |
+   564→| Cost Center | ❌ No UI | ✅ `costCenterApi.list/create` | Only available in unused `organization/api/client.ts` |
+   565→| Department | ❌ No UI (as master) | ✅ `departmentApi.list/create` | Production Departments exist (line 16442 `ProductionDepartmentsModule`) but that's manufacturing-specific, not the org-wide Department master |
+   566→| Currency | ❌ No UI | (not in any client) | Only mentioned as Price Lists currency field (INR, USD hardcoded) |
+   567→| Payment Terms | ❌ No UI | (not in any client) | Only mentioned in BPFinancialTab as paymentTerms column (NET_15/30/45/60, CASH, ADVANCE) |
+   568→| Shipping Terms / Incoterms | ❌ No UI | (not in any client) | Completely absent from page.tsx |
+   569→| Reference Masters | ❌ No UI | (not in any client) | Completely absent from page.tsx |
+   570→
+   571→---
+   572→
+   573→## 5. Existing API Clients (Status Audit)
+   574→
+   575→All located under `/home/z/my-project/src/modules/*/api/client.ts`. **NONE are imported by page.tsx.**
+   576→
+   577→### 5.1 `src/modules/product/api/client.ts` (46 lines)
+   578→Exports: `productApi` with methods:
+   579→- `list({ page, search, productType, status })` → GET `/api/v1/catalog/products`
+   580→- `get(id)` → GET `/api/v1/catalog/products/{id}`
+   581→- `create(data)` → POST `/api/v1/catalog/products`
+   582→- `update(id, data, version)` → PATCH with `If-Match` header
+   583→- `delete(id, version)` → DELETE with `If-Match`
+   584→- `transition(id, targetStatus, version)` → POST `.../transition`
+   585→- `lookupBarcode(barcode)` → GET `.../barcode/{barcode}`
+   586→- `listCategories()` → GET `/api/v1/catalog/categories`
+   587→- `listBrands()` → GET `/api/v1/catalog/brands`
+   588→- `listUOMs()` → GET `/api/v1/catalog/uoms`
+   589→
+   590→Types: `Product` (23 fields), `Category`, `Brand`, `UOM`.
+   591→
+   592→### 5.2 `src/modules/customer/api/client.ts` (30 lines)
+   593→Exports: `customerApi` with methods:
+   594→- `list({ page, search, status, customerType })` → GET `/api/v1/sales/customers`
+   595→- `get(id)` → GET `/api/v1/sales/customers/{id}`
+   596→- `create(data)` → POST
+   597→- `update(id, data, version)` → PATCH
+   598→- `delete(id, version)` → DELETE
+   599→- `transition(id, targetStatus, version)` → POST `.../transition`
+   600→- `getCredit(id)` → GET `.../{id}/credit`
+   601→- `listGroups()` → GET `/api/v1/sales/customer-groups`
+   602→
+   603→Types: `Customer` (15 fields), `CustomerGroup`.
+   604→
+   605→### 5.3 `src/modules/supplier/api/client.ts` (30 lines)
+   606→Exports: `supplierApi` with methods:
+   607→- `list({ page, search, status, vendorType })` → GET `/api/v1/procurement/suppliers`
+   608→- `get(id)` → GET `/api/v1/procurement/suppliers/{id}`
+   609→- `create(data)` → POST
+   610→- `update(id, data, version)` → PATCH
+   611→- `delete(id, version)` → DELETE
+   612→- `transition(id, targetStatus, version)` → POST `.../transition`
+   613→- `blacklist(id, reason)` → POST `.../{id}/blacklist`
+   614→- `listCategories()` → GET `/api/v1/procurement/supplier-categories`
+   615→
+   616→Types: `Supplier` (16 fields), `SupplierCategory`.
+   617→
+   618→### 5.4 `src/modules/warehouse/api/client.ts` (50 lines)
+   619→Exports: `warehouseApi` with methods:
+   620→- `listZones(warehouseId)` → GET `/api/v1/warehouse/zones?warehouseId=`
+   621→- `listAisles(warehouseId)` → GET `/api/v1/warehouse/aisles?warehouseId=`
+   622→- `listRacks(warehouseId)` → GET `/api/v1/warehouse/racks?warehouseId=`
+   623→- `listBins(warehouseId, { zoneId, aisleId, rackId })` → GET `/api/v1/warehouse/bins`
+   624→- `createBin(data)` → POST `/api/v1/warehouse/bins`
+   625→- `listPutawayTasks({ page, status, warehouseId })` → GET `/api/v1/warehouse/putaway-tasks`
+   626→- `createPutawayTask(data)` → POST
+   627→- `completePutaway(id, version)` → POST `.../{id}/complete`
+   628→- `createBarcode(data)` → POST `/api/v1/warehouse/barcodes`
+   629→- `printBarcode(id)` → POST `.../barcodes/{id}/print`
+   630→- `scan(barcode, scanType)` → POST `/api/v1/warehouse/scan`
+   631→
+   632→Types: `WarehouseBin` (10 fields).
+   633→
+   634→⚠️ Note: This client only covers WMS operations (zones, aisles, racks, bins, putaway, barcodes, scan) — **does NOT cover the Warehouse Master itself** (create/update/delete a warehouse). For Warehouse Master CRUD you'd need to use `src/modules/organization/api/client.ts` → `warehouseApi.list/get/create`.
+   635→
+   636→### 5.5 `src/modules/organization/api/client.ts` (358 lines) — THE RICHEST
+   637→Exports 7 API objects:
+   638→- `companyApi` — list/get/create/update/delete/transition → `/api/v1/organization/companies`
+   639→- `plantApi` — list/get/create/transition → `/api/v1/organization/plants`
+   640→- `warehouseApi` — list/get/create → `/api/v1/organization/warehouses`
+   641→- `departmentApi` — list/create → `/api/v1/organization/departments`
+   642→- `costCenterApi` — list/create → `/api/v1/organization/cost-centers`
+   643→- `financialYearApi` — list/getCurrent/create → `/api/v1/organization/financial-years`
+   644→- `hierarchyApi.getTree()` → `/api/v1/organization/hierarchy`
+   645→
+   646→Types: `Company` (19 fields), `Plant` (14 fields), `Warehouse` (10 fields), `Department` (8 fields), `CostCenter` (8 fields), `FinancialYear` (8 fields), `HierarchyNode`.
+   647→
+   648→Token management: `setAuthToken`, `getAuthToken` (reads from `localStorage.suop_auth` JSON).
+   649→
+   650→### 5.6 `src/modules/inventory/api/client.ts` (62 lines)
+   651→Exports: `inventoryApi` with methods for inventory, ledger, transactions, reservations, blocks, expiry. Types: `Inventory` (12 fields).
+   652→
+   653→---
+   654→
+   655→## 6. Backend Endpoints Actually Used by page.tsx (Section 03)
+   656→
+   657→Only 2 mini-service endpoints + 4 organization REST endpoints:
+   658→
+   659→| Module | Endpoint | Method | Purpose |
+   660→|---|---|---|---|
+   661→| Organization | `/api/v1/organization/hierarchy` | GET | Fetch org tree |
+   662→| Organization | `/api/v1/organization/companies/{id}` | GET | Fetch company detail |
+   663→| Organization | `/api/v1/organization/companies` | POST | Create company |
+   664→| Commercial | `/api/commercial/resolve-price` | POST | Price resolution (mini-service, NOT /api/v1) |
+   665→| Identification | `/api/identification/trace` | POST | Traceability (mini-service, NOT /api/v1) |
+   666→
+   667→**Notable**: The Commercial + Identification endpoints hit the mini-service directly (no `/api/v1` prefix, no auth token). The 4 organization endpoints use `/api/v1/...` with Bearer token from `localStorage.suop_access_token`.
+   668→
+   669→---
+   670→
+   671→## 7. State Hooks Catalog (Section 03 Modules Only)
+   672→
+   673→| Module | useState count | useEffect count |
+   674→|---|---|---|
+   675→| OrganizationModule (666-919) | 9 + 1 nested | 2 |
+   676→| ProductMasterModule (1833-1903) | 1 | 0 |
+   677→| PIMModule (1906-1986) | 0 | 0 |
+   678→| CommercialEngineModule shell (1991-2046) | 1 | 0 |
+   679→| ResolutionTab (2452-2611) | 5 | 0 |
+   680→| BusinessPartnerModule shell (2616-2671) | 1 | 0 |
+   681→| IdentificationModule shell (3159-3214) | 1 | 0 |
+   682→| IDTraceabilityTab (3680-3808) | 4 | 0 |
+   683→| GovernanceModule shell (3813-3868) | 1 | 0 |
+   684→| WarehouseModule shell (8410-8453) | 1 | 0 |
+   685→| WarehouseLocationModule shell (8891-8933) | 1 | 0 |
+   686→| PlantMasterModule (16342-16439) | 1 | 0 |
+   687→| **TOTAL Section 03** | **27 useState + 2 useEffect** | |
+   688→
+   689→---
+   690→
+   691→## 8. Mock Data Arrays Catalog (Section 03)
+   692→
+   693→| Array name | Line | Module | Items | Schema |
+   694→|---|---|---|---|---|
+   695→| `products` | 1834 | ProductMaster | 6 | upi, code, sku, name, type, status, brand, mrp, stock |
+   696→| `families` | 1907 | PIM | 4 | code, name, products |
+   697→| `compliance` (PIM) | 1913 | PIM | 3 | product, type, cert, status, expiry |
+   698→| `approvals` (PIM) | 1918 | PIM | 3 | req, product, stage, status |
+   699→| `stats` (CommercialOverview) | 2049 | Commercial | 8 | label, value, sub, icon |
+   700→| `lists` (PriceLists) | 2099 | Commercial | 6 | code, name, type, currency, validFrom, priority, status, taxMode, items |
+   701→| `groups` (Tax) | 2150 | Commercial | 6 | code, name, type, rates[], status |
+   702→| `discounts` | 2196 | Commercial | 5 | code, name, type, value, kind, max, stackable, status |
+   703→| `promos` | 2241 | Commercial | 5 | code, name, type, offer, value, channels[], validFrom, validTo, used, max, priority, status |
+   704→| `prices` (FuturePrices) | 2283 | Commercial | 4 | product, current, future, change, effective, auto, status |
+   705→| `approvals` (Approvals) | 2322 | Commercial | 5 | id, type, name, stage, status, sla, breached |
+   706→| `profiles` (CostMargin) | 2370 | Commercial | 4 | product, method, purchase, average, fifo, weighted, standard, last, total, margin, selling |
+   707→| `rules` | 2414 | Commercial | 5 | code, name, type, enforcement, desc |
+   708→| `mockChain` | 3686 | IDTraceability | 5 forward + 6 backward | step, stage, entity, ... |
+   709→| `partners` | 2750 | BusinessPartner | 10 | id, code, name, type, roles[], gst, credit, risk, riskScore, status |
+   710→| `addresses` | 2813 | BusinessPartner | 8 | partner, type, line1, city, state, pincode, isDefault |
+   711→| `contacts` | 2849 | BusinessPartner | 7 | partner, name, designation, email, mobile, primary |
+   712→| `profiles` (Financial) | 2892 | BusinessPartner | 10 | partner, creditLimit, outstanding, available, creditDays, currency, paymentMode, paymentTerms, taxCategory, risk |
+   713→| `compliance` (BP) | 2938 | BusinessPartner | 9 | partner, type, number, authority, issueDate, expiry, status |
+   714→| `groups` (BP) | 2984 | BusinessPartner | 10 | code, name, type, discount, terms, members |
+   715→| `accounts` (Banking) | 3027 | BusinessPartner | 8 | partner, accountName, accountNumber, bank, branch, ifsc, type, isDefault, verified |
+   716→| `relationships` | 3071 | BusinessPartner | 5 | from, to, type, validFrom, status |
+   717→| `scorecards` | 3109 | BusinessPartner | 6 | partner, period, onTime, accuracy, quality, complaints, payment, response, overall, grade, orders, value |
+   718→| `barcodes` | 3277 | Identification | 8 | id, barcode, type, product, primary, status |
+   719→| `qrcodes` | 3325 | Identification | 6 | id, code, purpose, entity, scans, lastScan, encrypted, status |
+   720→| `batches` | 3369 | Identification | 8 | id, batch, product, mfg, exp, produced, remaining, status, grade, lots, reason? |
+   721→| `lots` | 3433 | Identification | 7 | id, lot, type, product, supplier, invoice, batch, qty, remaining, quality |
+   722→| `serials` | 3484 | Identification | 5 | id, serial, product, type, warrantyStart, warrantyEnd, status, location, lastService, nextService |
+   723→| `gs1` | 3540 | Identification | 6 | id, type, identifier, entity, entityType, prefix, check |
+   724→| `templates` (Labels) | 3582 | Identification | 8 | id, code, name, type, format, w, h, status, version, fields |
+   725→| `jobs` (Print) | 3633 | Identification | 6 | id, template, mode, entityType, printerType, printer, total, printed, status, requestedAt, completedAt, scheduledAt? |
+   726→| `lifecycles` | 3937 | Governance | 8 | id, product, state, prev, submitted, approved, published, activated, reason, transitions |
+   727→| `workflows` (Approvals) | 3998 | Governance | 5 | id, product, type, stage, status, sla, breached, steps, completed |
+   728→| `jobs` (Import) | 4053 | Governance | 5 | id, code, entity, file, format, total, success, errors, duplicates, status, initiated, completed, rollbackReason? |
+   729→| `jobs` (Export) | 4100 | Governance | 4 | id, code, entity, format, file, total, exported, size, status, initiated, completed |
+   730→| `rules` (Validation) | 4143 | Governance | 10 | code, name, entity, field, type, severity, enforcement, status |
+   731→| `duplicates` | 4193 | Governance | 6 | id, primary, duplicate, rule, score, matched[], status, action?, notes? |
+   732→| `audit` | 4248 | Governance | 8 | id, entity, type, action, module, user, role, fields[], reason, ip, time |
+   733→| `metrics` (Quality) | 4291 | Governance | 12 | entity, name, value, unit, score, desc |
+   734→| `history` | 4337 | Governance | 6 | id, product, version, type, fields[], editor, reason, time, rollback |
+   735→| `WHM_WAREHOUSES` | 8364 | Warehouse | 6 | id, code, name, type, company, branch, manager, city, volumeM3, weightKg, pallets, bins, hours, status, workingDays |
+   736→| `WHM_ZONES` | 8373 | Warehouse | 10 | id, code, name, type, warehouse, parentZone, tempZone, volumeM3, weightKg, pallets, bins, restricted, status |
+   737→| `WHM_TEMP_ZONES` | 8386 | Warehouse | 4 | id, code, name, type, warehouse, minTemp, maxTemp, targetTemp, minHum, maxHum, lastReading, lastReadingAt, alert, monitoring |
+   738→| `WHM_RULES` | 8393 | Warehouse | 5 | id, code, name, type, value, unit, enforcement, warehouse, desc |
+   739→| `WH_LOC_AISLES` | 8830 | Warehouse Locations | 6 | id, warehouseCode, warehouseName, zoneCode, zoneName, aisleCode, aisleName, description, lengthM, widthM, trafficDirection, status, rackCount, shelfCount, binCount |
+   740→| `WH_LOC_RACKS` | 8839 | Warehouse Locations | 8 | id, warehouseCode, aisleCode, rackCode, rackName, description, heightM, widthM, depthM, maxWeightKg, shelfCount, fireZone, status |
+   741→| `WH_LOC_BINS` | 8850 | Warehouse Locations | ~15 | id, warehouseCode, zoneCode, aisleCode, rackCode, shelfCode, binCode, barcode, qrCode, maxWeightKg, maxVolumeM3, currentWeightKg, currentVolumeM3, utilizationPercent, temperatureZone, binType, status, statusReason, currentItemTypes |
+   742→| `plants` | 16344 | Plant Master | 5 | id, code, name, type, manager, city, state, capacity, operatingStart, operatingEnd, status, departments, lines, resources |
+   743→
+   744→**TOTAL**: ~45 distinct mock data arrays containing **~250 hardcoded records** across Section 03.
+   745→
+   746→---
+   747→
+   748→## 9. UI Elements Catalog Per Module
+   749→
+   750→### 9.1 Buttons Without onClick Handlers (Dead Buttons)
+   751→
+   752→The following primary action buttons across Section 03 have **NO onClick handler** (purely decorative):
+   753→
+   754→| Module | Button | Line |
+   755→|---|---|---|
+   756→| ProductMaster | "New Product" | 1875 |
+   757→| ProductMaster | "Import" | 1873 |
+   758→| ProductMaster | "Export" | 1874 |
+   759→| PIM | (no add buttons — view-only) | — |
+   760→| PriceListsTab | "New Price List" | 2119 |
+   761→| TaxTab | "New Tax Group" | 2164 |
+   762→| DiscountsTab | "New Discount" | 2213 |
+   763→| PromotionsTab | "New Promotion" | 2253 |
+   764→| FuturePricesTab | "Schedule Price Change" | 2294 |
+   765→| ApprovalsTab | "Advance Stage" | 2357 |
+   766→| CostMarginTab | (no add) | — |
+   767→| RulesTab | "New Rule" | 2429 |
+   768→| BPPartnersTab | "New Partner" | 2778 |
+   769→| BPAddressesTab | "New Address" | 2828 |
+   770→| BPContactsTab | "New Contact" | 2864 |
+   771→| BPComplianceTab | "Add Compliance" | 2955 |
+   772→| BPGroupsTab | "New Group" | 3001 |
+   773→| BPBankingTab | "Add Bank Account" | 3042 |
+   774→| BPRelationshipsTab | "New Relationship" | 3083 |
+   775→| BPScorecardsTab | "New Scorecard" | 3123 |
+   776→| IDBarcodesTab | "Generate Barcode" | 3299 |
+   777→| IDQRCodesTab | "Generate QR" | 3343 |
+   778→| IDBatchesTab | "New Batch" | 3391 |
+   779→| IDLotsTab | "New Lot" | 3453 |
+   780→| IDSerialsTab | "Assign Serial" | 3498 |
+   781→| IDGS1Tab | "New GS1 ID" | 3554 |
+   782→| IDLabelsTab | "New Template" | 3604 |
+   783→| IDPrintTab | "New Print Job" | 3647 |
+   784→| GovLifecycleTab | "Transition" | 3959 |
+   785→| GovApprovalsTab | "New Workflow" | 4012 |
+   786→| GovImportTab | "New Import" | 4066 |
+   787→| GovExportTab | "New Export" | 4112 |
+   788→| GovValidationTab | "New Rule" | 4162 |
+   789→| GovDuplicatesTab | "Scan Duplicates" | 4207 |
+   790→| GovDuplicatesTab | "Merge" / "Mark False Positive" / "Ignore" | 4235-4237 |
+   791→| GovHistoryTab | "Rollback" | 4237 / 4371 |
+   792→| PlantMaster | "Create Plant" | 16400 |
+   793→
+   794→**Total dead buttons**: ~40 across Section 03.
+   795→
+   796→### 9.2 Tables (Read-Only)
+   797→1. ProductMaster — products table (6 rows)
+   798→2. PriceListsTab — price lists table (6 rows)
+   799→3. DiscountsTab — discounts table (5 rows)
+   800→4. CostMarginTab — cost profiles table (4 rows)
+   801→5. BPPartnersTab — partners table (10 rows)
+   802→6. BPContactsTab — contacts table (7 rows)
+   803→7. BPFinancialTab — financial profiles table (10 rows)
+   804→8. BPComplianceTab — compliance table (9 rows)
+   805→9. IDBarcodesTab — barcodes table (8 rows)
+   806→10. IDBatchesTab — batches table (8 rows)
+   807→11. IDLotsTab — lots table (7 rows)
+   808→12. IDGS1Tab — GS1 IDs table (6 rows)
+   809→13. GovLifecycleTab — lifecycles table (8 rows)
+   810→14. GovValidationTab — validation rules table (10 rows)
+   811→15. GovExportTab — export jobs table (4 rows)
+   812→16. WarehouseWarehousesTab — warehouses table (6 rows)
+   813→17. WhLocBinsTab — bins table (~15 rows)
+   814→
+   815→### 9.3 Forms (with state)
+   816→1. OrganizationModule Create Company dialog (line 892) — 8 fields, **real POST**
+   817→2. ResolutionTab price resolution form (line 2519) — 4 fields, **real POST** to mini-service
+   818→3. IDTraceabilityTab trace form (line 3745) — 2 fields + button, **real POST** to mini-service
+   819→4. PlantMaster Create Plant inline form (line 16388) — 8 fields, **NO submit handler**
+   820→
+   821→### 9.4 Drawers / Sheets
+   822→**NONE**. The codebase imports `Sheet` and `Drawer` from `@/components/ui/...` but Section 03 doesn't use them. Only inline modals (Organization's `<div className="fixed inset-0 bg-black/50 z-50">` pattern at line 888) are used.
+   823→
+   824→### 9.5 Search/Filter Inputs
+   825→1. ProductMaster search (line 1871) — `search` state, filters by name/SKU/UPI/code
+   826→2. OrganizationModule search (line 857) — `searchQuery` state, filters tree by name/code
+   827→3. PriceListsTab — NO search (table is small)
+   828→4. BPPartnersTab — NO search (despite text suggesting "Filter by role or type")
+   829→5. IDTraceabilityTab — Batch number input is the search key
+   830→
+   831→---
+   832→
+   833→## 10. Permission Checks (Section 03)
+   834→
+   835→Only **1 permission** is checked across all of Section 03:
+   836→
+   837→| Module | Permission | Lines | Use |
+   838→|---|---|---|---|
+   839→| OrganizationModule | `org:create` | 859, 887 | Gates "Add Entity" button + Create dialog |
+   840→
+   841→The other 8 Section 03 modules have **zero** `hasPermission` calls. The `useAuthStore` hook is only imported in `OrganizationModule` (line 667), `DashboardModule` (line 547), and `RBACModule` (line 923).
+   842→
+   843→---
+   844→
+   845→## 11. Critical Issues Summary
+   846→
+   847→### Issue 1: 8 of 9 modules use 100% hardcoded mock data
+   848→Only OrganizationModule is wired to a real backend. All other modules (`ProductMasterModule`, `PIMModule`, `CommercialEngineModule`, `BusinessPartnerModule`, `IdentificationModule`, `GovernanceModule`, `WarehouseModule`, `WarehouseLocationModule`, `PlantMasterModule`) use inline `const X = [...]` arrays. Refreshing the page shows the same data forever; creating a "New Product" does nothing.
+   849→
+   850→### Issue 2: Backend API clients exist but are unused
+   851→- `src/modules/product/api/client.ts` — 9 methods ready, 0 imported
+   852→- `src/modules/customer/api/client.ts` — 8 methods ready, 0 imported
+   853→- `src/modules/supplier/api/client.ts` — 8 methods ready, 0 imported
+   854→- `src/modules/warehouse/api/client.ts` — 11 methods ready, 0 imported
+   855→- `src/modules/organization/api/client.ts` — 7 API objects + 35 types ready, only hierarchy/company endpoints used (via inline fetch, not via the client)
+   856→- `src/modules/inventory/api/client.ts` — 8 methods ready, 0 imported
+   857→
+   858→### Issue 3: Modular React components exist but are unused
+   859→- `src/modules/product/components/ProductModule.tsx` (221 lines, fully wired to productApi)
+   860→- `src/modules/customer/components/CustomerModule.tsx` (171 lines, fully wired to customerApi)
+   861→- `src/modules/supplier/components/SupplierModule.tsx` (177 lines, fully wired to supplierApi)
+   862→- `src/modules/warehouse/components/WarehouseModule.tsx` (37 lines, currently a placeholder import)
+   863→- `src/modules/organization/components/OrganizationModule.tsx` (749 lines, fully wired)
+   864→
+   865→Page.tsx does NOT import any of these. It defines its own monolithic versions inline.
+   866→
+   867→### Issue 4: Two backend service layers confused
+   868→The `CommercialEngineModule`'s `ResolutionTab` and `IdentificationModule`'s `IDTraceabilityTab` make direct fetch calls to `http://localhost:3030/api/commercial/resolve-price` and `http://localhost:3030/api/identification/trace`. These are **mini-service endpoints** (no `/api/v1/` prefix, no auth token, defined in `mini-services/suop-backend/index.ts` at lines 3443 and 3905). The other modules should be hitting `/api/v1/catalog/...`, `/api/v1/sales/...`, `/api/v1/procurement/...`, `/api/v1/organization/...` etc. (the main backend API).
+   869→
+   870→### Issue 5: 40+ dead buttons
+   871→~40 "New X" / "Create X" / "Generate X" buttons across Section 03 have no onClick handlers — they exist purely as visual scaffolding. Users will click them and nothing happens.
+   872→
+   873→### Issue 6: Stats are hardcoded (not computed from data)
+   874→Most stat cards show hardcoded numbers that don't match the mock data. E.g. ProductMasterModule shows "Total Products: 12" but the `products` array has only 6 items. PIM shows "Families: 6" but `families` array has 4. This is misleading even in demo mode.
+   875→
+   876→### Issue 7: Customer/Supplier unified as Business Partner
+   877→The task asks for separate Customer Master and Supplier Master modules. The current architecture consolidates them into a single Business Partner Platform (SAP-style). This is architecturally sound BUT it means:
+   878→- The `customerApi` and `supplierApi` clients (which call `/api/v1/sales/customers` and `/api/v1/procurement/suppliers`) cannot be directly wired to the BusinessPartnerModule without an adapter
+   879→- The backend likely has BOTH a Business Partner master AND separate Customer/Supplier views (since the API endpoints exist) — this needs reconciliation
+   880→
+   881→### Issue 8: No edit/delete/transition UI
+   882→Even OrganizationModule (the most complete) only has Create. There's no edit form, no delete confirmation, no status transition UI (e.g. DRAFT → ACTIVE → INACTIVE for products, BLACKLIST for suppliers). The API clients support these (PATCH, DELETE, POST /transition) but the UI doesn't expose them.
+   883→
+   884→### Issue 9: No pagination
+   885→All tables render the full mock array. Even when `ProductModule.tsx` (the unused modular version) implements pagination with `page` state and Previous/Next buttons, the inline `ProductMasterModule` doesn't.
+   886→
+   887→### Issue 10: No loading/error states
+   888→Of 9 Section 03 modules, only OrganizationModule has loading skeletons and error retry. The other 8 render synchronously from inline consts — there's no `loading`, `error`, or `EmptyState` handling.
+   889→
+   890→---
+   891→
+   892→## 12. Production Readiness Scorecard (1-10)
+   893→
+   894→| Module | Score | Rationale |
+   895→|---|---|---|
+   896→| OrganizationModule | **7.5** | Real API, real create, has loading/error/permission gating. Missing edit/delete/transition. |
+   897→| PlantMasterModule | **2.5** | Mock + create form state but no submit. |
+   898→| CommercialEngineModule | **3.0** | Mock + 1 mini-service endpoint for price resolution. |
+   899→| IdentificationModule | **3.0** | Mock + 1 mini-service endpoint for traceability. |
+   900→| ProductMasterModule | **2.0** | 100% mock, no create, no detail. |
+   901→| PIMModule | **2.0** | 100% mock, no create, no detail. |
+   902→| BusinessPartnerModule | **2.5** | 100% mock but 10 well-structured tabs covering full partner lifecycle. |
+   903→| GovernanceModule | **2.0** | 100% mock, 10 tabs covering governance (should be the master overlay). |
+   904→| WarehouseModule | **2.0** | 100% mock, 5 tabs, no create. |
+   905→| WarehouseLocationModule | **2.0** | 100% mock, 5 tabs, no create. |
+   906→
+   907→**Section 03 overall: 3.2 / 10** — visually rich demo, but functionally a prototype. Major rewrite needed to wire to backend.
+   908→
+   909→---
+   910→
+   911→## 13. Recommended Next Actions
+   912→
+   913→1. **Import the existing modular components into page.tsx** (or migrate page.tsx modules to use the API clients). Specifically:
+   914→   - Replace `ProductMasterModule()` (line 1833) with the imported `<ProductModule />` from `src/modules/product/components/ProductModule.tsx` — this alone adds real product CRUD
+   915→   - Wire `BusinessPartnerModule` tabs to use `customerApi.list()` + `supplierApi.list()` (likely needs an adapter since the UI uses unified `partners[]` but APIs are split)
+   916→   - Wire `WarehouseModule` to use `warehouseApi.list()` from `src/modules/organization/api/client.ts` (Warehouse Master CRUD) and `warehouseApi.listZones/Aisles/Racks/Bins` from `src/modules/warehouse/api/client.ts` (WMS operations)
+   917→   - Wire `PlantMasterModule` to `plantApi.list/create` from organization client
+   918→   - Replace `OrganizationModule`'s inline fetches with the `companyApi` / `hierarchyApi` from the organization client (consistency)
+   919→
+   920→2. **Add onClick handlers to all 40+ dead buttons** — each should open a dialog/drawer with a form that POSTs to the appropriate API.
+   921→
+   922→3. **Add edit/delete/transition flows** — at minimum, a row-click detail drawer and an action menu per row.
+   923→
+   924→4. **Reconcile the Commercial + Identification mini-service endpoints** with the main `/api/v1/...` REST API. The mini-service is for prototyping; the production endpoints should be under `/api/v1/commercial/resolve-price` and `/api/v1/identification/trace`.
+   925→
+   926→5. **Add missing master modules** (currently NO UI): Product Categories, Brand Master, UOM Master, HSN/SAC Master, Cost Center, Department (org-wide), Currency, Payment Terms, Shipping Terms (Incoterms), Reference Masters. Backend APIs exist for some (categories, brands, uoms via `productApi.list*`; cost center, department via `costCenterApi`/`departmentApi`). Others need new API clients.
+   927→
+   928→6. **Add pagination, loading skeletons, error retry** to all modules (copy the pattern from OrganizationModule).
+   929→
+   930→7. **Add permission checks** — at minimum `master_data:product:create`, `master_data:customer:create`, etc. for every create/edit/delete button.
+   931→
+   932→8. **Compute stats from data** instead of hardcoding them.
+   933→
+   934→---
+   935→
+   936→**End of Findings File**
+   937→

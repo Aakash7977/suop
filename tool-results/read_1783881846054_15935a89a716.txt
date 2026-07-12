@@ -1,0 +1,562 @@
+     1→  2098→function PriceListsTab() {
+     2→  2099→  const lists = [
+     3→  2100→    { code: 'PL-RETAIL-MUM', name: 'Mumbai Retail Price List', type: 'RETAIL', currency: 'INR', validFrom: '2026-01-01', priority: 100, status: 'ACTIVE', taxMode: 'INCLUSIVE', items: 248 },
+     4→  2101→    { code: 'PL-WS-DIST', name: 'Wholesale Distributor Price List', type: 'WHOLESALE', currency: 'INR', validFrom: '2026-01-01', priority: 200, status: 'ACTIVE', taxMode: 'EXCLUSIVE', items: 180 },
+     5→  2102→    { code: 'PL-RST-MUM', name: 'Restaurant Menu Price List', type: 'RESTAURANT', currency: 'INR', validFrom: '2026-01-01', priority: 100, status: 'ACTIVE', taxMode: 'INCLUSIVE', items: 65 },
+     6→  2103→    { code: 'PL-CORP-TATA', name: 'Tata Corporate Contract', type: 'CORPORATE', currency: 'INR', validFrom: '2026-04-01', priority: 50, status: 'ACTIVE', taxMode: 'EXCLUSIVE', items: 92 },
+     7→  2104→    { code: 'PL-FEST-DIWALI', name: 'Diwali Festival Price List', type: 'FESTIVAL', currency: 'INR', validFrom: '2026-10-15', priority: 30, status: 'SCHEDULED', taxMode: 'INCLUSIVE', items: 45 },
+     8→  2105→    { code: 'PL-EXP-DUBAI', name: 'Dubai Export Price List', type: 'EXPORT', currency: 'USD', validFrom: '2026-01-01', priority: 150, status: 'ACTIVE', taxMode: 'EXCLUSIVE', items: 38 },
+     9→  2106→  ]
+    10→  2107→  const typeColor: Record<string, string> = {
+    11→  2108→    RETAIL: 'bg-blue-100 text-blue-800', WHOLESALE: 'bg-purple-100 text-purple-800',
+    12→  2109→    RESTAURANT: 'bg-orange-100 text-orange-800', CORPORATE: 'bg-emerald-100 text-emerald-800',
+    13→  2110→    FESTIVAL: 'bg-pink-100 text-pink-800', EXPORT: 'bg-amber-100 text-amber-800',
+    14→  2111→  }
+    15→  2112→  return (
+    16→  2113→    <Card className="p-6">
+    17→  2114→      <div className="flex items-center justify-between mb-4">
+    18→  2115→        <div>
+    19→  2116→          <h3 className="font-semibold">Price Lists</h3>
+    20→  2117→          <p className="text-xs text-muted-foreground mt-1">10 supported types: Retail, Wholesale, Distributor, Export, Restaurant, Online, Corporate, Employee, Festival, Special Contract</p>
+    21→  2118→        </div>
+    22→  2119→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Price List</Button>
+    23→  2120→      </div>
+    24→  2121→      <div className="overflow-x-auto">
+    25→  2122→        <table className="w-full text-sm">
+    26→  2123→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+    27→  2124→            <th className="py-2 font-medium">Code</th><th className="font-medium">Name</th><th className="font-medium">Type</th>
+    28→  2125→            <th className="font-medium">Currency</th><th className="font-medium">Tax Mode</th><th className="font-medium">Priority</th>
+    29→  2126→            <th className="font-medium">Items</th><th className="font-medium">Valid From</th><th className="font-medium">Status</th>
+    30→  2127→          </tr></thead>
+    31→  2128→          <tbody>
+    32→  2129→            {lists.map(l => (
+    33→  2130→              <tr key={l.code} className="border-b hover:bg-muted/40">
+    34→  2131→                <td className="py-2.5 font-mono text-xs">{l.code}</td>
+    35→  2132→                <td className="font-medium">{l.name}</td>
+    36→  2133→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[l.type])}>{l.type}</span></td>
+    37→  2134→                <td className="font-mono">{l.currency}</td>
+    38→  2135→                <td><Badge variant="outline" className="text-xs">{l.taxMode}</Badge></td>
+    39→  2136→                <td className="font-mono">{l.priority}</td>
+    40→  2137→                <td>{l.items}</td>
+    41→  2138→                <td className="text-xs text-muted-foreground">{l.validFrom}</td>
+    42→  2139→                <td><Badge className={l.status === 'ACTIVE' ? 'bg-emerald-600 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-500'}>{l.status}</Badge></td>
+    43→  2140→              </tr>
+    44→  2141→            ))}
+    45→  2142→          </tbody>
+    46→  2143→        </table>
+    47→  2144→      </div>
+    48→  2145→    </Card>
+    49→  2146→  )
+    50→  2147→}
+    51→  2148→
+    52→  2149→function TaxTab() {
+    53→  2150→  const groups = [
+    54→  2151→    { code: 'GST-0', name: 'GST Exempt (Fresh Foods)', type: 'EXEMPT', rates: [], status: 'ACTIVE' },
+    55→  2152→    { code: 'GST-5', name: 'GST 5% (Food Items)', type: 'GST', rates: [{ c: 'CGST', r: 2.5 }, { c: 'SGST', r: 2.5 }], status: 'ACTIVE' },
+    56→  2153→    { code: 'GST-12', name: 'GST 12% (Processed Foods)', type: 'GST', rates: [{ c: 'CGST', r: 6 }, { c: 'SGST', r: 6 }], status: 'ACTIVE' },
+    57→  2154→    { code: 'GST-18', name: 'GST 18% (Beverages)', type: 'GST', rates: [{ c: 'CGST', r: 9 }, { c: 'SGST', r: 9 }], status: 'ACTIVE' },
+    58→  2155→    { code: 'GST-28', name: 'GST 28% (Luxury/Sin)', type: 'GST', rates: [{ c: 'CGST', r: 14 }, { c: 'SGST', r: 14 }], status: 'ACTIVE' },
+    59→  2156→    { code: 'CESS-5', name: 'Cess 5% over GST', type: 'CESS', rates: [{ c: 'CESS', r: 5 }], status: 'ACTIVE' },
+    60→  2157→  ]
+    61→  2158→  return (
+    62→  2159→    <div className="space-y-4">
+    63→  2160→      <Card className="p-6">
+    64→  2161→        <div className="flex items-center justify-between mb-4">
+    65→  2162→          <div><h3 className="font-semibold">GST & Tax Engine</h3>
+    66→  2163→          <p className="text-xs text-muted-foreground mt-1">Supports GST (CGST/SGST/IGST), CESS, TCS, TDS (future). HSN/SAC mapped per product. Tax rules engine for state/type/category-based overrides.</p></div>
+    67→  2164→          <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Tax Group</Button>
+    68→  2165→        </div>
+    69→  2166→        <div className="grid gap-3 md:grid-cols-2">
+    70→  2167→          {groups.map(g => (
+    71→  2168→            <div key={g.code} className="border rounded-lg p-3">
+    72→  2169→              <div className="flex items-start justify-between">
+    73→  2170→                <div>
+    74→  2171→                  <p className="font-mono text-xs text-muted-foreground">{g.code}</p>
+    75→  2172→                  <p className="font-medium">{g.name}</p>
+    76→  2173→                </div>
+    77→  2174→                <Badge variant="outline" className="text-xs">{g.type}</Badge>
+    78→  2175→              </div>
+    79→  2176→              <div className="mt-2 flex flex-wrap gap-1.5">
+    80→  2177→                {g.rates.length === 0 ? <Badge variant="outline" className="text-xs">EXEMPT (0%)</Badge> :
+    81→  2178→                  g.rates.map(r => <Badge key={r.c} variant="outline" className="text-xs font-mono">{r.c}: {r.r}%</Badge>)}
+    82→  2179→              </div>
+    83→  2180→            </div>
+    84→  2181→          ))}
+    85→  2182→        </div>
+    86→  2183→      </Card>
+    87→  2184→      <Card className="p-6">
+    88→  2185→        <h3 className="font-semibold mb-3">Tax Calculation Modes</h3>
+    89→  2186→        <div className="grid sm:grid-cols-2 gap-3">
+    90→  2187→          <div className="border rounded-lg p-3"><p className="font-medium text-sm mb-1">Exclusive (Tax added on top)</p><p className="text-xs text-muted-foreground">Used for: Wholesale, Export, B2B. Price ₹100 + 5% GST = ₹105</p></div>
+    91→  2188→          <div className="border rounded-lg p-3"><p className="font-medium text-sm mb-1">Inclusive (Tax included in price)</p><p className="text-xs text-muted-foreground">Used for: Retail, Restaurant, E-commerce. MRP ₹105 includes ₹5 GST</p></div>
+    92→  2189→        </div>
+    93→  2190→      </Card>
+    94→  2191→    </div>
+    95→  2192→  )
+    96→  2193→}
+    97→  2194→
+    98→  2195→function DiscountsTab() {
+    99→  2196→  const discounts = [
+   100→  2197→    { code: 'DISC-5PCT', name: '5% General Discount', type: 'PERCENTAGE', value: 5, kind: 'PERCENTAGE', max: 50, stackable: true, status: 'ACTIVE' },
+   101→  2198→    { code: 'DISC-FLAT-50', name: 'Flat ₹50 Off (above ₹500)', type: 'FLAT', value: 50, kind: 'AMOUNT', max: null, stackable: false, status: 'ACTIVE' },
+   102→  2199→    { code: 'DISC-VOL-10', name: 'Volume Discount 10% (10+ units)', type: 'VOLUME', value: 10, kind: 'PERCENTAGE', max: 200, stackable: false, status: 'ACTIVE' },
+   103→  2200→    { code: 'DISC-EMP-15', name: 'Employee Discount 15%', type: 'CUSTOMER', value: 15, kind: 'PERCENTAGE', max: null, stackable: false, status: 'ACTIVE' },
+   104→  2201→    { code: 'DISC-SENIOR', name: 'Senior Citizen 7%', type: 'CUSTOMER', value: 7, kind: 'PERCENTAGE', max: null, stackable: false, status: 'ACTIVE' },
+   105→  2202→  ]
+   106→  2203→  const typeColor: Record<string, string> = {
+   107→  2204→    PERCENTAGE: 'bg-blue-100 text-blue-800', FLAT: 'bg-purple-100 text-purple-800',
+   108→  2205→    VOLUME: 'bg-amber-100 text-amber-800', CUSTOMER: 'bg-emerald-100 text-emerald-800',
+   109→  2206→    COUPON: 'bg-pink-100 text-pink-800',
+   110→  2207→  }
+   111→  2208→  return (
+   112→  2209→    <Card className="p-6">
+   113→  2210→      <div className="flex items-center justify-between mb-4">
+   114→  2211→        <div><h3 className="font-semibold">Discount Rules</h3>
+   115→  2212→        <p className="text-xs text-muted-foreground mt-1">9 supported types: Flat, Percentage, Buy X Get Y, Volume, Combo, Category, Brand, Customer, Coupon</p></div>
+   116→  2213→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Discount</Button>
+   117→  2214→      </div>
+   118→  2215→      <div className="overflow-x-auto">
+   119→  2216→        <table className="w-full text-sm">
+   120→  2217→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+   121→  2218→            <th className="py-2 font-medium">Code</th><th className="font-medium">Name</th><th className="font-medium">Type</th>
+   122→  2219→            <th className="font-medium">Value</th><th className="font-medium">Max</th><th className="font-medium">Stackable</th><th className="font-medium">Status</th>
+   123→  2220→          </tr></thead>
+   124→  2221→          <tbody>
+   125→  2222→            {discounts.map(d => (
+   126→  2223→              <tr key={d.code} className="border-b hover:bg-muted/40">
+   127→  2224→                <td className="py-2.5 font-mono text-xs">{d.code}</td>
+   128→  2225→                <td className="font-medium">{d.name}</td>
+   129→  2226→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[d.type])}>{d.type}</span></td>
+   130→  2227→                <td className="font-mono">{d.kind === 'PERCENTAGE' ? `${d.value}%` : `₹${d.value}`}</td>
+   131→  2228→                <td className="font-mono text-xs">{d.max !== null ? `₹${d.max}` : '—'}</td>
+   132→  2229→                <td>{d.stackable ? <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">Yes</Badge> : <Badge variant="outline" className="text-xs">No</Badge>}</td>
+   133→  2230→                <td><Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">{d.status}</Badge></td>
+   134→  2231→              </tr>
+   135→  2232→            ))}
+   136→  2233→          </tbody>
+   137→  2234→        </table>
+   138→  2235→      </div>
+   139→  2236→    </Card>
+   140→  2237→  )
+   141→  2238→}
+   142→  2239→
+   143→  2240→function PromotionsTab() {
+   144→  2241→  const promos = [
+   145→  2242→    { code: 'PROMO-DIWALI-2026', name: 'Diwali Dhamaka 15% Off', type: 'AUTOMATIC', offer: 'PERCENT_OFF', value: 15, channels: ['RETAIL_POS', 'ECOMMERCE'], validFrom: '2026-10-15', validTo: '2026-11-15', used: 234, max: 1000, priority: 50, status: 'SCHEDULED' },
+   146→  2243→    { code: 'PROMO-WEEKEND', name: 'Weekend Special 10%', type: 'AUTOMATIC', offer: 'PERCENT_OFF', value: 10, channels: ['RETAIL_POS'], validFrom: '2026-01-01', validTo: null, used: 1582, max: null, priority: 100, status: 'ACTIVE' },
+   147→  2244→    { code: 'PROMO-HAPPY-HRS', name: 'Happy Hours 20% (4-7PM)', type: 'AUTOMATIC', offer: 'PERCENT_OFF', value: 20, channels: ['RESTAURANT_POS'], validFrom: '2026-01-01', validTo: null, used: 765, max: null, priority: 80, status: 'ACTIVE' },
+   148→  2245→    { code: 'PROMO-BUY2GET1', name: 'Buy 2 Get 1 Free Sweets', type: 'AUTOMATIC', offer: 'BUY_X_GET_Y', value: null, channels: ['RETAIL_POS'], validFrom: '2026-01-01', validTo: null, used: 423, max: null, priority: 90, status: 'ACTIVE' },
+   149→  2246→    { code: 'PROMO-COUPON-WELCOME', name: 'Welcome Coupon ₹100 Off', type: 'COUPON', offer: 'FLAT_OFF', value: 100, channels: ['ALL'], validFrom: '2026-01-01', validTo: null, used: 891, max: 5000, priority: 70, status: 'ACTIVE' },
+   150→  2247→  ]
+   151→  2248→  return (
+   152→  2249→    <Card className="p-6">
+   153→  2250→      <div className="flex items-center justify-between mb-4">
+   154→  2251→        <div><h3 className="font-semibold">Promotions</h3>
+   155→  2252→        <p className="text-xs text-muted-foreground mt-1">4 supported types: Automatic, Manual, Coupon, Loyalty. Channel-scoped. Priority sorted. Conflict detection rules.</p></div>
+   156→  2253→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Promotion</Button>
+   157→  2254→      </div>
+   158→  2255→      <div className="space-y-3">
+   159→  2256→        {promos.map(p => (
+   160→  2257→          <div key={p.code} className="border rounded-lg p-3 hover:bg-muted/40">
+   161→  2258→            <div className="flex items-start justify-between">
+   162→  2259→              <div className="flex-1">
+   163→  2260→                <div className="flex items-center gap-2 mb-1">
+   164→  2261→                  <p className="font-mono text-xs text-muted-foreground">{p.code}</p>
+   165→  2262→                  <Badge variant="outline" className="text-xs">{p.type}</Badge>
+   166→  2263→                  <Badge variant="outline" className="text-xs">{p.offer}</Badge>
+   167→  2264→                  {p.value !== null && <Badge variant="outline" className="text-xs font-mono">{p.offer === 'PERCENT_OFF' ? `${p.value}%` : `₹${p.value}`}</Badge>}
+   168→  2265→                </div>
+   169→  2266→                <p className="font-medium">{p.name}</p>
+   170→  2267→                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+   171→  2268→                  <span>Channels: {p.channels.join(', ')}</span>
+   172→  2269→                  <span>·</span><span>Valid: {p.validFrom} → {p.validTo || 'ongoing'}</span>
+   173→  2270→                  <span>·</span><span>Used: {p.used}{p.max ? ` / ${p.max}` : ''}</span>
+   174→  2271→                </div>
+   175→  2272→              </div>
+   176→  2273→              <Badge className={p.status === 'ACTIVE' ? 'bg-emerald-600 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-500'}>{p.status}</Badge>
+   177→  2274→            </div>
+   178→  2275→          </div>
+   179→  2276→        ))}
+   180→  2277→      </div>
+   181→  2278→    </Card>
+   182→  2279→  )
+   183→  2280→}
+   184→  2281→
+   185→  2282→function FuturePricesTab() {
+   186→  2283→  const prices = [
+   187→  2284→    { product: 'Kaju Katli 500g', current: 540, future: 580, change: 7.41, effective: '2026-08-01', auto: true, status: 'PENDING_APPROVAL' },
+   188→  2285→    { product: 'Soan Cake 1kg', current: 880, future: 920, change: 4.55, effective: '2026-08-01', auto: true, status: 'APPROVED' },
+   189→  2286→    { product: 'Mixed Namkeen 200g', current: 85, future: 80, change: -5.88, effective: '2026-07-15', auto: true, status: 'SCHEDULED' },
+   190→  2287→    { product: 'Gulab Jamun 1kg', current: 420, future: 450, change: 7.14, effective: '2026-09-01', auto: true, status: 'PENDING_APPROVAL' },
+   191→  2288→  ]
+   192→  2289→  return (
+   193→  2290→    <Card className="p-6">
+   194→  2291→      <div className="flex items-center justify-between mb-4">
+   195→  2292→        <div><h3 className="font-semibold">Future Pricing</h3>
+   196→  2293→        <p className="text-xs text-muted-foreground mt-1">Scheduled price changes with automatic activation, expiry, rollback, and approval workflow.</p></div>
+   197→  2294→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Schedule Price Change</Button>
+   198→  2295→      </div>
+   199→  2296→      <div className="space-y-3">
+   200→  2297→        {prices.map(p => (
+   201→  2298→          <div key={p.product} className="border rounded-lg p-3">
+   202→  2299→            <div className="flex items-center justify-between mb-2">
+   203→  2300→              <p className="font-medium">{p.product}</p>
+   204→  2301→              <Badge className={p.status === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-600' : p.status === 'SCHEDULED' ? 'bg-blue-600 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-500'}>{p.status.replace('_', ' ')}</Badge>
+   205→  2302→            </div>
+   206→  2303→            <div className="flex items-center gap-3 text-sm">
+   207→  2304→              <span className="font-mono">₹{p.current}</span>
+   208→  2305→              <ArrowRightCircle className="h-4 w-4 text-muted-foreground" />
+   209→  2306→              <span className="font-mono font-semibold">₹{p.future}</span>
+   210→  2307→              <Badge variant="outline" className={p.change > 0 ? 'text-red-600 border-red-200' : 'text-emerald-600 border-emerald-200'}>
+   211→  2308→                {p.change > 0 ? <TrendingUp className="mr-1 h-3 w-3" /> : <TrendingDown className="mr-1 h-3 w-3" />}
+   212→  2309→                {p.change > 0 ? '+' : ''}{p.change}%
+   213→  2310→              </Badge>
+   214→  2311→              <span className="text-xs text-muted-foreground ml-auto">Effective: {p.effective}</span>
+   215→  2312→              {p.auto && <Badge variant="outline" className="text-xs">Auto-activate</Badge>}
+   216→  2313→            </div>
+   217→  2314→          </div>
+   218→  2315→        ))}
+   219→  2316→      </div>
+   220→  2317→    </Card>
+   221→  2318→  )
+   222→  2319→}
+   223→  2320→
+   224→  2321→function ApprovalsTab() {
+   225→  2322→  const approvals = [
+   226→  2323→    { id: 'ap-001', type: 'PRICE_LIST', name: 'Diwali Festival Price List', stage: 'PRICING_TEAM', status: 'IN_REVIEW', sla: '2026-09-15', breached: false },
+   227→  2324→    { id: 'ap-002', type: 'FUTURE_PRICE', name: 'Kaju Katli Price Change +7.41%', stage: 'FINANCE', status: 'IN_REVIEW', sla: '2026-07-20', breached: false },
+   228→  2325→    { id: 'ap-003', type: 'PROMOTION', name: 'Diwali Dhamaka 15% Off', stage: 'MANAGEMENT', status: 'IN_REVIEW', sla: '2026-09-20', breached: false },
+   229→  2326→    { id: 'ap-004', type: 'FUTURE_PRICE', name: 'Gulab Jamun Price Change +7.14%', stage: 'DRAFT', status: 'PENDING', sla: '2026-07-25', breached: false },
+   230→  2327→    { id: 'ap-005', type: 'DISCOUNT_RULE', name: 'Senior Citizen 7% Discount', stage: 'APPROVED', status: 'APPROVED', sla: '2026-06-30', breached: false },
+   231→  2328→  ]
+   232→  2329→  const stages = ['DRAFT', 'PRICING_TEAM', 'FINANCE', 'MANAGEMENT', 'APPROVED', 'PUBLISHED']
+   233→  2330→  return (
+   234→  2331→    <Card className="p-6">
+   235→  2332→      <h3 className="font-semibold mb-4">Price Approval Workflow</h3>
+   236→  2333→      <div className="mb-4 flex items-center gap-1 text-xs">
+   237→  2334→        {stages.map((s, i) => (
+   238→  2335→          <div key={s} className="flex items-center">
+   239→  2336→            <div className="px-2 py-1 rounded border bg-muted/40 font-mono">{s}</div>
+   240→  2337→            {i < stages.length - 1 && <ArrowRight className="h-3 w-3 mx-0.5 text-muted-foreground" />}
+   241→  2338→          </div>
+   242→  2339→        ))}
+   243→  2340→      </div>
+   244→  2341→      <div className="space-y-3">
+   245→  2342→        {approvals.map(a => (
+   246→  2343→          <div key={a.id} className="border rounded-lg p-3">
+   247→  2344→            <div className="flex items-center justify-between mb-2">
+   248→  2345→              <div className="flex items-center gap-2">
+   249→  2346→                <Badge variant="outline" className="text-xs font-mono">{a.type}</Badge>
+   250→  2347→                <p className="font-medium text-sm">{a.name}</p>
+   251→  2348→              </div>
+   252→  2349→              <Badge className={a.status === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-600' : a.status === 'IN_REVIEW' ? 'bg-blue-600 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-500'}>{a.status.replace('_', ' ')}</Badge>
+   253→  2350→            </div>
+   254→  2351→            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+   255→  2352→              <span>Current Stage: <span className="font-mono font-medium text-foreground">{a.stage}</span></span>
+   256→  2353→              <span>·</span>
+   257→  2354→              <span>SLA Due: {a.sla}</span>
+   258→  2355→              {a.breached && <Badge variant="destructive" className="text-xs">SLA BREACHED</Badge>}
+   259→  2356→              {a.status !== 'APPROVED' && a.status !== 'PUBLISHED' && (
+   260→  2357→                <Button size="sm" variant="outline" className="ml-auto h-7 text-xs">
+   261→  2358→                  <ArrowRightCircle className="mr-1 h-3 w-3" /> Advance Stage
+   262→  2359→                </Button>
+   263→  2360→              )}
+   264→  2361→            </div>
+   265→  2362→          </div>
+   266→  2363→        ))}
+   267→  2364→      </div>
+   268→  2365→    </Card>
+   269→  2366→  )
+   270→  2367→}
+   271→  2368→
+   272→  2369→function CostMarginTab() {
+   273→  2370→  const profiles = [
+   274→  2371→    { product: 'Kaju Katli 500g', method: 'FIFO', purchase: 320, average: 325, fifo: 318, weighted: 327, standard: 330, last: 332, total: 350, margin: 54.29, selling: 540 },
+   275→  2372→    { product: 'Soan Cake 1kg', method: 'WEIGHTED_AVERAGE', purchase: 580, average: 585, fifo: 575, weighted: 588, standard: 590, last: 595, total: 625, margin: 28.64, selling: 880 },
+   276→  2373→    { product: 'Mixed Namkeen 200g', method: 'STANDARD', purchase: 48, average: 50, fifo: 47, weighted: 51, standard: 52, last: 49, total: 53, margin: 37.65, selling: 85 },
+   277→  2374→    { product: 'Gulab Jamun 1kg', method: 'LAST_PURCHASE', purchase: 280, average: 278, fifo: 275, weighted: 282, standard: 285, last: 290, total: 304, margin: 27.62, selling: 420 },
+   278→  2375→  ]
+   279→  2376→  return (
+   280→  2377→    <Card className="p-6">
+   281→  2378→      <h3 className="font-semibold mb-1">Cost & Margin Engine</h3>
+   282→  2379→      <p className="text-xs text-muted-foreground mb-4">4 costing methods: FIFO, Weighted Average, Standard, Last Purchase. Tracks landing cost, overhead, total cost, and computes margins in real-time.</p>
+   283→  2380→      <div className="overflow-x-auto">
+   284→  2381→        <table className="w-full text-sm">
+   285→  2382→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+   286→  2383→            <th className="py-2 font-medium">Product</th><th className="font-medium">Method</th>
+   287→  2384→            <th className="font-medium text-right">Purchase</th><th className="font-medium text-right">Avg</th>
+   288→  2385→            <th className="font-medium text-right">FIFO</th><th className="font-medium text-right">Wtd Avg</th>
+   289→  2386→            <th className="font-medium text-right">Std</th><th className="font-medium text-right">Last</th>
+   290→  2387→            <th className="font-medium text-right">Total</th><th className="font-medium text-right">Selling</th>
+   291→  2388→            <th className="font-medium text-right">Margin%</th>
+   292→  2389→          </tr></thead>
+   293→  2390→          <tbody>
+   294→  2391→            {profiles.map(p => (
+   295→  2392→              <tr key={p.product} className="border-b hover:bg-muted/40">
+   296→  2393→                <td className="py-2.5 font-medium">{p.product}</td>
+   297→  2394→                <td><Badge variant="outline" className="text-xs font-mono">{p.method}</Badge></td>
+   298→  2395→                <td className="text-right font-mono">₹{p.purchase}</td>
+   299→  2396→                <td className="text-right font-mono text-xs">₹{p.average}</td>
+   300→  2397→                <td className="text-right font-mono text-xs">₹{p.fifo}</td>
+   301→  2398→                <td className="text-right font-mono text-xs">₹{p.weighted}</td>
+   302→  2399→                <td className="text-right font-mono text-xs">₹{p.standard}</td>
+   303→  2400→                <td className="text-right font-mono text-xs">₹{p.last}</td>
+   304→  2401→                <td className="text-right font-mono font-semibold">₹{p.total}</td>
+   305→  2402→                <td className="text-right font-mono">₹{p.selling}</td>
+   306→  2403→                <td className="text-right font-mono"><span className={p.margin > 30 ? 'text-emerald-600 font-semibold' : p.margin > 15 ? 'text-amber-600' : 'text-red-600 font-semibold'}>{p.margin}%</span></td>
+   307→  2404→              </tr>
+   308→  2405→            ))}
+   309→  2406→          </tbody>
+   310→  2407→        </table>
+   311→  2408→      </div>
+   312→  2409→    </Card>
+   313→  2410→  )
+   314→  2411→}
+   315→  2412→
+   316→  2413→function RulesTab() {
+   317→  2414→  const rules = [
+   318→  2415→    { code: 'MIN-SELL-PRICE', name: 'Minimum Selling Price (Below Cost)', type: 'MIN_SELLING_PRICE', enforcement: 'HARD_BLOCK', desc: 'Selling price cannot be below cost' },
+   319→  2416→    { code: 'MAX-DISC-30', name: 'Maximum Discount 30%', type: 'MAX_DISCOUNT', enforcement: 'OVERRIDE_WITH_REASON', desc: 'Discounts above 30% require justification reason' },
+   320→  2417→    { code: 'MIN-MARGIN-15', name: 'Minimum Margin 15%', type: 'MIN_MARGIN', enforcement: 'WARN', desc: 'Warns when margin falls below 15%' },
+   321→  2418→    { code: 'HOLIDAY-MKUP', name: 'Festival Holiday Markup 5%', type: 'HOLIDAY_PRICING', enforcement: 'HARD_BLOCK', desc: 'Auto-applies 5% markup on Diwali/Holi/Christmas' },
+   322→  2419→    { code: 'CONTRACT-TATA', name: 'Tata Corporate Contract Pricing', type: 'CONTRACT_PRICING', enforcement: 'HARD_BLOCK', desc: 'Forces Tata customer to use contract price list' },
+   323→  2420→  ]
+   324→  2421→  const enfColor: Record<string, string> = {
+   325→  2422→    HARD_BLOCK: 'bg-red-100 text-red-800', OVERRIDE_WITH_REASON: 'bg-amber-100 text-amber-800', WARN: 'bg-yellow-100 text-yellow-800',
+   326→  2423→  }
+   327→  2424→  return (
+   328→  2425→    <Card className="p-6">
+   329→  2426→      <div className="flex items-center justify-between mb-4">
+   330→  2427→        <div><h3 className="font-semibold">Commercial Rules Engine</h3>
+   331→  2428→        <p className="text-xs text-muted-foreground mt-1">Enforcement rules: Minimum Selling Price, Maximum Discount, Minimum Margin, Customer Pricing, Location Pricing, Holiday Pricing, Contract Pricing. Future: AI Dynamic Pricing, Demand Pricing.</p></div>
+   332→  2429→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
+   333→  2430→      </div>
+   334→  2431→      <div className="space-y-3">
+   335→  2432→        {rules.map(r => (
+   336→  2433→          <div key={r.code} className="border rounded-lg p-3">
+   337→  2434→            <div className="flex items-start justify-between">
+   338→  2435→              <div>
+   339→  2436→                <div className="flex items-center gap-2 mb-1">
+   340→  2437→                  <p className="font-mono text-xs text-muted-foreground">{r.code}</p>
+   341→  2438→                  <Badge variant="outline" className="text-xs">{r.type.replace(/_/g, ' ')}</Badge>
+   342→  2439→                </div>
+   343→  2440→                <p className="font-medium">{r.name}</p>
+   344→  2441→                <p className="text-xs text-muted-foreground mt-1">{r.desc}</p>
+   345→  2442→              </div>
+   346→  2443→              <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', enfColor[r.enforcement])}>{r.enforcement.replace(/_/g, ' ')}</span>
+   347→  2444→            </div>
+   348→  2445→          </div>
+   349→  2446→        ))}
+   350→  2447→      </div>
+   351→  2448→    </Card>
+   352→  2449→  )
+   353→  2450→}
+   354→  2451→
+   355→  2452→function ResolutionTab() {
+   356→  2453→  const [productId, setProductId] = useState('prd-kaju-katli')
+   357→  2454→  const [quantity, setQuantity] = useState('1')
+   358→  2455→  const [channel, setChannel] = useState('RETAIL_POS')
+   359→  2456→  const [customerId, setCustomerId] = useState('')
+   360→  2457→  const [result, setResult] = useState<any>(null)
+   361→  2458→  const [loading, setLoading] = useState(false)
+   362→  2459→
+   363→  2460→  async function resolve() {
+   364→  2461→    setLoading(true)
+   365→  2462→    try {
+   366→  2463→      const res = await fetch('http://localhost:3030/api/commercial/resolve-price', {
+   367→  2464→        method: 'POST',
+   368→  2465→        headers: { 'Content-Type': 'application/json' },
+   369→  2466→        body: JSON.stringify({
+   370→  2467→          productId, productName: productId, customerId: customerId || undefined,
+   371→  2468→          channelId: channel, quantity: Number(quantity) || 1, basePrice: 540,
+   372→  2469→        }),
+   373→  2470→      })
+   374→  2471→      const json = await res.json()
+   375→  2472→      if (json.success) setResult(json.data)
+   376→  2473→      else setResult({ error: json.message })
+   377→  2474→    } catch (e) {
+   378→  2475→      // Backend may not be running; show demo result
+   379→  2476→      setResult({
+   380→  2477→        requestId: 'demo-' + Date.now(),
+   381→  2478→        basePrice: 540,
+   382→  2479→        listPrice: Number(quantity) >= 10 ? 513 : 540,
+   383→  2480→        appliedDiscounts: [{ code: 'DISC-5PCT', name: '5% General Discount', amount: Number(((Number(quantity) >= 10 ? 513 : 540) * 0.05).toFixed(2)) }],
+   384→  2481→        appliedPromotions: channel === 'RETAIL_POS' ? [{ code: 'PROMO-WEEKEND', name: 'Weekend Special 10%', amount: Number(((Number(quantity) >= 10 ? 513 : 540) * 0.10).toFixed(2)) }] : [],
+   385→  2482→        discountAmount: Number(((Number(quantity) >= 10 ? 513 : 540) * 0.05).toFixed(2)),
+   386→  2483→        promotionAmount: channel === 'RETAIL_POS' ? Number(((Number(quantity) >= 10 ? 513 : 540) * 0.10).toFixed(2)) : 0,
+   387→  2484→        taxableAmount: Number((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)).toFixed(2),
+   388→  2485→        taxComponents: [{ component: 'CGST', rate: 2.5, amount: Number((((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)) * 0.025).toFixed(2)) }, { component: 'SGST', rate: 2.5, amount: Number((((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)) * 0.025).toFixed(2)) }],
+   389→  2486→        taxAmount: Number((((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)) * 0.05).toFixed(2)),
+   390→  2487→        finalPrice: Number(((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)) * 1.05).toFixed(2),
+   391→  2488→        resolutionTrace: [
+   392→  2489→          { step: 'BASE_PRICE', source: 'PRICE_LIST', value: 540 },
+   393→  2490→          { step: 'LIST_PRICE', value: Number(quantity) >= 10 ? 513 : 540 },
+   394→  2491→          ...(Number(quantity) >= 10 ? [{ step: 'QUANTITY_BREAK', quantity: Number(quantity), discountPercent: 5, value: 513 }] : []),
+   395→  2492→          { step: 'DISCOUNTS_APPLIED', count: 1, totalAmount: Number(((Number(quantity) >= 10 ? 513 : 540) * 0.05).toFixed(2)) },
+   396→  2493→          { step: 'PROMOTIONS_APPLIED', count: channel === 'RETAIL_POS' ? 1 : 0, totalAmount: channel === 'RETAIL_POS' ? Number(((Number(quantity) >= 10 ? 513 : 540) * 0.10).toFixed(2)) : 0 },
+   397→  2494→          { step: 'TAXABLE_AMOUNT', value: Number((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)).toFixed(2) },
+   398→  2495→          { step: 'TAX_CALCULATED', mode: 'EXCLUSIVE', components: 2, totalAmount: Number((((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)) * 0.05).toFixed(2)) },
+   399→  2496→          { step: 'FINAL_PRICE', value: Number(((Number(quantity) >= 10 ? 513 : 540) - ((Number(quantity) >= 10 ? 513 : 540) * 0.05) - (channel === 'RETAIL_POS' ? ((Number(quantity) >= 10 ? 513 : 540) * 0.10) : 0)) * 1.05).toFixed(2) },
+   400→  2497→        ],
+   401→  2498→        responseTimeMs: 3,
+   402→  2499→        note: 'Backend offline — showing simulated resolution. Start backend: cd mini-services/suop-backend && bun run index.ts'
+   403→  2500→      })
+   404→  2501→    } finally {
+   405→  2502→      setLoading(false)
+   406→  2503→    }
+   407→  2504→  }
+   408→  2505→
+   409→  2506→  return (
+   410→  2507→    <div className="space-y-4">
+   411→  2508→      <Card className="p-6">
+   412→  2509→        <div className="flex items-start gap-2 mb-4">
+   413→  2510→          <Sparkles className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+   414→  2511→          <div>
+   415→  2512→            <h3 className="font-semibold">Price Resolution Service</h3>
+   416→  2513→            <p className="text-xs text-muted-foreground mt-1">
+   417→  2514→              The single source of truth for pricing. Your Retail POS and Restaurant POS will call this endpoint
+   418→  2515→              instead of maintaining their own pricing logic. Returns the final price with full audit trail.
+   419→  2516→            </p>
+   420→  2517→          </div>
+   421→  2518→        </div>
+   422→  2519→        <div className="grid sm:grid-cols-4 gap-3 mb-4">
+   423→  2520→          <div><Label className="text-xs">Product ID</Label>
+   424→  2521→            <Input value={productId} onChange={e => setProductId(e.target.value)} className="font-mono text-sm" /></div>
+   425→  2522→          <div><Label className="text-xs">Quantity</Label>
+   426→  2523→            <Input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} className="text-sm" /></div>
+   427→  2524→          <div><Label className="text-xs">Channel</Label>
+   428→  2525→            <select value={channel} onChange={e => setChannel(e.target.value)} className="w-full h-9 rounded-md border px-3 text-sm bg-background">
+   429→  2526→              <option value="RETAIL_POS">Retail POS</option>
+   430→  2527→              <option value="RESTAURANT_POS">Restaurant POS</option>
+   431→  2528→              <option value="ERP">ERP</option>
+   432→  2529→              <option value="ECOMMERCE">E-commerce</option>
+   433→  2530→              <option value="CUSTOMER_PORTAL">Customer Portal</option>
+   434→  2531→            </select></div>
+   435→  2532→          <div><Label className="text-xs">Customer ID (optional)</Label>
+   436→  2533→            <Input value={customerId} onChange={e => setCustomerId(e.target.value)} placeholder="cust-tata-001" className="font-mono text-sm" /></div>
+   437→  2534→        </div>
+   438→  2535→        <Button onClick={resolve} disabled={loading} className="w-full">
+   439→  2536→          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resolving...</> : <><PlayCircle className="mr-2 h-4 w-4" />Resolve Price</>}
+   440→  2537→        </Button>
+   441→  2538→      </Card>
+   442→  2539→
+   443→  2540→      {result && !result.error && (
+   444→  2541→        <div className="space-y-4">
+   445→  2542→          <Card className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-900">
+   446→  2543→            <div className="flex items-center justify-between mb-4">
+   447→  2544→              <div><p className="text-xs text-muted-foreground">Final Price</p>
+   448→  2545→              <p className="text-4xl font-bold text-emerald-700 dark:text-emerald-400">₹{Number(result.finalPrice).toFixed(2)}</p></div>
+   449→  2546→              <div className="text-right">
+   450→  2547→                <p className="text-xs text-muted-foreground">Request ID</p>
+   451→  2548→                <p className="font-mono text-xs">{result.requestId?.slice(0, 18)}...</p>
+   452→  2549→                <p className="text-xs text-muted-foreground mt-2">Response Time</p>
+   453→  2550→                <p className="font-mono text-xs">{result.responseTimeMs}ms</p>
+   454→  2551→              </div>
+   455→  2552→            </div>
+   456→  2553→            <div className="grid sm:grid-cols-4 gap-3 text-sm">
+   457→  2554→              <div><p className="text-xs text-muted-foreground">Base Price</p><p className="font-mono font-semibold">₹{Number(result.basePrice).toFixed(2)}</p></div>
+   458→  2555→              <div><p className="text-xs text-muted-foreground">List Price</p><p className="font-mono font-semibold">₹{Number(result.listPrice).toFixed(2)}</p></div>
+   459→  2556→              <div><p className="text-xs text-muted-foreground">Discount</p><p className="font-mono text-red-600">−₹{Number(result.discountAmount).toFixed(2)}</p></div>
+   460→  2557→              <div><p className="text-xs text-muted-foreground">Promotion</p><p className="font-mono text-red-600">−₹{Number(result.promotionAmount).toFixed(2)}</p></div>
+   461→  2558→              <div><p className="text-xs text-muted-foreground">Taxable Amount</p><p className="font-mono font-semibold">₹{Number(result.taxableAmount).toFixed(2)}</p></div>
+   462→  2559→              <div className="col-span-2"><p className="text-xs text-muted-foreground">Tax Components</p>
+   463→  2560→                <div className="flex flex-wrap gap-1 mt-0.5">
+   464→  2561→                  {result.taxComponents?.map((tc: any, i: number) => (
+   465→  2562→                    <Badge key={i} variant="outline" className="text-xs font-mono">{tc.component}: ₹{tc.amount} ({tc.rate}%)</Badge>
+   466→  2563→                  ))}
+   467→  2564→                </div>
+   468→  2565→              </div>
+   469→  2566→              <div><p className="text-xs text-muted-foreground">Tax Total</p><p className="font-mono text-blue-600">+₹{Number(result.taxAmount).toFixed(2)}</p></div>
+   470→  2567→            </div>
+   471→  2568→            {result.appliedDiscounts?.length > 0 && (
+   472→  2569→              <div className="mt-3 pt-3 border-t">
+   473→  2570→                <p className="text-xs text-muted-foreground mb-1">Applied Discounts:</p>
+   474→  2571→                {result.appliedDiscounts.map((d: any, i: number) => (
+   475→  2572→                  <Badge key={i} variant="outline" className="mr-1 text-xs">{d.code}: −₹{d.amount}</Badge>
+   476→  2573→                ))}
+   477→  2574→              </div>
+   478→  2575→            )}
+   479→  2576→            {result.appliedPromotions?.length > 0 && (
+   480→  2577→              <div className="mt-2">
+   481→  2578→                <p className="text-xs text-muted-foreground mb-1">Applied Promotions:</p>
+   482→  2579→                {result.appliedPromotions.map((p: any, i: number) => (
+   483→  2580→                  <Badge key={i} variant="outline" className="mr-1 text-xs bg-pink-50 dark:bg-pink-950/30">{p.code}: −₹{p.amount}</Badge>
+   484→  2581→                ))}
+   485→  2582→              </div>
+   486→  2583→            )}
+   487→  2584→            {result.note && <p className="mt-3 text-xs text-amber-600 italic">{result.note}</p>}
+   488→  2585→          </Card>
+   489→  2586→
+   490→  2587→          {result.resolutionTrace && (
+   491→  2588→            <Card className="p-6">
+   492→  2589→              <h4 className="font-semibold mb-3 flex items-center gap-2"><Activity className="h-4 w-4" /> Resolution Trace (Audit Trail)</h4>
+   493→  2590→              <div className="space-y-1.5 font-mono text-xs">
+   494→  2591→                {result.resolutionTrace.map((t: any, i: number) => (
+   495→  2592→                  <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/40">
+   496→  2593→                    <Badge variant="outline" className="text-xs">{i + 1}</Badge>
+   497→  2594→                    <span className="font-semibold text-blue-600">{t.step}</span>
+   498→  2595→                    {t.source && <span className="text-muted-foreground">← {t.source}</span>}
+   499→  2596→                    {t.value !== undefined && <span className="ml-auto">₹{Number(t.value).toFixed(2)}</span>}
+   500→  2597→                    {t.count !== undefined && <span className="ml-auto text-muted-foreground">{t.count} applied, total ₹{t.totalAmount?.toFixed(2)}</span>}
+   501→  2598→                    {t.discountPercent && <span className="ml-auto text-muted-foreground">−{t.discountPercent}%</span>}
+   502→  2599→                  </div>
+   503→  2600→                ))}
+   504→  2601→              </div>
+   505→  2602→            </Card>
+   506→  2603→          )}
+   507→  2604→        </div>
+   508→  2605→      )}
+   509→  2606→      {result?.error && (
+   510→  2607→        <Card className="p-6 border-red-200"><p className="text-red-600 text-sm">{result.error}</p></Card>
+   511→  2608→      )}
+   512→  2609→    </div>
+   513→  2610→  )
+   514→  2611→}
+   515→  2612→
+   516→  2613→// ─── Business Partner Module (Sprint 9) ─────────────────
+   517→  2614→type BPTab = 'overview' | 'partners' | 'addresses' | 'contacts' | 'financial' | 'compliance' | 'groups' | 'banking' | 'relationships' | 'scorecards'
+   518→  2615→
+   519→  2616→function BusinessPartnerModule() {
+   520→  2617→  const [tab, setTab] = useState<BPTab>('overview')
+   521→  2618→  const tabs: Array<{ key: BPTab; label: string; icon: React.ReactNode }> = [
+   522→  2619→    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
+   523→  2620→    { key: 'partners', label: 'Partners', icon: <Users2 className="h-4 w-4" /> },
+   524→  2621→    { key: 'addresses', label: 'Addresses', icon: <MapPinned className="h-4 w-4" /> },
+   525→  2622→    { key: 'contacts', label: 'Contacts', icon: <Phone className="h-4 w-4" /> },
+   526→  2623→    { key: 'financial', label: 'Financial', icon: <CreditCard className="h-4 w-4" /> },
+   527→  2624→    { key: 'compliance', label: 'Compliance', icon: <ShieldCheck className="h-4 w-4" /> },
+   528→  2625→    { key: 'groups', label: 'Groups', icon: <FolderTree className="h-4 w-4" /> },
+   529→  2626→    { key: 'banking', label: 'Banking', icon: <IndianRupee className="h-4 w-4" /> },
+   530→  2627→    { key: 'relationships', label: 'Relationships', icon: <Handshake className="h-4 w-4" /> },
+   531→  2628→    { key: 'scorecards', label: 'Scorecards', icon: <Award className="h-4 w-4" /> },
+   532→  2629→  ]
+   533→  2630→
+   534→  2631→  return (
+   535→  2632→    <div className="space-y-6">
+   536→  2633→      <Card className="p-6 bg-gradient-to-r from-indigo-950 via-blue-900 to-cyan-900 text-white border-0">
+   537→  2634→        <div className="flex items-start justify-between">
+   538→  2635→          <div>
+   539→  2636→            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+   540→  2637→              <Users2 className="h-7 w-7" /> Enterprise Business Partner Platform
+   541→  2638→            </h2>
+   542→  2639→            <p className="text-blue-200 text-sm max-w-3xl">
+   543→  2640→              Unified master for Customers, Suppliers, Transporters, Franchisees, Corporate Clients,
+   544→  2641→              Delivery Partners, and Service Providers. One partner can play multiple roles — no duplication.
+   545→  2642→              Every module (Finance, Inventory, Sales, Purchase) references the same partner record.
+   546→  2643→            </p>
+   547→  2644→          </div>
+   548→  2645→          <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Sprint 9</Badge>
+   549→  2646→        </div>
+   550→  2647→      </Card>
+   551→  2648→
+   552→  2649→      <div className="flex flex-wrap gap-2 border-b pb-3">
+   553→  2650→        {tabs.map(t => (
+   554→  2651→          <button key={t.key} onClick={() => setTab(t.key)}
+   555→  2652→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+   556→  2653→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+   557→  2654→            {t.icon}{t.label}
+   558→  2655→          </button>
+   559→  2656→        ))}
+   560→  2657→      </div>
+   561→
+   562→[showing lines 2098-2657 of 38132; use offset=2658 with limit to continue reading]

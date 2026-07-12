@@ -1,0 +1,702 @@
+  3185→              traced from customer complaint back to the cashew supplier in Konkan.
+  3186→            </p>
+  3187→          </div>
+  3188→          <Badge className="bg-teal-500 text-teal-950 hover:bg-teal-500">Sprint 10</Badge>
+  3189→        </div>
+  3190→      </Card>
+  3191→
+  3192→      <div className="flex flex-wrap gap-2 border-b pb-3">
+  3193→        {tabs.map(t => (
+  3194→          <button key={t.key} onClick={() => setTab(t.key)}
+  3195→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  3196→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+  3197→            {t.icon}{t.label}
+  3198→          </button>
+  3199→        ))}
+  3200→      </div>
+  3201→
+  3202→      {tab === 'overview' && <IDOverviewTab />}
+  3203→      {tab === 'barcodes' && <IDBarcodesTab />}
+  3204→      {tab === 'qrcodes' && <IDQRCodesTab />}
+  3205→      {tab === 'batches' && <IDBatchesTab />}
+  3206→      {tab === 'lots' && <IDLotsTab />}
+  3207→      {tab === 'serials' && <IDSerialsTab />}
+  3208→      {tab === 'gs1' && <IDGS1Tab />}
+  3209→      {tab === 'labels' && <IDLabelsTab />}
+  3210→      {tab === 'print' && <IDPrintTab />}
+  3211→      {tab === 'traceability' && <IDTraceabilityTab />}
+  3212→    </div>
+  3213→  )
+  3214→}
+  3215→
+  3216→function IDOverviewTab() {
+  3217→  const stats = [
+  3218→    { label: 'Barcode Types', value: '9', sub: 'EAN, UPC, Code128, GS1-128, ITF-14 + Internal', icon: <Barcode className="h-5 w-5 text-blue-600" /> },
+  3219→    { label: 'Barcodes', value: '8', sub: '6 EAN-13 + 2 Internal + 1 ITF-14', icon: <Barcode className="h-5 w-5 text-cyan-600" /> },
+  3220→    { label: 'QR Codes', value: '6', sub: 'Product, Batch, Warehouse, Location, Asset, Invoice', icon: <QrCode className="h-5 w-5 text-purple-600" /> },
+  3221→    { label: 'Batches', value: '8', sub: '2 Released, 1 Quarantined, 1 Blocked, 1 Expired', icon: <Boxes className="h-5 w-5 text-amber-600" /> },
+  3222→    { label: 'Lots', value: '7', sub: '3 Supplier + 2 Production + 1 Return + 1 Packaging', icon: <PackageCheck className="h-5 w-5 text-emerald-600" /> },
+  3223→    { label: 'Serial Numbers', value: '5', sub: 'Machines + Equipment + Electronics', icon: <Hash className="h-5 w-5 text-indigo-600" /> },
+  3224→    { label: 'GS1 Identifiers', value: '6', sub: 'GTIN, GLN, SSCC, GS1-128', icon: <Globe2 className="h-5 w-5 text-pink-600" /> },
+  3225→    { label: 'Label Templates', value: '8', sub: '7 Published + 1 Pending Approval', icon: <FileText className="h-5 w-5 text-teal-600" /> },
+  3226→  ]
+  3227→  return (
+  3228→    <div className="space-y-6">
+  3229→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  3230→        {stats.map(s => (
+  3231→          <Card key={s.label} className="p-4">
+  3232→            <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+  3233→            <p className="text-2xl font-bold">{s.value}</p>
+  3234→            <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+  3235→          </Card>
+  3236→        ))}
+  3237→      </div>
+  3238→      <Card className="p-6 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900">
+  3239→        <h3 className="font-semibold mb-3 flex items-center gap-2"><AlertIcon className="h-5 w-5 text-amber-600" /> Quality Alerts</h3>
+  3240→        <div className="space-y-2 text-sm">
+  3241→          <div className="flex items-center gap-2 p-2 rounded border border-red-200 bg-red-50 dark:bg-red-950/30">
+  3242→            <AlertIcon className="h-4 w-4 text-red-600" />
+  3243→            <span className="font-medium">Batch KK-2606-05 BLOCKED</span>
+  3244→            <span className="text-muted-foreground">— Customer complaint: taste deviation. Recall initiated (RC-2026-001). 56 units quarantined.</span>
+  3245→          </div>
+  3246→          <div className="flex items-center gap-2 p-2 rounded border border-amber-200 bg-amber-50 dark:bg-amber-950/30">
+  3247→            <Clock className="h-4 w-4 text-amber-600" />
+  3248→            <span className="font-medium">Batch KK-2607-02 QUARANTINED</span>
+  3249→            <span className="text-muted-foreground">— Quality check pending. 800 units on hold.</span>
+  3250→          </div>
+  3251→          <div className="flex items-center gap-2 p-2 rounded border border-orange-200 bg-orange-50 dark:bg-orange-950/30">
+  3252→            <Clock className="h-4 w-4 text-orange-600" />
+  3253→            <span className="font-medium">Batch GJ-2606-02 EXPIRED</span>
+  3254→            <span className="text-muted-foreground">— Past expiry date. Disposal required.</span>
+  3255→          </div>
+  3256→        </div>
+  3257→      </Card>
+  3258→      <Card className="p-6 bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-900">
+  3259→        <h3 className="font-semibold mb-2 flex items-center gap-2"><Route className="h-5 w-5 text-teal-600" /> Traceability Architecture</h3>
+  3260→        <p className="text-sm text-muted-foreground mb-3">Every finished product traces back through 7 stages. The Traceability Engine supports both directions:</p>
+  3261→        <div className="grid sm:grid-cols-2 gap-3 text-xs">
+  3262→          <div className="p-3 rounded border bg-background">
+  3263→            <p className="font-semibold mb-2 flex items-center gap-1"><ArrowUpFromLine className="h-4 w-4 text-emerald-600" /> Forward Traceability (Batch → Customer)</p>
+  3264→            <p className="text-muted-foreground">Production Output → Warehouse → Sales Dispatch → Customer Delivery. Used for: "Where did this batch go?"</p>
+  3265→          </div>
+  3266→          <div className="p-3 rounded border bg-background">
+  3267→            <p className="font-semibold mb-2 flex items-center gap-1"><ArrowDownToLine className="h-4 w-4 text-blue-600" /> Backward Traceability (Customer → Supplier)</p>
+  3268→            <p className="text-muted-foreground">Customer Complaint → Invoice → Batch → Production Order → Raw Material → Supplier. Used for recalls.</p>
+  3269→          </div>
+  3270→        </div>
+  3271→      </Card>
+  3272→    </div>
+  3273→  )
+  3274→}
+  3275→
+  3276→function IDBarcodesTab() {
+  3277→  const barcodes = [
+  3278→    { id: 'bc-001', barcode: '8901234567890', type: 'EAN_13', product: 'Kaju Katli 500g', primary: true, status: 'ACTIVE' },
+  3279→    { id: 'bc-002', barcode: '8901234567891', type: 'EAN_13', product: 'Kaju Katli 250g', primary: true, status: 'ACTIVE' },
+  3280→    { id: 'bc-003', barcode: '8901234567892', type: 'EAN_13', product: 'Soan Cake 1kg', primary: true, status: 'ACTIVE' },
+  3281→    { id: 'bc-004', barcode: '8901234567893', type: 'EAN_13', product: 'Mixed Namkeen 200g', primary: true, status: 'ACTIVE' },
+  3282→    { id: 'bc-005', barcode: '8901234567894', type: 'EAN_13', product: 'Gulab Jamun 1kg', primary: true, status: 'ACTIVE' },
+  3283→    { id: 'bc-006', barcode: 'SUDH-INT-KK-500', type: 'INTERNAL', product: 'Kaju Katli 500g (Internal)', primary: false, status: 'ACTIVE' },
+  3284→    { id: 'bc-007', barcode: 'SUDH-INT-SC-1000', type: 'INTERNAL', product: 'Soan Cake 1kg (Internal)', primary: false, status: 'ACTIVE' },
+  3285→    { id: 'bc-008', barcode: '00012345600012', type: 'ITF_14', product: 'Kaju Katli Carton (12 pcs)', primary: false, status: 'ACTIVE' },
+  3286→  ]
+  3287→  const typeColor: Record<string, string> = {
+  3288→    EAN_13: 'bg-blue-100 text-blue-800', EAN_8: 'bg-cyan-100 text-cyan-800',
+  3289→    UPC_A: 'bg-purple-100 text-purple-800', UPC_E: 'bg-violet-100 text-violet-800',
+  3290→    CODE_128: 'bg-amber-100 text-amber-800', CODE_39: 'bg-orange-100 text-orange-800',
+  3291→    GS1_128: 'bg-emerald-100 text-emerald-800', ITF_14: 'bg-pink-100 text-pink-800',
+  3292→    INTERNAL: 'bg-slate-100 text-slate-800',
+  3293→  }
+  3294→  return (
+  3295→    <Card className="p-6">
+  3296→      <div className="flex items-center justify-between mb-4">
+  3297→        <div><h3 className="font-semibold">Barcode Management</h3>
+  3298→        <p className="text-xs text-muted-foreground mt-1">9 supported types: EAN-13, EAN-8, UPC-A, UPC-E, Code128, Code39, GS1-128, ITF-14, Internal. One primary barcode per variant. Unique enforcement.</p></div>
+  3299→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Generate Barcode</Button>
+  3300→      </div>
+  3301→      <div className="overflow-x-auto">
+  3302→        <table className="w-full text-sm">
+  3303→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  3304→            <th className="py-2 font-medium">Barcode</th><th className="font-medium">Type</th>
+  3305→            <th className="font-medium">Product</th><th className="font-medium">Primary</th><th className="font-medium">Status</th>
+  3306→          </tr></thead>
+  3307→          <tbody>
+  3308→            {barcodes.map(b => (
+  3309→              <tr key={b.id} className="border-b hover:bg-muted/40">
+  3310→                <td className="py-2.5 font-mono text-xs">{b.barcode}</td>
+  3311→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[b.type])}>{b.type.replace(/_/g, '-')}</span></td>
+  3312→                <td className="font-medium">{b.product}</td>
+  3313→                <td>{b.primary ? <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">Primary</Badge> : <Badge variant="outline" className="text-xs">Secondary</Badge>}</td>
+  3314→                <td><Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">{b.status}</Badge></td>
+  3315→              </tr>
+  3316→            ))}
+  3317→          </tbody>
+  3318→        </table>
+  3319→      </div>
+  3320→    </Card>
+  3321→  )
+  3322→}
+  3323→
+  3324→function IDQRCodesTab() {
+  3325→  const qrcodes = [
+  3326→    { id: 'qr-001', code: 'QR-PROD-KK-001', purpose: 'PRODUCT', entity: 'Kaju Katli 500g', scans: 1247, lastScan: '2026-07-08 15:23', encrypted: false, status: 'ACTIVE' },
+  3327→    { id: 'qr-002', code: 'QR-BATCH-KK-2607-01', purpose: 'BATCH', entity: 'Batch KK-2607-01', scans: 384, lastScan: '2026-07-09 11:15', encrypted: true, status: 'ACTIVE' },
+  3328→    { id: 'qr-003', code: 'QR-WHSE-MUM-DC', purpose: 'WAREHOUSE', entity: 'Mumbai Distribution Center', scans: 5421, lastScan: '2026-07-09 09:00', encrypted: false, status: 'ACTIVE' },
+  3329→    { id: 'qr-004', code: 'QR-LOC-A1-03', purpose: 'LOCATION', entity: 'Rack A1, Bin 03 (Cold Storage)', scans: 892, lastScan: '2026-07-09 14:30', encrypted: false, status: 'ACTIVE' },
+  3330→    { id: 'qr-005', code: 'QR-ASSET-MIXER-01', purpose: 'ASSET', entity: 'Industrial Mixer M-01', scans: 156, lastScan: '2026-07-07 16:45', encrypted: true, status: 'ACTIVE' },
+  3331→    { id: 'qr-006', code: 'QR-INV-2026-00892', purpose: 'INVOICE', entity: 'Invoice INV-2026-00892 (Tata)', scans: 12, lastScan: '2026-07-08 18:00', encrypted: false, status: 'ACTIVE' },
+  3332→  ]
+  3333→  const purposeColor: Record<string, string> = {
+  3334→    PRODUCT: 'bg-blue-100 text-blue-800', BATCH: 'bg-purple-100 text-purple-800',
+  3335→    WAREHOUSE: 'bg-amber-100 text-amber-800', LOCATION: 'bg-emerald-100 text-emerald-800',
+  3336→    ASSET: 'bg-pink-100 text-pink-800', INVOICE: 'bg-cyan-100 text-cyan-800',
+  3337→  }
+  3338→  return (
+  3339→    <Card className="p-6">
+  3340→      <div className="flex items-center justify-between mb-4">
+  3341→        <div><h3 className="font-semibold">QR Code Platform</h3>
+  3342→        <p className="text-xs text-muted-foreground mt-1">7 purposes: Product, Batch, Warehouse, Location, Asset, Order, Invoice. AES-256 encryption for sensitive codes. Scan tracking with last-scanned timestamp.</p></div>
+  3343→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Generate QR</Button>
+  3344→      </div>
+  3345→      <div className="space-y-3">
+  3346→        {qrcodes.map(q => (
+  3347→          <div key={q.id} className="border rounded-lg p-3 flex items-center gap-3">
+  3348→            <div className="h-12 w-12 rounded-md bg-slate-900 flex items-center justify-center flex-shrink-0">
+  3349→              <QrCode className="h-7 w-7 text-white" />
+  3350→            </div>
+  3351→            <div className="flex-1 min-w-0">
+  3352→              <div className="flex items-center gap-2 mb-1 flex-wrap">
+  3353→                <p className="font-mono text-xs">{q.code}</p>
+  3354→                <span className={cn('inline-block px-1.5 py-0.5 rounded text-xs font-medium', purposeColor[q.purpose])}>{q.purpose}</span>
+  3355→                {q.encrypted && <Badge variant="outline" className="text-xs"><ShieldIcon className="mr-1 h-3 w-3" />AES-256</Badge>}
+  3356→              </div>
+  3357→              <p className="font-medium text-sm truncate">{q.entity}</p>
+  3358→              <p className="text-xs text-muted-foreground">{q.scans.toLocaleString('en-IN')} scans · Last: {q.lastScan}</p>
+  3359→            </div>
+  3360→            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">{q.status}</Badge>
+  3361→          </div>
+  3362→        ))}
+  3363→      </div>
+  3364→    </Card>
+  3365→  )
+  3366→}
+  3367→
+  3368→function IDBatchesTab() {
+  3369→  const batches = [
+  3370→    { id: 'bat-001', batch: 'KK-2607-01', product: 'Kaju Katli 500g', mfg: '2026-07-01', exp: '2026-07-31', produced: 500, remaining: 142, status: 'RELEASED', grade: 'A', lots: 3 },
+  3371→    { id: 'bat-002', batch: 'KK-2607-02', product: 'Kaju Katli 500g', mfg: '2026-07-05', exp: '2026-08-04', produced: 800, remaining: 800, status: 'QUARANTINED', grade: null, lots: 0, reason: 'Quality check pending' },
+  3372→    { id: 'bat-003', batch: 'SC-2606-04', product: 'Soan Cake 1kg', mfg: '2026-06-15', exp: '2026-09-15', produced: 300, remaining: 89, status: 'RELEASED', grade: 'A', lots: 2 },
+  3373→    { id: 'bat-004', batch: 'MN-2607-03', product: 'Mixed Namkeen 200g', mfg: '2026-07-08', exp: '2026-08-22', produced: 1200, remaining: 1180, status: 'PRODUCED', grade: 'B', lots: 4 },
+  3374→    { id: 'bat-005', batch: 'GJ-2606-02', product: 'Gulab Jamun 1kg', mfg: '2026-06-20', exp: '2026-07-20', produced: 400, remaining: 0, status: 'EXPIRED', grade: null, lots: 2, reason: 'Past expiry - dispose' },
+  3375→    { id: 'bat-006', batch: 'GJ-2607-01', product: 'Gulab Jamun 1kg', mfg: '2026-07-05', exp: '2026-08-05', produced: 600, remaining: 412, status: 'RELEASED', grade: 'A', lots: 3 },
+  3376→    { id: 'bat-007', batch: 'KK-2606-05', product: 'Kaju Katli 500g', mfg: '2026-06-25', exp: '2026-07-25', produced: 700, remaining: 56, status: 'BLOCKED', grade: 'C', lots: 2, reason: 'Customer complaint - investigation' },
+  3377→    { id: 'bat-008', batch: 'SC-2607-01', product: 'Soan Cake 1kg', mfg: '2026-07-10', exp: '2026-10-10', produced: 0, remaining: 0, status: 'PLANNED', grade: null, lots: 0 },
+  3378→  ]
+  3379→  const statusColor: Record<string, string> = {
+  3380→    RELEASED: 'bg-emerald-600 hover:bg-emerald-600', PRODUCED: 'bg-blue-600 hover:bg-blue-600',
+  3381→    PLANNED: 'bg-slate-500 hover:bg-slate-500', QUARANTINED: 'bg-amber-500 hover:bg-amber-500',
+  3382→    BLOCKED: 'bg-red-600 hover:bg-red-600', EXPIRED: 'bg-gray-700 hover:bg-gray-700',
+  3383→    CONSUMED: 'bg-violet-600 hover:bg-violet-600',
+  3384→  }
+  3385→  const gradeColor: Record<string, string> = { A: 'text-emerald-600', B: 'text-blue-600', C: 'text-amber-600', REJECT: 'text-red-600' }
+  3386→  return (
+  3387→    <Card className="p-6">
+  3388→      <div className="flex items-center justify-between mb-4">
+  3389→        <div><h3 className="font-semibold">Batch Management</h3>
+  3390→        <p className="text-xs text-muted-foreground mt-1">7 batch statuses: Planned, Produced, Released, Quarantined, Blocked, Consumed, Expired. Quality grade A/B/C/REJECT. Mandatory for all manufactured products (per Chief Architect recommendation).</p></div>
+  3391→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Batch</Button>
+  3392→      </div>
+  3393→      <div className="overflow-x-auto">
+  3394→        <table className="w-full text-sm">
+  3395→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  3396→            <th className="py-2 font-medium">Batch No</th><th className="font-medium">Product</th>
+  3397→            <th className="font-medium">Mfg Date</th><th className="font-medium">Expiry</th>
+  3398→            <th className="font-medium text-right">Produced</th><th className="font-medium text-right">Remaining</th>
+  3399→            <th className="font-medium">Grade</th><th className="font-medium">Lots</th><th className="font-medium">Status</th>
+  3400→          </tr></thead>
+  3401→          <tbody>
+  3402→            {batches.map(b => (
+  3403→              <tr key={b.id} className="border-b hover:bg-muted/40">
+  3404→                <td className="py-2.5 font-mono text-xs">{b.batch}</td>
+  3405→                <td className="font-medium">{b.product}</td>
+  3406→                <td className="text-xs text-muted-foreground">{b.mfg}</td>
+  3407→                <td className="text-xs text-muted-foreground">{b.exp}</td>
+  3408→                <td className="text-right font-mono">{b.produced}</td>
+  3409→                <td className="text-right font-mono">{b.remaining}</td>
+  3410→                <td>{b.grade ? <span className={cn('font-mono font-bold', gradeColor[b.grade])}>{b.grade}</span> : <span className="text-muted-foreground">—</span>}</td>
+  3411→                <td className="text-center">{b.lots}</td>
+  3412→                <td><Badge className={statusColor[b.status] || 'bg-gray-500'}>{b.status}</Badge></td>
+  3413→              </tr>
+  3414→            ))}
+  3415→          </tbody>
+  3416→        </table>
+  3417→      </div>
+  3418→      {(batches.find(b => b.reason)) && (
+  3419→        <div className="mt-4 space-y-2">
+  3420→          <p className="text-xs font-semibold text-muted-foreground">Status Reasons:</p>
+  3421→          {batches.filter(b => b.reason).map(b => (
+  3422→            <div key={b.id} className="text-xs p-2 rounded border bg-muted/40">
+  3423→              <span className="font-mono font-medium">{b.batch}:</span> <span className="text-muted-foreground">{b.reason}</span>
+  3424→            </div>
+  3425→          ))}
+  3426→        </div>
+  3427→      )}
+  3428→    </Card>
+  3429→  )
+  3430→}
+  3431→
+  3432→function IDLotsTab() {
+  3433→  const lots = [
+  3434→    { id: 'lot-001', lot: 'CASHEW-KK-2606', type: 'SUPPLIER_LOT', product: 'Cashew Nuts (Raw)', supplier: 'Konkan Cashew Processors', invoice: 'PO-2026-0142', batch: 'KK-2607-01', qty: 200, remaining: 35, quality: 'PASSED' },
+  3435→    { id: 'lot-002', lot: 'SUGAR-SB-2606', type: 'SUPPLIER_LOT', product: 'Sugar (Raw)', supplier: 'Sri Balaji Sugar', invoice: 'PO-2026-0156', batch: 'KK-2607-01', qty: 150, remaining: 28, quality: 'PASSED' },
+  3436→    { id: 'lot-003', lot: 'GHEE-AM-2606', type: 'SUPPLIER_LOT', product: 'Ghee (Raw)', supplier: 'Amul', invoice: 'PO-2026-0178', batch: 'KK-2607-01', qty: 50, remaining: 12, quality: 'PASSED' },
+  3437→    { id: 'lot-004', lot: 'PROD-KK-2607-01-A', type: 'PRODUCTION_LOT', product: 'Kaju Katli (Run A)', supplier: null, invoice: null, batch: 'KK-2607-01', qty: 250, remaining: 78, quality: 'PASSED' },
+  3438→    { id: 'lot-005', lot: 'PROD-KK-2607-01-B', type: 'PRODUCTION_LOT', product: 'Kaju Katli (Run B)', supplier: null, invoice: null, batch: 'KK-2607-01', qty: 250, remaining: 64, quality: 'PASSED' },
+  3439→    { id: 'lot-006', lot: 'PKG-MB-2607', type: 'SUPPLIER_LOT', product: 'Packaging Boxes', supplier: 'Mumbai Packaging Solutions', invoice: 'PO-2026-0203', batch: null, qty: 5000, remaining: 2840, quality: 'PASSED' },
+  3440→    { id: 'lot-007', lot: 'RET-KK-2606-05', type: 'RETURN_LOT', product: 'Kaju Katli (Returned)', supplier: null, invoice: null, batch: 'KK-2606-05', qty: 24, remaining: 24, quality: 'QUARANTINED' },
+  3441→  ]
+  3442→  const typeColor: Record<string, string> = {
+  3443→    SUPPLIER_LOT: 'bg-purple-100 text-purple-800', PRODUCTION_LOT: 'bg-emerald-100 text-emerald-800',
+  3444→    WAREHOUSE_LOT: 'bg-amber-100 text-amber-800', RETURN_LOT: 'bg-red-100 text-red-800',
+  3445→    INSPECTION_LOT: 'bg-blue-100 text-blue-800',
+  3446→  }
+  3447→  const qualityColor: Record<string, string> = { PASSED: 'text-emerald-600', FAILED: 'text-red-600', PENDING: 'text-amber-600', QUARANTINED: 'text-red-600' }
+  3448→  return (
+  3449→    <Card className="p-6">
+  3450→      <div className="flex items-center justify-between mb-4">
+  3451→        <div><h3 className="font-semibold">Lot Management</h3>
+  3452→        <p className="text-xs text-muted-foreground mt-1">5 lot types: Supplier, Production, Warehouse, Return, Inspection. Hierarchy: Batch → Multiple Lots. Tracks supplier invoice + quality status for raw material traceability.</p></div>
+  3453→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Lot</Button>
+  3454→      </div>
+  3455→      <div className="overflow-x-auto">
+  3456→        <table className="w-full text-sm">
+  3457→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  3458→            <th className="py-2 font-medium">Lot No</th><th className="font-medium">Type</th>
+  3459→            <th className="font-medium">Product</th><th className="font-medium">Supplier / Source</th>
+  3460→            <th className="font-medium">Batch</th><th className="font-medium text-right">Qty</th>
+  3461→            <th className="font-medium text-right">Remaining</th><th className="font-medium">Quality</th>
+  3462→          </tr></thead>
+  3463→          <tbody>
+  3464→            {lots.map(l => (
+  3465→              <tr key={l.id} className="border-b hover:bg-muted/40">
+  3466→                <td className="py-2.5 font-mono text-xs">{l.lot}</td>
+  3467→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[l.type])}>{l.type.replace(/_/g, ' ')}</span></td>
+  3468→                <td className="font-medium">{l.product}</td>
+  3469→                <td className="text-xs">{l.supplier || <span className="text-muted-foreground">—</span>}<br />{l.invoice && <span className="font-mono text-muted-foreground">{l.invoice}</span>}</td>
+  3470→                <td className="font-mono text-xs">{l.batch || <span className="text-muted-foreground">—</span>}</td>
+  3471→                <td className="text-right font-mono">{l.qty}</td>
+  3472→                <td className="text-right font-mono">{l.remaining}</td>
+  3473→                <td className={cn('font-semibold', qualityColor[l.quality])}>{l.quality}</td>
+  3474→              </tr>
+  3475→            ))}
+  3476→          </tbody>
+  3477→        </table>
+  3478→      </div>
+  3479→    </Card>
+  3480→  )
+  3481→}
+  3482→
+  3483→function IDSerialsTab() {
+  3484→  const serials = [
+  3485→    { id: 'sn-001', serial: 'SUDH-MIX-M01', product: 'Industrial Dough Mixer', type: 'MACHINE', warrantyStart: '2025-04-01', warrantyEnd: '2027-04-01', status: 'IN_SERVICE', location: 'Mumbai Plant - Production Line 1', lastService: '2026-06-15', nextService: '2026-09-15' },
+  3486→    { id: 'sn-002', serial: 'SUDH-PACK-P02', product: 'Automatic Packaging Machine', type: 'MACHINE', warrantyStart: '2025-04-01', warrantyEnd: '2027-04-01', status: 'IN_SERVICE', location: 'Mumbai Plant - Packaging Line 2', lastService: '2026-06-20', nextService: '2026-09-20' },
+  3487→    { id: 'sn-003', serial: 'SUDH-COLD-S01', product: 'Walk-in Cold Storage Unit', type: 'EQUIPMENT', warrantyStart: '2024-01-15', warrantyEnd: '2026-01-15', status: 'UNDER_REPAIR', location: 'Mumbai DC - Cold Zone', lastService: '2026-07-01', nextService: '2026-07-12' },
+  3488→    { id: 'sn-004', serial: 'SUDH-FORL-F03', product: 'Electric Forklift', type: 'EQUIPMENT', warrantyStart: '2024-08-01', warrantyEnd: '2026-08-01', status: 'IN_SERVICE', location: 'Pune Warehouse', lastService: '2026-05-10', nextService: '2026-08-10' },
+  3489→    { id: 'sn-005', serial: 'SUDH-POS-R001', product: 'POS Terminal (Retail)', type: 'ELECTRONICS', warrantyStart: '2025-10-01', warrantyEnd: '2026-10-01', status: 'ACTIVE', location: 'Mumbai Retail Store 01', lastService: null, nextService: null },
+  3490→  ]
+  3491→  const typeColor: Record<string, string> = { MACHINE: 'bg-blue-100 text-blue-800', EQUIPMENT: 'bg-purple-100 text-purple-800', ELECTRONICS: 'bg-cyan-100 text-cyan-800', HIGH_VALUE_ITEM: 'bg-amber-100 text-amber-800' }
+  3492→  const statusColor: Record<string, string> = { ACTIVE: 'bg-emerald-600 hover:bg-emerald-600', IN_SERVICE: 'bg-blue-600 hover:bg-blue-600', UNDER_REPAIR: 'bg-amber-500 hover:bg-amber-500', RETIRED: 'bg-gray-600 hover:bg-gray-600', LOST: 'bg-red-600 hover:bg-red-600', STOLEN: 'bg-red-700 hover:bg-red-700' }
+  3493→  return (
+  3494→    <Card className="p-6">
+  3495→      <div className="flex items-center justify-between mb-4">
+  3496→        <div><h3 className="font-semibold">Serial Number Management</h3>
+  3497→        <p className="text-xs text-muted-foreground mt-1">For machines, equipment, electronics, high-value items. Globally unique serials. Tracks warranty, service history, current location. Per Chief Architect: mandatory for machines & equipment, not for food products.</p></div>
+  3498→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Assign Serial</Button>
+  3499→      </div>
+  3500→      <div className="space-y-3">
+  3501→        {serials.map(s => {
+  3502→          const today = new Date()
+  3503→          const warrantyEnd = new Date(s.warrantyEnd)
+  3504→          const warrantyActive = warrantyEnd > today
+  3505→          const warrantyExpiringSoon = warrantyEnd > today && warrantyEnd < new Date(today.getTime() + 60 * 86400000)
+  3506→          return (
+  3507→            <div key={s.id} className="border rounded-lg p-3">
+  3508→              <div className="flex items-start justify-between mb-2">
+  3509→                <div>
+  3510→                  <div className="flex items-center gap-2 mb-1">
+  3511→                    <p className="font-mono text-xs">{s.serial}</p>
+  3512→                    <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[s.type])}>{s.type}</span>
+  3513→                    <Badge className={statusColor[s.status] + ' text-xs'}>{s.status.replace(/_/g, ' ')}</Badge>
+  3514→                  </div>
+  3515→                  <p className="font-medium">{s.product}</p>
+  3516→                  <p className="text-xs text-muted-foreground mt-0.5"><MapPinned className="inline h-3 w-3 mr-1" />{s.location}</p>
+  3517→                </div>
+  3518→                <div className="text-right">
+  3519→                  <p className="text-xs text-muted-foreground">Warranty</p>
+  3520→                  <p className={cn('text-xs font-semibold', warrantyActive ? (warrantyExpiringSoon ? 'text-amber-600' : 'text-emerald-600') : 'text-red-600')}>
+  3521→                    {warrantyActive ? (warrantyExpiringSoon ? 'Expiring soon' : 'Active') : 'Expired'}
+  3522→                  </p>
+  3523→                  <p className="text-xs text-muted-foreground">{s.warrantyStart} → {s.warrantyEnd}</p>
+  3524→                </div>
+  3525→              </div>
+  3526→              <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+  3527→                <span>Last service: <span className="font-medium text-foreground">{s.lastService || 'Never'}</span></span>
+  3528→                <span>·</span>
+  3529→                <span>Next service: <span className="font-medium text-foreground">{s.nextService || 'Not scheduled'}</span></span>
+  3530→              </div>
+  3531→            </div>
+  3532→          )
+  3533→        })}
+  3534→      </div>
+  3535→    </Card>
+  3536→  )
+  3537→}
+  3538→
+  3539→function IDGS1Tab() {
+  3540→  const gs1 = [
+  3541→    { id: 'gs1-001', type: 'GTIN', identifier: '08901234567890', entity: 'Kaju Katli 500g', entityType: 'PRODUCT', prefix: '8901234', check: '0' },
+  3542→    { id: 'gs1-002', type: 'GTIN', identifier: '08901234567891', entity: 'Kaju Katli 250g', entityType: 'PRODUCT', prefix: '8901234', check: '1' },
+  3543→    { id: 'gs1-003', type: 'GLN', identifier: '8901234000017', entity: 'Mumbai Plant', entityType: 'LOCATION', prefix: '8901234', check: '7' },
+  3544→    { id: 'gs1-004', type: 'GLN', identifier: '8901234000024', entity: 'Mumbai Distribution Center', entityType: 'LOCATION', prefix: '8901234', check: '4' },
+  3545→    { id: 'gs1-005', type: 'SSCC', identifier: '008901234000000018', entity: 'Pallet PAL-2026-001', entityType: 'LOGISTIC_UNIT', prefix: '8901234', check: '8' },
+  3546→    { id: 'gs1-006', type: 'GS1_128', identifier: '(01)08901234567890(17)260731(10)KK260701', entity: 'Kaju Katli 500g with batch+expiry', entityType: 'PRODUCT', prefix: '8901234', check: '0' },
+  3547→  ]
+  3548→  const typeColor: Record<string, string> = { GTIN: 'bg-blue-100 text-blue-800', GLN: 'bg-emerald-100 text-emerald-800', SSCC: 'bg-amber-100 text-amber-800', GS1_128: 'bg-purple-100 text-purple-800' }
+  3549→  return (
+  3550→    <Card className="p-6">
+  3551→      <div className="flex items-center justify-between mb-4">
+  3552→        <div><h3 className="font-semibold">GS1 Standards</h3>
+  3553→        <p className="text-xs text-muted-foreground mt-1">4 GS1 identifier types: GTIN (products), GLN (locations), SSCC (logistic units), GS1-128 (with application identifiers). Company prefix: 8901234. Enables global supply chain integration.</p></div>
+  3554→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New GS1 ID</Button>
+  3555→      </div>
+  3556→      <div className="overflow-x-auto">
+  3557→        <table className="w-full text-sm">
+  3558→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  3559→            <th className="py-2 font-medium">Type</th><th className="font-medium">Identifier</th>
+  3560→            <th className="font-medium">Entity</th><th className="font-medium">Type</th>
+  3561→            <th className="font-medium">Company Prefix</th><th className="font-medium">Check</th>
+  3562→          </tr></thead>
+  3563→          <tbody>
+  3564→            {gs1.map(g => (
+  3565→              <tr key={g.id} className="border-b hover:bg-muted/40">
+  3566→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[g.type])}>{g.type.replace(/_/g, '-')}</span></td>
+  3567→                <td className="font-mono text-xs break-all">{g.identifier}</td>
+  3568→                <td className="font-medium">{g.entity}</td>
+  3569→                <td><Badge variant="outline" className="text-xs">{g.entityType.replace(/_/g, ' ')}</Badge></td>
+  3570→                <td className="font-mono text-xs">{g.prefix}</td>
+  3571→                <td className="font-mono">{g.check}</td>
+  3572→              </tr>
+  3573→            ))}
+  3574→          </tbody>
+  3575→        </table>
+  3576→      </div>
+  3577→    </Card>
+  3578→  )
+  3579→}
+  3580→
+  3581→function IDLabelsTab() {
+  3582→  const templates = [
+  3583→    { id: 'lt-001', code: 'LBL-PROD-STD', name: 'Product Label (Standard)', type: 'PRODUCT', format: 'THERMAL', w: 100, h: 60, status: 'PUBLISHED', version: 3, fields: 8 },
+  3584→    { id: 'lt-002', code: 'LBL-SHELF-STD', name: 'Shelf Label', type: 'SHELF', format: 'THERMAL', w: 80, h: 40, status: 'PUBLISHED', version: 2, fields: 5 },
+  3585→    { id: 'lt-003', code: 'LBL-PALLET-STD', name: 'Pallet Label (GS1)', type: 'PALLET', format: 'ZEBRA', w: 150, h: 100, status: 'PUBLISHED', version: 4, fields: 10 },
+  3586→    { id: 'lt-004', code: 'LBL-BATCH-EXP', name: 'Batch Label with Expiry', type: 'BATCH', format: 'THERMAL', w: 100, h: 50, status: 'PUBLISHED', version: 2, fields: 6 },
+  3587→    { id: 'lt-005', code: 'LBL-LOC-QR', name: 'Location QR Label', type: 'LOCATION', format: 'PDF', w: 90, h: 90, status: 'PUBLISHED', version: 1, fields: 4 },
+  3588→    { id: 'lt-006', code: 'LBL-SHIP-DISPATCH', name: 'Shipping Dispatch Label', type: 'SHIPPING', format: 'A4', w: 210, h: 100, status: 'PUBLISHED', version: 5, fields: 12 },
+  3589→    { id: 'lt-007', code: 'LBL-QR-PROD', name: 'Product QR Code Label', type: 'QR', format: 'THERMAL', w: 60, h: 60, status: 'PUBLISHED', version: 1, fields: 3 },
+  3590→    { id: 'lt-008', code: 'LBL-BC-EAN13', name: 'EAN-13 Barcode Label', type: 'BARCODE', format: 'THERMAL', w: 50, h: 30, status: 'PENDING_APPROVAL', version: 1, fields: 2 },
+  3591→  ]
+  3592→  const typeColor: Record<string, string> = {
+  3593→    PRODUCT: 'bg-blue-100 text-blue-800', SHELF: 'bg-cyan-100 text-cyan-800',
+  3594→    PALLET: 'bg-amber-100 text-amber-800', BATCH: 'bg-purple-100 text-purple-800',
+  3595→    LOCATION: 'bg-emerald-100 text-emerald-800', SHIPPING: 'bg-pink-100 text-pink-800',
+  3596→    QR: 'bg-indigo-100 text-indigo-800', BARCODE: 'bg-slate-100 text-slate-800',
+  3597→  }
+  3598→  const statusColor: Record<string, string> = { PUBLISHED: 'bg-emerald-600 hover:bg-emerald-600', DRAFT: 'bg-slate-500 hover:bg-slate-500', PENDING_APPROVAL: 'bg-amber-500 hover:bg-amber-500', APPROVED: 'bg-blue-600 hover:bg-blue-600', ARCHIVED: 'bg-gray-600 hover:bg-gray-600' }
+  3599→  return (
+  3600→    <Card className="p-6">
+  3601→      <div className="flex items-center justify-between mb-4">
+  3602→        <div><h3 className="font-semibold">Label Templates</h3>
+  3603→        <p className="text-xs text-muted-foreground mt-1">8 label types: Product, Shelf, Pallet, Batch, Location, Shipping, QR, Barcode. 5 print formats: A4, Thermal, Zebra, Brother, PDF. Approval workflow before publishing.</p></div>
+  3604→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Template</Button>
+  3605→      </div>
+  3606→      <div className="grid gap-3 md:grid-cols-2">
+  3607→        {templates.map(t => (
+  3608→          <div key={t.id} className="border rounded-lg p-3">
+  3609→            <div className="flex items-start justify-between mb-2">
+  3610→              <div>
+  3611→                <p className="font-mono text-xs text-muted-foreground">{t.code}</p>
+  3612→                <p className="font-medium">{t.name}</p>
+  3613→              </div>
+  3614→              <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[t.type])}>{t.type}</span>
+  3615→            </div>
+  3616→            <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+  3617→              <Badge variant="outline" className="text-xs font-mono">{t.format}</Badge>
+  3618→              <span>{t.w}×{t.h}mm</span>
+  3619→              <span>·</span>
+  3620→              <span>{t.fields} fields</span>
+  3621→              <span>·</span>
+  3622→              <span>v{t.version}</span>
+  3623→            </div>
+  3624→            <Badge className={statusColor[t.status] + ' text-xs'}>{t.status.replace(/_/g, ' ')}</Badge>
+  3625→          </div>
+  3626→        ))}
+  3627→      </div>
+  3628→    </Card>
+  3629→  )
+  3630→}
+  3631→
+  3632→function IDPrintTab() {
+  3633→  const jobs = [
+  3634→    { id: 'lpj-001', template: 'Product Label (Standard)', mode: 'BULK', entityType: 'PRODUCT', printerType: 'THERMAL', printer: 'Zebra ZD420 - Plant 1', total: 500, printed: 500, status: 'COMPLETED', requestedAt: '2026-07-08 10:00', completedAt: '2026-07-08 11:30' },
+  3635→    { id: 'lpj-002', template: 'Batch Label with Expiry', mode: 'SINGLE', entityType: 'BATCH', printerType: 'THERMAL', printer: 'Brother TD-4520 - Plant 1', total: 50, printed: 32, status: 'PRINTING', requestedAt: '2026-07-09 08:00', completedAt: null },
+  3636→    { id: 'lpj-003', template: 'Pallet Label (GS1)', mode: 'BULK', entityType: 'LOGISTIC_UNIT', printerType: 'ZEBRA', printer: 'Zebra ZT411 - DC', total: 24, printed: 0, status: 'QUEUED', requestedAt: '2026-07-09 09:15', scheduledAt: '2026-07-09 14:00' },
+  3637→    { id: 'lpj-004', template: 'Location QR Label', mode: 'BULK', entityType: 'LOCATION', printerType: 'LASER', printer: 'HP LaserJet - Office', total: 120, printed: 120, status: 'COMPLETED', requestedAt: '2026-07-07 15:00', completedAt: '2026-07-07 16:20' },
+  3638→    { id: 'lpj-005', template: 'Shipping Dispatch Label', mode: 'AUTO', entityType: 'INVOICE', printerType: 'NETWORK', printer: 'Network Printer - Dispatch', total: 12, printed: 8, status: 'PRINTING', requestedAt: '2026-07-09 11:00', completedAt: null },
+  3639→    { id: 'lpj-006', template: 'Product Label (Standard)', mode: 'REPRINT', entityType: 'PRODUCT', printerType: 'THERMAL', printer: 'Zebra ZD420 - Plant 1', total: 100, printed: 0, status: 'QUEUED', requestedAt: '2026-07-09 12:00', scheduledAt: null },
+  3640→  ]
+  3641→  const statusColor: Record<string, string> = { COMPLETED: 'bg-emerald-600 hover:bg-emerald-600', PRINTING: 'bg-blue-600 hover:bg-blue-600', QUEUED: 'bg-amber-500 hover:bg-amber-500', FAILED: 'bg-red-600 hover:bg-red-600', CANCELLED: 'bg-gray-500 hover:bg-gray-500' }
+  3642→  return (
+  3643→    <Card className="p-6">
+  3644→      <div className="flex items-center justify-between mb-4">
+  3645→        <div><h3 className="font-semibold">Print Queue</h3>
+  3646→        <p className="text-xs text-muted-foreground mt-1">5 print modes: Single, Bulk, Auto, Scheduled, Reprint. 5 printer types: Thermal, Laser, Inkjet, Bluetooth, Network. Real-time progress tracking.</p></div>
+  3647→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Print Job</Button>
+  3648→      </div>
+  3649→      <div className="space-y-3">
+  3650→        {jobs.map(j => {
+  3651→          const progress = j.total > 0 ? Math.round((j.printed / j.total) * 100) : 0
+  3652→          return (
+  3653→            <div key={j.id} className="border rounded-lg p-3">
+  3654→              <div className="flex items-start justify-between mb-2">
+  3655→                <div>
+  3656→                  <p className="font-medium">{j.template}</p>
+  3657→                  <p className="text-xs text-muted-foreground mt-0.5">
+  3658→                    <Badge variant="outline" className="text-xs mr-1">{j.mode}</Badge>
+  3659→                    <Badge variant="outline" className="text-xs mr-1">{j.entityType.replace(/_/g, ' ')}</Badge>
+  3660→                    <Printer className="inline h-3 w-3 mr-1" />{j.printer}
+  3661→                  </p>
+  3662→                </div>
+  3663→                <Badge className={statusColor[j.status] + ' text-xs'}>{j.status}</Badge>
+  3664→              </div>
+  3665→              <div className="flex items-center gap-3 text-xs">
+  3666→                <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+  3667→                  <div className={cn('h-full', j.status === 'COMPLETED' ? 'bg-emerald-600' : j.status === 'PRINTING' ? 'bg-blue-600' : 'bg-amber-500')} style={{ width: `${progress}%` }} />
+  3668→                </div>
+  3669→                <span className="font-mono font-medium">{j.printed} / {j.total} ({progress}%)</span>
+  3670→              </div>
+  3671→              <p className="text-xs text-muted-foreground mt-1">Requested: {j.requestedAt}{j.completedAt && ` · Completed: ${j.completedAt}`}</p>
+  3672→            </div>
+  3673→          )
+  3674→        })}
+  3675→      </div>
+  3676→    </Card>
+  3677→  )
+  3678→}
+  3679→
+  3680→function IDTraceabilityTab() {
+  3681→  const [batchNumber, setBatchNumber] = useState('KK-2607-01')
+  3682→  const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
+  3683→  const [result, setResult] = useState<any>(null)
+  3684→  const [loading, setLoading] = useState(false)
+  3685→
+  3686→  const mockChain = direction === 'forward'
+  3687→    ? [
+  3688→        { step: 1, stage: 'PRODUCTION_OUTPUT', entity: 'Batch KK-2607-01', detail: 'Kaju Katli 500g manufactured', qty: 500, date: '2026-07-01' },
+  3689→        { step: 2, stage: 'WAREHOUSE_TRANSFER', entity: 'Mumbai Distribution Center', from: 'Mumbai Plant Warehouse', to: 'Mumbai DC', qty: 358, ref: 'TO-2026-0042', date: '2026-07-03' },
+  3690→        { step: 3, stage: 'SALES_DISPATCH', entity: 'Tata Consumer Products', from: 'Mumbai DC', to: 'Tata', qty: 100, ref: 'INV-2026-00892', date: '2026-07-05' },
+  3691→        { step: 4, stage: 'SALES_DISPATCH', entity: 'Reliance Retail (Andheri)', from: 'Mumbai DC', to: 'Reliance', qty: 48, ref: 'INV-2026-00915', date: '2026-07-06' },
+  3692→        { step: 5, stage: 'SALES_DISPATCH', entity: 'Sudhamrit Retail Store 01', from: 'Mumbai DC', to: 'Store 01', qty: 24, ref: 'INV-2026-00921', date: '2026-07-06' },
+  3693→      ]
+  3694→    : [
+  3695→        { step: 1, stage: 'CUSTOMER', entity: 'Customer Complaint / Recall', detail: 'Investigation triggered', date: '2026-07-08' },
+  3696→        { step: 2, stage: 'BATCH', entity: 'Batch KK-2607-01', detail: 'Kaju Katli 500g (Quality: A)', qty: 142, status: 'RELEASED', date: '2026-07-01' },
+  3697→        { step: 3, stage: 'PRODUCTION_ORDER', entity: 'MO-2026-0089', detail: 'Manufacturing order', date: '2026-07-01' },
+  3698→        { step: 4, stage: 'RAW_MATERIAL', entity: 'CASHEW-KK-2606', detail: 'Cashew Nuts', supplier: 'Konkan Cashew Processors', invoice: 'PO-2026-0142', qty: 200, remaining: 35, quality: 'PASSED' },
+  3699→        { step: 5, stage: 'RAW_MATERIAL', entity: 'SUGAR-SB-2606', detail: 'Sugar', supplier: 'Sri Balaji Sugar', invoice: 'PO-2026-0156', qty: 150, remaining: 28, quality: 'PASSED' },
+  3700→        { step: 6, stage: 'RAW_MATERIAL', entity: 'GHEE-AM-2606', detail: 'Ghee', supplier: 'Amul', invoice: 'PO-2026-0178', qty: 50, remaining: 12, quality: 'PASSED' },
+  3701→      ]
+  3702→
+  3703→  async function trace() {
+  3704→    setLoading(true)
+  3705→    try {
+  3706→      const res = await fetch('http://localhost:3030/api/identification/trace', {
+  3707→        method: 'POST',
+  3708→        headers: { 'Content-Type': 'application/json' },
+  3709→        body: JSON.stringify({ batchNumber, direction }),
+  3710→      })
+  3711→      const json = await res.json()
+  3712→      if (json.success) setResult(json.data)
+  3713→      else setResult({ error: json.message })
+  3714→    } catch {
+  3715→      setResult({ chain: mockChain, direction, batch: { batchNumber, productName: 'Kaju Katli 500g', manufacturingDate: '2026-07-01', expiryDate: '2026-07-31', status: 'RELEASED', qualityGrade: 'A', quantityProduced: 500, quantityRemaining: 142 }, relatedLots: 3, relatedLogs: 8, note: 'Backend offline — showing simulated trace. Start backend: cd mini-services/suop-backend && bun run index.ts' })
+  3716→    } finally { setLoading(false) }
+  3717→  }
+  3718→
+  3719→  const stageColor: Record<string, string> = {
+  3720→    PRODUCTION_OUTPUT: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30',
+  3721→    WAREHOUSE_TRANSFER: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30',
+  3722→    SALES_DISPATCH: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30',
+  3723→    CUSTOMER_DELIVERY: 'border-pink-500 bg-pink-50 dark:bg-pink-950/30',
+  3724→    CUSTOMER: 'border-red-500 bg-red-50 dark:bg-red-950/30',
+  3725→    BATCH: 'border-amber-500 bg-amber-50 dark:bg-amber-950/30',
+  3726→    PRODUCTION_ORDER: 'border-cyan-500 bg-cyan-50 dark:bg-cyan-950/30',
+  3727→    RAW_MATERIAL: 'border-teal-500 bg-teal-50 dark:bg-teal-950/30',
+  3728→    RECALL: 'border-red-700 bg-red-50 dark:bg-red-950/30',
+  3729→    QUALITY_HOLD: 'border-orange-500 bg-orange-50 dark:bg-orange-950/30',
+  3730→  }
+  3731→
+  3732→  return (
+  3733→    <div className="space-y-4">
+  3734→      <Card className="p-6">
+  3735→        <div className="flex items-start gap-2 mb-4">
+  3736→          <Route className="h-5 w-5 text-teal-500 flex-shrink-0 mt-0.5" />
+  3737→          <div>
+  3738→            <h3 className="font-semibold">Traceability Engine</h3>
+  3739→            <p className="text-xs text-muted-foreground mt-1">
+  3740→              Forward: trace a batch downstream to all customers who received it. Backward: trace from customer complaint
+  3741→              back to the raw material suppliers. Critical for food safety recalls.
+  3742→            </p>
+  3743→          </div>
+  3744→        </div>
+  3745→        <div className="grid sm:grid-cols-3 gap-3 mb-4">
+  3746→          <div><Label className="text-xs">Batch Number</Label>
+  3747→            <Input value={batchNumber} onChange={e => setBatchNumber(e.target.value)} className="font-mono text-sm" placeholder="KK-2607-01" /></div>
+  3748→          <div><Label className="text-xs">Direction</Label>
+  3749→            <select value={direction} onChange={e => setDirection(e.target.value as 'forward' | 'backward')} className="w-full h-9 rounded-md border px-3 text-sm bg-background">
+  3750→              <option value="forward">Forward (Batch → Customers)</option>
+  3751→              <option value="backward">Backward (Customer → Supplier)</option>
+  3752→            </select></div>
+  3753→          <div className="flex items-end">
+  3754→            <Button onClick={trace} disabled={loading} className="w-full">
+  3755→              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Tracing...</> : <><SearchIcon className="mr-2 h-4 w-4" />Trace</>}
+  3756→            </Button>
+  3757→          </div>
+  3758→        </div>
+  3759→      </Card>
+  3760→
+  3761→      {result && !result.error && (
+  3762→        <Card className="p-6">
+  3763→          <div className="flex items-center justify-between mb-4">
+  3764→            <div>
+  3765→              <h4 className="font-semibold flex items-center gap-2">
+  3766→                {direction === 'forward' ? <ArrowUpFromLine className="h-5 w-5 text-emerald-600" /> : <ArrowDownToLine className="h-5 w-5 text-blue-600" />}
+  3767→                {direction === 'forward' ? 'Forward Traceability' : 'Backward Traceability'} — {result.batch?.batchNumber || batchNumber}
+  3768→              </h4>
+  3769→              <p className="text-xs text-muted-foreground mt-1">
+  3770→                {result.batch?.productName || 'Kaju Katli 500g'} · Mfg: {result.batch?.manufacturingDate || '2026-07-01'} · Exp: {result.batch?.expiryDate || '2026-07-31'} · Quality: {result.batch?.qualityGrade || 'A'} · {result.relatedLots || 3} lots · {result.relatedLogs || 8} events
+  3771→              </p>
+  3772→            </div>
+  3773→            <Badge className={result.batch?.status === 'RELEASED' ? 'bg-emerald-600 hover:bg-emerald-600' : result.batch?.status === 'BLOCKED' ? 'bg-red-600 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-500'}>{result.batch?.status || 'RELEASED'}</Badge>
+  3774→          </div>
+  3775→          {result.note && <p className="text-xs text-amber-600 italic mb-3">{result.note}</p>}
+  3776→          <div className="space-y-3">
+  3777→            {(result.chain || []).map((step: any, i: number) => (
+  3778→              <div key={i} className={cn('border-l-4 rounded-r-lg p-3', stageColor[step.stage] || 'border-slate-400 bg-muted/40')}>
+  3779→                <div className="flex items-start gap-3">
+  3780→                  <div className="flex h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold items-center justify-center flex-shrink-0">{step.step}</div>
+  3781→                  <div className="flex-1">
+  3782→                    <div className="flex items-center gap-2 flex-wrap">
+  3783→                      <Badge variant="outline" className="text-xs font-mono">{step.stage.replace(/_/g, ' ')}</Badge>
+  3784→                      <p className="font-medium text-sm">{step.entity}</p>
+  3785→                    </div>
+  3786→                    {step.detail && <p className="text-xs text-muted-foreground mt-1">{step.detail}</p>}
+  3787→                    <div className="flex items-center gap-3 text-xs mt-1.5 flex-wrap">
+  3788→                      {step.from && step.to && <span><span className="text-muted-foreground">From:</span> <span className="font-medium">{step.from}</span> → <span className="text-muted-foreground">To:</span> <span className="font-medium">{step.to}</span></span>}
+  3789→                      {step.qty && <span><span className="text-muted-foreground">Qty:</span> <span className="font-mono font-medium">{step.qty}</span></span>}
+  3790→                      {step.remaining !== undefined && <span><span className="text-muted-foreground">Remaining:</span> <span className="font-mono font-medium">{step.remaining}</span></span>}
+  3791→                      {step.ref && <span><span className="text-muted-foreground">Ref:</span> <span className="font-mono font-medium">{step.ref}</span></span>}
+  3792→                      {step.supplier && <span><span className="text-muted-foreground">Supplier:</span> <span className="font-medium">{step.supplier}</span></span>}
+  3793→                      {step.invoice && <span><span className="text-muted-foreground">PO:</span> <span className="font-mono font-medium">{step.invoice}</span></span>}
+  3794→                      {step.quality && <span><span className="text-muted-foreground">Quality:</span> <span className="font-semibold text-emerald-600">{step.quality}</span></span>}
+  3795→                      {step.date && <span className="ml-auto text-muted-foreground">{step.date}</span>}
+  3796→                    </div>
+  3797→                    {step.notes && <p className="text-xs text-red-600 mt-1">⚠ {step.notes}</p>}
+  3798→                  </div>
+  3799→                </div>
+  3800→              </div>
+  3801→            ))}
+  3802→          </div>
+  3803→        </Card>
+  3804→      )}
+  3805→      {result?.error && <Card className="p-6 border-red-200"><p className="text-red-600 text-sm">{result.error}</p></Card>}
+  3806→    </div>
+  3807→  )
+  3808→}
+  3809→
+  3810→// ─── Data Governance Module (Sprint 11) ─────────────────
+  3811→type GovTab = 'overview' | 'lifecycle' | 'approvals' | 'import' | 'export' | 'validation' | 'duplicates' | 'audit' | 'quality' | 'history'
+  3812→
+  3813→function GovernanceModule() {
+  3814→  const [tab, setTab] = useState<GovTab>('overview')
+  3815→  const tabs: Array<{ key: GovTab; label: string; icon: React.ReactNode }> = [
+  3816→    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+  3817→    { key: 'lifecycle', label: 'Lifecycle', icon: <Workflow className="h-4 w-4" /> },
+  3818→    { key: 'approvals', label: 'Approvals', icon: <ClipboardList className="h-4 w-4" /> },
+  3819→    { key: 'import', label: 'Import', icon: <UploadCloud className="h-4 w-4" /> },
+  3820→    { key: 'export', label: 'Export', icon: <DownloadCloud className="h-4 w-4" /> },
+  3821→    { key: 'validation', label: 'Validation', icon: <ListChecks className="h-4 w-4" /> },
+  3822→    { key: 'duplicates', label: 'Duplicates', icon: <GitMerge className="h-4 w-4" /> },
+  3823→    { key: 'audit', label: 'Audit Trail', icon: <HistoryIcon className="h-4 w-4" /> },
+  3824→    { key: 'quality', label: 'Quality', icon: <ShieldAlert className="h-4 w-4" /> },
+  3825→    { key: 'history', label: 'Change History', icon: <History className="h-4 w-4" /> },
+  3826→  ]
+  3827→
+  3828→  return (
+  3829→    <div className="space-y-6">
+  3830→      <Card className="p-6 bg-gradient-to-r from-violet-950 via-purple-900 to-fuchsia-900 text-white border-0">
+  3831→        <div className="flex items-start justify-between">
+  3832→          <div>
+  3833→            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+  3834→              <ShieldCheck className="h-7 w-7" /> Data Governance & Master Data Quality
+  3835→            </h2>
+  3836→            <p className="text-violet-200 text-sm max-w-3xl">
+  3837→              Enterprise-grade governance: product lifecycle enforcement, multi-level approval workflows,
+  3838→              bulk import/export with rollback, validation framework, duplicate detection & merge,
+  3839→              complete audit trail, and real-time data quality scoring.
+  3840→            </p>
+  3841→          </div>
+  3842→          <Badge className="bg-violet-500 text-violet-950 hover:bg-violet-500">Sprint 11 · Part 2 ✓</Badge>
+  3843→        </div>
+  3844→      </Card>
+  3845→
+  3846→      <div className="flex flex-wrap gap-2 border-b pb-3">
+  3847→        {tabs.map(t => (
+  3848→          <button key={t.key} onClick={() => setTab(t.key)}
+  3849→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  3850→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+  3851→            {t.icon}{t.label}
+  3852→          </button>
+  3853→        ))}
+  3854→      </div>
+  3855→
+  3856→      {tab === 'overview' && <GovOverviewTab />}
+  3857→      {tab === 'lifecycle' && <GovLifecycleTab />}
+  3858→      {tab === 'approvals' && <GovApprovalsTab />}
+  3859→      {tab === 'import' && <GovImportTab />}
+  3860→      {tab === 'export' && <GovExportTab />}
+  3861→      {tab === 'validation' && <GovValidationTab />}
+  3862→      {tab === 'duplicates' && <GovDuplicatesTab />}
+  3863→      {tab === 'audit' && <GovAuditTab />}
+  3864→      {tab === 'quality' && <GovQualityTab />}
+  3865→      {tab === 'history' && <GovHistoryTab />}
+  3866→    </div>
+  3867→  )
+  3868→}
+  3869→
+  3870→function GovOverviewTab() {
+  3871→  const stats = [
+  3872→    { label: 'Active Products', value: '2', sub: 'In ACTIVE lifecycle state', icon: <Package className="h-5 w-5 text-emerald-600" /> },
+  3873→    { label: 'Pending Approvals', value: '2', sub: '1 IN_REVIEW · 1 PENDING', icon: <ClipboardList className="h-5 w-5 text-amber-600" /> },
+  3874→    { label: 'SLA Breached', value: '1', sub: 'Old Laddu (rejected)', icon: <AlertOctagon className="h-5 w-5 text-red-600" /> },
+  3875→    { label: 'Import Jobs', value: '5', sub: '2 COMPLETED · 1 ROLLBACK', icon: <UploadCloud className="h-5 w-5 text-blue-600" /> },
+  3876→    { label: 'Export Jobs', value: '4', sub: '3 COMPLETED · 1 EXPORTING', icon: <DownloadCloud className="h-5 w-5 text-purple-600" /> },
+  3877→    { label: 'Validation Rules', value: '10', sub: 'All ACTIVE', icon: <ListChecks className="h-5 w-5 text-teal-600" /> },
+  3878→    { label: 'Pending Duplicates', value: '2', sub: 'Need resolution', icon: <GitMerge className="h-5 w-5 text-pink-600" /> },
+  3879→    { label: 'Audit Entries', value: '8', sub: 'Full trail', icon: <HistoryIcon className="h-5 w-5 text-indigo-600" /> },
+  3880→  ]
+  3881→  return (
+  3882→    <div className="space-y-6">
+  3883→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  3884→        {stats.map(s => (
+
+[showing lines 3185-3884 of 38132; use offset=3885 with limit to continue reading]

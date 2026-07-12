@@ -3633,3 +3633,168 @@ Stage Summary:
 - Git tag: v1.1-eip-foundation
 - Pushed to https://github.com/Aakash7977/suop.git
 - VERSION 1.1 EIP FOUNDATION COMPLETE.
+
+---
+Task ID: SECTION03-FE-EXPLORE
+Agent: Section 03 Frontend Explore (sub-agent)
+Task: Explore page.tsx (38,131 lines) to find ALL code related to Section 03 — Master Data Management. Catalog 19 conceptual master modules (Product, Categories, Brand, UOM, HSN/SAC, Tax, Customer, Supplier, Company, Plant, Warehouse, Storage Location, Cost Center, Department, Currency, Payment Terms, Shipping Terms, Price Lists, Reference Masters). Audit API client status. Write findings file at /home/z/my-project/docs/frontend/SECTION-03/_exploration_findings.md.
+
+Work Log:
+- Read worklog.md to understand prior context (Section 01 + 02 already explored/implemented; backend at v1.1 EIP foundation)
+- Read /home/z/my-project/docs/frontend/FRONTEND_IMPLEMENTATION_PROGRESS.md and SECTION-02/SECTION_02_SUMMARY.md for established pattern
+- Listed src/modules/ to find 11 module directories with api/client.ts and components/*.tsx files
+- Mapped sidebar navigation (lines 151-300+): identified "Master Data (Sprint 6-11) — PART 2 COMPLETE" section with 6 sidebar items: products, pim, commercial, partners, identification, governance
+- Identified related master modules in other sidebar sections: organization (Platform), warehouse + whlocations (Operations), plantmaster (Part 5 Manufacturing)
+- Cataloged 11 top-level Section 03 component functions with line ranges:
+  - OrganizationModule() 666-919 (only one wired to real backend)
+  - ProductMasterModule() 1833-1903
+  - PIMModule() 1906-1986
+  - CommercialEngineModule() 1991-2046 + 10 sub-tabs 2048-2611
+  - BusinessPartnerModule() 2616-2671 + 10 sub-tabs 2673-3154 (consolidates Customer + Supplier)
+  - IdentificationModule() 3159-3214 + 10 sub-tabs 3216-3808
+  - GovernanceModule() 3813-3868 + 10 sub-tabs 3870-4378
+  - WarehouseModule() 8410-8453 + 5 sub-tabs 8455-8890
+  - WarehouseLocationModule() 8891-8933 + 5 sub-tabs 8935-9392
+  - PlantMasterModule() 16342-16439
+- Read each module's source code (lines 666-919, 1833-4378, 8340-9392, 16342-16439) capturing mock data arrays, state hooks, function names, UI elements, API calls
+- Confirmed Section 03 modules use 27 useState hooks + 2 useEffect hooks total
+- Identified ~45 hardcoded mock data arrays containing ~250 records
+- Cataloged 4 real API endpoints used (only OrganizationModule's 4 + Commercial ResolutionTab 1 + ID TraceabilityTab 1 = 6 real fetch calls in entire Section 03)
+- Identified ~40 dead buttons (no onClick handlers) across Section 03
+- Read all 6 backend API client files:
+  - src/modules/product/api/client.ts (46 lines, 9 methods on productApi)
+  - src/modules/customer/api/client.ts (30 lines, 8 methods on customerApi)
+  - src/modules/supplier/api/client.ts (30 lines, 8 methods on supplierApi)
+  - src/modules/warehouse/api/client.ts (50 lines, 11 methods on warehouseApi — WMS ops only, not Warehouse Master CRUD)
+  - src/modules/organization/api/client.ts (358 lines, 7 API objects: companyApi, plantApi, warehouseApi, departmentApi, costCenterApi, financialYearApi, hierarchyApi)
+  - src/modules/inventory/api/client.ts (62 lines, 8 methods on inventoryApi)
+- Verified NONE of these clients are imported by page.tsx (grep for `import.*from.*@/modules/` returned no matches)
+- Verified the modular React components in src/modules/*/components/*.tsx (ProductModule.tsx 221 lines, CustomerModule.tsx 171 lines, SupplierModule.tsx 177 lines, WarehouseModule.tsx 37 lines, OrganizationModule.tsx 749 lines) are also NOT imported by page.tsx — they are orphan code
+- Confirmed CommercialEngineModule's price resolution + IdentificationModule's traceability call mini-service endpoints (http://localhost:3030/api/commercial/resolve-price and /api/identification/trace) NOT the main /api/v1/... REST API — checked mini-services/suop-backend/index.ts (lines 3440-3443 and 3901-3905)
+- Identified 12 missing master modules with NO UI in page.tsx: Product Categories, Brand, UOM, HSN/SAC, Cost Center, Department (org-wide), Currency, Payment Terms, Shipping Terms/Incoterms, Reference Masters (some have backend API clients ready)
+- Wrote comprehensive findings file (12 sections, ~600 lines) at /home/z/my-project/docs/frontend/SECTION-03/_exploration_findings.md including:
+  - Module-by-module breakdown with line ranges, mock arrays, state hooks, function names, UI elements
+  - Full mock data array catalog with line numbers + schemas
+  - API client status audit (6 clients, ~50 methods, 0 imported)
+  - Permission check audit (only 1 permission checked: org:create)
+  - 40+ dead buttons catalog
+  - 10 critical issues documented
+  - Production readiness scorecard (overall 3.2/10, only OrganizationModule at 7.5/10)
+  - 8 recommended next actions
+
+Stage Summary:
+- Section 03 frontend exploration COMPLETE
+- Findings file written: /home/z/my-project/docs/frontend/SECTION-03/_exploration_findings.md (~600 lines)
+- Key finding: Only 1 of 9 master modules (OrganizationModule) is wired to real backend. 8 others use ~45 hardcoded mock arrays with ~250 records total. 40+ "New X" buttons have no onClick handlers. Backend API clients exist for product/customer/supplier/warehouse/organization/inventory but NONE are imported into page.tsx — they are orphan code. Modular React components also exist but unused.
+- Section 03 overall production readiness: 3.2/10
+- Recommended next: wire existing API clients, add create/edit/delete/transition flows, add missing master modules (Categories, Brand, UOM, HSN, Cost Center, Department, Currency, Payment Terms, Shipping Terms, Reference Masters)
+- No code changes made — exploration only. Ready for Section 03 implementation phase.
+
+---
+Task ID: SECTION03-BE-EXPLORE
+Agent: Section 03 Backend Explore (sub-agent)
+Task: Map every backend capability related to Section 03 — Master Data Management. Read all backend modules under /home/z/my-project/apps/backend/src/modules/ related to master data (product, customer, supplier, warehouse, inventory, organization, pricing-engine, gst-taxation, recipe-bom, product-costing, financial-foundation, general-ledger). Catalog every endpoint with literal path, every DTO field, every permission string, every repository method, every event, every workflow, every Prisma model. Write findings file at /home/z/my-project/docs/frontend/SECTION-03/_backend_findings.md.
+
+Work Log:
+- Read worklog.md to understand prior context (Section 03 frontend already explored; backend at v1.1 EIP foundation with 3,299 tests passing)
+- Listed /home/z/my-project/apps/backend/src/modules/ — found all 12 target modules with consistent structure (routes/, service/, repository/, workflow/, __tests__/, types/)
+- Read app.ts route mounting (lines 177–236) to capture all 12 mount prefixes
+- Read /home/z/my-project/apps/backend/src/core/permissions/registry.ts (197 lines) to catalog ALL permission literals and DEFAULT_ROLES assignments
+- For each of the 12 modules, read routes/index.ts, service/index.ts, repository/index.ts, workflow/index.ts in full
+
+Module-by-module exploration:
+1. product module (4 files, ~480 lines): 14 endpoints under /api/v1/catalog, ProductLifecycle workflow (6 states, 8 transitions), raw SQL via PGlite, 4 entities (products, categories, brands, uoms, barcodes), zod validators for create operations, audit + events on all mutations
+2. customer module (4 files, ~440 lines): 12 endpoints under /api/v1/sales, CustomerLifecycle workflow (7 states, 12 transitions), raw SQL, 4 entities (customers, contacts, addresses, groups), CRITICAL RBAC GAP — uses org:* as proxy instead of defined customer:* permissions
+3. supplier module (4 files, ~510 lines): 15 endpoints under /api/v1/procurement, SupplierLifecycle workflow (8 states), raw SQL, 6 entities (suppliers, contacts, addresses, compliances, product_mappings, categories), blacklist endpoint with CRITICAL audit severity, preferred-supplier auto-revocation logic
+4. organization module (5 files, ~830 lines): 17 endpoints under /api/v1/organization, OrganizationLifecycle workflow (5 states, 7 transitions), raw SQL, 9 entities (companies, business_units, divisions, regions, plants, warehouses, departments, cost_centers, financial_years), hierarchy tree endpoint with 6-level recursive join, hard-delete requires system:tenant:cross permission
+5. warehouse module (3 files, ~530 lines): 15 endpoints under /api/v1/warehouse, no workflow (manual putaway status transitions), raw SQL, 7 entities (zones, aisles, racks, bins, putaway_tasks, barcode_labels, scan_logs), bin capacity validation, auto-allocate bin for putaway, GS1/QR barcode generation
+6. inventory module (3 files, ~620 lines): 14 endpoints under /api/v1/inventory, no workflow, raw SQL, 7 entities (inventory, transactions, ledger, batches, lots, reservations, blocks), IMMUTABLE ledger with is_immutable flag, FEFO/FIFO strategies, Moving Average Cost, IQC-pass-required business rule for stock-in
+7. pricing-engine module (3 files, ~190 lines): 9 endpoints under /api/v1/sales/pricing, no workflow, raw SQL via genRepo factory, 4 entities (price_lists, promotions, coupons, tax_configurations), full pricing calculation engine (base price → customer discount → promotion → coupon → tax → grand total), reads from price_list_items + customer_price_agreements + tax_configurations tables
+8. gst-taxation module (4 files, ~510 lines): 8 endpoints under /api/v1/finance/gst, Prisma-backed (uses (db as any).GstConfigurations), CRITICAL WORKFLOW GAP — service calls workflowRegistry.get('GstConfigurationLifecycle') but workflow file registers 'TaxReturnLifecycle' instead; CRITICAL RBAC GAP — uses audit:read for both read AND write
+9. recipe-bom module (4 files, ~580 lines): 9 endpoints under /api/v1/manufacturing/recipes, RecipeLifecycle workflow (4 states, 5 transitions), raw SQL, 7 entities (recipes, recipe_items, recipe_byproducts, bom_headers, bom_lines, routings, routing_operations), multi-level BOM explosion via phantom line recursion, recipe cost auto-calculation, yield/loss validation
+10. product-costing module (3 files, ~510 lines): 8 endpoints under /api/v1/finance/costing, Prisma-backed (uses (db as any).ProductCosts), CRITICAL WORKFLOW GAP — service references 'ProductCostLifecycle' workflow that is NOT registered anywhere; CRITICAL RBAC GAP — uses audit:read for both read AND write; CRITICAL DATA MODEL GAP — Prisma model ProductCosts not defined in schema.prisma
+11. financial-foundation module (4 files, ~110 lines condensed): 14 endpoints under /api/v1/finance/foundation, FinancialFoundationJournalEntryLifecycle workflow (4 states), raw SQL via genRepo, 7 entities (chart_of_accounts, fiscal_years, fiscal_periods, cost_centers, profit_centers, currencies, exchange_rates), auto-creates 12 monthly periods on fiscal year create, CRITICAL RBAC GAP — uses audit:read:critical as write proxy
+12. general-ledger module (3 files, ~510 lines): 8 endpoints under /api/v1/finance/gl, Prisma-backed, same RBAC + workflow gaps as gst-taxation and product-costing
+
+Prisma schema exploration:
+- Read /home/z/my-project/prisma/schema.prisma (18,068 lines, ~400+ models)
+- Cataloged all Section-03-relevant models in 8 domains: Product (24 models), Business Partner (11 models), Organization (13 models), Pricing/Tax (20 models), Identification (11 models), Warehouse (12 models), Manufacturing/Recipe-BOM (9 models), Manufacturing org (9 models)
+- Identified critical mismatch: Prisma defines unified BusinessPartner model with roles, but backend uses separate customers/suppliers tables via raw SQL
+- Identified critical mismatch: Prisma defines WarehouseMaster/WarehouseZone/WarehouseAisle/WarehouseRack/WarehouseShelf/WarehouseBin, but warehouse module uses raw SQL with same table names — schema is forward-compatible
+- Identified critical mismatch: Prisma defines StockBalance/StockLedger/InventoryTransaction/InventoryJournalEntry, but inventory module uses raw SQL with inventory/inventory_transactions/inventory_ledger table names
+- Confirmed Prisma models GstConfigurations and ProductCosts referenced in service code are NOT defined in schema.prisma
+
+Findings file written:
+- /home/z/my-project/docs/frontend/SECTION-03/_backend_findings.md (~1,400 lines, 19 sections)
+- Section 0: Reading guide
+- Section 1: Route mount map (12 mount prefixes)
+- Section 2: Permission catalog (24 permission literals mapped to modules)
+- Sections 3–14: Module-by-module deep dive (each with endpoints table, DTOs, business rules, repository methods, database tables)
+- Section 15: Prisma models inventory (8 domains, ~100+ models cataloged with table names and key fields)
+- Section 16: Master endpoint matrix (117 total endpoints, permission matrix, audit coverage matrix, event coverage matrix)
+- Section 17: Missing endpoints (12 sub-sections covering product/customer/supplier/organization/warehouse/inventory/pricing/gst/recipe-bom/financial/identification/governance gaps — frontend UI exists but no backend)
+- Section 18: Backend gaps & recommendations (6 critical security gaps, 4 critical workflow gaps, 5 critical data model gaps, 5 validation gaps, 6 event gaps, 3 audit gaps, 4 architectural consistency gaps, prioritized tier recommendations for frontend wiring)
+- Section 19: Quick reference — all 117 endpoints sorted by path
+
+Key findings (critical for frontend team):
+- 117 total endpoints across 12 modules (Tier 1 functional: 72 endpoints, Tier 2 functional but RBAC-broken: 33 endpoints, Tier 3 broken workflow/Prisma model: 24 endpoints, Tier 4 missing entirely)
+- Customer module uses org:* permissions instead of defined customer:* permissions (1-line fix per route)
+- Pricing-engine uses customer:read/customer:update as proxy for pricing operations (no pricing permissions exist in registry)
+- gst-taxation, product-costing, general-ledger all use audit:read for both read AND write — critical security gap
+- gst-taxation service calls workflow 'GstConfigurationLifecycle' but workflow file registers 'TaxReturnLifecycle' — transition endpoint will always fail
+- product-costing service references 'ProductCostLifecycle' workflow that is not registered anywhere — transition endpoint will always fail
+- Prisma models GstConfigurations and ProductCosts are referenced in service code but NOT defined in schema.prisma — create endpoint will fail at runtime
+- Two cost_centers concepts exist (org module vs financial-foundation module) — schema conflict
+- ~80+ missing endpoints that frontend UI implies (UOM conversions, HSN/SAC master, product variants/images/documents, BU/Division/Region CRUD, warehouse temperature zones, inventory adjustments/transfers/physical counts, price list items, discount rules, GST tax rates/groups, formula/yield rules, payment terms/shipping terms/incoterms masters, identification/traceability, data governance)
+- Three persistence patterns coexist (raw SQL, Prisma client, repository pattern) — needs standardization
+- Optimistic concurrency inconsistent (If-Match header vs body version field vs none)
+
+Stage Summary:
+- Section 03 backend exploration COMPLETE
+- Findings file written: /home/z/my-project/docs/frontend/SECTION-03/_backend_findings.md (~1,400 lines, 19 sections)
+- Total endpoints cataloged: 117 across 12 modules
+- Total Prisma models cataloged: ~100+ across 8 master-data domains
+- Total permission literals mapped: 24
+- Total DTOs documented: ~40 with full field lists
+- Total workflows documented: 8 (ProductLifecycle, CustomerLifecycle, SupplierLifecycle, OrganizationLifecycle, RecipeLifecycle, TaxReturnLifecycle, FinancialFoundationJournalEntryLifecycle, plus 2 broken references)
+- Critical gaps identified: 6 security, 4 workflow, 5 data model, 5 validation, 6 event, 3 audit, 4 architectural
+- ~80 missing endpoints identified that frontend UI implies
+- No code changes made — exploration only. Ready for Section 03 backend fix-up phase and frontend wiring phase.
+- Frontend team can now wire up Tier 1 modules (organization, product, supplier, customer, inventory) directly from this findings file using the literal paths, DTOs, and permission strings documented.
+
+---
+Task ID: SECTION03-SUMMARY
+Agent: Main (Super Z)
+Task: Generate SECTION_03_SUMMARY.md for Master Data Management after frontend + backend exploration
+
+Work Log:
+- Read frontend exploration findings (937 lines, 10 components cataloged, 45 mock arrays, 40+ dead buttons)
+- Read backend exploration findings (2,232 lines, 117 endpoints across 12 modules, 24 permissions, 6 functional workflows)
+- Synthesized findings into comprehensive 1,328-line SECTION_03_SUMMARY.md covering:
+  * Executive summary (overall score 3.2/10)
+  * Business purpose + personas + downstream dependencies
+  * 19 conceptual master sub-domains mapped to UI locations + backend mounts
+  * 10 component-by-component breakdowns with line ranges, state hooks, API calls, permission checks, scores
+  * 4 current forms (2 real API, 1 mini-service, 1 dead)
+  * 17 current tables (all mock, all unpaged)
+  * 40+ dead buttons cataloged by line number
+  * 1 current dialog (Create Company)
+  * Business rules for Product, Customer, Supplier, Organization, Warehouse, Pricing, Identification, Governance
+  * Workflow mapping (10 workflows, 3 broken)
+  * API mapping: 6 wired + 109 available-but-unwired endpoints across 12 modules
+  * Database mapping: ~100+ Prisma models, 6 schema mismatches, 3 persistence patterns
+  * RBAC mapping: 24 permissions, 5 critical gaps, 20+ recommended new permissions
+  * Validation rules per module (3 modules have NO zod validator)
+  * Current problems: 13 critical + 10 high-priority
+  * Missing features: 10 missing UI modules + 50+ missing UI features + ~80 missing backend endpoints
+  * Top 10 critical issues + top 10 high-priority issues
+  * Production readiness scorecard (current vs target per module)
+  * 4-phase implementation plan (extraction → wire-up → backend gaps → polish)
+  * Estimated work breakdown: ~245 hours total
+  * Approval gates defined
+
+Stage Summary:
+- Deliverable: /home/z/my-project/docs/frontend/SECTION-03/SECTION_03_SUMMARY.md (1,328 lines, 88KB)
+- Key findings: Section 03 is 3.2/10 production-ready. Only 1 of 9 modules wired. 40+ dead buttons. 6 backend API clients unused. 3 broken workflows. 5 RBAC gaps. ~80 missing backend endpoints.
+- Status: STOP — awaiting user approval before Phase 1 (code extraction) begins.
+- No code changes made. No UI changes made. Pure analysis + documentation.

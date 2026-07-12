@@ -1,0 +1,552 @@
+  2616→function BusinessPartnerModule() {
+  2617→  const [tab, setTab] = useState<BPTab>('overview')
+  2618→  const tabs: Array<{ key: BPTab; label: string; icon: React.ReactNode }> = [
+  2619→    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
+  2620→    { key: 'partners', label: 'Partners', icon: <Users2 className="h-4 w-4" /> },
+  2621→    { key: 'addresses', label: 'Addresses', icon: <MapPinned className="h-4 w-4" /> },
+  2622→    { key: 'contacts', label: 'Contacts', icon: <Phone className="h-4 w-4" /> },
+  2623→    { key: 'financial', label: 'Financial', icon: <CreditCard className="h-4 w-4" /> },
+  2624→    { key: 'compliance', label: 'Compliance', icon: <ShieldCheck className="h-4 w-4" /> },
+  2625→    { key: 'groups', label: 'Groups', icon: <FolderTree className="h-4 w-4" /> },
+  2626→    { key: 'banking', label: 'Banking', icon: <IndianRupee className="h-4 w-4" /> },
+  2627→    { key: 'relationships', label: 'Relationships', icon: <Handshake className="h-4 w-4" /> },
+  2628→    { key: 'scorecards', label: 'Scorecards', icon: <Award className="h-4 w-4" /> },
+  2629→  ]
+  2630→
+  2631→  return (
+  2632→    <div className="space-y-6">
+  2633→      <Card className="p-6 bg-gradient-to-r from-indigo-950 via-blue-900 to-cyan-900 text-white border-0">
+  2634→        <div className="flex items-start justify-between">
+  2635→          <div>
+  2636→            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+  2637→              <Users2 className="h-7 w-7" /> Enterprise Business Partner Platform
+  2638→            </h2>
+  2639→            <p className="text-blue-200 text-sm max-w-3xl">
+  2640→              Unified master for Customers, Suppliers, Transporters, Franchisees, Corporate Clients,
+  2641→              Delivery Partners, and Service Providers. One partner can play multiple roles — no duplication.
+  2642→              Every module (Finance, Inventory, Sales, Purchase) references the same partner record.
+  2643→            </p>
+  2644→          </div>
+  2645→          <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Sprint 9</Badge>
+  2646→        </div>
+  2647→      </Card>
+  2648→
+  2649→      <div className="flex flex-wrap gap-2 border-b pb-3">
+  2650→        {tabs.map(t => (
+  2651→          <button key={t.key} onClick={() => setTab(t.key)}
+  2652→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  2653→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+  2654→            {t.icon}{t.label}
+  2655→          </button>
+  2656→        ))}
+  2657→      </div>
+  2658→
+  2659→      {tab === 'overview' && <BPOverviewTab />}
+  2660→      {tab === 'partners' && <BPPartnersTab />}
+  2661→      {tab === 'addresses' && <BPAddressesTab />}
+  2662→      {tab === 'contacts' && <BPContactsTab />}
+  2663→      {tab === 'financial' && <BPFinancialTab />}
+  2664→      {tab === 'compliance' && <BPComplianceTab />}
+  2665→      {tab === 'groups' && <BPGroupsTab />}
+  2666→      {tab === 'banking' && <BPBankingTab />}
+  2667→      {tab === 'relationships' && <BPRelationshipsTab />}
+  2668→      {tab === 'scorecards' && <BPScorecardsTab />}
+  2669→    </div>
+  2670→  )
+  2671→}
+  2672→
+  2673→function BPOverviewTab() {
+  2674→  const stats = [
+  2675→    { label: 'Total Partners', value: '10', sub: 'All Active', icon: <Users2 className="h-5 w-5 text-blue-600" /> },
+  2676→    { label: 'Customer Groups', value: '5', sub: 'Retail, Wholesale, Corporate, VIP, Export', icon: <FolderTree className="h-5 w-5 text-emerald-600" /> },
+  2677→    { label: 'Supplier Groups', value: '5', sub: 'Raw, Packaging, Transport, Maint, Utility', icon: <Package className="h-5 w-5 text-purple-600" /> },
+  2678→    { label: 'Total Credit Exposure', value: '₹2.41Cr', sub: 'Across all partners', icon: <CreditCard className="h-5 w-5 text-amber-600" /> },
+  2679→    { label: 'Scorecards', value: '6', sub: 'Q2 2026 graded', icon: <Award className="h-5 w-5 text-pink-600" /> },
+  2680→    { label: 'Relationships', value: '5', sub: 'Parent/subsidiary/franchise', icon: <Handshake className="h-5 w-5 text-teal-600" /> },
+  2681→    { label: 'Low Risk Partners', value: '7', sub: 'Risk score &lt; 25', icon: <ShieldCheck className="h-5 w-5 text-emerald-600" /> },
+  2682→    { label: 'Medium Risk Partners', value: '3', sub: 'Risk 25-50', icon: <AlertIcon className="h-5 w-5 text-amber-600" /> },
+  2683→  ]
+  2684→  const roleBreakdown = [
+  2685→    { role: 'CUSTOMER', count: 3, color: 'bg-blue-500' },
+  2686→    { role: 'SUPPLIER', count: 4, color: 'bg-purple-500' },
+  2687→    { role: 'DISTRIBUTOR', count: 2, color: 'bg-emerald-500' },
+  2688→    { role: 'TRANSPORTER', count: 1, color: 'bg-amber-500' },
+  2689→    { role: 'DELIVERY_PARTNER', count: 2, color: 'bg-pink-500' },
+  2690→    { role: 'FRANCHISE', count: 1, color: 'bg-rose-500' },
+  2691→    { role: 'CORPORATE', count: 3, color: 'bg-indigo-500' },
+  2692→    { role: 'MANUFACTURER', count: 1, color: 'bg-cyan-500' },
+  2693→    { role: 'RETAIL_OUTLET', count: 2, color: 'bg-teal-500' },
+  2694→    { role: 'SERVICE_PROVIDER', count: 2, color: 'bg-violet-500' },
+  2695→  ]
+  2696→  return (
+  2697→    <div className="space-y-6">
+  2698→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  2699→        {stats.map(s => (
+  2700→          <Card key={s.label} className="p-4">
+  2701→            <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+  2702→            <p className="text-2xl font-bold">{s.value}</p>
+  2703→            <p className="text-xs text-muted-foreground mt-1" dangerouslySetInnerHTML={{ __html: s.sub }} />
+  2704→          </Card>
+  2705→        ))}
+  2706→      </div>
+  2707→      <Card className="p-6">
+  2708→        <h3 className="font-semibold mb-4 flex items-center gap-2"><Users2 className="h-5 w-5" /> Partner Role Breakdown</h3>
+  2709→        <p className="text-xs text-muted-foreground mb-4">One partner can hold multiple roles. Total role assignments below.</p>
+  2710→        <div className="space-y-2">
+  2711→          {roleBreakdown.map(r => (
+  2712→            <div key={r.role} className="flex items-center gap-3">
+  2713→              <div className="w-40 text-sm font-medium">{r.role.replace(/_/g, ' ')}</div>
+  2714→              <div className="flex-1 h-6 bg-muted rounded overflow-hidden">
+  2715→                <div className={cn('h-full flex items-center justify-end pr-2 text-white text-xs font-medium', r.color)} style={{ width: `${(r.count / 4) * 100}%` }}>{r.count}</div>
+  2716→              </div>
+  2717→            </div>
+  2718→          ))}
+  2719→        </div>
+  2720→      </Card>
+  2721→      <Card className="p-6 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+  2722→        <h3 className="font-semibold mb-2 flex items-center gap-2"><Handshake className="h-5 w-5 text-blue-600" /> Why Single Business Partner Master?</h3>
+  2723→        <p className="text-sm text-muted-foreground mb-3">
+  2724→          Modern enterprise ERPs (SAP, Oracle, Microsoft Dynamics) use a unified business partner master instead of
+  2725→          separate Customer Master and Supplier Master. One organization can play multiple roles over time:
+  2726→        </p>
+  2727→        <div className="grid sm:grid-cols-2 gap-2 text-xs">
+  2728→          {[
+  2729→            'A supplier can later become a customer',
+  2730→            'A customer can become a distributor',
+  2731→            'A transporter can become a service provider',
+  2732→            'A franchisee is also a retail outlet',
+  2733→            'One PAN/GST record per organization',
+  2734→            'Bank accounts reusable across roles',
+  2735→            'Compliance certificates shared across roles',
+  2736→            'Scorecards evaluate any role performance',
+  2737→          ].map(benefit => (
+  2738→            <div key={benefit} className="flex items-start gap-2">
+  2739→              <CheckCircle2 className="h-3 w-3 text-emerald-600 mt-0.5 flex-shrink-0" />
+  2740→              <span>{benefit}</span>
+  2741→            </div>
+  2742→          ))}
+  2743→        </div>
+  2744→      </Card>
+  2745→    </div>
+  2746→  )
+  2747→}
+  2748→
+  2749→function BPPartnersTab() {
+  2750→  const partners = [
+  2751→    { id: 'bp-001', code: 'CUST-TATA-001', name: 'Tata Consumer Products Ltd.', type: 'CORPORATE', roles: ['CUSTOMER', 'CORPORATE'], gst: '27AAACT2727Q1ZW', credit: 5000000, risk: 'LOW', riskScore: 12.5, status: 'ACTIVE' },
+  2752→    { id: 'bp-002', code: 'SUP-CASHEW-01', name: 'Konkan Cashew Processors Pvt. Ltd.', type: 'COMPANY', roles: ['SUPPLIER', 'MANUFACTURER'], gst: '27AAGCK1234M1Z2', credit: 1000000, risk: 'LOW', riskScore: 18.0, status: 'ACTIVE' },
+  2753→    { id: 'bp-003', code: 'SUP-SUGAR-AP', name: 'Sri Balaji Sugar Industries Ltd.', type: 'COMPANY', roles: ['SUPPLIER'], gst: '37AAECS7890P1Z5', credit: 2500000, risk: 'MEDIUM', riskScore: 35.0, status: 'ACTIVE' },
+  2754→    { id: 'bp-004', code: 'TRANS-BLUE-01', name: 'Blue Dart Express Ltd.', type: 'COMPANY', roles: ['TRANSPORTER', 'DELIVERY_PARTNER'], gst: '27AAACB1234M1Z6', credit: 500000, risk: 'LOW', riskScore: 15.0, status: 'ACTIVE' },
+  2755→    { id: 'bp-005', code: 'CUST-RELIANCE-01', name: 'Reliance Retail Ltd.', type: 'CORPORATE', roles: ['CUSTOMER', 'DISTRIBUTOR', 'RETAIL_OUTLET'], gst: '27AAACR5055K1ZA', credit: 8000000, risk: 'LOW', riskScore: 8.0, status: 'ACTIVE' },
+  2756→    { id: 'bp-006', code: 'FRANCH-MUM-01', name: 'Sudhamrit Franchise - Andheri West', type: 'COMPANY', roles: ['FRANCHISE', 'RETAIL_OUTLET'], gst: '27AAGCS5678P1Z9', credit: 500000, risk: 'MEDIUM', riskScore: 28.0, status: 'ACTIVE' },
+  2757→    { id: 'bp-007', code: 'SUP-GHEE-AMUL', name: 'Amul (GCMMF)', type: 'COMPANY', roles: ['SUPPLIER', 'DISTRIBUTOR'], gst: '24AAACG1234N1Z1', credit: 3000000, risk: 'LOW', riskScore: 10.0, status: 'ACTIVE' },
+  2758→    { id: 'bp-008', code: 'CUST-BLR-TECH', name: 'Infosys Technologies Ltd.', type: 'CORPORATE', roles: ['CUSTOMER', 'CORPORATE', 'SERVICE_PROVIDER'], gst: '29AAACI4798L1ZB', credit: 2000000, risk: 'LOW', riskScore: 5.0, status: 'ACTIVE' },
+  2759→    { id: 'bp-009', code: 'SUP-PKG-MUMBAI', name: 'Mumbai Packaging Solutions', type: 'COMPANY', roles: ['SUPPLIER'], gst: '27AAFCM9012P1Z3', credit: 800000, risk: 'MEDIUM', riskScore: 32.0, status: 'ACTIVE' },
+  2760→    { id: 'bp-010', code: 'DELIV-ZOMATO-01', name: 'Zomato Limited', type: 'COMPANY', roles: ['DELIVERY_PARTNER', 'SERVICE_PROVIDER'], gst: '29AAACZ4567Q1Z8', credit: 300000, risk: 'LOW', riskScore: 20.0, status: 'ACTIVE' },
+  2761→  ]
+  2762→  const roleColor: Record<string, string> = {
+  2763→    CUSTOMER: 'bg-blue-100 text-blue-800', SUPPLIER: 'bg-purple-100 text-purple-800',
+  2764→    DISTRIBUTOR: 'bg-emerald-100 text-emerald-800', TRANSPORTER: 'bg-amber-100 text-amber-800',
+  2765→    DELIVERY_PARTNER: 'bg-pink-100 text-pink-800', FRANCHISE: 'bg-rose-100 text-rose-800',
+  2766→    CORPORATE: 'bg-indigo-100 text-indigo-800', MANUFACTURER: 'bg-cyan-100 text-cyan-800',
+  2767→    RETAIL_OUTLET: 'bg-teal-100 text-teal-800', SERVICE_PROVIDER: 'bg-violet-100 text-violet-800',
+  2768→  }
+  2769→  const riskColor: Record<string, string> = {
+  2770→    LOW: 'bg-emerald-100 text-emerald-800', MEDIUM: 'bg-amber-100 text-amber-800',
+  2771→    HIGH: 'bg-orange-100 text-orange-800', CRITICAL: 'bg-red-100 text-red-800',
+  2772→  }
+  2773→  return (
+  2774→    <Card className="p-6">
+  2775→      <div className="flex items-center justify-between mb-4">
+  2776→        <div><h3 className="font-semibold">Business Partners</h3>
+  2777→        <p className="text-xs text-muted-foreground mt-1">10 partners holding 21 role assignments. Filter by role or type. Duplicate GST/PAN auto-detected on create.</p></div>
+  2778→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Partner</Button>
+  2779→      </div>
+  2780→      <div className="overflow-x-auto">
+  2781→        <table className="w-full text-sm">
+  2782→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  2783→            <th className="py-2 font-medium">Code</th><th className="font-medium">Legal Name</th>
+  2784→            <th className="font-medium">Type</th><th className="font-medium">Roles</th>
+  2785→            <th className="font-medium">GST</th><th className="font-medium text-right">Credit Limit</th>
+  2786→            <th className="font-medium">Risk</th><th className="font-medium">Status</th>
+  2787→          </tr></thead>
+  2788→          <tbody>
+  2789→            {partners.map(p => (
+  2790→              <tr key={p.id} className="border-b hover:bg-muted/40">
+  2791→                <td className="py-2.5 font-mono text-xs">{p.code}</td>
+  2792→                <td className="font-medium">{p.name}</td>
+  2793→                <td><Badge variant="outline" className="text-xs">{p.type}</Badge></td>
+  2794→                <td>
+  2795→                  <div className="flex flex-wrap gap-1">
+  2796→                    {p.roles.map(r => <span key={r} className={cn('inline-block px-1.5 py-0.5 rounded text-xs font-medium', roleColor[r])}>{r.replace(/_/g, ' ')}</span>)}
+  2797→                  </div>
+  2798→                </td>
+  2799→                <td className="font-mono text-xs">{p.gst}</td>
+  2800→                <td className="text-right font-mono">₹{p.credit.toLocaleString('en-IN')}</td>
+  2801→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', riskColor[p.risk])}>{p.risk} ({p.riskScore})</span></td>
+  2802→                <td><Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">{p.status}</Badge></td>
+  2803→              </tr>
+  2804→            ))}
+  2805→          </tbody>
+  2806→        </table>
+  2807→      </div>
+  2808→    </Card>
+  2809→  )
+  2810→}
+  2811→
+  2812→function BPAddressesTab() {
+  2813→  const addresses = [
+  2814→    { partner: 'Tata Consumer Products', type: 'REGISTERED_OFFICE', line1: 'Bombay House, Homi Mody Street', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', isDefault: true },
+  2815→    { partner: 'Tata Consumer Products', type: 'BILLING', line1: 'Tower A, Tata Chambers', city: 'Mumbai', state: 'Maharashtra', pincode: '400020', isDefault: false },
+  2816→    { partner: 'Tata Consumer Products', type: 'SHIPPING', line1: 'Plot 12, MIDC Industrial Area', city: 'Pune', state: 'Maharashtra', pincode: '411019', isDefault: false },
+  2817→    { partner: 'Konkan Cashew Processors', type: 'FACTORY', line1: 'Survey 45, Ratnagiri Road', city: 'Ratnagiri', state: 'Maharashtra', pincode: '415612', isDefault: true },
+  2818→    { partner: 'Konkan Cashew Processors', type: 'BILLING', line1: 'Shop 8, APMC Market', city: 'Vashi', state: 'Maharashtra', pincode: '400703', isDefault: false },
+  2819→    { partner: 'Blue Dart Express', type: 'WAREHOUSE', line1: 'Hub 4, Sahara Logistics Park', city: 'Mumbai', state: 'Maharashtra', pincode: '400709', isDefault: true },
+  2820→    { partner: 'Blue Dart Express', type: 'BRANCH', line1: 'Airport Road, Cargo Terminal', city: 'Bengaluru', state: 'Karnataka', pincode: '560017', isDefault: false },
+  2821→    { partner: 'Sudhamrit Franchise - Andheri West', type: 'RETAIL_OUTLET', line1: 'Shop 12, Lokhandwala Complex', city: 'Mumbai', state: 'Maharashtra', pincode: '400053', isDefault: true },
+  2822→  ]
+  2823→  return (
+  2824→    <Card className="p-6">
+  2825→      <div className="flex items-center justify-between mb-4">
+  2826→        <div><h3 className="font-semibold">Address Management</h3>
+  2827→        <p className="text-xs text-muted-foreground mt-1">9 address types: Registered Office, Billing, Shipping, Factory, Warehouse, Branch, Restaurant, Pickup, Return. Reusable across modules.</p></div>
+  2828→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Address</Button>
+  2829→      </div>
+  2830→      <div className="space-y-3">
+  2831→        {addresses.map((a, i) => (
+  2832→          <div key={i} className="border rounded-lg p-3 flex items-start gap-3">
+  2833→            <MapPinned className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
+  2834→            <div className="flex-1">
+  2835→              <div className="flex items-center gap-2 mb-1">
+  2836→                <p className="font-medium">{a.partner}</p>
+  2837→                <Badge variant="outline" className="text-xs">{a.type.replace(/_/g, ' ')}</Badge>
+  2838→                {a.isDefault && <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">Default</Badge>}
+  2839→              </div>
+  2840→              <p className="text-sm text-muted-foreground">{a.line1}, {a.city}, {a.state} — {a.pincode}</p>
+  2841→            </div>
+  2842→          </div>
+  2843→        ))}
+  2844→      </div>
+  2845→    </Card>
+  2846→  )
+  2847→}
+  2848→
+  2849→function BPContactsTab() {
+  2850→  const contacts = [
+  2851→    { partner: 'Tata Consumer Products', name: 'Rajesh Mehta', designation: 'Procurement Head', email: 'rajesh.mehta@tataconsumer.com', mobile: '+91 98200 12345', primary: true },
+  2852→    { partner: 'Tata Consumer Products', name: 'Priya Sharma', designation: 'Accounts Manager', email: 'priya.sharma@tataconsumer.com', mobile: '+91 98200 67890', primary: false },
+  2853→    { partner: 'Konkan Cashew Processors', name: 'Suresh Patil', designation: 'Director', email: 'suresh@konkancashew.in', mobile: '+91 94210 11111', primary: true },
+  2854→    { partner: 'Blue Dart Express', name: 'Anil Kumar', designation: 'Key Account Manager', email: 'anil.kumar@bluedart.com', mobile: '+91 99300 22222', primary: true },
+  2855→    { partner: 'Reliance Retail', name: 'Vikram Iyer', designation: 'Category Manager - Foods', email: 'vikram.iyer@ril.com', mobile: '+91 98200 33333', primary: true },
+  2856→    { partner: 'Amul', name: 'Deepak Patel', designation: 'Sales Manager (Maharashtra)', email: 'deepak.patel@amul.coop', mobile: '+91 94260 44444', primary: true },
+  2857→    { partner: 'Infosys', name: 'Lakshmi Nair', designation: 'Admin Head', email: 'lakshmi.nair@infosys.com', mobile: '+91 99860 55555', primary: true },
+  2858→  ]
+  2859→  return (
+  2860→    <Card className="p-6">
+  2861→      <div className="flex items-center justify-between mb-4">
+  2862→        <div><h3 className="font-semibold">Contact Management</h3>
+  2863→        <p className="text-xs text-muted-foreground mt-1">Per-partner contacts with designation, department, email, mobile, office phone, WhatsApp, and preferred contact channel.</p></div>
+  2864→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Contact</Button>
+  2865→      </div>
+  2866→      <div className="overflow-x-auto">
+  2867→        <table className="w-full text-sm">
+  2868→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  2869→            <th className="py-2 font-medium">Partner</th><th className="font-medium">Name</th>
+  2870→            <th className="font-medium">Designation</th><th className="font-medium">Email</th>
+  2871→            <th className="font-medium">Mobile</th><th className="font-medium">Primary</th>
+  2872→          </tr></thead>
+  2873→          <tbody>
+  2874→            {contacts.map((c, i) => (
+  2875→              <tr key={i} className="border-b hover:bg-muted/40">
+  2876→                <td className="py-2.5">{c.partner}</td>
+  2877→                <td className="font-medium">{c.name}</td>
+  2878→                <td className="text-xs">{c.designation}</td>
+  2879→                <td className="text-xs"><a href={`mailto:${c.email}`} className="text-blue-600 hover:underline">{c.email}</a></td>
+  2880→                <td className="font-mono text-xs">{c.mobile}</td>
+  2881→                <td>{c.primary ? <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">Yes</Badge> : <Badge variant="outline" className="text-xs">No</Badge>}</td>
+  2882→              </tr>
+  2883→            ))}
+  2884→          </tbody>
+  2885→        </table>
+  2886→      </div>
+  2887→    </Card>
+  2888→  )
+  2889→}
+  2890→
+  2891→function BPFinancialTab() {
+  2892→  const profiles = [
+  2893→    { partner: 'Tata Consumer Products', creditLimit: 5000000, outstanding: 1250000, available: 3750000, creditDays: 60, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_60', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2894→    { partner: 'Konkan Cashew Processors', creditLimit: 1000000, outstanding: 280000, available: 720000, creditDays: 30, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_30', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2895→    { partner: 'Sri Balaji Sugar', creditLimit: 2500000, outstanding: 1850000, available: 650000, creditDays: 45, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_45', taxCategory: 'REGISTERED', risk: 'MEDIUM' },
+  2896→    { partner: 'Blue Dart Express', creditLimit: 500000, outstanding: 145000, available: 355000, creditDays: 30, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_30', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2897→    { partner: 'Reliance Retail', creditLimit: 8000000, outstanding: 4200000, available: 3800000, creditDays: 45, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_45', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2898→    { partner: 'Sudhamrit Andheri Franchise', creditLimit: 500000, outstanding: 85000, available: 415000, creditDays: 15, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_15', taxCategory: 'COMPOSITION', risk: 'MEDIUM' },
+  2899→    { partner: 'Amul', creditLimit: 3000000, outstanding: 920000, available: 2080000, creditDays: 30, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_30', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2900→    { partner: 'Infosys', creditLimit: 2000000, outstanding: 540000, available: 1460000, creditDays: 30, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_30', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2901→    { partner: 'Mumbai Packaging', creditLimit: 800000, outstanding: 410000, available: 390000, creditDays: 30, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_30', taxCategory: 'REGISTERED', risk: 'MEDIUM' },
+  2902→    { partner: 'Zomato', creditLimit: 300000, outstanding: 67000, available: 233000, creditDays: 15, currency: 'INR', paymentMode: 'CREDIT', paymentTerms: 'NET_15', taxCategory: 'REGISTERED', risk: 'LOW' },
+  2903→  ]
+  2904→  const riskColor: Record<string, string> = { LOW: 'text-emerald-600', MEDIUM: 'text-amber-600', HIGH: 'text-orange-600' }
+  2905→  return (
+  2906→    <Card className="p-6">
+  2907→      <h3 className="font-semibold mb-1">Financial Profiles</h3>
+  2908→      <p className="text-xs text-muted-foreground mb-4">Credit limits, outstanding balances, payment terms, tax category, and risk rating per partner. One profile per partner.</p>
+  2909→      <div className="overflow-x-auto">
+  2910→        <table className="w-full text-sm">
+  2911→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  2912→            <th className="py-2 font-medium">Partner</th>
+  2913→            <th className="font-medium text-right">Credit Limit</th><th className="font-medium text-right">Outstanding</th>
+  2914→            <th className="font-medium text-right">Available</th><th className="font-medium">Days</th>
+  2915→            <th className="font-medium">Terms</th><th className="font-medium">Tax</th><th className="font-medium">Risk</th>
+  2916→          </tr></thead>
+  2917→          <tbody>
+  2918→            {profiles.map(p => (
+  2919→              <tr key={p.partner} className="border-b hover:bg-muted/40">
+  2920→                <td className="py-2.5 font-medium">{p.partner}</td>
+  2921→                <td className="text-right font-mono">₹{p.creditLimit.toLocaleString('en-IN')}</td>
+  2922→                <td className="text-right font-mono text-red-600">₹{p.outstanding.toLocaleString('en-IN')}</td>
+  2923→                <td className="text-right font-mono text-emerald-600">₹{p.available.toLocaleString('en-IN')}</td>
+  2924→                <td className="text-center">{p.creditDays}</td>
+  2925→                <td><Badge variant="outline" className="text-xs font-mono">{p.paymentTerms}</Badge></td>
+  2926→                <td><Badge variant="outline" className="text-xs">{p.taxCategory}</Badge></td>
+  2927→                <td className={cn('font-semibold', riskColor[p.risk])}>{p.risk}</td>
+  2928→              </tr>
+  2929→            ))}
+  2930→          </tbody>
+  2931→        </table>
+  2932→      </div>
+  2933→    </Card>
+  2934→  )
+  2935→}
+  2936→
+  2937→function BPComplianceTab() {
+  2938→  const compliance = [
+  2939→    { partner: 'Tata Consumer Products', type: 'GST', number: '27AAACT2727Q1ZW', authority: 'GSTN', issueDate: '2017-07-01', expiry: null, status: 'ACTIVE' },
+  2940→    { partner: 'Tata Consumer Products', type: 'PAN', number: 'AAACT2727Q', authority: 'Income Tax Dept', issueDate: '1998-04-12', expiry: null, status: 'ACTIVE' },
+  2941→    { partner: 'Konkan Cashew Processors', type: 'GST', number: '27AAGCK1234M1Z2', authority: 'GSTN', issueDate: '2017-07-01', expiry: null, status: 'ACTIVE' },
+  2942→    { partner: 'Konkan Cashew Processors', type: 'FSSAI', number: '11522034000123', authority: 'FSSAI', issueDate: '2024-01-15', expiry: '2027-01-14', status: 'ACTIVE' },
+  2943→    { partner: 'Konkan Cashew Processors', type: 'MSME', number: 'UDYAM-MH-12-0044521', authority: 'MSME Ministry', issueDate: '2020-08-10', expiry: null, status: 'ACTIVE' },
+  2944→    { partner: 'Sri Balaji Sugar', type: 'GST', number: '37AAECS7890P1Z5', authority: 'GSTN', issueDate: '2017-07-01', expiry: null, status: 'ACTIVE' },
+  2945→    { partner: 'Amul', type: 'FSSAI', number: '10322034000111', authority: 'FSSAI', issueDate: '2023-06-01', expiry: '2026-05-31', status: 'EXPIRED' },
+  2946→    { partner: 'Amul', type: 'ISO', number: 'ISO 22000:2018', authority: 'ISO Cert Body', issueDate: '2023-09-01', expiry: '2026-08-31', status: 'ACTIVE' },
+  2947→    { partner: 'Mumbai Packaging', type: 'MSME', number: 'UDYAM-MH-16-0099887', authority: 'MSME Ministry', issueDate: '2021-03-15', expiry: null, status: 'ACTIVE' },
+  2948→  ]
+  2949→  const statusColor: Record<string, string> = { ACTIVE: 'bg-emerald-600 hover:bg-emerald-600', EXPIRED: 'bg-red-600 hover:bg-red-600', PENDING_VERIFICATION: 'bg-amber-500 hover:bg-amber-500' }
+  2950→  return (
+  2951→    <Card className="p-6">
+  2952→      <div className="flex items-center justify-between mb-4">
+  2953→        <div><h3 className="font-semibold">Compliance Management</h3>
+  2954→        <p className="text-xs text-muted-foreground mt-1">8 compliance types: GST, PAN, MSME, FSSAI, IEC, ISO, Agreements, Insurance. Document uploads + verification workflow. Expiry alerts.</p></div>
+  2955→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Add Compliance</Button>
+  2956→      </div>
+  2957→      <div className="overflow-x-auto">
+  2958→        <table className="w-full text-sm">
+  2959→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  2960→            <th className="py-2 font-medium">Partner</th><th className="font-medium">Type</th>
+  2961→            <th className="font-medium">Certificate Number</th><th className="font-medium">Authority</th>
+  2962→            <th className="font-medium">Issue</th><th className="font-medium">Expiry</th><th className="font-medium">Status</th>
+  2963→          </tr></thead>
+  2964→          <tbody>
+  2965→            {compliance.map((c, i) => (
+  2966→              <tr key={i} className="border-b hover:bg-muted/40">
+  2967→                <td className="py-2.5">{c.partner}</td>
+  2968→                <td><Badge variant="outline" className="text-xs font-mono">{c.type}</Badge></td>
+  2969→                <td className="font-mono text-xs">{c.number}</td>
+  2970→                <td className="text-xs">{c.authority}</td>
+  2971→                <td className="text-xs text-muted-foreground">{c.issueDate}</td>
+  2972→                <td className="text-xs text-muted-foreground">{c.expiry || '—'}</td>
+  2973→                <td><Badge className={statusColor[c.status] || 'bg-gray-600'}>{c.status.replace(/_/g, ' ')}</Badge></td>
+  2974→              </tr>
+  2975→            ))}
+  2976→          </tbody>
+  2977→        </table>
+  2978→      </div>
+  2979→    </Card>
+  2980→  )
+  2981→}
+  2982→
+  2983→function BPGroupsTab() {
+  2984→  const groups = [
+  2985→    { code: 'CG-RETAIL', name: 'Retail Customers', type: 'CUSTOMER', discount: 0, terms: 'CASH', members: 1245 },
+  2986→    { code: 'CG-WHOLESALE', name: 'Wholesale Customers', type: 'CUSTOMER', discount: 5, terms: 'NET_30', members: 89 },
+  2987→    { code: 'CG-CORPORATE', name: 'Corporate Customers', type: 'CUSTOMER', discount: 8, terms: 'NET_45', members: 32 },
+  2988→    { code: 'CG-VIP', name: 'VIP Customers', type: 'CUSTOMER', discount: 12, terms: 'NET_30', members: 18 },
+  2989→    { code: 'CG-EXPORT', name: 'Export Customers', type: 'CUSTOMER', discount: 0, terms: 'ADVANCE', members: 7 },
+  2990→    { code: 'SG-RAW-MATERIAL', name: 'Raw Material Suppliers', type: 'SUPPLIER', discount: null, terms: 'NET_30', members: 24 },
+  2991→    { code: 'SG-PACKAGING', name: 'Packaging Suppliers', type: 'SUPPLIER', discount: null, terms: 'NET_30', members: 12 },
+  2992→    { code: 'SG-TRANSPORT', name: 'Transport Services', type: 'SUPPLIER', discount: null, terms: 'NET_15', members: 8 },
+  2993→    { code: 'SG-MAINTENANCE', name: 'Maintenance Services', type: 'SUPPLIER', discount: null, terms: 'NET_30', members: 6 },
+  2994→    { code: 'SG-UTILITY', name: 'Utility Providers', type: 'SUPPLIER', discount: null, terms: 'NET_30', members: 4 },
+  2995→  ]
+  2996→  return (
+  2997→    <Card className="p-6">
+  2998→      <div className="flex items-center justify-between mb-4">
+  2999→        <div><h3 className="font-semibold">Customer & Supplier Groups</h3>
+  3000→        <p className="text-xs text-muted-foreground mt-1">Classification for pricing tiers, payment terms defaults, and reporting. Plus flexible partner tags for ad-hoc labeling.</p></div>
+  3001→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Group</Button>
+  3002→      </div>
+  3003→      <div className="grid gap-3 md:grid-cols-2">
+  3004→        {groups.map(g => (
+  3005→          <div key={g.code} className="border rounded-lg p-3">
+  3006→            <div className="flex items-start justify-between mb-2">
+  3007→              <div>
+  3008→                <p className="font-mono text-xs text-muted-foreground">{g.code}</p>
+  3009→                <p className="font-medium">{g.name}</p>
+  3010→              </div>
+  3011→              <Badge className={g.type === 'CUSTOMER' ? 'bg-blue-600 hover:bg-blue-600' : 'bg-purple-600 hover:bg-purple-600'}>{g.type}</Badge>
+  3012→            </div>
+  3013→            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+  3014→              {g.discount !== null && <span>Discount: <span className="font-mono font-medium text-foreground">{g.discount}%</span></span>}
+  3015→              <span>Terms: <span className="font-mono font-medium text-foreground">{g.terms}</span></span>
+  3016→              <span>·</span>
+  3017→              <span><span className="font-mono font-medium text-foreground">{g.members.toLocaleString('en-IN')}</span> members</span>
+  3018→            </div>
+  3019→          </div>
+  3020→        ))}
+  3021→      </div>
+  3022→    </Card>
+  3023→  )
+  3024→}
+  3025→
+  3026→function BPBankingTab() {
+  3027→  const accounts = [
+  3028→    { partner: 'Tata Consumer Products', accountName: 'Tata Consumer Products Ltd', accountNumber: '**** **** **** 4521', bank: 'HDFC Bank', branch: 'Fort, Mumbai', ifsc: 'HDFC0000001', type: 'CURRENT', isDefault: true, verified: true },
+  3029→    { partner: 'Tata Consumer Products', accountName: 'Tata Consumer Products Ltd', accountNumber: '**** **** **** 7821', bank: 'State Bank of India', branch: 'Nariman Point', ifsc: 'SBIN0000001', type: 'CURRENT', isDefault: false, verified: true },
+  3030→    { partner: 'Konkan Cashew Processors', accountName: 'Konkan Cashew Processors Pvt Ltd', accountNumber: '**** **** **** 1192', bank: 'Bank of Maharashtra', branch: 'Ratnagiri', ifsc: 'MAHB0000001', type: 'CURRENT', isDefault: true, verified: true },
+  3031→    { partner: 'Blue Dart Express', accountName: 'Blue Dart Express Ltd', accountNumber: '**** **** **** 3344', bank: 'ICICI Bank', branch: 'Andheri East', ifsc: 'ICIC0000001', type: 'CURRENT', isDefault: true, verified: true },
+  3032→    { partner: 'Blue Dart Express', accountName: 'Blue Dart Express Ltd', accountNumber: '**** **** **** 9912', bank: 'Axis Bank', branch: 'Bengaluru MG Road', ifsc: 'UTIB0000001', type: 'CURRENT', isDefault: false, verified: true },
+  3033→    { partner: 'Reliance Retail', accountName: 'Reliance Retail Ltd', accountNumber: '**** **** **** 5567', bank: 'HDFC Bank', branch: 'Bandra Kurla Complex', ifsc: 'HDFC0000123', type: 'CURRENT', isDefault: true, verified: true },
+  3034→    { partner: 'Amul', accountName: 'GCMMF Ltd', accountNumber: '**** **** **** 2298', bank: 'Bank of Baroda', branch: 'Anand', ifsc: 'BARB0000001', type: 'CURRENT', isDefault: true, verified: true },
+  3035→    { partner: 'Infosys', accountName: 'Infosys Ltd', accountNumber: '**** **** **** 8890', bank: 'HDFC Bank', branch: 'Electronics City', ifsc: 'HDFC0000456', type: 'CURRENT', isDefault: true, verified: true },
+  3036→  ]
+  3037→  return (
+  3038→    <Card className="p-6">
+  3039→      <div className="flex items-center justify-between mb-4">
+  3040→        <div><h3 className="font-semibold">Bank Accounts</h3>
+  3041→        <p className="text-xs text-muted-foreground mt-1">Per-partner bank accounts with IFSC, SWIFT (for export), UPI ID. Account numbers masked in UI (encrypted at rest). Verification workflow for each account.</p></div>
+  3042→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Add Bank Account</Button>
+  3043→      </div>
+  3044→      <div className="space-y-3">
+  3045→        {accounts.map((a, i) => (
+  3046→          <div key={i} className="border rounded-lg p-3">
+  3047→            <div className="flex items-start justify-between mb-2">
+  3048→              <div>
+  3049→                <p className="text-xs text-muted-foreground">{a.partner}</p>
+  3050→                <p className="font-medium">{a.accountName}</p>
+  3051→              </div>
+  3052→              <div className="flex items-center gap-1">
+  3053→                {a.isDefault && <Badge className="bg-blue-600 hover:bg-blue-600 text-xs">Default</Badge>}
+  3054→                {a.verified ? <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs"><CheckCircle2 className="mr-1 h-3 w-3" />Verified</Badge> : <Badge variant="outline" className="text-xs">Pending</Badge>}
+  3055→              </div>
+  3056→            </div>
+  3057→            <div className="grid sm:grid-cols-4 gap-2 text-xs">
+  3058→              <div><p className="text-muted-foreground">Account No</p><p className="font-mono">{a.accountNumber}</p></div>
+  3059→              <div><p className="text-muted-foreground">Bank</p><p>{a.bank}, {a.branch}</p></div>
+  3060→              <div><p className="text-muted-foreground">IFSC</p><p className="font-mono">{a.ifsc}</p></div>
+  3061→              <div><p className="text-muted-foreground">Type</p><Badge variant="outline" className="text-xs">{a.type}</Badge></div>
+  3062→            </div>
+  3063→          </div>
+  3064→        ))}
+  3065→      </div>
+  3066→    </Card>
+  3067→  )
+  3068→}
+  3069→
+  3070→function BPRelationshipsTab() {
+  3071→  const relationships = [
+  3072→    { from: 'Tata Consumer Products', to: 'Sudhamrit Foods Ltd.', type: 'CUSTOMER_OF', validFrom: '2026-01-15', status: 'ACTIVE' },
+  3073→    { from: 'Reliance Retail', to: 'Reliance Industries Ltd.', type: 'SUBSIDIARY', validFrom: '2026-01-12', status: 'ACTIVE' },
+  3074→    { from: 'Konkan Cashew Processors', to: 'Sudhamrit Foods Ltd.', type: 'PREFERRED_SUPPLIER', validFrom: '2026-01-20', status: 'ACTIVE' },
+  3075→    { from: 'Amul', to: 'Sudhamrit Foods Ltd.', type: 'STRATEGIC_PARTNER', validFrom: '2026-01-18', status: 'ACTIVE' },
+  3076→    { from: 'Sudhamrit Franchise - Andheri West', to: 'Sudhamrit Foods Ltd.', type: 'FRANCHISE', validFrom: '2026-03-05', status: 'ACTIVE' },
+  3077→  ]
+  3078→  return (
+  3079→    <Card className="p-6">
+  3080→      <div className="flex items-center justify-between mb-4">
+  3081→        <div><h3 className="font-semibold">Business Partner Relationships</h3>
+  3082→        <p className="text-xs text-muted-foreground mt-1">Track parent/subsidiary, distributor/dealer, franchise, preferred supplier, strategic partner, sister concern, JV partner relationships between partners.</p></div>
+  3083→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Relationship</Button>
+  3084→      </div>
+  3085→      <div className="space-y-3">
+  3086→        {relationships.map((r, i) => (
+  3087→          <div key={i} className="border rounded-lg p-3 flex items-center gap-3">
+  3088→            <Handshake className="h-5 w-5 text-blue-600 flex-shrink-0" />
+  3089→            <div className="flex-1">
+  3090→              <div className="flex items-center gap-2 mb-1">
+  3091→                <p className="font-medium text-sm">{r.from}</p>
+  3092→                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+  3093→                <p className="font-medium text-sm">{r.to}</p>
+  3094→              </div>
+  3095→              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+  3096→                <Badge variant="outline" className="text-xs">{r.type.replace(/_/g, ' ')}</Badge>
+  3097→                <span>Valid from: {r.validFrom}</span>
+  3098→              </div>
+  3099→            </div>
+  3100→            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs">{r.status}</Badge>
+  3101→          </div>
+  3102→        ))}
+  3103→      </div>
+  3104→    </Card>
+  3105→  )
+  3106→}
+  3107→
+  3108→function BPScorecardsTab() {
+  3109→  const scorecards = [
+  3110→    { partner: 'Amul', period: 'Q2 2026', onTime: 97.8, accuracy: 99.5, quality: 98.5, complaints: 0.5, payment: 96.0, response: 95.0, overall: 97.8, grade: 'A+', orders: 218, value: 8450000 },
+  3111→    { partner: 'Tata Consumer Products', period: 'Q2 2026', onTime: null, accuracy: null, quality: 95.0, complaints: 0.8, payment: 99.0, response: null, overall: 96.2, grade: 'A+', orders: 32, value: 12500000 },
+  3112→    { partner: 'Konkan Cashew Processors', period: 'Q2 2026', onTime: 94.5, accuracy: 98.2, quality: 96.0, complaints: 1.2, payment: 92.0, response: 88.0, overall: 93.5, grade: 'A', orders: 142, value: 3845000 },
+  3113→    { partner: 'Blue Dart Express', period: 'Q2 2026', onTime: 91.2, accuracy: 96.8, quality: 92.0, complaints: 2.8, payment: 88.0, response: 90.5, overall: 91.6, grade: 'A', orders: 485, value: 1240000 },
+  3114→    { partner: 'Sri Balaji Sugar', period: 'Q2 2026', onTime: 82.0, accuracy: 88.5, quality: 90.0, complaints: 3.5, payment: 85.0, response: 78.0, overall: 83.5, grade: 'B', orders: 56, value: 2890000 },
+  3115→    { partner: 'Mumbai Packaging Solutions', period: 'Q2 2026', onTime: 75.5, accuracy: 82.0, quality: 85.0, complaints: 5.2, payment: 78.0, response: 72.0, overall: 78.5, grade: 'C', orders: 38, value: 580000 },
+  3116→  ]
+  3117→  const gradeColor: Record<string, string> = { 'A+': 'bg-emerald-600 text-white', 'A': 'bg-emerald-500 text-white', 'B': 'bg-amber-500 text-white', 'C': 'bg-orange-500 text-white', 'D': 'bg-red-600 text-white' }
+  3118→  return (
+  3119→    <Card className="p-6">
+  3120→      <div className="flex items-center justify-between mb-4">
+  3121→        <div><h3 className="font-semibold">Partner Scorecards</h3>
+  3122→        <p className="text-xs text-muted-foreground mt-1">Quarterly evaluations: on-time delivery, order accuracy, quality, complaints, payment history, response time. Composite overall score + letter grade. Future: AI risk prediction, customer lifetime value.</p></div>
+  3123→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Scorecard</Button>
+  3124→      </div>
+  3125→      <div className="space-y-3">
+  3126→        {scorecards.map(s => (
+  3127→          <div key={s.partner} className="border rounded-lg p-3">
+  3128→            <div className="flex items-start justify-between mb-2">
+  3129→              <div>
+  3130→                <p className="font-medium">{s.partner}</p>
+  3131→                <p className="text-xs text-muted-foreground">{s.period} · {s.orders} orders · ₹{s.value.toLocaleString('en-IN')} business value</p>
+  3132→              </div>
+  3133→              <div className="flex items-center gap-2">
+  3134→                <div className="text-right">
+  3135→                  <p className="text-2xl font-bold">{s.overall}</p>
+  3136→                  <p className="text-xs text-muted-foreground">Overall Score</p>
+  3137→                </div>
+  3138→                <span className={cn('inline-flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm', gradeColor[s.grade])}>{s.grade}</span>
+  3139→              </div>
+  3140→            </div>
+  3141→            <div className="grid grid-cols-6 gap-2 text-xs">
+  3142→              <div className="text-center p-2 rounded bg-muted/40"><p className="text-muted-foreground">On-Time</p><p className="font-mono font-semibold">{s.onTime !== null ? `${s.onTime}%` : '—'}</p></div>
+  3143→              <div className="text-center p-2 rounded bg-muted/40"><p className="text-muted-foreground">Accuracy</p><p className="font-mono font-semibold">{s.accuracy !== null ? `${s.accuracy}%` : '—'}</p></div>
+  3144→              <div className="text-center p-2 rounded bg-muted/40"><p className="text-muted-foreground">Quality</p><p className="font-mono font-semibold">{s.quality}%</p></div>
+  3145→              <div className="text-center p-2 rounded bg-muted/40"><p className="text-muted-foreground">Complaints</p><p className="font-mono font-semibold">{s.complaints}%</p></div>
+  3146→              <div className="text-center p-2 rounded bg-muted/40"><p className="text-muted-foreground">Payment</p><p className="font-mono font-semibold">{s.payment}%</p></div>
+  3147→              <div className="text-center p-2 rounded bg-muted/40"><p className="text-muted-foreground">Response</p><p className="font-mono font-semibold">{s.response !== null ? `${s.response}%` : '—'}</p></div>
+  3148→            </div>
+  3149→          </div>
+  3150→        ))}
+  3151→      </div>
+  3152→    </Card>
+  3153→  )
+  3154→}
+  3155→
+  3156→// ─── Identification & Traceability Module (Sprint 10) ────
+  3157→type IDTab = 'overview' | 'barcodes' | 'qrcodes' | 'batches' | 'lots' | 'serials' | 'gs1' | 'labels' | 'print' | 'traceability'
+  3158→
+  3159→function IdentificationModule() {
+  3160→  const [tab, setTab] = useState<IDTab>('overview')
+  3161→  const tabs: Array<{ key: IDTab; label: string; icon: React.ReactNode }> = [
+  3162→    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-4 w-4" /> },
+  3163→    { key: 'barcodes', label: 'Barcodes', icon: <Barcode className="h-4 w-4" /> },
+  3164→    { key: 'qrcodes', label: 'QR Codes', icon: <QrCode className="h-4 w-4" /> },
+  3165→    { key: 'batches', label: 'Batches', icon: <Boxes className="h-4 w-4" /> },
+
+[showing lines 2616-3165 of 38132; use offset=3166 with limit to continue reading]

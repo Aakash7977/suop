@@ -1,0 +1,402 @@
+   700→
+   701→### 6.15 Business rules
+   702→
+   703→1. Company code unique per tenant.
+   704→2. Parent company must exist if `parentId` specified.
+   705→3. Cannot delete company with child companies (`ORG.HAS_CHILDREN`).
+   706→4. Hard delete requires `system:tenant:cross` permission (system admin only).
+   707→5. Only one default warehouse per plant (`ORG.DEFAULT_WAREHOUSE_EXISTS`).
+   708→6. Financial year end date must be after start date.
+   709→7. No overlapping financial years.
+   710→
+   711→### 6.16 Hierarchy tree response shape
+   712→
+   713→GET `/api/v1/organization/hierarchy` returns a tree:
+   714→```json
+   715→[
+   716→  {
+   717→    "id": "uuid", "code": "string", "name": "string", "type": "Company", "status": "ACTIVE",
+   718→    "children": [
+   719→      { "type": "BusinessUnit", ..., "children": [
+   720→        { "type": "Division", ..., "children": [
+   721→          { "type": "Region", ..., "children": [
+   722→            { "type": "Plant", ..., "children": [
+   723→              { "type": "Warehouse", ... }
+   724→            ]}
+   725→          ]}
+   726→        ]}
+   727→      ]}
+   728→    ]
+   729→  }
+   730→]
+   731→```
+   732→
+   733→### 6.17 Database tables touched (raw SQL)
+   734→
+   735→`companies`, `business_units`, `divisions`, `regions`, `plants`, `warehouses`, `departments`, `cost_centers`, `financial_years`
+   736→
+   737→### 6.18 Repository also defines `businessUnitRepository` (full CRUD) but NO routes are exposed for BusinessUnits, Divisions, or Regions — only the hierarchy endpoint reads them.
+   738→
+   739→---
+   740→
+   741→## 7. Module: `warehouse` — Zones, Aisles, Racks, Bins, Putaway, Barcodes, Scan logs
+   742→
+   743→**Mount**: `/api/v1/warehouse`
+   744→**File**: `apps/backend/src/modules/warehouse/routes/index.ts` (181 lines)
+   745→**Permission family**: `inventory:read|post` (no warehouse-specific permissions exist)
+   746→**Workflow**: No workflow state machine — zones/aisles/racks/bins have no status transitions; putaway tasks transition manually via service.
+   747→
+   748→### 7.1 Endpoints — Zones
+   749→
+   750→| Method | Path                                  | Permission         | Description            | Audit | Event |
+   751→|--------|---------------------------------------|--------------------|------------------------|-------|-------|
+   752→| GET    | `/api/v1/warehouse/zones`             | `inventory:read`   | List zones (?warehouseId=) | No  | No    |
+   753→| POST   | `/api/v1/warehouse/zones`             | `inventory:post`   | Create zone            | Yes   | No    |
+   754→
+   755→### 7.2 Endpoints — Aisles
+   756→
+   757→| Method | Path                                  | Permission         | Description            | Audit | Event |
+   758→|--------|---------------------------------------|--------------------|------------------------|-------|-------|
+   759→| GET    | `/api/v1/warehouse/aisles`            | `inventory:read`   | List aisles (?warehouseId=) | No | No |
+   760→| POST   | `/api/v1/warehouse/aisles`            | `inventory:post`   | Create aisle           | Yes   | No    |
+   761→
+   762→### 7.3 Endpoints — Racks
+   763→
+   764→| Method | Path                                  | Permission         | Description            | Audit | Event |
+   765→|--------|---------------------------------------|--------------------|------------------------|-------|-------|
+   766→| GET    | `/api/v1/warehouse/racks`             | `inventory:read`   | List racks (?warehouseId=) | No | No |
+   767→| POST   | `/api/v1/warehouse/racks`             | `inventory:post`   | Create rack            | Yes   | No    |
+   768→
+   769→### 7.4 Endpoints — Bins
+   770→
+   771→| Method | Path                                  | Permission         | Description                              | Audit | Event |
+   772→|--------|---------------------------------------|--------------------|------------------------------------------|-------|-------|
+   773→| GET    | `/api/v1/warehouse/bins`              | `inventory:read`   | List bins (?warehouseId=&zoneId=&aisleId=&rackId=) | No | No |
+   774→| POST   | `/api/v1/warehouse/bins`              | `inventory:post`   | Create bin                              | Yes   | No    |
+   775→
+   776→### 7.5 Endpoints — Putaway Tasks
+   777→
+   778→| Method | Path                                              | Permission         | Description                          | Audit | Event                          |
+   779→|--------|---------------------------------------------------|--------------------|--------------------------------------|-------|--------------------------------|
+   780→| GET    | `/api/v1/warehouse/putaway-tasks`                 | `inventory:read`   | List putaway tasks (paginated)       | No    | No                             |
+   781→| POST   | `/api/v1/warehouse/putaway-tasks`                 | `inventory:post`   | Create putaway task (validates bin)  | Yes   | `PutawayTaskCreated`           |
+   782→| POST   | `/api/v1/warehouse/putaway-tasks/:id/complete`    | `inventory:post`   | Complete putaway (updates bin used)  | Yes   | `PutawayCompleted`             |
+   783→
+   784→### 7.6 Endpoints — Barcode Engine
+   785→
+   786→| Method | Path                                              | Permission         | Description                              | Audit | Event |
+   787→|--------|---------------------------------------------------|--------------------|------------------------------------------|-------|-------|
+   788→| GET    | `/api/v1/warehouse/barcodes`                      | `inventory:read`   | List barcodes (paginated)                | No    | No    |
+   789→| POST   | `/api/v1/warehouse/barcodes`                      | `inventory:post`   | Create barcode label                     | Yes (`BARCODE_CREATED`) | No |
+   790→| POST   | `/api/v1/warehouse/barcodes/:id/print`            | `inventory:read`   | Mark barcode as printed (increments print_count) | Yes (`BARCODE_PRINTED`) | No |
+   791→
+   792→### 7.7 Endpoints — Scanner
+   793→
+   794→| Method | Path                                              | Permission         | Description                          | Audit | Event |
+   795→|--------|---------------------------------------------------|--------------------|--------------------------------------|-------|-------|
+   796→| POST   | `/api/v1/warehouse/scan`                          | `inventory:read`   | Scan a barcode (returns label)       | Yes (`BARCODE_SCANNED`) | No |
+   797→| GET    | `/api/v1/warehouse/scan-logs`                     | `inventory:read`   | List scan logs (paginated)           | No    | No    |
+   798→
+   799→### 7.8 DTO: `zoneSchema`
+   800→
+   801→| Field          | Type    | Validation             | Default    |
+   802→|----------------|---------|------------------------|------------|
+   803→| `warehouseId`  | uuid    | required               | —          |
+   804→| `zoneCode`     | string  | min 1                  | required   |
+   805→| `zoneName`     | string  | min 1                  | required   |
+   806→| `zoneType`     | string  |                        | `STORAGE`  |
+   807→| `capacity`     | number  | non-negative, optional | —          |
+   808→| `description`  | string  | optional               | —          |
+   809→
+   810→### 7.9 DTO: `aisleSchema`
+   811→
+   812→| Field          | Type    | Validation             | Default |
+   813→|----------------|---------|------------------------|---------|
+   814→| `warehouseId`  | uuid    | required               | —       |
+   815→| `zoneId`       | uuid    | optional               | —       |
+   816→| `aisleCode`    | string  | min 1                  | required|
+   817→| `aisleName`    | string  | min 1                  | required|
+   818→| `capacity`     | number  | non-negative, optional | —       |
+   819→| `description`  | string  | optional               | —       |
+   820→
+   821→### 7.10 DTO: `rackSchema`
+   822→
+   823→| Field                | Type    | Validation             | Default     |
+   824→|----------------------|---------|------------------------|-------------|
+   825→| `warehouseId`        | uuid    | required               | —           |
+   826→| `zoneId`             | uuid    | optional               | —           |
+   827→| `aisleId`            | uuid    | optional               | —           |
+   828→| `rackCode`           | string  | min 1                  | required    |
+   829→| `rackName`           | string  | min 1                  | required    |
+   830→| `rackType`           | string  |                        | `STANDARD`  |
+   831→| `levels`             | number  | int, positive          | 1           |
+   832→| `capacityPerLevel`   | number  | non-negative, optional | —           |
+   833→| `description`        | string  | optional               | —           |
+   834→
+   835→### 7.11 DTO: `binSchema`
+   836→
+   837→| Field          | Type    | Validation             | Default    |
+   838→|----------------|---------|------------------------|------------|
+   839→| `warehouseId`  | uuid    | required               | —          |
+   840→| `zoneId`       | uuid    | optional               | —          |
+   841→| `aisleId`      | uuid    | optional               | —          |
+   842→| `rackId`       | uuid    | optional               | —          |
+   843→| `binCode`      | string  | min 1                  | required   |
+   844→| `binName`      | string  | min 1                  | required   |
+   845→| `binType`      | string  |                        | `STORAGE`  |
+   846→| `level`        | number  | int, positive          | 1          |
+   847→| `position`     | string  | optional               | —          |
+   848→| `capacity`     | number  | non-negative, optional | —          |
+   849→| `description`  | string  | optional               | —          |
+   850→
+   851→### 7.12 DTO: `putawaySchema`
+   852→
+   853→| Field              | Type    | Validation                                                                  | Default  |
+   854→|--------------------|---------|-----------------------------------------------------------------------------|----------|
+   855→| `grnId`            | uuid    | optional                                                                    | —        |
+   856→| `grnNumber`        | string  | optional                                                                    | —        |
+   857→| `grnLineId`        | uuid    | optional                                                                    | —        |
+   858→| `inspectionLotId`  | uuid    | **required**                                                                | —        |
+   859→| `productId`        | uuid    | required                                                                    | —        |
+   860→| `productSku`       | string  | min 1                                                                       | required |
+   861→| `productName`      | string  | min 1                                                                       | required |
+   862→| `batchId`          | uuid    | optional                                                                    | —        |
+   863→| `batchNumber`      | string  | optional                                                                    | —        |
+   864→| `lotId`            | uuid    | optional                                                                    | —        |
+   865→| `lotNumber`        | string  | optional                                                                    | —        |
+   866→| `quantity`         | number  | positive                                                                    | required |
+   867→| `uomId`            | uuid    | required                                                                    | —        |
+   868→| `uomCode`          | string  | min 1                                                                       | required |
+   869→| `warehouseId`      | uuid    | required                                                                    | —        |
+   870→| `warehouseName`    | string  | min 1                                                                       | required |
+   871→| `targetBinId`      | uuid    | optional (auto-allocated if omitted)                                        | —        |
+   872→| `targetBinCode`    | string  | optional                                                                    | —        |
+   873→| `assignedTo`       | uuid    | optional                                                                    | —        |
+   874→| `assignedToName`   | string  | optional                                                                    | —        |
+   875→| `priority`         | enum    | `LOW`/`NORMAL`/`HIGH`/`URGENT`                                              | `NORMAL` |
+   876→| `remarks`          | string  | optional                                                                    | —        |
+   877→
+   878→### 7.13 DTO: `barcodeSchema` (Warehouse)
+   879→
+   880→| Field              | Type    | Validation                                                                                    |
+   881→|--------------------|---------|-----------------------------------------------------------------------------------------------|
+   882→| `labelType`        | enum    | `PRODUCT`/`BATCH`/`LOT`/`BIN`/`GRN`/`PALLET`/`GS1`/`QR`                                     |
+   883→| `productId`        | uuid    | optional                                                                                      |
+   884→| `productSku`       | string  | optional                                                                                      |
+   885→| `productName`      | string  | optional                                                                                      |
+   886→| `batchId`          | uuid    | optional                                                                                      |
+   887→| `batchNumber`      | string  | optional                                                                                      |
+   888→| `lotId`            | uuid    | optional                                                                                      |
+   889→| `lotNumber`        | string  | optional                                                                                      |
+   890→| `warehouseId`      | uuid    | optional                                                                                      |
+   891→| `binId`            | uuid    | optional                                                                                      |
+   892→| `binCode`          | string  | optional                                                                                      |
+   893→| `grnId`            | uuid    | optional                                                                                      |
+   894→| `grnNumber`        | string  | optional                                                                                      |
+   895→| `quantity`         | number  | optional                                                                                      |
+   896→| `uomCode`          | string  | optional                                                                                      |
+   897→| `manufactureDate`  | string  | datetime, optional                                                                            |
+   898→| `expiryDate`       | string  | datetime, optional                                                                            |
+   899→| `gs1Gtin`          | string  | optional                                                                                      |
+   900→
+   901→### 7.14 DTO: `scanSchema`
+   902→
+   903→| Field          | Type   | Validation             |
+   904→|----------------|--------|------------------------|
+   905→| `barcode`      | string | min 1                  |
+   906→| `scanType`     | string | min 1                  |
+   907→| `scanContext`  | string | optional               |
+   908→| `deviceId`     | string | optional               |
+   909→| `location`     | string | optional               |
+   910→
+   911→### 7.15 Business rules
+   912→
+   913→1. Putaway quantity must be positive.
+   914→2. If target bin specified: must exist, be active, not blocked, have capacity.
+   915→3. If target bin not specified: auto-allocate bin with sufficient capacity (`findAvailableBin`).
+   916→4. Cannot complete a putaway in `COMPLETED` status.
+   917→5. Completing a putaway updates bin `used_capacity`.
+   918→6. Barcode auto-generated with prefix `BC-YYYY-` (or `GTIN-` for GS1, `QR-` for QR).
+   919→
+   920→### 7.16 Database tables touched (raw SQL)
+   921→
+   922→`warehouse_zones`, `warehouse_aisles`, `warehouse_racks`, `warehouse_bins`, `putaway_tasks`, `barcode_labels`, `scan_logs`
+   923→
+   924→> Note: This module duplicates some Prisma models — `WarehouseZone`, `WarehouseAisle`, `WarehouseRack`, `WarehouseShelf`, `WarehouseBin`, `WarehouseMaster` are all defined in `schema.prisma` (lines 6026–6441), but the warehouse service uses raw SQL with separate tables (e.g. `warehouse_zones` lowercase snake_case). Schema mismatch likely — Prisma is future-state, raw SQL is current-state.
+   925→
+   926→---
+   927→
+   928→## 8. Module: `inventory` — Stock ledger engine
+   929→
+   930→**Mount**: `/api/v1/inventory`
+   931→**File**: `apps/backend/src/modules/inventory/routes/index.ts` (153 lines)
+   932→**Permission family**: `inventory:read|post|adjust`
+   933→
+   934→### 8.1 Endpoints
+   935→
+   936→| Method | Path                                              | Permission           | Description                              | Audit | Event                |
+   937→|--------|---------------------------------------------------|----------------------|------------------------------------------|-------|----------------------|
+   938→| GET    | `/api/v1/inventory/inventory`                     | `inventory:read`     | List stock (paginated)                   | No    | No                   |
+   939→| GET    | `/api/v1/inventory/inventory/:id`                 | `inventory:read`     | Get inventory record                     | No    | No                   |
+   940→| POST   | `/api/v1/inventory/inventory/stock-in`            | `inventory:post`     | Stock in (requires IQC pass)             | Yes (`STOCK_IN`) | `StockAdded` |
+   941→| POST   | `/api/v1/inventory/inventory/stock-out`           | `inventory:post`     | Stock out (FEFO/FIFO)                    | Yes (`STOCK_OUT`) | `StockRemoved` |
+   942→| GET    | `/api/v1/inventory/ledger`                        | `inventory:read`     | List ledger entries (IMMUTABLE)          | No    | No                   |
+   943→| GET    | `/api/v1/inventory/transactions`                  | `inventory:read`     | List transactions                        | No    | No                   |
+   944→| GET    | `/api/v1/inventory/reservations`                  | `inventory:read`     | List reservations                        | No    | No                   |
+   945→| POST   | `/api/v1/inventory/reservations`                  | `inventory:post`     | Reserve stock                            | Yes (`STOCK_RESERVED`) | No |
+   946→| POST   | `/api/v1/inventory/reservations/:id/release`      | `inventory:post`     | Release reservation                      | Yes (`STOCK_RESERVATION_RELEASED`) | No |
+   947→| GET    | `/api/v1/inventory/blocks`                        | `inventory:read`     | List stock blocks                        | No    | No                   |
+   948→| POST   | `/api/v1/inventory/blocks`                        | `inventory:adjust`   | Block stock (quality hold etc.)          | Yes (`STOCK_BLOCKED`) | `StockBlocked` |
+   949→| GET    | `/api/v1/inventory/expiry`                        | `inventory:read`     | Get expiring stock (?days=30)            | No    | No                   |
+   950→| POST   | `/api/v1/inventory/expiry/mark-expired`           | `inventory:adjust`   | Mark expired stock                       | Yes (`STOCK_EXPIRED`) (system actor) | No |
+   951→| GET    | `/api/v1/inventory/batches`                       | `inventory:read`     | List batches                             | No    | No                   |
+   952→
+   953→### 8.2 DTO: `stockInSchema`
+   954→
+   955→| Field              | Type    | Validation             |
+   956→|--------------------|---------|------------------------|
+   957→| `grnId`            | uuid    | required               |
+   958→| `grnNumber`        | string  | min 1                  |
+   959→| `inspectionLotId`  | uuid    | required               |
+   960→| `productId`        | uuid    | required               |
+   961→| `productSku`       | string  | min 1                  |
+   962→| `productName`      | string  | min 1                  |
+   963→| `warehouseId`      | uuid    | required               |
+   964→| `warehouseName`    | string  | min 1                  |
+   965→| `binId`            | uuid    | optional               |
+   966→| `binCode`          | string  | optional               |
+   967→| `batchNumber`      | string  | optional               |
+   968→| `lotNumber`        | string  | optional               |
+   969→| `manufactureDate`  | string  | datetime, optional     |
+   970→| `expiryDate`       | string  | datetime, optional     |
+   971→| `quantity`         | number  | positive               |
+   972→| `unitCost`         | number  | non-negative           |
+   973→| `uomId`            | uuid    | required               |
+   974→| `uomCode`          | string  | min 1                  |
+   975→| `currency`         | string  | optional               |
+   976→
+   977→### 8.3 DTO: `stockOutSchema`
+   978→
+   979→| Field              | Type    | Validation                                     | Default |
+   980→|--------------------|---------|------------------------------------------------|---------|
+   981→| `productId`        | uuid    | required                                       | —       |
+   982→| `productSku`       | string  | min 1                                          | —       |
+   983→| `productName`      | string  | min 1                                          | —       |
+   984→| `warehouseId`      | uuid    | required                                       | —       |
+   985→| `warehouseName`    | string  | min 1                                          | —       |
+   986→| `quantity`         | number  | positive                                       | —       |
+   987→| `uomId`            | uuid    | required                                       | —       |
+   988→| `uomCode`          | string  | min 1                                          | —       |
+   989→| `strategy`         | enum    | `FEFO`/`FIFO`                                  | `FEFO`  |
+   990→| `referenceType`    | string  | optional                                       | —       |
+   991→| `referenceId`      | uuid    | optional                                       | —       |
+   992→| `referenceNumber`  | string  | optional                                       | —       |
+   993→| `reason`           | string  | min 1                                          | —       |
+   994→
+   995→### 8.4 DTO: `reserveSchema`
+   996→
+   997→| Field               | Type    | Validation             |
+   998→|---------------------|---------|------------------------|
+   999→| `productId`         | uuid    | required               |
+  1000→| `productSku`        | string  | min 1                  |
+  1001→| `warehouseId`       | uuid    | required               |
+  1002→| `reservedQty`       | number  | positive               |
+  1003→| `uomId`             | uuid    | required               |
+  1004→| `uomCode`           | string  | min 1                  |
+  1005→| `reservationType`   | string  | optional               |
+  1006→| `referenceType`     | string  | optional               |
+  1007→| `referenceId`       | uuid    | optional               |
+  1008→| `referenceNumber`   | string  | optional               |
+  1009→| `reservedFor`       | string  | optional               |
+  1010→| `expiresAt`         | string  | datetime, optional     |
+  1011→
+  1012→### 8.5 DTO: `blockSchema`
+  1013→
+  1014→| Field            | Type    | Validation             |
+  1015→|------------------|---------|------------------------|
+  1016→| `productId`      | uuid    | required               |
+  1017→| `productSku`     | string  | min 1                  |
+  1018→| `warehouseId`    | uuid    | required               |
+  1019→| `blockedQty`     | number  | positive               |
+  1020→| `uomId`          | uuid    | required               |
+  1021→| `uomCode`        | string  | min 1                  |
+  1022→| `blockType`      | string  | optional               |
+  1023→| `blockReason`    | string  | min 1                  |
+  1024→| `sourceType`     | string  | optional               |
+  1025→| `sourceId`       | uuid    | optional               |
+  1026→| `sourceNumber`   | string  | optional               |
+  1027→
+  1028→### 8.6 Business rules
+  1029→
+  1030→1. Stock-in requires inspection lot status `PASSED` or `CONDITIONAL_PASS` (cannot stock in rejected inventory).
+  1031→2. Expiry date mandatory for batch-tracked products.
+  1032→3. Batch unique per product.
+  1033→4. Lot unique per product.
+  1034→5. Stock out: cannot issue from blocked stock.
+  1035→6. Stock out: cannot issue from expired stock.
+  1036→7. Stock out: insufficient stock throws `INV.INSUFFICIENT_STOCK`.
+  1037→8. **Inventory ledger is IMMUTABLE** — `is_immutable = true` column; no UPDATE/DELETE ever.
+  1038→9. Every movement creates a ledger entry.
+  1039→10. Moving Average Cost recalculated on every stock-in.
+  1040→11. Reservation release: only `ACTIVE` reservations can be released.
+  1041→
+  1042→### 8.7 Database tables touched (raw SQL)
+  1043→
+  1044→`inventory`, `inventory_transactions`, `inventory_ledger`, `batches`, `lots`, `stock_reservations`, `stock_blocks`, `inspection_lots` (read-only check)
+  1045→
+  1046→### 8.8 Number generation patterns
+  1047→
+  1048→- Inventory transactions: `IVT-YYYY-########` (8 digits)
+  1049→- Inventory ledger entries: `IVL-YYYY-########` (8 digits)
+  1050→- Stock reservations: `SR-YYYY-######` (6 digits)
+  1051→- Stock blocks: `SB-YYYY-######` (6 digits)
+  1052→
+  1053→---
+  1054→
+  1055→## 9. Module: `pricing-engine` — Price lists, promotions, coupons, tax configs, calculate
+  1056→
+  1057→**Mount**: `/api/v1/sales/pricing`
+  1058→**File**: `apps/backend/src/modules/pricing-engine/routes/index.ts` (29 lines, condensed one-liners)
+  1059→**Permission family**: PROXY — `CR = CUSTOMER_READ = 'customer:read'`, `CU = CUSTOMER_UPDATE = 'customer:update'`
+  1060→**Workflow**: None
+  1061→
+  1062→### 9.1 Endpoints
+  1063→
+  1064→| Method | Path                                       | Permission (effective) | Description                          | Audit | Event |
+  1065→|--------|--------------------------------------------|------------------------|--------------------------------------|-------|-------|
+  1066→| GET    | `/api/v1/sales/pricing/price-lists`        | `customer:read`        | List price lists                     | No    | No    |
+  1067→| POST   | `/api/v1/sales/pricing/price-lists`        | `customer:update`      | Create price list                    | Yes   | No    |
+  1068→| GET    | `/api/v1/sales/pricing/promotions`         | `customer:read`        | List promotions                      | No    | No    |
+  1069→| POST   | `/api/v1/sales/pricing/promotions`         | `customer:update`      | Create promotion                     | Yes   | No    |
+  1070→| GET    | `/api/v1/sales/pricing/coupons`            | `customer:read`        | List coupons                         | No    | No    |
+  1071→| POST   | `/api/v1/sales/pricing/coupons`            | `customer:update`      | Create coupon                        | Yes   | No    |
+  1072→| POST   | `/api/v1/sales/pricing/calculate`          | `customer:read`        | Calculate best price (scheme engine) | No    | No    |
+  1073→| GET    | `/api/v1/sales/pricing/tax-configs`        | `customer:read`        | List tax configurations              | No    | No    |
+  1074→| POST   | `/api/v1/sales/pricing/tax-configs`        | `customer:update`      | Create tax config                    | Yes   | No    |
+  1075→
+  1076→### 9.2 DTO: `plSchema` (Price List)
+  1077→
+  1078→| Field            | Type   | Validation             | Default     |
+  1079→|------------------|--------|------------------------|-------------|
+  1080→| `listCode`       | string | min 1                  | required    |
+  1081→| `listName`       | string | min 1                  | required    |
+  1082→| `listType`       | string |                        | `STANDARD`  |
+  1083→| `channel`        | string | optional               | —           |
+  1084→| `currency`       | string |                        | `INR`       |
+  1085→| `effectiveFrom`  | string | required               | —           |
+  1086→| `effectiveTo`    | string | optional               | —           |
+  1087→| `description`    | string | optional               | —           |
+  1088→
+  1089→### 9.3 DTO: `promoSchema` (Promotion)
+  1090→
+  1091→| Field                 | Type    | Validation                                     | Default  |
+  1092→|-----------------------|---------|------------------------------------------------|----------|
+  1093→| `promoCode`           | string  | min 1                                          | required |
+  1094→| `promoName`           | string  | min 1                                          | required |
+  1095→| `promoType`           | string  | min 1                                          | required |
+  1096→| `scope`               | string  |                                                | `PRODUCT`|
+  1097→| `productId`           | uuid    | optional                                       | —        |
+  1098→| `productCategoryId`   | uuid    | optional                                       | —        |
+  1099→| `customerId`          | uuid    | optional                                       | —        |
+
+[showing lines 700-1099 of 2232; use offset=1100 with limit to continue reading]

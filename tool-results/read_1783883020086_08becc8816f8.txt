@@ -1,0 +1,402 @@
+  1500→### 13.8 Business rules
+  1501→
+  1502→1. Account type must be one of the 6 valid types.
+  1503→2. Fiscal year end date must be after start date.
+  1504→3. Creating a fiscal year auto-creates 12 monthly periods.
+  1505→4. Cannot close an already-closed period.
+  1506→
+  1507→### 13.9 Database tables touched (raw SQL via `genRepo`)
+  1508→
+  1509→`chart_of_accounts`, `fiscal_years`, `fiscal_periods`, `cost_centers`, `profit_centers`, `currencies`, `exchange_rates`
+  1510→
+  1511→> Note: `cost_centers` table here is separate from the one used by `organization` module. There are two cost_center concepts in the codebase — the org-level (with `costCenterType: PRODUCTION/SERVICE/ADMIN/SALES`) and the finance-level (with parent_cc_id, company_id, plant_id). Schema mismatch — needs reconciliation.
+  1512→
+  1513→### 13.10 RBAC gap
+  1514→
+  1515→Same as gst-taxation — using `audit:read:critical` for writes is not a proper write permission. Anyone with audit critical read can mutate master financial data.
+  1516→
+  1517→---
+  1518→
+  1519→## 14. Module: `general-ledger` — General Ledger (Prisma-backed)
+  1520→
+  1521→**Mount**: `/api/v1/finance/gl`
+  1522→**File**: `apps/backend/src/modules/general-ledger/routes/index.ts` (95 lines)
+  1523→**Permission family**: PROXY — `READ_PERM = AUDIT_READ`, `WRITE_PERM = AUDIT_READ` (same!)
+  1524→**Workflow**: Service references `'GeneralLedgerLifecycle'` workflow (lazy import) but no workflow file exists in `general-ledger/workflow/index.ts` directory (file exists but content not directly read; workflow name pattern suggests JournalEntryLifecycle).
+  1525→
+  1526→### 14.1 Endpoints
+  1527→
+  1528→| Method | Path                                  | Permission (effective) | Description                              | Audit | Event |
+  1529→|--------|---------------------------------------|------------------------|------------------------------------------|-------|-------|
+  1530→| GET    | `/api/v1/finance/gl`                  | `audit:read`           | List general ledger entries              | No    | No    |
+  1531→| GET    | `/api/v1/finance/gl/count`            | `audit:read`           | Count                                    | No    | No    |
+  1532→| GET    | `/api/v1/finance/gl/exists/:code`     | `audit:read`           | Check existence by code                  | No    | No    |
+  1533→| GET    | `/api/v1/finance/gl/:id`              | `audit:read`           | Get by ID                                | No    | No    |
+  1534→| POST   | `/api/v1/finance/gl`                  | `audit:read`           | Create                                   | Yes   | Yes (event emitted) |
+  1535→| PUT    | `/api/v1/finance/gl/:id`              | `audit:read`           | Update (optimistic concurrency)          | Yes   | No    |
+  1536→| DELETE | `/api/v1/finance/gl/:id`              | `audit:read`           | Soft-delete (?reason=)                   | Yes   | No    |
+  1537→| POST   | `/api/v1/finance/gl/:id/transition`   | `audit:read`           | Workflow transition                      | Yes   | Yes (event emitted) |
+  1538→
+  1539→### 14.2 Schema
+  1540→
+  1541→Route accepts arbitrary JSON. Service uses Prisma client directly. Prisma model name not explicitly listed in schema.prisma under a clear `GeneralLedger` model — gap.
+  1542→
+  1543→### 14.3 Same RBAC + workflow gaps as gst-taxation (§10.3, §10.4)
+  1544→
+  1545→---
+  1546→
+  1547→## 15. Prisma Models — Master Data Inventory
+  1548→
+  1549→The Prisma schema at `/home/z/my-project/prisma/schema.prisma` is the **future-state** data model. Many models are NOT yet wired to backend routes (the backend currently uses raw SQL via PGlite for product/customer/supplier/warehouse/inventory modules). The Prisma models exist for forward-compatibility with Prisma client (used by gst-taxation, product-costing, general-ledger).
+  1550→
+  1551→### 15.1 Product domain (lines 1111–1722)
+  1552→
+  1553→| Prisma Model              | Table name                | Key fields                                                                                          | Status enum values                                                                                              |
+  1554→|---------------------------|---------------------------|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+  1555→| `ProductCategory`         | `product_categories`      | `categoryCode` (unique), `categoryName`, `parentCategoryId`, `level`, `path`, `isLeaf`              | `ACTIVE` (default)                                                                                                |
+  1556→| `Brand`                   | `brands`                  | `brandCode` (unique), `brandName`, `manufacturer`, `isOem`, `isPrivateLabel`                       | `ACTIVE`                                                                                                          |
+  1557→| `Uom`                     | `uoms`                    | `uomCode` (unique), `uomName`, `uomType` (COUNT/WEIGHT/VOLUME/LENGTH/TIME), `isBaseUnit`           | `ACTIVE`                                                                                                          |
+  1558→| `UomConversion`           | `uom_conversions`         | `fromUomId`, `toUomId`, `factor`, `companyId` (NULL=global)                                        | unique [fromUomId, toUomId, companyId]                                                                            |
+  1559→| `Product`                 | `products`                | `upi` (unique), `productCode` (unique), `sku` (unique), `productType`, `status`, `brandId`, `categoryId`, `defaultUomId`, `hsnCode`, `taxGroupId`, `barcodeType`, `trackBatch`, `trackSerial`, `trackExpiry`, `shelfLifeDays`, `isManufactured`, `isPurchased`, `isSold`, `isStockManaged`, `isKitchenItem`, `netWeight`, `grossWeight`, `length`, `width`, `height`, `defaultCostPrice`, `defaultMrp`, `defaultSellingPrice`, `currencyCode` | `DRAFT`, `ACTIVE`, `INACTIVE`, `BLOCKED`, `DISCONTINUED`, `ARCHIVED` |
+  1560→| `Attribute`               | `attributes`              | `attributeCode` (unique), `attributeName`, `attributeType`, `dataType`, `isRequired`, `isVariantAttribute`, `isSearchable`, `allowedValues[]` | `ACTIVE`                                                                                                          |
+  1561→| `AttributeValue`          | `attribute_values`        | `attributeId`, `value`, `displayValue`, `sortOrder`                                                 | `ACTIVE`; unique [attributeId, value]                                                                             |
+  1562→| `ProductAttribute`        | `product_attributes`      | `productId`, `attributeId`, `attributeValueId`, `valueText`, `valueNumber`, `valueBoolean`, `valueDate` | unique [productId, attributeId]                                                                                  |
+  1563→| `ProductVariant`          | `product_variants`        | `productId`, `variantCode` (unique), `variantName`, `variantSku` (unique), `variantBarcode`, `variantAttributes` (JSON), `costPrice`, `mrp`, `sellingPrice`, `currencyCode`, `isDefault` | `ACTIVE`                                                                                                          |
+  1564→| `ProductImage`            | `product_images`          | `productId`, `variantId`, `imageUrl`, `thumbnailUrl`, `imageType` (PRIMARY/GALLERY/THUMBNAIL/QR_PREVIEW/BARCODE_PREVIEW), `displayOrder`, `isPrimary` | —                                                                                                                 |
+  1565→| `ProductDocument`         | `product_documents`       | `productId`, `documentName`, `documentType` (SPECIFICATION/FSSAI/LAB_REPORT/RECIPE/WARRANTY/CERTIFICATE/COA/MSDS), `fileUrl`, `version`, `isVerified`, `expiryDate` | —                                                                                                                 |
+  1566→| `ProductFamily`           | `product_families`        | `familyCode` (unique), `familyName`, `displayOrder`                                                 | `ACTIVE`                                                                                                          |
+  1567→| `ProductFamilyMapping`    | `product_family_mappings` | `productId`, `familyId`, `isPrimary`                                                                | unique [productId, familyId]                                                                                      |
+  1568→| `ProductGroup`            | `product_groups`          | `groupCode` (unique), `groupName`, `parentGroupId`, `level`, `path` (supports unlimited hierarchy) | `ACTIVE`                                                                                                          |
+  1569→| `ProductGroupMapping`     | `product_group_mappings`  | `productId`, `groupId`                                                                              | —                                                                                                                 |
+  1570→| `ProductCollection`       | `product_collections`     | (collection master for merchandising)                                                               | —                                                                                                                 |
+  1571→| `ProductCollectionItem`   | `product_collection_items`| `productId`, `collectionId`                                                                         | —                                                                                                                 |
+  1572→| `ProductTemplate`         | `product_templates`       | (template for product creation)                                                                     | —                                                                                                                 |
+  1573→| `ProductSpecification`    | `product_specifications`  | (technical specs)                                                                                   | —                                                                                                                 |
+  1574→| `ProductCompliance`       | `product_compliance`      | (FSSAI, ISO, etc. at product level)                                                                | —                                                                                                                 |
+  1575→| `ProductTranslation`      | `product_translations`    | (i18n)                                                                                              | —                                                                                                                 |
+  1576→| `ProductVersion`          | `product_versions`        | (version history)                                                                                   | —                                                                                                                 |
+  1577→| `ProductApprovalRequest`  | `product_approval_requests`| (approval workflow)                                                                                | —                                                                                                                 |
+  1578→| `ProductUsageMatrix`      | `product_usage_matrix`    | (where product is used — channels)                                                                  | —                                                                                                                 |
+  1579→| `ProductLifecycle`        | `product_lifecycles`      | (lifecycle stage definition)                                                                        | —                                                                                                                 |
+  1580→| `ProductLifecycleHistory` | `product_lifecycle_histories` | (transition log)                                                                                | —                                                                                                                 |
+  1581→| `ProductChangeHistory`    | `product_change_histories`| (audit trail of product field changes)                                                              | —                                                                                                                 |
+  1582→
+  1583→### 15.2 Business Partner domain (lines 2340–2695)
+  1584→
+  1585→> ⚠️ **Important**: The Prisma schema defines a unified `BusinessPartner` model with roles (`BusinessPartnerRole` with role values `CUSTOMER`, `SUPPLIER`, `DISTRIBUTOR`, `TRANSPORTER`, etc.). The current backend uses separate `customers` and `suppliers` tables via raw SQL. The Prisma model is the future-state.
+  1586→
+  1587→| Prisma Model                            | Table name                              | Key fields / Notes                                                                              |
+  1588→|-----------------------------------------|-----------------------------------------|--------------------------------------------------------------------------------------------------|
+  1589→| `BusinessPartner`                       | `business_partners`                     | `partnerCode` (unique), `legalName`, `displayName`, `partnerType`, `status`, `gstNumber`, `panNumber`, `msmeNumber`, `fssaiNumber`, `iecCode`, `currency`, `creditLimit`, `creditDays`, `paymentTermsId`, `paymentMode`, `riskCategory`, `riskScore`, `parentPartnerId` |
+  1590→| `BusinessPartnerRole`                   | `business_partner_roles`                | `partnerId`, `role` (CUSTOMER/SUPPLIER/DISTRIBUTOR/TRANSPORTER/etc.), `isPrimary`; unique [partnerId, role] |
+  1591→| `BusinessPartnerAddress`                | `business_partner_addresses`            | `partnerId`, `addressType` (REGISTERED_OFFICE/BILLING/SHIPPING/FACTORY/WAREHOUSE/BRANCH/RESTAURANT/PICKUP/RETURN), `isDefault`, `line1`, `line2`, `city`, `district`, `state`, `stateCode`, `country`, `countryCode`, `pincode`, `latitude`, `longitude` |
+  1592→| `BusinessPartnerContact`                | `business_partner_contacts`             | `partnerId`, `firstName`, `lastName`, `designation`, `department`, `email`, `mobile`, `officePhone`, `whatsapp`, `isPrimary`, `preferredContact`, `linkedUserId` |
+  1593→| `BusinessPartnerFinancialProfile`       | `business_partner_financial_profiles`   | `partnerId` (unique), `creditLimit`, `outstandingAmount`, `availableCredit`, `creditDays`, `defaultCurrency`, `paymentMode`, `paymentTerms`, `taxCategory`, `riskCategory`, `riskScore`, `totalOrders`, `totalBusinessValue` |
+  1594→| `BusinessPartnerCompliance`             | `business_partner_compliance`           | `partnerId`, `complianceType` (GST/PAN/MSME/FSSAI/IEC/ISO/AGREEMENT/INSURANCE), `certificateNumber`, `issuingAuthority`, `issueDate`, `expiryDate`, `documentUrl`, `documentVerified`, `status` |
+  1595→| `CustomerGroup`                         | `customer_groups`                       | customer grouping                                                                                |
+  1596→| `BusinessPartnerGroupMembership`        | `business_partner_group_memberships`    | partner ↔ group link                                                                             |
+  1597→| `PartnerTag`                            | `partner_tags`                          | tagging for partners                                                                             |
+  1598→| `BusinessPartnerBankAccount`            | `business_partner_bank_accounts`        | `partnerId`, `accountName`, `accountNumber`, `bankName`, `branchName`, `ifscCode`, `accountType`, `isDefault`, `upiId` |
+  1599→| `BusinessPartnerRelationship`           | `business_partner_relationships`        | partner-to-partner relationships (parent/subsidiary, etc.)                                       |
+  1600→| `BusinessPartnerScorecard`              | `business_partner_scorecards`           | performance scorecard                                                                            |
+  1601→
+  1602→### 15.3 Organization domain (lines 291–770)
+  1603→
+  1604→| Prisma Model             | Table name             | Key fields                                                                                                                                                                                                          |
+  1605→|--------------------------|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1606→| `Enterprise`             | `enterprises`          | top of hierarchy                                                                                                                                                                                                    |
+  1607→| `Company`                | `companies`            | `enterpriseId`, `companyCode` (unique), `companyName`, `legalName`, `companyType`, `gstin`, `pan`, `cin`, `currencyCode`, `timezone`, `locale`, `fiscalYearStart`, `fiscalYearEnd`, `website`, `logoUrl`, `status` |
+  1608→| `CompanyAddress`         | `company_addresses`    | `companyId`, `addressType` (REGISTERED/OPERATIONAL/BRANCH), `addressLine1`, `city`, `state`, `country`, `postalCode`, `stateCode`, `countryCode`, `latitude`, `longitude`, `isDefault`                             |
+  1609→| `CompanyTaxProfile`      | `company_tax_profiles` | `companyId`, `taxType` (GST/INCOME_TAX/PROFESSIONAL_TAX/LWF/TDS), `taxNumber`, `registrationDate`, `jurisdiction`, `filingFrequency`                                                                              |
+  1610→| `CompanyBankAccount`     | `company_bank_accounts`| `companyId`, `accountName`, `accountNumber`, `bankName`, `branchName`, `ifscCode`, `accountType` (CURRENT/SAVINGS/ESCROW), `isDefault`, `upiId`                                                                    |
+  1611→| `BusinessUnit`           | `business_units`       | `companyId`, `code`, `name`, `parentId`                                                                                                                                                                             |
+  1612→| `Division`               | `divisions`            | `businessUnitId`, `code`, `name`, `parentId`                                                                                                                                                                        |
+  1613→| `Branch`                 | `branches`             | branch entity                                                                                                                                                                                                       |
+  1614→| `Plant`                  | `plants`               | `branchId`, `plantCode` (unique), `plantName`, `plantType` (MANUFACTURING/PACKING/COLD_STORAGE/DISTRIBUTION), `capacityPerDay`, `capacityUnit`, `shiftModel` (SINGLE/DOUBLE/TRIPLE), `workingDays[]`, `calendarId`, `plantManagerId`, `status` |
+  1615→| `Warehouse`              | `warehouses`           | `branchId`, `plantId`, `warehouseCode` (unique), `warehouseName`, `warehouseType`, `capacityVolume`, `capacityWeight`, `temperatureZone`, `temperatureMin`, `temperatureMax`, `warehouseManagerId`, `status`       |
+  1616→| `Department`             | `departments`          | `companyId`, `branchId`, `deptCode` (unique), `deptName`, `parentId`, `headUserId`, `costCenterId`                                                                                                                  |
+  1617→| `CostCenter`             | `cost_centers`         | `companyId`, `branchId`, `costCenterCode` (unique), `costCenterName`, `costCenterType` (OPERATIONAL/ADMINISTRATIVE/SUPPORT/PROFIT_CENTER), `parentId`, `glAccountCode`, `budgetAnnual`, `currencyCode`             |
+  1618→| `OrganizationTreeNode`   | `organization_tree_nodes` | materialized hierarchy view                                                                                                                                                                                       |
+  1619→
+  1620→### 15.4 Pricing & Taxation domain (lines 1758–2340)
+  1621→
+  1622→| Prisma Model             | Table name                | Key fields                                                                                                                                                                                                          |
+  1623→|--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1624→| `PriceList`              | `price_lists`             | `code` (unique), `name`, `type` (RETAIL/WHOLESALE/DISTRIBUTOR/EXPORT/RESTAURANT/ONLINE/CORPORATE/EMPLOYEE/FESTIVAL/SPECIAL_CONTRACT), `currency`, `validFrom`, `validTo`, `priority`, `status`, `taxMode` (EXCLUSIVE/INCLUSIVE), `roundingRule`, `roundingDigits` |
+  1625→| `PriceListItem`          | `price_list_items`        | `priceListId`, `productId`, `productVariantId`, `uomId`, `basePrice`, `sellingPrice`, `mrp`, `purchasePrice`, `transferPrice`, `minQuantity`, `maxQuantity`, `validFrom`, `validTo`, `status`                     |
+  1626→| `PriceListVersion`       | `price_list_versions`     | version history for price lists                                                                                                                                                                                     |
+  1627→| `ProductPrice`           | `product_prices`          | product-level pricing                                                                                                                                                                                               |
+  1628→| `TaxGroup`               | `tax_groups`              | tax grouping                                                                                                                                                                                                        |
+  1629→| `TaxRate`                | `tax_rates`               | tax rate master (CGST/SGST/IGST/CESS)                                                                                                                                                                               |
+  1630→| `ProductTaxMapping`      | `product_tax_mappings`    | product ↔ tax mapping                                                                                                                                                                                               |
+  1631→| `TaxRule`                | `tax_rules`               | rule engine                                                                                                                                                                                                         |
+  1632→| `DiscountRule`           | `discount_rules`          | discount definitions                                                                                                                                                                                                |
+  1633→| `DiscountCondition`      | `discount_conditions`     | conditions for discounts                                                                                                                                                                                            |
+  1634→| `DiscountTarget`         | `discount_targets`        | target entity for discount                                                                                                                                                                                          |
+  1635→| `Promotion`              | `promotions`              | `promoCode`, `promoName`, `promoType`, `scope`, `productId`, `productCategoryId`, `customerId`, `discountType`, `discountValue`, `minQty`, `maxQty`, `minOrderValue`, `maxDiscountAmount`, `buyQty`, `getQty`, `startDate`, `endDate`, `usageLimit`, `usageCount`, `isActive`, `description`, `termsConditions` |
+  1636→| `PromotionProduct`       | `promotion_products`      | promotion ↔ product mapping                                                                                                                                                                                         |
+  1637→| `PromotionCondition`     | `promotion_conditions`    | conditions for promotions                                                                                                                                                                                           |
+  1638→| `CostProfile`            | `cost_profiles`           | cost profile for products                                                                                                                                                                                           |
+  1639→| `MarginRule`             | `margin_rules`            | margin rules                                                                                                                                                                                                        |
+  1640→| `FuturePrice`            | `future_prices`           | future-dated price changes                                                                                                                                                                                          |
+  1641→| `PriceApprovalRequest`   | `price_approval_requests` | approval workflow for prices                                                                                                                                                                                        |
+  1642→| `CommercialRule`         | `commercial_rules`        | commercial terms (payment, delivery, etc.)                                                                                                                                                                          |
+  1643→| `PriceResolutionLog`     | `price_resolution_logs`   | log of price resolution (which price was applied to which order)                                                                                                                                                    |
+  1644→
+  1645→### 15.5 Identification & Traceability (lines 2697–3052)
+  1646→
+  1647→| Prisma Model             | Table name                | Key fields                                                                                                                                                                                                          |
+  1648→|--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1649→| `BarcodeType`            | `barcode_types`           | barcode type master                                                                                                                                                                                                 |
+  1650→| `Barcode`                | `barcodes`                | barcode master                                                                                                                                                                                                      |
+  1651→| `BarcodeAssignment`      | `barcode_assignments`     | barcode ↔ entity                                                                                                                                                                                                    |
+  1652→| `QrCode`                 | `qr_codes`                | QR code master                                                                                                                                                                                                      |
+  1653→| `Batch`                  | `batches`                 | batch master for batch-tracked products                                                                                                                                                                             |
+  1654→| `Lot`                    | `lots`                    | lot master                                                                                                                                                                                                          |
+  1655→| `SerialNumber`           | `serial_numbers`          | serial number tracking                                                                                                                                                                                              |
+  1656→| `Gs1Identifier`          | `gs1_identifiers`         | GS1 identifier master                                                                                                                                                                                               |
+  1657→| `LabelTemplate`          | `label_templates`         | label template master                                                                                                                                                                                               |
+  1658→| `LabelPrintJob`          | `label_print_jobs`        | print job queue                                                                                                                                                                                                     |
+  1659→| `TraceabilityLog`        | `traceability_logs`       | end-to-end traceability log                                                                                                                                                                                         |
+  1660→
+  1661→### 15.6 Warehouse domain (lines 6026–6475)
+  1662→
+  1663→| Prisma Model             | Table name                | Key fields                                                                                                                                                                                                          |
+  1664→|--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1665→| `WarehouseMaster`        | `warehouse_master`        | `warehouseCode` (unique), `warehouseName`, `warehouseType`, `companyId`, `branchId`, `managerId`, `managerName`, address fields, `timezone`, `barcodeEnabled`, `fifoEnabled`, `fefoEnabled`, `qualityInspectionRequired`, `defaultPickingStrategy`, `defaultPutawayStrategy`, capacity fields, operating hours, `status` (ACTIVE/INACTIVE/MAINTENANCE/CLOSED) |
+  1666→| `WarehouseZone`          | `warehouse_zones`         | `warehouseId`, `zoneCode`, `zoneName`, `zoneType` (RECEIVING/PUTAWAY/STORAGE/PICKING/PACKING/DISPATCH/RETURNS/QUARANTINE/QUALITY_INSPECTION/DAMAGED_GOODS), `parentZoneId`, `temperatureZoneId`, capacity fields, `isRestricted`, `accessRequired`; unique [warehouseId, zoneCode] |
+  1667→| `TemperatureZone`        | `temperature_zones`       | `warehouseId`, `zoneCode`, `zoneName`, `tempZoneType` (AMBIENT/CHILLED/FROZEN/DEEP_FREEZE/HUMIDITY_CONTROLLED), `minTemperature`, `maxTemperature`, `targetTemperature`, humidity ranges, alert thresholds, `lastReading`, `lastReadingAt`; unique [warehouseId, zoneCode] |
+  1668→| `TemperatureLog`         | `temperature_logs`        | `temperatureZoneId`, `temperature`, `humidity`, `isAlert`, `alertType`, `sensorId`, `recordedAt`                                                                                                                  |
+  1669→| `WarehouseCapacity`      | `warehouse_capacity`      | `warehouseId`, `zoneId`, capacity metrics (volume/weight/pallets/bins), `utilizationPercent`, `snapshotDate`                                                                                                       |
+  1670→| `WarehouseCalendar`      | `warehouse_calendar`      | `warehouseId`, `calendarDate`, `dayType` (WORKING_DAY/HOLIDAY/MAINTENANCE/SPECIAL), shift times, `isClosed`                                                                                                        |
+  1671→| `WarehouseAccessRule`    | `warehouse_access_rules`  | access control rules                                                                                                                                                                                                |
+  1672→| `WarehouseRule`          | `warehouse_rules`         | business rules for warehouse operations                                                                                                                                                                             |
+  1673→| `WarehouseAisle`         | `warehouse_aisles`        | `warehouseId`, `zoneId`, `aisleCode`, `aisleName`, `lengthM`, `widthM`, `trafficDirection` (ONE_WAY/TWO_WAY/FORKLIFT_ONLY/WALKING_ONLY); unique [warehouseId, aisleCode]                                            |
+  1674→| `WarehouseRack`          | `warehouse_racks`         | `warehouseId`, `zoneId`, `aisleId`, `rackCode`, `rackName`, `heightM`, `widthM`, `depthM`, `maxWeightKg`, `shelfCount`, `fireZone`; unique [warehouseId, rackCode]                                                  |
+  1675→| `WarehouseShelf`         | `warehouse_shelves`       | `warehouseId`, `rackId`, `shelfCode`, `shelfName`, `level`, `heightFromFloor`, `maxWeightKg`, `maxVolumeM3`, `pickingLevel` (GROUND/MID/HIGH/TOP), `accessibility`; unique [warehouseId, shelfCode]                 |
+  1676→| `WarehouseBin`           | `warehouse_bins`          | `warehouseId`, `warehouseCode`, `zoneId`, `aisleId`, `rackId`, `shelfId`, `binCode`, `barcode` (unique), `qrCode` (unique), capacity fields, `temperatureZone`, utilization                                                                      |
+  1677→
+  1678→### 15.7 Manufacturing domain — Recipe/BOM (lines 10370–10555)
+  1679→
+  1680→| Prisma Model             | Table name                | Key fields                                                                                                                                                                                                          |
+  1681→|--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1682→| `Recipe`                 | `recipes`                 | recipe master (raw SQL version is `recipes` table)                                                                                                                                                                  |
+  1683→| `RecipeVersion`          | `recipe_versions`         | version history                                                                                                                                                                                                     |
+  1684→| `Formula`                | `formulas`                | formula master                                                                                                                                                                                                      |
+  1685→| `FormulaLine`            | `formula_lines`           | formula components                                                                                                                                                                                                  |
+  1686→| `BillOfMaterial`         | `bill_of_materials`       | `bomCode` (unique), `recipeId`, `recipeCode`, `productId`, `productSku`, `productName`, `bomType` (SINGLE_LEVEL/MULTI_LEVEL/PHANTOM/PACKAGING/ALTERNATE/ENGINEERING/MANUFACTURING), `version`, `status`            |
+  1687→| `BOMLine`                | `bom_lines`               | `bomId`, `lineNo`, `componentId`, `componentSku`, `componentName`, `componentType`, `quantity`, `uom`, `scrapPercentage`, `unitCost`, `totalCost`, `hasAlternate`                                                  |
+  1688→| `RoutingStep`            | `routing_steps`           | routing step master                                                                                                                                                                                                 |
+  1689→| `YieldRule`              | `yield_rules`             | `recipeId`, `expectedYieldPct`, `expectedLossPct`, `minYieldPct`, `maxYieldPct`; unique [recipeId]                                                                                                                  |
+  1690→| `YieldHistory`           | `yield_histories`         | batch yield history                                                                                                                                                                                                 |
+  1691→
+  1692→### 15.8 Manufacturing org (lines 10049–10370)
+  1693→
+  1694→| Prisma Model             | Table name                | Key fields                                                                                                                                                                                                          |
+  1695→|--------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1696→| `ManufacturingPlant`     | `manufacturing_plants`    | manufacturing plant master (separate from `Plant`)                                                                                                                                                                  |
+  1697→| `ProductionDepartment`   | `production_departments`  | production department master                                                                                                                                                                                        |
+  1698→| `ProductionLine`         | `production_lines`        | production line master                                                                                                                                                                                              |
+  1699→| `WorkCenter`             | `work_centers`            | work center master (referenced by routing operations)                                                                                                                                                               |
+  1700→| `ProductionCalendar`     | `production_calendars`    | production calendar master                                                                                                                                                                                          |
+  1701→| `ProductionShift`        | `production_shifts`       | shift master                                                                                                                                                                                                        |
+  1702→| `PlantHoliday`           | `plant_holidays`          | holiday calendar                                                                                                                                                                                                    |
+  1703→| `ProductionResource`     | `production_resources`    | resource master (machine/labor)                                                                                                                                                                                     |
+  1704→| `PlantConfiguration`     | `plant_configurations`    | plant configuration settings                                                                                                                                                                                        |
+  1705→
+  1706→---
+  1707→
+  1708→## 16. Master Endpoint Matrix (Consolidated)
+  1709→
+  1710→Total endpoints across all 12 Section 03 modules: **117 endpoints** (counted from route files).
+  1711→
+  1712→### By module endpoint count
+  1713→
+  1714→| Module                  | Endpoint count | Mount prefix                          |
+  1715→|-------------------------|----------------|---------------------------------------|
+  1716→| product                 | 14             | `/api/v1/catalog`                     |
+  1717→| customer                | 12             | `/api/v1/sales`                       |
+  1718→| supplier                | 15             | `/api/v1/procurement`                 |
+  1719→| organization            | 17             | `/api/v1/organization`                |
+  1720→| warehouse               | 15             | `/api/v1/warehouse`                   |
+  1721→| inventory               | 14             | `/api/v1/inventory`                   |
+  1722→| pricing-engine          | 9              | `/api/v1/sales/pricing`               |
+  1723→| gst-taxation            | 8              | `/api/v1/finance/gst`                 |
+  1724→| recipe-bom              | 9              | `/api/v1/manufacturing/recipes`       |
+  1725→| product-costing         | 8              | `/api/v1/finance/costing`             |
+  1726→| financial-foundation    | 14             | `/api/v1/finance/foundation`          |
+  1727→| general-ledger          | 8              | `/api/v1/finance/gl`                  |
+  1728→
+  1729→### Permission matrix (consolidated)
+  1730→
+  1731→| Permission literal        | Modules using it                                                    |
+  1732→|---------------------------|---------------------------------------------------------------------|
+  1733→| `product:read`            | product, recipe-bom                                                 |
+  1734→| `product:create`          | product, recipe-bom                                                 |
+  1735→| `product:update`          | product, recipe-bom                                                 |
+  1736→| `product:delete`          | product                                                             |
+  1737→| `supplier:read`           | supplier                                                            |
+  1738→| `supplier:create`         | supplier                                                            |
+  1739→| `supplier:update`         | supplier                                                            |
+  1740→| `supplier:delete`         | supplier                                                            |
+  1741→| `supplier:blacklist`      | supplier (blacklist endpoint)                                       |
+  1742→| `org:read`                | organization, customer (proxy)                                      |
+  1743→| `org:create`              | organization, customer (proxy)                                      |
+  1744→| `org:update`              | organization, customer (proxy)                                      |
+  1745→| `org:delete`              | organization, customer (proxy)                                      |
+  1746→| `customer:read`           | pricing-engine (proxy)                                              |
+  1747→| `customer:update`         | pricing-engine (proxy)                                              |
+  1748→| `inventory:read`          | inventory, warehouse                                                |
+  1749→| `inventory:post`          | inventory, warehouse                                                |
+  1750→| `inventory:adjust`        | inventory (blocks, expiry mark)                                     |
+  1751→| `audit:read`              | gst-taxation (read+write), product-costing (read+write), general-ledger (read+write), financial-foundation (read only) |
+  1752→| `audit:read:critical`     | financial-foundation (write proxy)                                  |
+  1753→| `system:tenant:cross`     | organization (hard-delete company — checked in service, not route) |
+  1754→
+  1755→### Audit log coverage matrix
+  1756→
+  1757→| Module                  | Mutating endpoints with audit log? |
+  1758→|-------------------------|------------------------------------|
+  1759→| product                 | Yes (create, update, delete, transition, addBarcode, category.create, brand.create) |
+  1760→| customer                | Yes (create, update, delete, transition, addContact, addAddress, group.create) |
+  1761→| supplier                | Yes (create, update, delete, transition, blacklist [CRITICAL], addContact, addAddress, addCompliance, assignProduct, category.create) |
+  1762→| organization            | Yes (all CRUD including restore and hardDelete [CRITICAL]) |
+  1763→| warehouse               | Yes (zone/aisle/rack/bin create, putaway create+complete, barcode create+print, scan) |
+  1764→| inventory               | Yes (stockIn, stockOut, reserve, release, block, markExpired) |
+  1765→| pricing-engine          | Yes (all creates)                  |
+  1766→| gst-taxation            | Yes (create, update, delete, transition) |
+  1767→| recipe-bom              | Yes (create, transition) — but NO audit for BOM create (gap) |
+  1768→| product-costing         | Yes (create, update, delete, transition) |
+  1769→| financial-foundation    | Yes (all creates, period close, exchange rate set) |
+  1770→| general-ledger          | Yes (create, update, delete, transition) |
+  1771→
+  1772→### Event coverage matrix
+  1773→
+  1774→| Module                  | Events emitted                                                                                                                                                                                                                                                                                           |
+  1775→|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  1776→| product                 | `ProductCreated`, `ProductUpdated`, `ProductApproved`, `ProductArchived`                                                                                                                                                                                                                                  |
+  1777→| customer                | `CustomerCreated`, `CustomerApproved`, `CustomerBlocked`, `CustomerArchived`                                                                                                                                                                                                                              |
+  1778→| supplier                | `SupplierCreated`, `SupplierUpdated`, `SupplierApproved`, `SupplierBlocked`, `SupplierBlacklisted`                                                                                                                                                                                                        |
+  1779→| organization            | `CompanyCreated`, `PlantActivated`                                                                                                                                                                                                                                                                        |
+  1780→| warehouse               | `PutawayTaskCreated`, `PutawayCompleted`                                                                                                                                                                                                                                                                  |
+  1781→| inventory               | `StockAdded`, `StockRemoved`, `StockBlocked`                                                                                                                                                                                                                                                              |
+  1782→| pricing-engine          | (none)                                                                                                                                                                                                                                                                                                    |
+  1783→| gst-taxation            | `GstConfigCreated`, `GstConfigurationTransitioned`                                                                                                                                                                                                                                                        |
+  1784→| recipe-bom              | `RecipeCreated`, `RecipeApproved`                                                                                                                                                                                                                                                                         |
+  1785→| product-costing         | `ProductCostCalculated`, `ProductCostTransitioned`                                                                                                                                                                                                                                                        |
+  1786→| financial-foundation    | (none)                                                                                                                                                                                                                                                                                                    |
+  1787→| general-ledger          | (events emitted per service code review but specific names not enumerated in route file)                                                                                                                                                                                                                  |
+  1788→
+  1789→---
+  1790→
+  1791→## 17. Missing Endpoints (Frontend Needs That Backend Doesn't Expose)
+  1792→
+  1793→Based on the frontend exploration findings (see `_exploration_findings.md` for the frontend's UI buttons/forms), the following capabilities are shown in the UI but have **no corresponding backend endpoint**:
+  1794→
+  1795→### 17.1 Product domain gaps
+  1796→- **UOM create** — `POST /api/v1/catalog/uoms` (only list exists, no create)
+  1797→- **UOM conversion** — `POST /api/v1/catalog/uom-conversions` (no endpoints; table exists in Prisma)
+  1798→- **HSN code CRUD** — no endpoints (UI has HSN/SAC tab; table column exists on Product but no master)
+  1799→- **SAC code CRUD** — no endpoints
+  1800→- **Product attributes CRUD** — no endpoints (Prisma models `Attribute`, `AttributeValue`, `ProductAttribute` exist)
+  1801→- **Product variants CRUD** — no endpoints (Prisma model `ProductVariant` exists)
+  1802→- **Product images CRUD** — no endpoints (Prisma model `ProductImage` exists)
+  1803→- **Product documents CRUD** — no endpoints (Prisma model `ProductDocument` exists)
+  1804→- **Product families CRUD** — no endpoints
+  1805→- **Product groups CRUD** — no endpoints
+  1806→- **Product templates CRUD** — no endpoints
+  1807→- **Product specifications CRUD** — no endpoints
+  1808→- **Product compliance** (product-level, distinct from supplier compliance) — no endpoints
+  1809→- **Product translations** — no endpoints
+  1810→- **Product versioning/approval workflow** — no endpoints (Prisma models exist)
+  1811→- **Product usage matrix** — no endpoints
+  1812→- **Product change history** — no endpoints (audit log exists but no dedicated query endpoint)
+  1813→- **Category update/delete** — only list + create exist; no `PATCH/DELETE /api/v1/catalog/categories/:id`
+  1814→- **Brand update/delete** — only list + create exist; no `PATCH/DELETE /api/v1/catalog/brands/:id`
+  1815→- **Barcode delete** — repository has `softDelete` but no route exposed
+  1816→
+  1817→### 17.2 Customer domain gaps
+  1818→- **Customer contact update/delete** — only create exists; no `PATCH/DELETE /customers/:id/contacts/:contactId`
+  1819→- **Customer address update/delete** — only create exists
+  1820→- **Customer group update/delete** — only list + create exist
+  1821→- **Customer credit hold/release** — no dedicated endpoint; only the credit status GET exists
+  1822→- **Customer bank account CRUD** — no endpoints (Prisma model `BusinessPartnerBankAccount` exists)
+  1823→- **Customer compliance CRUD** — no endpoints
+  1824→- **Customer scorecard** — no endpoints
+  1825→- **Customer tags** — no endpoints
+  1826→
+  1827→### 17.3 Supplier domain gaps
+  1828→- **Supplier contact update/delete** — only create + list exist
+  1829→- **Supplier address update/delete** — only create exists
+  1830→- **Supplier compliance update/delete/mark-expired** — repository has `findExpiring` and `updateStatus` but **no routes exposed**
+  1831→- **Supplier product mapping update/delete** — only create + list exist
+  1832→- **Supplier category update/delete** — only list + create exist
+  1833→- **Supplier bank account CRUD** — no endpoints
+  1834→- **Supplier scorecard** — no endpoints
+  1835→- **Un-blacklist endpoint** — only blacklist exists; no `POST /suppliers/:id/unblacklist`
+  1836→
+  1837→### 17.4 Organization domain gaps
+  1838→- **Business Unit CRUD** — repository exists (`businessUnitRepository`) but **no routes**
+  1839→- **Division CRUD** — no routes (Prisma model exists, hierarchy reads it)
+  1840→- **Region CRUD** — no routes (Prisma model exists, hierarchy reads it)
+  1841→- **Branch CRUD** — no routes (Prisma model exists)
+  1842→- **Plant update/delete** — only list + create + transition exist; no `PATCH/DELETE /plants/:id`
+  1843→- **Warehouse update/delete/transition** — only list + create exist
+  1844→- **Department update/delete** — only list + create exist
+  1845→- **Cost center update/delete** — only list + create exist
+  1846→- **Financial year update/delete/close** — only list + create + getCurrent exist; close is in financial-foundation module
+  1847→- **Working calendar CRUD** — types exist (`WorkingCalendarInput`) but no routes
+  1848→- **Tax config CRUD** — types exist (`TaxConfigInput`) but no routes (different from pricing-engine tax configs)
+  1849→
+  1850→### 17.5 Warehouse domain gaps
+  1851→- **Warehouse master CRUD** — `/api/v1/warehouse` only exposes zones/aisles/racks/bins/putaway/barcodes/scan, NOT the warehouse entity itself (that's at `/api/v1/organization/warehouses`)
+  1852→- **Zone update/delete** — only list + create exist
+  1853→- **Aisle update/delete** — only list + create exist
+  1854→- **Rack update/delete** — only list + create exist
+  1855→- **Bin update/delete/block/unblock** — only list + create exist (no block endpoint despite `isBlocked` field)
+  1856→- **Putaway task cancel/reassign** — only list + create + complete exist
+  1857→- **Temperature zones CRUD** — no endpoints (Prisma model exists)
+  1858→- **Temperature logs query** — no endpoints
+  1859→- **Warehouse capacity snapshots** — no endpoints
+  1860→- **Warehouse calendar** — no endpoints
+  1861→- **Shelf CRUD** — no endpoints (Prisma model `WarehouseShelf` exists)
+  1862→
+  1863→### 17.6 Inventory domain gaps
+  1864→- **Inventory adjustment** — no endpoints (Prisma models `InventoryAdjustment`, `InventoryAdjustmentLine`, `AdjustmentReason` exist)
+  1865→- **Stock transfer** — no endpoints (Prisma models `StockTransfer`, `StockTransferLine`, `InventoryInTransit` exist)
+  1866→- **Bin transfer** — no endpoints (Prisma model `BinTransfer` exists)
+  1867→- **Physical inventory / cycle count** — no endpoints (Prisma models `PhysicalInventory`, `CycleCountPlan`, `CycleCountSchedule`, `CountVariance` exist)
+  1868→- **Lot CRUD** — only list-by-product implicitly via stock-in; no `GET /lots`
+  1869→- **Serial number tracking** — no endpoints (Prisma model `SerialNumber` exists)
+  1870→- **Stock reservation by batch/lot** — repository supports `batchId`/`lotId` but not exposed in DTO
+  1871→- **Stock block release** — only create + list exist; no release endpoint
+  1872→- **Inventory revaluation** — no endpoints (Prisma model exists)
+  1873→- **Inventory cost layer** — no endpoints
+  1874→
+  1875→### 17.7 Pricing domain gaps
+  1876→- **Price list item CRUD** — no endpoints (Prisma model `PriceListItem` exists, used by calculate engine)
+  1877→- **Price list version** — no endpoints
+  1878→- **Product price** — no endpoints
+  1879→- **Customer price agreement CRUD** — no endpoints (table `customer_price_agreements` referenced by calculate engine)
+  1880→- **Discount rule CRUD** — no endpoints (Prisma models `DiscountRule`, `DiscountCondition`, `DiscountTarget` exist)
+  1881→- **Promotion update/delete** — only list + create exist
+  1882→- **Coupon update/delete/validate** — only list + create exist
+  1883→- **Tax config update/delete** — only list + create exist
+  1884→- **Future price** — no endpoints (Prisma model exists)
+  1885→- **Price approval workflow** — no endpoints (Prisma model exists)
+  1886→- **Commercial rule** — no endpoints
+  1887→
+  1888→### 17.8 GST/Taxation gaps
+  1889→- **HSN code master CRUD** — no endpoints (referenced as a field on Product but no master entity)
+  1890→- **SAC code master CRUD** — no endpoints
+  1891→- **Tax rate CRUD** — no endpoints (Prisma model `TaxRate` exists)
+  1892→- **Tax group CRUD** — no endpoints (Prisma model `TaxGroup` exists)
+  1893→- **Tax return filing** — workflow exists (`TaxReturnLifecycle`) but no routes
+  1894→- **GSTIN validation/lookup against GST portal** — only local lookup by GSTIN exists
+  1895→
+  1896→### 17.9 Recipe/BOM gaps
+  1897→- **Recipe update** — only create + transition exist
+  1898→- **Recipe item update/delete** — no endpoints
+  1899→- **Recipe byproduct update/delete** — no endpoints
+
+[showing lines 1500-1899 of 2232; use offset=1900 with limit to continue reading]
