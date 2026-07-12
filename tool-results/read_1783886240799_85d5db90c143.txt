@@ -1,0 +1,750 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { Card } from '@/components/ui/card'
+     5→import { Button } from '@/components/ui/button'
+     6→import { Input } from '@/components/ui/input'
+     7→import { Label } from '@/components/ui/label'
+     8→import { Badge } from '@/components/ui/badge'
+     9→import { Separator } from '@/components/ui/separator'
+    10→import {
+    11→  companyApi, plantApi, warehouseApi, departmentApi,
+    12→  costCenterApi, financialYearApi, hierarchyApi,
+    13→  authApi, setAuthToken,
+    14→  type Company, type Plant, type Warehouse, type Department,
+    15→  type CostCenter, type FinancialYear, type HierarchyNode,
+    16→} from '../api/client'
+    17→import {
+    18→  Building2, Factory, Warehouse as WarehouseIcon, Users, DollarSign,
+    19→  Calendar, Network, Plus, Search, Loader2, AlertCircle, CheckCircle2,
+    20→  ChevronRight, ChevronDown, FileText, MapPin, Clock,
+    21→} from 'lucide-react'
+    22→
+    23→// ─── Shared UI Components ───────────────────────────────────────────────────
+    24→
+    25→function LoadingState() {
+    26→  return (
+    27→    <div className="flex items-center justify-center py-12">
+    28→      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    29→      <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
+    30→    </div>
+    31→  )
+    32→}
+    33→
+    34→function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+    35→  return (
+    36→    <div className="flex flex-col items-center justify-center py-12 gap-3">
+    37→      <AlertCircle className="h-8 w-8 text-red-500" />
+    38→      <p className="text-sm text-red-600">{message}</p>
+    39→      {onRetry && <Button size="sm" variant="outline" onClick={onRetry}>Retry</Button>}
+    40→    </div>
+    41→  )
+    42→}
+    43→
+    44→function EmptyState({ message }: { message: string }) {
+    45→  return (
+    46→    <div className="flex flex-col items-center justify-center py-12 gap-2">
+    47→      <FileText className="h-8 w-8 text-muted-foreground" />
+    48→      <p className="text-sm text-muted-foreground">{message}</p>
+    49→    </div>
+    50→  )
+    51→}
+    52→
+    53→const statusColors: Record<string, string> = {
+    54→  DRAFT: 'bg-slate-100 text-slate-700',
+    55→  CONFIGURED: 'bg-blue-100 text-blue-700',
+    56→  ACTIVE: 'bg-emerald-100 text-emerald-700',
+    57→  SUSPENDED: 'bg-amber-100 text-amber-700',
+    58→  ARCHIVED: 'bg-zinc-100 text-zinc-500',
+    59→}
+    60→
+    61→// ─── Organization Dashboard ─────────────────────────────────────────────────
+    62→
+    63→function OrgDashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
+    64→  const [stats, setStats] = useState({ companies: 0, plants: 0, warehouses: 0, departments: 0, costCenters: 0 })
+    65→  const [currentFY, setCurrentFY] = useState<FinancialYear | null>(null)
+    66→  const [loading, setLoading] = useState(true)
+    67→  const [error, setError] = useState('')
+    68→
+    69→  const load = useCallback(async () => {
+    70→    setLoading(true)
+    71→    setError('')
+    72→    try {
+    73→      const [companies, plants, warehouses, depts, ccs, fy] = await Promise.all([
+    74→        companyApi.list({ pageSize: 1 }),
+    75→        plantApi.list({ pageSize: 1 }),
+    76→        warehouseApi.list({ pageSize: 1 }),
+    77→        departmentApi.list({ pageSize: 1 }),
+    78→        costCenterApi.list({ pageSize: 1 }),
+    79→        financialYearApi.getCurrent(),
+    80→      ])
+    81→      setStats({
+    82→        companies: companies.meta.total,
+    83→        plants: plants.meta.total,
+    84→        warehouses: warehouses.meta.total,
+    85→        departments: depts.meta.total,
+    86→        costCenters: ccs.meta.total,
+    87→      })
+    88→      setCurrentFY(fy.data ?? null)
+    89→    } catch (e) {
+    90→      setError((e as Error).message)
+    91→    } finally {
+    92→      setLoading(false)
+    93→    }
+    94→  }, [])
+    95→
+    96→  useEffect(() => { load() }, [load])
+    97→
+    98→  if (loading) return <LoadingState />
+    99→  if (error) return <ErrorState message={error} onRetry={load} />
+   100→
+   101→  const cards = [
+   102→    { label: 'Companies', value: stats.companies, icon: Building2, color: 'text-blue-600', tab: 'companies' },
+   103→    { label: 'Plants', value: stats.plants, icon: Factory, color: 'text-amber-600', tab: 'plants' },
+   104→    { label: 'Warehouses', value: stats.warehouses, icon: WarehouseIcon, color: 'text-purple-600', tab: 'warehouses' },
+   105→    { label: 'Departments', value: stats.departments, icon: Users, color: 'text-cyan-600', tab: 'departments' },
+   106→    { label: 'Cost Centers', value: stats.costCenters, icon: DollarSign, color: 'text-emerald-600', tab: 'cost-centers' },
+   107→  ]
+   108→
+   109→  return (
+   110→    <div className="space-y-6">
+   111→      <Card className="p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white border-0">
+   112→        <h2 className="text-2xl font-bold mb-1">Organization Dashboard</h2>
+   113→        <p className="text-slate-300 text-sm">Enterprise organization hierarchy — companies, plants, warehouses, departments, and financial configuration.</p>
+   114→        {currentFY && (
+   115→          <div className="mt-4 flex items-center gap-3">
+   116→            <Badge className="bg-emerald-500 text-white">Current FY: {currentFY.code}</Badge>
+   117→            <span className="text-xs text-slate-400">{currentFY.start_date.split('T')[0]} → {currentFY.end_date.split('T')[0]}</span>
+   118→          </div>
+   119→        )}
+   120→      </Card>
+   121→
+   122→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+   123→        {cards.map(card => (
+   124→          <Card key={card.label} className="p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigate(card.tab)}>
+   125→            <div className="flex items-center justify-between mb-2">
+   126→              <p className="text-xs text-muted-foreground">{card.label}</p>
+   127→              <card.icon className={`h-5 w-5 ${card.color}`} />
+   128→            </div>
+   129→            <p className="text-2xl font-bold">{card.value}</p>
+   130→          </Card>
+   131→        ))}
+   132→      </div>
+   133→
+   134→      <div className="grid gap-6 lg:grid-cols-2">
+   135→        <Card className="p-6">
+   136→          <h3 className="font-semibold mb-4 flex items-center gap-2"><Network className="h-5 w-5 text-blue-600" />Organization Hierarchy</h3>
+   137→          <p className="text-sm text-muted-foreground mb-4">View the complete organization tree from Company → Plant → Warehouse.</p>
+   138→          <Button size="sm" variant="outline" onClick={() => onNavigate('hierarchy')}>
+   139→            View Hierarchy Tree <ChevronRight className="ml-1 h-4 w-4" />
+   140→          </Button>
+   141→        </Card>
+   142→        <Card className="p-6">
+   143→          <h3 className="font-semibold mb-4 flex items-center gap-2"><Calendar className="h-5 w-5 text-emerald-600" />Financial Year</h3>
+   144→          {currentFY ? (
+   145→            <div>
+   146→              <p className="text-sm font-medium">{currentFY.name}</p>
+   147→              <p className="text-xs text-muted-foreground">{currentFY.start_date.split('T')[0]} to {currentFY.end_date.split('T')[0]}</p>
+   148→              <Badge className="mt-2 bg-emerald-100 text-emerald-700">Active · Current</Badge>
+   149→            </div>
+   150→          ) : (
+   151→            <p className="text-sm text-muted-foreground">No current financial year set.</p>
+   152→          )}
+   153→          <Button size="sm" variant="outline" className="mt-4" onClick={() => onNavigate('financial-years')}>
+   154→            Manage Financial Years <ChevronRight className="ml-1 h-4 w-4" />
+   155→          </Button>
+   156→        </Card>
+   157→      </div>
+   158→    </div>
+   159→  )
+   160→}
+   161→
+   162→// ─── Company Management ─────────────────────────────────────────────────────
+   163→
+   164→function CompanyManagement() {
+   165→  const [companies, setCompanies] = useState<Company[]>([])
+   166→  const [total, setTotal] = useState(0)
+   167→  const [page, setPage] = useState(1)
+   168→  const [search, setSearch] = useState('')
+   169→  const [loading, setLoading] = useState(true)
+   170→  const [error, setError] = useState('')
+   171→  const [showCreate, setShowCreate] = useState(false)
+   172→  const [successMsg, setSuccessMsg] = useState('')
+   173→
+   174→  const load = useCallback(async () => {
+   175→    setLoading(true)
+   176→    setError('')
+   177→    try {
+   178→      const result = await companyApi.list({ page, pageSize: 25, search: search || undefined })
+   179→      setCompanies(result.data)
+   180→      setTotal(result.meta.total)
+   181→    } catch (e) {
+   182→      setError((e as Error).message)
+   183→    } finally {
+   184→      setLoading(false)
+   185→    }
+   186→  }, [page, search])
+   187→
+   188→  useEffect(() => { load() }, [load])
+   189→
+   190→  const handleCreate = async (data: Partial<Company>) => {
+   191→    await companyApi.create(data)
+   192→    setSuccessMsg(`Company "${data.name}" created successfully`)
+   193→    setShowCreate(false)
+   194→    setTimeout(() => setSuccessMsg(''), 3000)
+   195→    load()
+   196→  }
+   197→
+   198→  const handleTransition = async (company: Company, target: string) => {
+   199→    try {
+   200→      await companyApi.transition(company.id, target, company.version)
+   201→      setSuccessMsg(`Company "${company.name}" transitioned to ${target}`)
+   202→      setTimeout(() => setSuccessMsg(''), 3000)
+   203→      load()
+   204→    } catch (e) {
+   205→      setError((e as Error).message)
+   206→    }
+   207→  }
+   208→
+   209→  return (
+   210→    <div className="space-y-4">
+   211→      <div className="flex items-center justify-between">
+   212→        <h2 className="text-xl font-bold">Companies</h2>
+   213→        <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+   214→          <Plus className="mr-1 h-4 w-4" />New Company
+   215→        </Button>
+   216→      </div>
+   217→
+   218→      {successMsg && (
+   219→        <div className="flex items-center gap-2 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+   220→          <CheckCircle2 className="h-4 w-4" />{successMsg}
+   221→        </div>
+   222→      )}
+   223→
+   224→      <div className="relative max-w-sm">
+   225→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   226→        <Input placeholder="Search companies..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+   227→      </div>
+   228→
+   229→      {showCreate && <CompanyForm onSubmit={handleCreate} onCancel={() => setShowCreate(false)} />}
+   230→
+   231→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   232→        <Card className="p-0 overflow-hidden">
+   233→          {companies.length === 0 ? <EmptyState message="No companies found. Create your first company." /> : (
+   234→            <table className="w-full">
+   235→              <thead className="bg-muted/50">
+   236→                <tr className="text-xs font-semibold text-muted-foreground uppercase">
+   237→                  <th className="text-left px-4 py-3">Code</th>
+   238→                  <th className="text-left px-4 py-3">Name</th>
+   239→                  <th className="text-left px-4 py-3">GSTIN</th>
+   240→                  <th className="text-left px-4 py-3">City</th>
+   241→                  <th className="text-center px-4 py-3">Status</th>
+   242→                  <th className="text-right px-4 py-3">Actions</th>
+   243→                </tr>
+   244→              </thead>
+   245→              <tbody>
+   246→                {companies.map(c => (
+   247→                  <tr key={c.id} className="border-t hover:bg-muted/30">
+   248→                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{c.code}</td>
+   249→                    <td className="px-4 py-3 font-medium text-sm">{c.name}</td>
+   250→                    <td className="px-4 py-3 text-xs font-mono">{c.gstin || '—'}</td>
+   251→                    <td className="px-4 py-3 text-xs">{c.city || '—'}</td>
+   252→                    <td className="px-4 py-3 text-center"><Badge className={`text-[10px] ${statusColors[c.status] || 'bg-slate-100'}`}>{c.status}</Badge></td>
+   253→                    <td className="px-4 py-3 text-right">
+   254→                      <div className="flex justify-end gap-1">
+   255→                        {c.status === 'DRAFT' && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleTransition(c, 'CONFIGURED')}>Configure</Button>}
+   256→                        {c.status === 'CONFIGURED' && <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => handleTransition(c, 'ACTIVE')}>Activate</Button>}
+   257→                        {c.status === 'ACTIVE' && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleTransition(c, 'SUSPENDED')}>Suspend</Button>}
+   258→                        {c.status === 'SUSPENDED' && <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => handleTransition(c, 'ACTIVE')}>Reactivate</Button>}
+   259→                      </div>
+   260→                    </td>
+   261→                  </tr>
+   262→                ))}
+   263→              </tbody>
+   264→            </table>
+   265→          )}
+   266→        </Card>
+   267→      )}
+   268→
+   269→      {total > 25 && (
+   270→        <div className="flex items-center justify-between">
+   271→          <p className="text-xs text-muted-foreground">{total} companies · Page {page}</p>
+   272→          <div className="flex gap-2">
+   273→            <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+   274→            <Button size="sm" variant="outline" disabled={page * 25 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>
+   275→          </div>
+   276→        </div>
+   277→      )}
+   278→    </div>
+   279→  )
+   280→}
+   281→
+   282→function CompanyForm({ onSubmit, onCancel }: { onSubmit: (data: Partial<Company>) => Promise<void>; onCancel: () => void }) {
+   283→  const [saving, setSaving] = useState(false)
+   284→  const [error, setError] = useState('')
+   285→  const [form, setForm] = useState({ code: '', name: '', legalName: '', gstin: '', email: '', phone: '', city: '', state: '', country: 'India' })
+   286→
+   287→  const handleSubmit = async (e: React.FormEvent) => {
+   288→    e.preventDefault()
+   289→    setSaving(true)
+   290→    setError('')
+   291→    try {
+   292→      await onSubmit({
+   293→        code: form.code, name: form.name, legalName: form.legalName || undefined,
+   294→        gstin: form.gstin || undefined, email: form.email || undefined,
+   295→        phone: form.phone || undefined, city: form.city || undefined,
+   296→        state: form.state || undefined, country: form.country,
+   297→      })
+   298→    } catch (e) {
+   299→      setError((e as Error).message)
+   300→    } finally {
+   301→      setSaving(false)
+   302→    }
+   303→  }
+   304→
+   305→  return (
+   306→    <Card className="p-6 border-2 border-blue-200 bg-blue-50/30">
+   307→      <h3 className="font-semibold mb-4">Create New Company</h3>
+   308→      {error && <div className="mb-4 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs">{error}</div>}
+   309→      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+   310→        <div className="space-y-2"><Label>Code *</Label><Input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} required placeholder="SUDHAMRIT" /></div>
+   311→        <div className="space-y-2"><Label>Name *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="Sudhamrit Foods" /></div>
+   312→        <div className="space-y-2"><Label>Legal Name</Label><Input value={form.legalName} onChange={e => setForm({ ...form, legalName: e.target.value })} placeholder="Sudhamrit Foods Pvt Ltd" /></div>
+   313→        <div className="space-y-2"><Label>GSTIN</Label><Input value={form.gstin} onChange={e => setForm({ ...form, gstin: e.target.value })} placeholder="27AABCS1234M1Z5" /></div>
+   314→        <div className="space-y-2"><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="info@sudhamrit.com" /></div>
+   315→        <div className="space-y-2"><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91-22-12345678" /></div>
+   316→        <div className="space-y-2"><Label>City</Label><Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Mumbai" /></div>
+   317→        <div className="space-y-2"><Label>State</Label><Input value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} placeholder="Maharashtra" /></div>
+   318→        <div className="md:col-span-2 flex items-end gap-2">
+   319→          <Button type="submit" size="sm" disabled={saving}>{saving ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" />Creating...</> : 'Create Company'}</Button>
+   320→          <Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
+   321→        </div>
+   322→      </form>
+   323→    </Card>
+   324→  )
+   325→}
+   326→
+   327→// ─── Plant Management ───────────────────────────────────────────────────────
+   328→
+   329→function PlantManagement() {
+   330→  const [plants, setPlants] = useState<Plant[]>([])
+   331→  const [total, setTotal] = useState(0)
+   332→  const [page, setPage] = useState(1)
+   333→  const [search, setSearch] = useState('')
+   334→  const [loading, setLoading] = useState(true)
+   335→  const [error, setError] = useState('')
+   336→  const [showCreate, setShowCreate] = useState(false)
+   337→  const [successMsg, setSuccessMsg] = useState('')
+   338→
+   339→  const load = useCallback(async () => {
+   340→    setLoading(true); setError('')
+   341→    try {
+   342→      const result = await plantApi.list({ page, pageSize: 25, search: search || undefined })
+   343→      setPlants(result.data); setTotal(result.meta.total)
+   344→    } catch (e) { setError((e as Error).message) } finally { setLoading(false) }
+   345→  }, [page, search])
+   346→
+   347→  useEffect(() => { load() }, [load])
+   348→
+   349→  const handleTransition = async (plant: Plant, target: string) => {
+   350→    try {
+   351→      await plantApi.transition(plant.id, target, plant.version)
+   352→      setSuccessMsg(`Plant "${plant.name}" transitioned to ${target}`)
+   353→      setTimeout(() => setSuccessMsg(''), 3000)
+   354→      load()
+   355→    } catch (e) { setError((e as Error).message) }
+   356→  }
+   357→
+   358→  return (
+   359→    <div className="space-y-4">
+   360→      <div className="flex items-center justify-between">
+   361→        <h2 className="text-xl font-bold">Plants</h2>
+   362→        <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-1 h-4 w-4" />New Plant</Button>
+   363→      </div>
+   364→      {successMsg && <div className="flex items-center gap-2 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm"><CheckCircle2 className="h-4 w-4" />{successMsg}</div>}
+   365→      <div className="relative max-w-sm">
+   366→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   367→        <Input placeholder="Search plants..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+   368→      </div>
+   369→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   370→        <Card className="p-0 overflow-hidden">
+   371→          {plants.length === 0 ? <EmptyState message="No plants found." /> : (
+   372→            <table className="w-full">
+   373→              <thead className="bg-muted/50"><tr className="text-xs font-semibold text-muted-foreground uppercase">
+   374→                <th className="text-left px-4 py-3">Code</th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Type</th>
+   375→                <th className="text-left px-4 py-3">City</th><th className="text-center px-4 py-3">Status</th><th className="text-right px-4 py-3">Actions</th>
+   376→              </tr></thead>
+   377→              <tbody>
+   378→                {plants.map(p => (
+   379→                  <tr key={p.id} className="border-t hover:bg-muted/30">
+   380→                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{p.code}</td>
+   381→                    <td className="px-4 py-3 font-medium text-sm">{p.name}</td>
+   382→                    <td className="px-4 py-3"><Badge variant="outline" className="text-[10px]">{p.plant_type}</Badge></td>
+   383→                    <td className="px-4 py-3 text-xs">{p.city || '—'}</td>
+   384→                    <td className="px-4 py-3 text-center"><Badge className={`text-[10px] ${statusColors[p.status] || 'bg-slate-100'}`}>{p.status}</Badge></td>
+   385→                    <td className="px-4 py-3 text-right">
+   386→                      <div className="flex justify-end gap-1">
+   387→                        {p.status === 'DRAFT' && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleTransition(p, 'CONFIGURED')}>Configure</Button>}
+   388→                        {p.status === 'CONFIGURED' && <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700" onClick={() => handleTransition(p, 'ACTIVE')}>Activate</Button>}
+   389→                        {p.status === 'ACTIVE' && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleTransition(p, 'SUSPENDED')}>Suspend</Button>}
+   390→                      </div>
+   391→                    </td>
+   392→                  </tr>
+   393→                ))}
+   394→              </tbody>
+   395→            </table>
+   396→          )}
+   397→        </Card>
+   398→      )}
+   399→      {total > 25 && (<div className="flex items-center justify-between">
+   400→        <p className="text-xs text-muted-foreground">{total} plants · Page {page}</p>
+   401→        <div className="flex gap-2">
+   402→          <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+   403→          <Button size="sm" variant="outline" disabled={page * 25 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>
+   404→        </div>
+   405→      </div>)}
+   406→    </div>
+   407→  )
+   408→}
+   409→
+   410→// ─── Warehouse Management ───────────────────────────────────────────────────
+   411→
+   412→function WarehouseManagement() {
+   413→  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+   414→  const [total, setTotal] = useState(0)
+   415→  const [page, setPage] = useState(1)
+   416→  const [search, setSearch] = useState('')
+   417→  const [loading, setLoading] = useState(true)
+   418→  const [error, setError] = useState('')
+   419→
+   420→  const load = useCallback(async () => {
+   421→    setLoading(true); setError('')
+   422→    try {
+   423→      const result = await warehouseApi.list({ page, pageSize: 25, search: search || undefined })
+   424→      setWarehouses(result.data); setTotal(result.meta.total)
+   425→    } catch (e) { setError((e as Error).message) } finally { setLoading(false) }
+   426→  }, [page, search])
+   427→
+   428→  useEffect(() => { load() }, [load])
+   429→
+   430→  return (
+   431→    <div className="space-y-4">
+   432→      <h2 className="text-xl font-bold">Warehouses</h2>
+   433→      <div className="relative max-w-sm">
+   434→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   435→        <Input placeholder="Search warehouses..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+   436→      </div>
+   437→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   438→        <Card className="p-0 overflow-hidden">
+   439→          {warehouses.length === 0 ? <EmptyState message="No warehouses found." /> : (
+   440→            <table className="w-full">
+   441→              <thead className="bg-muted/50"><tr className="text-xs font-semibold text-muted-foreground uppercase">
+   442→                <th className="text-left px-4 py-3">Code</th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Type</th>
+   443→                <th className="text-center px-4 py-3">Default</th><th className="text-center px-4 py-3">Status</th>
+   444→              </tr></thead>
+   445→              <tbody>
+   446→                {warehouses.map(w => (
+   447→                  <tr key={w.id} className="border-t hover:bg-muted/30">
+   448→                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{w.code}</td>
+   449→                    <td className="px-4 py-3 font-medium text-sm">{w.name}</td>
+   450→                    <td className="px-4 py-3"><Badge variant="outline" className="text-[10px]">{w.warehouse_type}</Badge></td>
+   451→                    <td className="px-4 py-3 text-center">{w.is_default && <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" />}</td>
+   452→                    <td className="px-4 py-3 text-center"><Badge className={`text-[10px] ${statusColors[w.status] || 'bg-slate-100'}`}>{w.status}</Badge></td>
+   453→                  </tr>
+   454→                ))}
+   455→              </tbody>
+   456→            </table>
+   457→          )}
+   458→        </Card>
+   459→      )}
+   460→    </div>
+   461→  )
+   462→}
+   463→
+   464→// ─── Department Management ──────────────────────────────────────────────────
+   465→
+   466→function DepartmentManagement() {
+   467→  const [departments, setDepartments] = useState<Department[]>([])
+   468→  const [total, setTotal] = useState(0)
+   469→  const [page, setPage] = useState(1)
+   470→  const [search, setSearch] = useState('')
+   471→  const [loading, setLoading] = useState(true)
+   472→  const [error, setError] = useState('')
+   473→
+   474→  const load = useCallback(async () => {
+   475→    setLoading(true); setError('')
+   476→    try {
+   477→      const result = await departmentApi.list({ page, pageSize: 25, search: search || undefined })
+   478→      setDepartments(result.data); setTotal(result.meta.total)
+   479→    } catch (e) { setError((e as Error).message) } finally { setLoading(false) }
+   480→  }, [page, search])
+   481→
+   482→  useEffect(() => { load() }, [load])
+   483→
+   484→  return (
+   485→    <div className="space-y-4">
+   486→      <h2 className="text-xl font-bold">Departments</h2>
+   487→      <div className="relative max-w-sm">
+   488→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   489→        <Input placeholder="Search departments..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+   490→      </div>
+   491→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   492→        <Card className="p-0 overflow-hidden">
+   493→          {departments.length === 0 ? <EmptyState message="No departments found." /> : (
+   494→            <table className="w-full">
+   495→              <thead className="bg-muted/50"><tr className="text-xs font-semibold text-muted-foreground uppercase">
+   496→                <th className="text-left px-4 py-3">Code</th><th className="text-left px-4 py-3">Name</th><th className="text-center px-4 py-3">Status</th>
+   497→              </tr></thead>
+   498→              <tbody>
+   499→                {departments.map(d => (
+   500→                  <tr key={d.id} className="border-t hover:bg-muted/30">
+   501→                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{d.code}</td>
+   502→                    <td className="px-4 py-3 font-medium text-sm">{d.name}</td>
+   503→                    <td className="px-4 py-3 text-center"><Badge className={`text-[10px] ${statusColors[d.status] || 'bg-slate-100'}`}>{d.status}</Badge></td>
+   504→                  </tr>
+   505→                ))}
+   506→              </tbody>
+   507→            </table>
+   508→          )}
+   509→        </Card>
+   510→      )}
+   511→    </div>
+   512→  )
+   513→}
+   514→
+   515→// ─── Cost Center Management ─────────────────────────────────────────────────
+   516→
+   517→function CostCenterManagement() {
+   518→  const [centers, setCenters] = useState<CostCenter[]>([])
+   519→  const [total, setTotal] = useState(0)
+   520→  const [page, setPage] = useState(1)
+   521→  const [search, setSearch] = useState('')
+   522→  const [loading, setLoading] = useState(true)
+   523→  const [error, setError] = useState('')
+   524→
+   525→  const load = useCallback(async () => {
+   526→    setLoading(true); setError('')
+   527→    try {
+   528→      const result = await costCenterApi.list({ page, pageSize: 25, search: search || undefined })
+   529→      setCenters(result.data); setTotal(result.meta.total)
+   530→    } catch (e) { setError((e as Error).message) } finally { setLoading(false) }
+   531→  }, [page, search])
+   532→
+   533→  useEffect(() => { load() }, [load])
+   534→
+   535→  return (
+   536→    <div className="space-y-4">
+   537→      <h2 className="text-xl font-bold">Cost Centers</h2>
+   538→      <div className="relative max-w-sm">
+   539→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   540→        <Input placeholder="Search cost centers..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+   541→      </div>
+   542→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   543→        <Card className="p-0 overflow-hidden">
+   544→          {centers.length === 0 ? <EmptyState message="No cost centers found." /> : (
+   545→            <table className="w-full">
+   546→              <thead className="bg-muted/50"><tr className="text-xs font-semibold text-muted-foreground uppercase">
+   547→                <th className="text-left px-4 py-3">Code</th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Type</th><th className="text-center px-4 py-3">Status</th>
+   548→              </tr></thead>
+   549→              <tbody>
+   550→                {centers.map(c => (
+   551→                  <tr key={c.id} className="border-t hover:bg-muted/30">
+   552→                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{c.code}</td>
+   553→                    <td className="px-4 py-3 font-medium text-sm">{c.name}</td>
+   554→                    <td className="px-4 py-3"><Badge variant="outline" className="text-[10px]">{c.cost_center_type}</Badge></td>
+   555→                    <td className="px-4 py-3 text-center"><Badge className={`text-[10px] ${statusColors[c.status] || 'bg-slate-100'}`}>{c.status}</Badge></td>
+   556→                  </tr>
+   557→                ))}
+   558→              </tbody>
+   559→            </table>
+   560→          )}
+   561→        </Card>
+   562→      )}
+   563→    </div>
+   564→  )
+   565→}
+   566→
+   567→// ─── Financial Year Management ──────────────────────────────────────────────
+   568→
+   569→function FinancialYearManagement() {
+   570→  const [years, setYears] = useState<FinancialYear[]>([])
+   571→  const [loading, setLoading] = useState(true)
+   572→  const [error, setError] = useState('')
+   573→
+   574→  const load = useCallback(async () => {
+   575→    setLoading(true); setError('')
+   576→    try {
+   577→      const result = await financialYearApi.list({ pageSize: 50 })
+   578→      setYears(result.data)
+   579→    } catch (e) { setError((e as Error).message) } finally { setLoading(false) }
+   580→  }, [])
+   581→
+   582→  useEffect(() => { load() }, [load])
+   583→
+   584→  return (
+   585→    <div className="space-y-4">
+   586→      <h2 className="text-xl font-bold">Financial Years</h2>
+   587→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   588→        <Card className="p-0 overflow-hidden">
+   589→          {years.length === 0 ? <EmptyState message="No financial years configured." /> : (
+   590→            <table className="w-full">
+   591→              <thead className="bg-muted/50"><tr className="text-xs font-semibold text-muted-foreground uppercase">
+   592→                <th className="text-left px-4 py-3">Code</th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Start Date</th><th className="text-left px-4 py-3">End Date</th><th className="text-center px-4 py-3">Current</th><th className="text-center px-4 py-3">Status</th>
+   593→              </tr></thead>
+   594→              <tbody>
+   595→                {years.map(fy => (
+   596→                  <tr key={fy.id} className="border-t hover:bg-muted/30">
+   597→                    <td className="px-4 py-3 font-mono text-xs text-blue-700">{fy.code}</td>
+   598→                    <td className="px-4 py-3 font-medium text-sm">{fy.name}</td>
+   599→                    <td className="px-4 py-3 text-xs font-mono">{fy.start_date.split('T')[0]}</td>
+   600→                    <td className="px-4 py-3 text-xs font-mono">{fy.end_date.split('T')[0]}</td>
+   601→                    <td className="px-4 py-3 text-center">{fy.is_current && <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" />}</td>
+   602→                    <td className="px-4 py-3 text-center"><Badge className={`text-[10px] ${statusColors[fy.status] || 'bg-slate-100'}`}>{fy.status}</Badge></td>
+   603→                  </tr>
+   604→                ))}
+   605→              </tbody>
+   606→            </table>
+   607→          )}
+   608→        </Card>
+   609→      )}
+   610→    </div>
+   611→  )
+   612→}
+   613→
+   614→// ─── Hierarchy Tree ─────────────────────────────────────────────────────────
+   615→
+   616→function HierarchyTree() {
+   617→  const [tree, setTree] = useState<HierarchyNode[]>([])
+   618→  const [loading, setLoading] = useState(true)
+   619→  const [error, setError] = useState('')
+   620→
+   621→  const load = useCallback(async () => {
+   622→    setLoading(true); setError('')
+   623→    try {
+   624→      const result = await hierarchyApi.getTree()
+   625→      setTree(result.data)
+   626→    } catch (e) { setError((e as Error).message) } finally { setLoading(false) }
+   627→  }, [])
+   628→
+   629→  useEffect(() => { load() }, [load])
+   630→
+   631→  const typeColors: Record<string, string> = {
+   632→    Company: 'text-blue-600 bg-blue-50',
+   633→    BusinessUnit: 'text-purple-600 bg-purple-50',
+   634→    Division: 'text-indigo-600 bg-indigo-50',
+   635→    Region: 'text-cyan-600 bg-cyan-50',
+   636→    Plant: 'text-amber-600 bg-amber-50',
+   637→    Warehouse: 'text-emerald-600 bg-emerald-50',
+   638→  }
+   639→
+   640→  function TreeNode({ node, depth }: { node: HierarchyNode; depth: number }) {
+   641→    const [expanded, setExpanded] = useState(depth < 2)
+   642→    const hasChildren = node.children && node.children.length > 0
+   643→    return (
+   644→      <div style={{ marginLeft: depth * 24 }}>
+   645→        <div className="flex items-center gap-2 py-1.5 hover:bg-muted/30 rounded px-2 cursor-pointer" onClick={() => hasChildren && setExpanded(!expanded)}>
+   646→          {hasChildren ? (
+   647→            expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+   648→          ) : <span className="w-4" />}
+   649→          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${typeColors[node.type] || 'bg-slate-50 text-slate-600'}`}>{node.type}</span>
+   650→          <span className="font-mono text-xs text-blue-700">{node.code}</span>
+   651→          <span className="text-sm font-medium">{node.name}</span>
+   652→          <Badge className={`text-[9px] ${statusColors[node.status] || 'bg-slate-100'}`}>{node.status}</Badge>
+   653→        </div>
+   654→        {expanded && hasChildren && node.children!.map(child => <TreeNode key={child.id} node={child} depth={depth + 1} />)}
+   655→      </div>
+   656→    )
+   657→  }
+   658→
+   659→  return (
+   660→    <div className="space-y-4">
+   661→      <h2 className="text-xl font-bold">Organization Hierarchy</h2>
+   662→      {loading ? <LoadingState /> : error ? <ErrorState message={error} onRetry={load} /> : (
+   663→        <Card className="p-6">
+   664→          {tree.length === 0 ? <EmptyState message="No organization hierarchy found. Create companies to build the tree." /> : (
+   665→            <div>{tree.map(node => <TreeNode key={node.id} node={node} depth={0} />)}</div>
+   666→          )}
+   667→        </Card>
+   668→      )}
+   669→    </div>
+   670→  )
+   671→}
+   672→
+   673→// ─── Main Organization Module ───────────────────────────────────────────────
+   674→
+   675→type OrgTab = 'dashboard' | 'companies' | 'plants' | 'warehouses' | 'departments' | 'cost-centers' | 'financial-years' | 'hierarchy'
+   676→
+   677→const TABS: Array<{ key: OrgTab; label: string; icon: React.ReactNode }> = [
+   678→  { key: 'dashboard', label: 'Dashboard', icon: <Network className="h-4 w-4" /> },
+   679→  { key: 'companies', label: 'Companies', icon: <Building2 className="h-4 w-4" /> },
+   680→  { key: 'plants', label: 'Plants', icon: <Factory className="h-4 w-4" /> },
+   681→  { key: 'warehouses', label: 'Warehouses', icon: <WarehouseIcon className="h-4 w-4" /> },
+   682→  { key: 'departments', label: 'Departments', icon: <Users className="h-4 w-4" /> },
+   683→  { key: 'cost-centers', label: 'Cost Centers', icon: <DollarSign className="h-4 w-4" /> },
+   684→  { key: 'financial-years', label: 'Financial Years', icon: <Calendar className="h-4 w-4" /> },
+   685→  { key: 'hierarchy', label: 'Hierarchy Tree', icon: <Network className="h-4 w-4" /> },
+   686→]
+   687→
+   688→export function OrganizationModule() {
+   689→  const [tab, setTab] = useState<OrgTab>('dashboard')
+   690→  const [authReady, setAuthReady] = useState(false)
+   691→  const [authError, setAuthError] = useState('')
+   692→
+   693→  useEffect(() => {
+   694→    // Get a token for API calls (temporary — will be replaced by real auth)
+   695→    const existing = localStorage.getItem('suop_auth')
+   696→    if (existing) {
+   697→      try {
+   698→        const data = JSON.parse(existing)
+   699→        if (data.token) {
+   700→          setAuthToken(data.token)
+   701→          setAuthReady(true)
+   702→          return
+   703→        }
+   704→      } catch { /* ignore */ }
+   705→    }
+   706→    // Get a test token
+   707→    authApi.getTestToken().then(token => {
+   708→      if (token) {
+   709→        setAuthToken(token)
+   710→        localStorage.setItem('suop_auth', JSON.stringify({ token, isAuthenticated: true }))
+   711→        setAuthReady(true)
+   712→      }
+   713→    }).catch(e => {
+   714→      setAuthError(`Cannot connect to backend: ${(e as Error).message}`)
+   715→      setAuthReady(true)
+   716→    })
+   717→  }, [])
+   718→
+   719→  if (authError) {
+   720→    return <ErrorState message={authError} />
+   721→  }
+   722→
+   723→  if (!authReady) {
+   724→    return <LoadingState />
+   725→  }
+   726→
+   727→  return (
+   728→    <div className="space-y-6">
+   729→      <div className="flex flex-wrap gap-2 border-b pb-3">
+   730→        {TABS.map(t => (
+   731→          <button key={t.key} onClick={() => setTab(t.key)}
+   732→            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+   733→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
+   734→            {t.icon}{t.label}
+   735→          </button>
+   736→        ))}
+   737→      </div>
+   738→
+   739→      {tab === 'dashboard' && <OrgDashboard onNavigate={(t) => setTab(t as OrgTab)} />}
+   740→      {tab === 'companies' && <CompanyManagement />}
+   741→      {tab === 'plants' && <PlantManagement />}
+   742→      {tab === 'warehouses' && <WarehouseManagement />}
+   743→      {tab === 'departments' && <DepartmentManagement />}
+   744→      {tab === 'cost-centers' && <CostCenterManagement />}
+   745→      {tab === 'financial-years' && <FinancialYearManagement />}
+   746→      {tab === 'hierarchy' && <HierarchyTree />}
+   747→    </div>
+   748→  )
+   749→}
+   750→

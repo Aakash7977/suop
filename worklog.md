@@ -3836,3 +3836,204 @@ Stage Summary:
 - Production readiness: 3.2/10 → 6.5/10 (+3.3 points)
 - Build: Next.js production build passes
 - Status: STOP — awaiting user approval for Phase 3 (backend gaps) or Phase 4 (frontend polish)
+
+---
+Task ID: SECTION03-BACKEND-VERIFY
+Agent: Explore sub-agent (Section 03 Backend Verification)
+Task: EXHAUSTIVE verification of every Section 03 (Master Data Management) backend endpoint. The user was furious that prior reports assumed ~80 endpoints were missing without proof. This task was to PROVE what exists by reading actual files — no assumptions.
+
+Backend root: /home/z/my-project/apps/backend/
+
+Work Log:
+- Read prior worklog (Tasks 3-6) to establish context
+- Read /home/z/my-project/apps/backend/src/app/app.ts (lines 1-263) to map every route mount prefix
+- Read every routes/index.ts file for 15 modules (product, customer, supplier, organization, warehouse, inventory, pricing-engine, gst-taxation, recipe-bom, product-costing, financial-foundation, general-ledger, quality-foundation, crm-foundation, auth)
+- Read every service/index.ts file for 12 modules to extract business rules, audit calls, event emissions, workflow invocations
+- Read every repository/index.ts file (where present — some modules use Prisma client directly) for SQL tables touched and query types
+- Read every workflow/index.ts file (8 found) to extract state machines, states, transitions
+- Read core/permissions/registry.ts to enumerate ALL 30 permission literals
+- Read core/audit/service.ts to confirm AuditLog Prisma model and AuditService.log/getEntityHistory/getActorHistory/query methods
+- Read core/events/event-bus.ts to confirm EventOutbox table pattern and writeToOutbox API
+- Read middleware/audit.ts to confirm global audit middleware runs on all mutations
+- Grep'd prisma/schema.prisma for ^model\s+\w+ — confirmed 300+ models including all referenced Section 03 tables
+- Grep'd for writeToOutbox across all modules — found 40+ distinct event names being emitted
+- Glob'd for **/{dto,validators}/*.ts — NO matches. Confirmed DTOs are inline zod schemas in route files (deliberate design choice using zod + @hono/zod-validator)
+
+KEY FINDING — PRIOR "MISSING ENDPOINT" CLAIMS ARE FALSE:
+After reading every file in every Section 03 module, the prior report's assumption that ~80 master-data endpoints were missing is INCORRECT. The actual count is 186 VERIFIED endpoints across 15 modules, every one cited with file:line source:
+
+| Module | Mount Prefix | Endpoint Count |
+|---|---|---|
+| Product | /api/v1/catalog | 14 |
+| Customer | /api/v1/sales | 12 |
+| Supplier | /api/v1/procurement | 15 |
+| Organization | /api/v1/organization | 23 |
+| Warehouse | /api/v1/warehouse | 16 |
+| Inventory | /api/v1/inventory | 14 |
+| Pricing Engine | /api/v1/sales/pricing | 9 |
+| GST Taxation | /api/v1/finance/gst | 8 |
+| Recipe-BOM | /api/v1/manufacturing/recipes | 12 |
+| Product Costing | /api/v1/finance/costing | 8 |
+| Financial Foundation | /api/v1/finance/foundation | 14 |
+| General Ledger | /api/v1/finance/gl | 8 |
+| Quality Foundation | /api/v1/quality/foundation | 13 |
+| CRM Foundation | /api/v1/crm/foundation | 8 |
+| Auth (reference) | /api/v1/auth | 12 |
+| TOTAL | | 186 |
+
+LIKELY SOURCE OF PRIOR CONFUSION:
+1. Endpoints are mounted under non-obvious prefixes (Products under /catalog not /products; Customers under /sales not /customers; Suppliers under /procurement not /suppliers)
+2. Some modules reuse proxy permissions (Customer uses ORG_* even though CUSTOMER_* exists; Pricing uses CUSTOMER_*)
+3. No separate dto/ or validators/ directories exist — schemas are inline zod
+4. Some modules use Prisma client directly without a separate repository file
+
+KNOWN BUGS FOUND (NOT missing endpoints — endpoints exist but have defects):
+1. GST Taxation route file lines 25-26: READ_PERM = WRITE_PERM = AUDIT_READ (write should require AUDIT_READ_CRITICAL)
+2. GST Taxation workflow name mismatch: service line 337 looks up 'GstConfigurationLifecycle' but workflow/index.ts registers 'TaxReturnLifecycle' — transition endpoint will throw WORKFLOW.NOT_REGISTERED at runtime
+3. Product Costing: same READ_PERM=WRITE_PERM=AUDIT_READ bug; ALSO no workflow/index.ts exists, but service looks up 'ProductCostLifecycle' — transition endpoint broken
+4. CRM Foundation: no workflow/index.ts exists, but service looks up 'CrmActivityLifecycle' — transition endpoint broken
+5. General Ledger: same READ_PERM=WRITE_PERM=AUDIT_READ bug (workflow IS registered correctly though)
+6. Organization module under-exposes Business Unit / Division / Region (repositories exist, used by /hierarchy tree endpoint, but no dedicated CRUD REST routes)
+7. Inventory module has no formal workflow (stockIn enforces inspection status via direct SQL)
+8. Warehouse module has no formal workflow (putaway tasks have status field but no state machine)
+9. EventName catalog in event-bus.ts is partial (16 names) but modules emit 40+ — catalog should be expanded
+10. Customer routes alias CUSTOMER_* to ORG_* (cosmetic — endpoints work)
+
+Workflows registered (8):
+1. OrganizationLifecycle (5 states, 7 transitions) — shared by Company/Plant/Warehouse
+2. ProductLifecycle (6 states, 8 transitions)
+3. CustomerLifecycle (7 states, 12 transitions)
+4. SupplierLifecycle (8 states, 13 transitions)
+5. RecipeLifecycle (4 states, 5 transitions)
+6. JournalEntryLifecycle (general-ledger, 6 states, 7 transitions)
+7. FinancialFoundationJournalEntryLifecycle (4 states, 5 transitions, backward compat)
+8. TaxReturnLifecycle (gst-taxation, 4 states, 4 transitions) — BUG: service looks for different name
+
+NOT registered (transition endpoints broken):
+- ProductCostLifecycle (referenced by product-costing service)
+- CrmActivityLifecycle (referenced by crm-foundation service)
+
+Cross-cutting services verified:
+- auditService: AuditLog Prisma model, methods log/getEntityHistory/getActorHistory/query, fire-and-forget pattern, severity levels INFO/WARN/CRITICAL, entity types include Product/Customer/Supplier/Inventory/BarcodeLabel/PutawayTask/JournalEntry/GstConfiguration/ProductCost/CrmActivity/Company/Plant/Warehouse/etc.
+- eventBus: EventOutbox Prisma table pattern, writeToOutbox API called inside DB transactions, drainOutbox background job
+- workflowRegistry: state-machine.ts (not read in detail but confirmed via LS), used by 5+ modules for canTransition checks
+- Permission registry: 30 permission literals covering org/auth/product/supplier/customer/po/quot/grn/quality/inventory/audit/system domains, 6 default roles (tenant_admin, quality_manager, procurement_officer, procurement_manager, warehouse_operator, auditor)
+
+Stage Summary:
+- Section 03 backend verification is COMPLETE
+- 186 endpoints verified across 15 modules — every one cited with file:line source
+- Prior "~80 missing" assumption is FALSE; misunderstanding arose from non-obvious mount prefixes, proxy permissions, and missing dto/ directories
+- 13 known bugs/design quirks documented — most are permission-mapping or workflow-name issues, NOT missing functionality
+- All Prisma models referenced by services exist in schema (300+ models verified)
+- Recommendation: prioritize fixing the 3 broken transition endpoints (GST, Product Costing, CRM Foundation) and the 4 permission-mapping bugs in finance modules
+
+Artifacts Produced:
+- /home/z/my-project/docs/frontend/SECTION-03/_backend_verification_raw.md (~700 lines, exhaustive module-by-module inventory with endpoint tables, service/repository/workflow/DTO/event/permission/audit breakdowns, source file:line citations for every claim, and 13-item known-bugs list)
+
+Ready for next: Frontend Section 03 implementation can proceed against the verified 186-endpoint backend. Frontend team should use the actual mount prefixes documented in §0 of the verification file (NOT /api/v1/products — use /api/v1/catalog/products, etc.).
+
+---
+Task ID: SECTION03-FRONTEND-VERIFY
+Agent: Explore sub-agent (Section 03 Frontend Verification)
+Task: EXHAUSTIVE verification of EVERY reusable frontend artifact that Section 03 (Master Data Management) can use. The user was angry that previous work created duplicate code instead of reusing existing components/hooks/utilities. This task was to inventory the entire frontend so the next implementer can reuse rather than reinvent.
+
+Work Log:
+- Read prior worklog (3,933 lines) to establish context — prior Section 03 implement phase claimed extraction + wire-up was complete and build passed.
+- Read existing Section 03 docs (SECTION_03_SUMMARY.md 1,328 lines, SECTION_03_IMPLEMENTATION_REPORT.md 550 lines, _exploration_findings.md 936 lines, _backend_findings.md 2,231 lines, _backend_verification_raw.md 1,101 lines) for context.
+- Cataloged every file in src/components/ (47 files, 5,496 LOC — ONLY ui/ subdirectory, zero shared domain components).
+- Read both files in src/hooks/ (use-mobile.ts 19 LOC, use-toast.ts 194 LOC).
+- Read all 3 files in src/lib/ (utils.ts 7 LOC, db.ts 13 LOC, supabase.ts 103 LOC).
+- Read both Zustand stores in src/stores/ (auth-store.ts 566 LOC, org-context-store.ts 101 LOC).
+- Read all 14 module API clients in src/modules/*/api/client.ts (1,193 LOC total).
+- Read all 14 module components in src/modules/*/components/*.tsx (3,606 LOC total).
+- Read all 13 Section 03 files in src/sections/03-master-data/ (5,596 LOC total).
+- Grep'd page.tsx (37,619 lines, 340 top-level functions) for helper functions, color maps, mock data arrays, and imports.
+- Grep'd for permission-gating patterns, toast usage, DataTable, Combobox, DatePicker — confirmed none exist as shared primitives.
+
+KEY FINDINGS:
+
+1. **CRITICAL BUG — Section 03 toast system is invisible**: The custom `pushToast`/`subscribeToasts` pub/sub in `src/sections/03-master-data/api/clients.ts:221-238` is exported but `subscribeToasts` is NEVER called anywhere. Every `pushToast('info', '...')` call in Section 03 (40+ of them across all components) fires into a void. The proper toast system is `toast()` from `@/hooks/use-toast.ts:145` + `<Toaster />` mounted in `src/app/layout.tsx:34` — Section 03 should use this, not its own broken pub/sub.
+
+2. **Massive duplication — Status color maps**: 14+ inline copies of `statusColors`/`STATUS_COLORS`/`*_COLORS` maps across modules and page.tsx. The most complete copy is `s28BadgeForStatus` (70 entries) in `src/sections/03-master-data/utils/helpers.ts:12`. Should be promoted to `src/lib/badges.ts` and all other copies deleted.
+
+3. **Massive duplication — LoadingState/ErrorState/EmptyState**: 12+ inline copies (every module has its own). No shared component exists. Should be extracted to `src/components/states.tsx`.
+
+4. **Massive duplication — Manual tab bar, manual pagination, manual `<table>`, manual `<select>`**: 9+ copies each. shadcn primitives `<Tabs>`, `<Table>`, `<Select>`, `<Pagination>` exist but are NEVER used by any module. Section 03 components all use raw HTML.
+
+5. **shadcn primitives underused**: Of 47 UI primitives, the most useful ones for Section 03 (`<Tabs>`, `<Table>`, `<Select>`, `<Pagination>`, `<Skeleton>`, `<Form>`, `<AlertDialog>`, `<Dialog>`) are essentially unused. `<Form>` (react-hook-form + zod) is never used despite the 28-field Product create dialog needing it.
+
+6. **No shared domain components exist**: NO `<DataTable>`, NO `<Combobox>`, NO `<DatePicker>`, NO `<FileUpload>`, NO `<ConfirmDialog>`, NO `<PageHeader>`, NO `<StatCard>`. Every list/form/dialog is built from scratch in each module.
+
+7. **Section 03 hooks are private to Section 03**: `useList`, `useRecord`, `useMutation`, `useDebouncedSearch`, `useDropdown` (in `src/sections/03-master-data/hooks/use-master-data.ts`) are reusable but live under Section 03's directory, not under `src/hooks/`. Other sections can't import them.
+
+8. **Section 03 utils are private to Section 03**: `s28BadgeForStatus`, `formatINR`, `formatDate`, `formatDateTime`, `relativeTime`, `exportToCSV`, `validateGSTIN/PAN/Email/Phone/Pincode` (in `src/sections/03-master-data/utils/helpers.ts`) are reusable but live under Section 03's directory, not under `src/lib/`.
+
+9. **Two `warehouseApi` exports with the same name**: `src/modules/warehouse/api/client.ts:26` (operational — bins/putaway/barcodes) and `src/modules/organization/api/client.ts:267` (master-data — list/get/create). Section 03 aliases the org one as `orgWarehouseApi` at import time, but the naming is confusing and source-level rename is needed.
+
+10. **Auth store duplicates `authClient` logic**: `src/stores/auth-store.ts:140-213` has inline `backendLogin`/`backendRefresh`/`backendLogout` functions that duplicate `src/modules/auth/api/client.ts:62` `authClient.login/refresh/logout`. The duplication exists to avoid a circular import.
+
+11. **OrganizationModule has temporary auth bootstrap that should be removed**: `src/modules/organization/components/OrganizationModule.tsx:690-725` calls `authApi.getTestToken()` to get a test token. This is dev-only dead code now that real auth via `useAuthStore` is wired.
+
+12. **Section 03 components do NOT scope queries by org context**: `useOrgContextStore()` (company/plant/warehouse picker) exists and is mounted in page.tsx TopBar, but no Section 03 component reads from it. All list queries are unscoped.
+
+13. **5 of 9 Section 03 components have live API data** (ProductMaster, PIM, PlantMaster, BusinessPartner.BPPartnersTab, Warehouse.WarehouseWarehousesTab). 4 of 9 still use 100% mock data (Governance, WarehouseLocations, and most sub-tabs of CommercialEngine/BusinessPartner/Identification).
+
+14. **30+ dead buttons in Section 03** emit `pushToast('info', '...')` calls — but since the toast pub/sub is unwired (see finding #1), clicking them does nothing visible.
+
+15. **API clients ready to be called (no new code needed)**:
+- `productApi` — full CRUD + transition + barcode lookup + 3 reference data endpoints
+- `customerApi` — full CRUD + transition + credit + groups
+- `supplierApi` — full CRUD + transition + blacklist + categories
+- `companyApi` — full CRUD + lifecycle
+- `plantApi` — list + get + create + transition (no update/delete)
+- `orgWarehouseApi` — list + get + create (no update/delete/transition)
+- `departmentApi` — list + create
+- `costCenterApi` — list + create
+- `financialYearApi` — list + getCurrent + create
+- `hierarchyApi` — getTree
+- `warehouseApi` (operational) — 11 methods (zones, aisles, racks, bins, putaway, barcodes, scan)
+- `inventoryApi` — 9 methods (list, get, stockIn/Out, ledger, transactions, reserve, block, expiring)
+- `pricingApi` — 9 methods (price lists, promotions, coupons, tax configs, calculate) [built in Section 03 clients.ts]
+- `gstApi` — list, get [built in Section 03 clients.ts]
+- `financeApi` — list+create for currencies + exchange rates [built in Section 03 clients.ts]
+
+Stage Summary:
+- Section 03 frontend verification is COMPLETE.
+- Deliverable: /home/z/my-project/docs/frontend/SECTION-03/_frontend_verification_raw.md (~830 lines, 9-section exhaustive catalog with file:line citations for every claim)
+- 47 UI primitives cataloged (shadcn/ui)
+- 2 hooks cataloged (use-mobile, use-toast)
+- 3 lib utilities cataloged (cn, db, supabase)
+- 2 stores cataloged (auth-store, org-context-store)
+- 14 module API clients cataloged (all 12 organization CRUD + 14 module components with CRUD/transition/search/pagination/permission status)
+- 13 Section 03 files cataloged (5/9 wired to live APIs, 30+ dead buttons, broken toast pub/sub)
+- 13 critical duplicate patterns flagged (toast system, status colors, loading/error/empty states, tab bars, pagination, tables, selects, forms, formatINR, two warehouseApi, auth store duplication, CSV export duplication, permission helper re-export)
+- 15 prioritized action items delivered for next implementer
+- The most important single fix: delete the broken `pushToast`/`subscribeToasts` pub/sub in Section 03's `api/clients.ts:221-238` and replace every `pushToast` call with `toast()` from `@/hooks/use-toast` — this makes 40+ dead buttons immediately produce visible feedback.
+- No code changes made — exploration and documentation only.
+
+---
+Task ID: SECTION03-RECOVERY
+Agent: Main (Super Z)
+Task: Section 03 Implementation Recovery & Course Correction — Generate verification reports ONLY, no code changes
+
+Work Log:
+- Dispatched 2 parallel Explore agents to EXHAUSTIVELY verify backend (186 endpoints) and frontend (47 shadcn primitives, 14 module components, 14 API clients) with file:line citations for every claim
+- Backend verification found 186 endpoints across 15 modules (NOT 117 as previously claimed, NOT 80 missing as previously assumed)
+- Frontend verification found CRITICAL BUG: Section 03's custom pushToast/subscribeToasts pub/sub is exported but subscribeToasts is NEVER called — 40+ pushToast calls fire into a void (invisible toasts)
+- Frontend verification found 13 duplicate patterns (status color maps, LoadingState/ErrorState/EmptyState, manual tab bars, manual pagination, raw tables, raw selects, FormData forms, formatINR, two warehouseApi exports, auth store duplication, CSV export duplication, permission helper indirection)
+- Frontend verification confirmed shadcn primitives (Tabs, Table, Select, Pagination, Skeleton, Form, Dialog, AlertDialog) exist but are NEVER used by any module
+- Generated SECTION_03_BACKEND_VERIFICATION.md (1,100+ lines) — exhaustive inventory of every endpoint, service, repository, workflow, permission, event, DTO, validator, component, hook, utility with file:line citations
+- Generated MISSING_BACKEND_ITEMS.md — only 18 genuinely missing items (with proof for each), 17 false positives corrected, 5 broken endpoints documented, 27 frontend client method gaps identified
+- Generated SECTION_03_RECOVERY_PLAN.md — 8-phase recovery plan (R1: fix toast, R2: promote shared code, R3: adopt shadcn, R4: wire endpoints, R5: fix backend bugs, R6: remove placeholders, R7: enterprise features, R8: testing) totaling 81 hours (reduced from 180-220 prior estimate)
+- NO code changes made. NO implementation done. Pure verification + planning.
+
+Stage Summary:
+- Deliverables (3 reports):
+  1. /home/z/my-project/docs/frontend/SECTION-03/SECTION_03_BACKEND_VERIFICATION.md
+  2. /home/z/my-project/docs/frontend/SECTION-03/MISSING_BACKEND_ITEMS.md
+  3. /home/z/my-project/docs/frontend/SECTION-03/SECTION_03_RECOVERY_PLAN.md
+- Key finding: Prior "~80 missing endpoints" claim was FALSE. Only 18 genuinely missing (most LOW/MEDIUM priority).
+- Key finding: Section 03's toast system is BROKEN (40+ invisible toasts). Must be fixed FIRST in Phase R1.
+- Key finding: 13 duplicate patterns exist. Recovery plan promotes shared code to src/lib/ and src/hooks/ before any new implementation.
+- Recovery plan: 81 hours across 8 phases with approval gates between each.
+- Status: STOP — awaiting user approval to begin Phase R1.
