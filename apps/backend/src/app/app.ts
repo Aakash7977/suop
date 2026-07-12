@@ -93,6 +93,7 @@ import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
 import { getRequestContext } from '@/core/context'
+import { docsRoutes } from '@/routes/docs'
 
 export function createApp() {
   const app = new Hono()
@@ -101,6 +102,10 @@ export function createApp() {
   // Mounted before global middleware so they bypass auth/audit.
   // These are the standard Kubernetes liveness/readiness probe endpoints.
   app.route('/', systemRoutes)
+
+  // ─── Documentation Endpoints (no auth) ───────────────────────────────────
+  // OpenAPI 3.1 spec + Swagger UI + ReDoc
+  app.route('/', docsRoutes)
 
   // ─── Global Middleware (RC1 Fix Pack 2: Security + Performance) ──────────
   // Registration order is critical — outer middleware wraps inner:

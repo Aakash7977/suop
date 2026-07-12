@@ -1,0 +1,99 @@
+# SUOP ERP v1.0 — Backend Deployment (3 replicas for HA)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: suop-backend
+  namespace: suop
+  labels:
+    app.kubernetes.io/name: suop-backend
+    app.kubernetes.io/version: "1.0.0-rc1"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: suop-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: suop-backend
+        app.kubernetes.io/version: "1.0.0-rc1"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3030"
+        prometheus.io/path: "/api/v1/_internal/metrics"
+    spec:
+      containers:
+        - name: backend
+          image: suop/backend:1.0.0-rc1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3030
+              name: http
+          envFrom:
+            - configMapRef:
+                name: suop-backend-config
+            - secretRef:
+                name: suop-backend-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 3030
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3030
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          startupProbe:
+            httpGet:
+              path: /live
+              port: 3030
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 30
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchExpressions:
+                        - key: app.kubernetes.io/name
+                          operator: In
+                          values:
+                            - suop-backend
+                    topologyKey: kubernetes.io/hostname
+          nodeSelector:
+            node-role.kubernetes.io/worker: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: suop-backend
+  namespace: suop
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: suop-backend
+  ports:
+    - port: 3030
+      targetPort: 3030
+      name: http

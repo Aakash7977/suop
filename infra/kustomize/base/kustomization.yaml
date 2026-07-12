@@ -1,0 +1,23 @@
+# SUOP ERP v1.0 — Kustomize Base
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../kubernetes/00-namespace.yaml
+  - ../../../kubernetes/01-configmap.yaml
+  - ../../../kubernetes/02-secrets.yaml
+  - ../../../kubernetes/10-postgres.yaml
+  - ../../../kubernetes/11-redis.yaml
+  - ../../../kubernetes/20-backend.yaml
+  - ../../../kubernetes/30-ingress.yaml
+  - ../../../kubernetes/40-hpa-pdb.yaml
+  - ../../../kubernetes/50-network-policies.yaml
+  - ../../../kubernetes/60-resource-quotas.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: suop-erp
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+  - name: suop/backend
+    newTag: 1.0.0-rc1

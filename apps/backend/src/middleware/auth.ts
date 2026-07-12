@@ -16,10 +16,19 @@ const PUBLIC_ROUTES = new Set([
   '/health',
   '/ready',
   '/live',
+  '/openapi.json',
+  '/swagger',
+  '/swagger/',
+  '/redoc',
+  '/redoc/',
+  '/api-info',
   '/api/v1/_internal/health',
   '/api/v1/_internal/live',
   '/api/v1/_internal/ready',
   '/api/v1/_internal/version',
+  '/api/v1/_internal/metrics',
+  '/api/v1/_internal/security',
+  '/api/v1/_internal/cache',
   '/api/v1/auth/login',
   '/api/v1/auth/refresh',
   '/api/v1/auth/forgot-password',
@@ -29,7 +38,7 @@ const PUBLIC_ROUTES = new Set([
 ])
 
 export async function authMiddleware(c: Context, next: Next) {
-  // Skip auth for public routes (root-level health + internal + reference)
+  // Skip auth for public routes (root-level health + internal + reference + docs)
   if (
     PUBLIC_ROUTES.has(c.req.path) ||
     c.req.path.startsWith('/api/v1/_internal') ||

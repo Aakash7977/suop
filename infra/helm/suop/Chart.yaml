@@ -1,0 +1,18 @@
+# SUOP ERP v1.0 — Helm Chart
+apiVersion: v2
+name: suop
+description: SUOP ERP v1.0 — Enterprise Food Manufacturing ERP
+type: application
+version: 1.0.0
+appVersion: "1.0.0-rc1"
+home: https://sudhamrit.com
+sources:
+  - https://github.com/Aakash7977/suop.git
+maintainers:
+  - name: Sudhamrit Foods
+    email: devops@sudhamrit.com
+keywords:
+  - erp
+  - manufacturing
+  - food
+  - enterprise

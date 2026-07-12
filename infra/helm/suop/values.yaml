@@ -1,0 +1,151 @@
+# SUOP ERP v1.0 — Helm Values
+# Default values for suop chart.
+# Override per-environment in values-dev.yaml, values-prod.yaml.
+
+# ─── Global ──────────────────────────────────────────────────────────────────
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# ─── Backend ─────────────────────────────────────────────────────────────────
+backend:
+  replicaCount: 3
+
+  image:
+    registry: docker.io
+    repository: suop/backend
+    tag: "1.0.0-rc1"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+  env:
+    NODE_ENV: production
+    PORT: "3030"
+    LOG_LEVEL: info
+
+  envSecrets:
+    - DATABASE_URL
+    - REDIS_URL
+    - JWT_SECRET
+    - FIELD_ENCRYPTION_KEY
+    - S3_ACCESS_KEY
+    - S3_SECRET_KEY
+    - SMTP_USER
+    - SMTP_PASS
+
+  probes:
+    liveness:
+      path: /live
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    readiness:
+      path: /ready
+      initialDelaySeconds: 5
+      periodSeconds: 5
+    startup:
+      path: /live
+      failureThreshold: 30
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ─── PostgreSQL ──────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  image: postgres:16-alpine
+  persistence:
+    size: 100Gi
+    storageClass: fast-ssd
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  auth:
+    username: suop
+    database: suop_prod
+    existingSecret: postgres-secrets
+
+# ─── Redis ───────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  image: redis:7-alpine
+  persistence:
+    size: 10Gi
+    storageClass: standard
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+  maxmemory: 512mb
+  auth:
+    existingSecret: redis-secrets
+
+# ─── Ingress ─────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: api.sudhamrit.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: suop-tls
+      hosts:
+        - api.sudhamrit.com
+
+# ─── Network Policies ────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: true
+
+# ─── Observability ───────────────────────────────────────────────────────────
+observability:
+  prometheus:
+    enabled: true
+    scrape: true
+    path: /api/v1/_internal/metrics
+    port: 3030
+  grafana:
+    enabled: true
+  jaeger:
+    enabled: true
+  otel:
+    enabled: false
+    endpoint: ""
+
+# ─── Backup ──────────────────────────────────────────────────────────────────
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 30d
+  encryption: true

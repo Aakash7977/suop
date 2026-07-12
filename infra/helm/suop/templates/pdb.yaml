@@ -1,0 +1,13 @@
+{{- if .Values.backend.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "suop.fullname" . }}-backend
+  labels:
+    {{- include "suop.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.backend.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "suop.selectorLabels" . | nindent 6 }}
+{{- end }}

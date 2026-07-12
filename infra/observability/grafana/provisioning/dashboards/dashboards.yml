@@ -1,0 +1,12 @@
+# SUOP ERP v1.0 — Grafana Dashboard Provisioning
+apiVersion: 1
+
+providers:
+  - name: 'SUOP ERP Dashboards'
+    orgId: 1
+    folder: 'SUOP ERP'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

@@ -1,0 +1,195 @@
+# SUOP ERP v1.0 — Docker Swarm Stack (Production)
+#
+# Deploy with:
+#   docker stack deploy -c infra/docker-swarm/stack.yml suop
+#
+# Prerequisites:
+#   - Docker Swarm mode initialized: docker swarm init
+#   - Secrets created: docker secret create postgres_password -
+#   - Configs created: docker config create suop_env .env.prod
+
+version: '3.8'
+
+services:
+  # ─── Backend (3 replicas, rolling update) ────────────────────────────────
+  backend:
+    image: suop/backend:1.0.0-rc1
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+      placement:
+        constraints:
+          - node.role == worker
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.suop.rule=Host(`api.sudhamrit.com`)
+        - traefik.http.routers.suop.tls=true
+        - traefik.http.routers.suop.tls.certresolver=letsencrypt
+        - traefik.http.services.suop.loadbalancer.server.port=3030
+    ports:
+      - target: 3030
+        published: 3030
+        mode: ingress
+    environment:
+      NODE_ENV: production
+      PORT: "3030"
+      DATABASE_URL: postgresql://suop:$$POSTGRES_PASSWORD@postgres:5432/suop_prod?schema=public&pool_max=20
+      REDIS_URL: redis://:$$REDIS_PASSWORD@redis:6379
+      JWT_SECRET: $$JWT_SECRET
+      CORS_ALLOWED_ORIGINS: https://app.sudhamrit.com
+      LOG_LEVEL: info
+    secrets:
+      - postgres_password
+      - redis_password
+      - jwt_secret
+    networks:
+      - suop-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.db == true
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    environment:
+      POSTGRES_USER: suop
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: suop_prod
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    secrets:
+      - postgres_password
+    networks:
+      - suop-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suop -d suop_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 768M
+        reservations:
+          cpus: '0.1'
+          memory: 256M
+    command: >
+      redis-server
+      --requirepass $$(cat /run/secrets/redis_password)
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - redis-data:/data
+    secrets:
+      - redis_password
+    networks:
+      - suop-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Traefik (Reverse Proxy + TLS) ────────────────────────────────────────
+  traefik:
+    image: traefik:v3.0
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    command:
+      - --providers.docker
+      - --providers.docker.swarmmode=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=devops@sudhamrit.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --metrics.prometheus=true
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
+      - target: 8080
+        published: 8080
+        mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-letsencrypt:/letsencrypt
+    networks:
+      - suop-net
+
+secrets:
+  postgres_password:
+    external: true
+  redis_password:
+    external: true
+  jwt_secret:
+    external: true
+
+volumes:
+  postgres-data:
+  redis-data:
+  traefik-letsencrypt:
+
+networks:
+  suop-net:
+    driver: overlay
+    attachable: true

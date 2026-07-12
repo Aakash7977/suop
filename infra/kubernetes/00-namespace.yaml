@@ -1,0 +1,8 @@
+# SUOP ERP v1.0 — Kubernetes Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: suop
+  labels:
+    app.kubernetes.io/name: suop
+    app.kubernetes.io/part-of: suop-erp
