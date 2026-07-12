@@ -89,6 +89,7 @@ import { ExecutiveDashboardsRoutes } from '@/modules/executive-dashboards/routes
 import { AiPredictionRoutes } from '@/modules/ai-prediction/routes'
 import { ReportingPlatformRoutes } from '@/modules/reporting-platform/routes'
 import { AlertsKpiEngineRoutes } from '@/modules/alerts-kpi-engine/routes'
+import { eipRoutes } from '@/modules/eip/routes'
 import { toBaseError, getHttpStatus } from '@/core/errors'
 import { error, type ResponseMeta } from '@/core/response'
 import { logger } from '@/core/logging'
@@ -228,6 +229,11 @@ export function createApp() {
   app.route('/api/v1/bi/ai', AiPredictionRoutes)
   app.route('/api/v1/bi/reports', ReportingPlatformRoutes)
   app.route('/api/v1/bi/alerts', AlertsKpiEngineRoutes)
+
+  // ─── EIP (Enterprise Integration Platform — Version 1.1) ─────────────────
+  // Phases 56-65: Event Bus, API Gateway, Webhooks, Connectors, Queues,
+  // IoT, Mobile, AI Copilot, Extensibility Platform
+  app.route('/api/v1/eip', eipRoutes)
 
   // ─── 404 Handler ──────────────────────────────────────────────────────────
   app.notFound((c) => {
