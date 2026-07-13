@@ -4587,3 +4587,35 @@ Stage Summary:
 - 0 CRITICAL bugs remaining ✅
 - 0 HIGH bugs remaining ✅
 - Status: Phase 0 COMPLETE — awaiting approval for Phase 1 (Permission Model Overhaul)
+
+---
+Task ID: SECTION04-PHASE1-DESIGN
+Agent: Main (Super Z)
+Task: Enterprise Permission Architecture Design — 6 documents
+
+Work Log:
+- Reviewed existing permission registry (38 permissions, 6 roles, many proxy)
+- Reviewed all 57 backend modules and their route permission usage
+- Identified all proxy permission violations (AUDIT_READ, ORG_*, CUSTOMER_*, PRODUCT_* used as proxies)
+- Designed enterprise permission catalog: ~215 domain-specific permissions across 14 domains
+- Designed 12 roles (6 revised + 6 new): sales_officer, sales_manager, warehouse_supervisor, finance_accountant, finance_manager, manufacturing_supervisor
+- Designed 12 Separation of Duties rules (maker-checker, financial integrity, audit independence, etc.)
+- Created permission naming standard: <domain>:<action>[:<scope>] with 15 standard actions
+- Created migration plan: rewrite registry → update 30 route files → update roles → verify
+- Created implementation plan: 14 hours, 5 steps, quality gates
+- NO code changes. Pure architecture design.
+
+Stage Summary:
+- 6 deliverables:
+  1. 01_ENTERPRISE_PERMISSION_CATALOG.md — ~215 permissions across 14 domains
+  2. 02_ROLE_PERMISSION_MATRIX.md — 12 roles × all permissions (allow/deny)
+  3. 03_SEPARATION_OF_DUTIES.md — 12 SoD rules + cross-module conflict matrix
+  4. 04_PERMISSION_NAMING_STANDARD.md — <domain>:<action>[:<scope>] convention + 50 domain names
+  5. 05_PERMISSION_MIGRATION_PLAN.md — 38→215 permissions, 6→12 roles, 30 route files, 14 hours
+  6. 06_PHASE1_IMPLEMENTATION_PLAN.md — 5 steps, quality gates, risk assessment
+- Key decisions:
+  * ONE permission per business capability (no proxy)
+  * 15 standard actions (read, create, update, delete, approve, reject, post, cancel, reopen, export, import, print, configure, audit, admin)
+  * 12 SoD rules (maker-checker for all financial/operational approvals)
+  * 6 new roles (sales_officer, sales_manager, warehouse_supervisor, finance_accountant, finance_manager, manufacturing_supervisor)
+- Status: STOP — awaiting approval to implement
