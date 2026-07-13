@@ -49,9 +49,32 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus, s28PriorityBadge, S28_WAREHOUSES, S28_ZONES } from '../utils/helpers'
+import { warehouseApi } from '@/modules/warehouse/api/client'
+import { toast } from '@/hooks/use-toast'
+import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 
 export function PutawayModule() {
   const [tab, setTab] = useState<PutawayTab>('overview')
+  const [tasks, setTasks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await warehouseApi.listPutawayTasks({ page: 1 })
+        if (!cancelled) setTasks(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load putaway tasks')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
   const tabs: Array<{ key: PutawayTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
     { key: 'tasks', label: 'Tasks', icon: <PackageOpen className="h-4 w-4" /> },

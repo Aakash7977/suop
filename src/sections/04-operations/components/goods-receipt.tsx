@@ -49,6 +49,10 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus, s28PriorityBadge, S28_WAREHOUSES, S28_ZONES } from '../utils/helpers'
+import { goodsReceiptApi } from '@/modules/goods-receipt/api/client'
+import { toast } from '@/hooks/use-toast'
+import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
+import { exportToCSV } from '@/lib/csv'
 
 export function GoodsReceiptModule() {
   const [tab, setTab] = useState<GRNTab>('overview')
@@ -151,7 +155,29 @@ function GRNOverviewTab() {
 }
 
 function GRNListTab() {
-  const grns = [
+  const [grns, setGrns] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await goodsReceiptApi.list({ page: 1, search })
+        if (!cancelled) setGrns(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load GRNs')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [search])
+
+  const _grns = [
     { id: 'gr-001', grnNumber: 'GRN-2026-00142', type: 'PURCHASE_RECEIPT', date: '2026-07-08', supplier: 'Konkan Cashew Processors', ref: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-12-AB-4521', status: 'COMPLETED', qualityHold: true, qualityStatus: 'APPROVED', lines: 3, ordered: 380, received: 380, accepted: 380, rejected: 0, value: 114000, posted: true, putaway: true, receivedBy: 'Suresh Patil' },
     { id: 'gr-002', grnNumber: 'GRN-2026-00143', type: 'PURCHASE_RECEIPT', date: '2026-07-08', supplier: 'Sri Balaji Sugar', ref: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', vehicle: 'AP-09-CD-8832', status: 'COMPLETED', qualityHold: false, qualityStatus: 'APPROVED', lines: 1, ordered: 500, received: 500, accepted: 500, rejected: 0, value: 25000, posted: true, putaway: true, receivedBy: 'Suresh Patil' },
     { id: 'gr-003', grnNumber: 'GRN-2026-00144', type: 'MANUFACTURING_RECEIPT', date: '2026-07-01', supplier: null, ref: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', vehicle: null, status: 'COMPLETED', qualityHold: true, qualityStatus: 'APPROVED', lines: 1, ordered: 500, received: 500, accepted: 500, rejected: 0, value: 175000, posted: true, putaway: true, receivedBy: 'Anita Desai' },

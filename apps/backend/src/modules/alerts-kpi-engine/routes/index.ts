@@ -23,7 +23,7 @@ import { AlertsKpiEngineService } from '../service'
 export const AlertsKpiEngineRoutes = new Hono()
 
 const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ
+const WRITE_PERM = Permission.AUDIT_READ_CRITICAL
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 AlertsKpiEngineRoutes.get('/', requirePermission(READ_PERM), async (c) => {

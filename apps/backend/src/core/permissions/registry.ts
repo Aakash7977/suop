@@ -140,11 +140,11 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.INVENTORY_READ, Permission.INVENTORY_POST,
     Permission.GRN_READ, Permission.GRN_POST, Permission.GRN_PUTAWAY,
     Permission.PRODUCT_READ,
-    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
+    Permission.CUSTOMER_READ,
   ],
   auditor: [
     Permission.PRODUCT_READ,
-    Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_DELETE,
+    Permission.CUSTOMER_READ,
     Permission.SUPPLIER_READ,
     Permission.PO_READ,
     Permission.QUOT_READ,

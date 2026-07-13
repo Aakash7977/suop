@@ -49,6 +49,10 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus, s28PriorityBadge, S28_WAREHOUSES, S28_ZONES } from '../utils/helpers'
+import { inventoryApi } from '@/modules/inventory/api/client'
+import { toast } from '@/hooks/use-toast'
+import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
+import { exportToCSV } from '@/lib/csv'
 
 export function InventoryModule() {
   const [tab, setTab] = useState<InvTab>('overview')
@@ -114,20 +118,49 @@ export function InventoryModule() {
 }
 
 function InvOverviewTab() {
-  const stats = [
-    { label: 'Total Inventory Value', value: '₹5.16L', sub: 'Across 10 stock balances', icon: <IndianRupee className="h-5 w-5 text-emerald-600" /> },
-    { label: 'Available Units', value: '4,904', sub: 'Ready for sale/issue', icon: <PackageCheck className="h-5 w-5 text-blue-600" /> },
-    { label: 'Reserved Units', value: '24', sub: 'For Infosys order', icon: <ShieldCheck className="h-5 w-5 text-purple-600" /> },
-    { label: 'Expired Units', value: '56', sub: 'Batch KK-2606-05', icon: <AlertOctagon className="h-5 w-5 text-red-600" /> },
-    { label: 'Transactions', value: '10', sub: '8 POSTED · 2 PENDING', icon: <ArrowLeftRight className="h-5 w-5 text-amber-600" /> },
-    { label: 'Ledger Entries', value: '10', sub: 'Immutable audit trail', icon: <BookOpen className="h-5 w-5 text-cyan-600" /> },
-    { label: 'Journal Entries', value: '6', sub: 'Double-entry style', icon: <Layers3 className="h-5 w-5 text-indigo-600" /> },
-    { label: 'Transaction Types', value: '18', sub: 'Goods Receipt to Stock Take', icon: <ListChecks className="h-5 w-5 text-teal-600" /> },
-  ]
+  const [stats, setStats] = useState<Array<{ label: string; value: string; sub: string; icon: React.ReactNode }>>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      try {
+        const [invRes, txnRes, ledgerRes] = await Promise.all([
+          inventoryApi.list({ page: 1, pageSize: 100 }).catch(() => ({ data: [], meta: { total: 0 } })),
+          inventoryApi.listTransactions({ page: 1 }).catch(() => ({ data: [], meta: { total: 0 } })),
+          inventoryApi.listLedger({ page: 1 }).catch(() => ({ data: [], meta: { total: 0 } })),
+        ])
+        if (cancelled) return
+        const inventory = invRes.data || []
+        const transactions = txnRes.data || []
+        const ledger = ledgerRes.data || []
+        const totalValue = inventory.reduce((s: number, i: { unit_cost?: number; moving_avg_cost?: number; quantity?: number }) => s + Number(i.unit_cost || i.moving_avg_cost || 0) * Number(i.quantity || 0), 0)
+        const totalQty = inventory.reduce((s: number, i: { quantity?: number }) => s + Number(i.quantity || 0), 0)
+        const expired = inventory.filter((i: { is_expired?: boolean }) => i.is_expired).length
+        setStats([
+          { label: 'Total Inventory Value', value: `₹${(totalValue / 100000).toFixed(2)}L`, sub: `Across ${inventory.length} stock balances`, icon: <IndianRupee className="h-5 w-5 text-emerald-600" /> },
+          { label: 'Available Units', value: totalQty.toLocaleString('en-IN'), sub: 'Ready for sale/issue', icon: <PackageCheck className="h-5 w-5 text-blue-600" /> },
+          { label: 'Stock Balances', value: String(inventory.length), sub: 'Active records', icon: <Boxes className="h-5 w-5 text-purple-600" /> },
+          { label: 'Expired Units', value: String(expired), sub: 'Requires action', icon: <AlertOctagon className="h-5 w-5 text-red-600" /> },
+          { label: 'Transactions', value: String(transactions.length), sub: 'All time', icon: <ArrowLeftRight className="h-5 w-5 text-amber-600" /> },
+          { label: 'Ledger Entries', value: String(ledger.length), sub: 'Immutable audit trail', icon: <BookOpen className="h-5 w-5 text-cyan-600" /> },
+          { label: 'Journal Entries', value: String(Math.ceil(ledger.length / 2)), sub: 'Double-entry style', icon: <Layers3 className="h-5 w-5 text-indigo-600" /> },
+          { label: 'Transaction Types', value: '18', sub: 'Goods Receipt to Stock Take', icon: <ListChecks className="h-5 w-5 text-teal-600" /> },
+        ])
+      } catch {
+        if (!cancelled) setStats([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map(s => (
+        {loading ? [...Array(8)].map((_, i) => <Card key={i} className="p-4"><div className="h-16 bg-muted/50 rounded animate-pulse" /></Card>) : stats.map(s => (
           <Card key={s.label} className="p-4">
             <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
             <p className="text-2xl font-bold">{s.value}</p>
@@ -162,7 +195,34 @@ function InvOverviewTab() {
 }
 
 function InvTransactionsTab() {
-  const transactions = [
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await inventoryApi.listTransactions({ page: 1 })
+        if (!cancelled) setTransactions(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load transactions')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const filtered = transactions.filter((t: any) =>
+    !search || String(t.transaction_number || t.number || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(t.movement_type || t.type || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const _transactions = [
     { id: 'it-001', number: 'INV-2026-00142', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', partner: 'Konkan Cashew Processors', status: 'POSTED', lines: 3, totalQty: 380, totalValue: 114000, createdBy: 'Suresh Patil' },
     { id: 'it-002', number: 'INV-2026-00143', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', partner: 'Sri Balaji Sugar', status: 'POSTED', lines: 1, totalQty: 500, totalValue: 25000, createdBy: 'Suresh Patil' },
     { id: 'it-003', number: 'INV-2026-00144', type: 'PRODUCTION_RECEIPT', date: '2026-07-01', refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 1, totalQty: 500, totalValue: 175000, createdBy: 'Anita Desai' },
@@ -224,7 +284,34 @@ function InvTransactionsTab() {
 }
 
 function InvBalancesTab() {
-  const balances = [
+  const [balances, setBalances] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await inventoryApi.list({ page: 1, pageSize: 100 })
+        if (!cancelled) setBalances(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load balances')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const filtered = balances.filter((b: any) =>
+    !search || String(b.product_sku || b.product_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(b.warehouse_name || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const _balances = [
     { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', available: 142, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 142, unitCost: 350, totalValue: 49700, expiry: '2026-07-31' },
     { product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', available: 186, reserved: 24, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 210, unitCost: 350, totalValue: 73500, expiry: '2026-07-31' },
     { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2606-05', available: 0, reserved: 0, allocated: 0, damaged: 0, expired: 56, inTransit: 0, total: 56, unitCost: 345, totalValue: 19320, expiry: '2026-07-25' },
@@ -276,7 +363,28 @@ function InvBalancesTab() {
 }
 
 function InvLedgerTab() {
-  const entries = [
+  const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await inventoryApi.listLedger({ page: 1 })
+        if (!cancelled) setEntries(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load ledger')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const _entries = [
     { id: 'sl-001', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 200, availDelta: 200, postingDate: '2026-07-08 10:15', isReversal: false },
     { id: 'sl-002', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 150, availDelta: 150, postingDate: '2026-07-08 10:15', isReversal: false },
     { id: 'sl-003', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 30, availDelta: 30, postingDate: '2026-07-08 10:15', isReversal: false },
