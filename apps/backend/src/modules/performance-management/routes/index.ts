@@ -22,8 +22,8 @@ import { PerformanceManagementService } from '../service'
 
 export const PerformanceManagementRoutes = new Hono()
 
-const READ_PERM = Permission.ORG_READ
-const WRITE_PERM = Permission.ORG_UPDATE
+const READ_PERM = Permission.AUDIT_READ
+const WRITE_PERM = Permission.AUDIT_READ_CRITICAL
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 PerformanceManagementRoutes.get('/', requirePermission(READ_PERM), async (c) => {

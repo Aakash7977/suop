@@ -31,16 +31,44 @@ export const pickPackDispatchService = {
     const ship = await shipmentRepository.create({ tenantId, shipmentNumber, ...data, freightPaidBy: data.freightPaidBy ?? 'CUSTOMER', status: 'CREATED', dispatchedBy: userId, dispatchedByName: ctx.userEmail, dispatchedAt: new Date().toISOString() })
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'SHIPMENT_CREATED', entityType: 'Shipment', entityId: String(ship!['id']), entityCode: shipmentNumber })
     await eventBus.writeToOutbox({ eventName: 'ShipmentCreated', payload: { shipmentId: String(ship!['id']), shipmentNumber }, tenantId })
-    // Decrement inventory on shipment creation (Bug fix: previously shipped stock remained in inventory)
+    // Decrement inventory on shipment creation — query SO lines for actual product/qty/uom
     try {
       const { inventoryService } = await import('@/modules/inventory/service')
       if (data.soId && data.warehouseId) {
-        await inventoryService.stockOut({
-          productId: data.soId, productSku: shipmentNumber, productName: `Shipment ${shipmentNumber}`,
-          warehouseId: data.warehouseId, warehouseName: data.warehouseName || '',
-          quantity: data.totalQty || 0, unitCost: 0, uomId: '', uomCode: 'EA',
-          movementType: 'SALES_ISSUE', referenceType: 'SHIPMENT', referenceNumber: shipmentNumber,
-        } as any)
+        // Query sales order lines to get actual product IDs, quantities, and UOMs
+        const linesResult = await query(
+          `SELECT product_id, product_sku, product_name, uom_id, uom_code,
+                  COALESCE(packed_qty, picked_qty, ordered_qty) AS ship_qty
+           FROM sales_order_lines
+           WHERE tenant_id = $1 AND so_id = $2
+           AND COALESCE(packed_qty, picked_qty, ordered_qty) > 0`,
+          [tenantId, data.soId]
+        )
+        for (const line of linesResult.rows) {
+          const qty = Number(line['ship_qty'])
+          if (qty <= 0) continue
+          await inventoryService.stockOut({
+            productId: String(line['product_id']),
+            productSku: String(line['product_sku']),
+            productName: String(line['product_name']),
+            warehouseId: data.warehouseId,
+            warehouseName: data.warehouseName || '',
+            quantity: qty,
+            unitCost: 0,
+            uomId: String(line['uom_id']),
+            uomCode: String(line['uom_code']),
+            movementType: 'SALES_ISSUE',
+            referenceType: 'SHIPMENT',
+            referenceNumber: shipmentNumber,
+            batchNumber: undefined,
+            lotNumber: undefined,
+          } as any)
+        }
+        // Update dispatched_qty on SO lines
+        await query(
+          `UPDATE sales_order_lines SET dispatched_qty = COALESCE(packed_qty, picked_qty, ordered_qty), updated_at = NOW() WHERE tenant_id = $1 AND so_id = $2`,
+          [tenantId, data.soId]
+        )
       }
     } catch (e) {
       // Log but don't fail the shipment if stockOut fails

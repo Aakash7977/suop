@@ -246,7 +246,7 @@ export const stockReservationRepository = {
       warehouseId: 'warehouse_id', batchId: 'batch_id', lotId: 'lot_id', reservedQty: 'reserved_qty',
       uomId: 'uom_id', uomCode: 'uom_code', reservationType: 'reservation_type',
       referenceType: 'reference_type', referenceId: 'reference_id', referenceNumber: 'reference_number',
-      reservedBy: 'reserved_by', reservedBy_Name: 'reserved_by_name', reservedFor: 'reserved_for', expiresAt: 'expires_at',
+      reservedBy: 'reserved_by', reservedByName: 'reserved_by_name', reservedFor: 'reserved_for', expiresAt: 'expires_at',
       status: 'status', remarks: 'remarks',
     }
     for (const [key, col] of Object.entries(fieldMap)) {
@@ -290,7 +290,7 @@ export const stockBlockRepository = {
       warehouseId: 'warehouse_id', batchId: 'batch_id', lotId: 'lot_id', blockedQty: 'blocked_qty',
       uomId: 'uom_id', uomCode: 'uom_code', blockType: 'block_type', blockReason: 'block_reason',
       sourceType: 'source_type', sourceId: 'source_id', sourceNumber: 'source_number',
-      blockedBy: 'blocked_by', blockedBy_Name: 'blocked_by_name', status: 'status', remarks: 'remarks',
+      blockedBy: 'blocked_by', blockedByName: 'blocked_by_name', status: 'status', remarks: 'remarks',
     }
     for (const [key, col] of Object.entries(fieldMap)) {
       if (data[key] !== undefined && data[key] !== null) { cols.push(col); vals.push(data[key]) }

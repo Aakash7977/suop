@@ -23,7 +23,7 @@ import { GstTaxationService } from '../service'
 export const GstTaxationRoutes = new Hono()
 
 const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ
+const WRITE_PERM = Permission.AUDIT_READ_CRITICAL
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 GstTaxationRoutes.get('/', requirePermission(READ_PERM), async (c) => {

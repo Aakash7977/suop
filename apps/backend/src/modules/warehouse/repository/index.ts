@@ -144,7 +144,7 @@ export const putawayTaskRepository = {
       batchId: 'batch_id', batchNumber: 'batch_number', lotId: 'lot_id', lotNumber: 'lot_number',
       quantity: 'quantity', uomId: 'uom_id', uomCode: 'uom_code', warehouseId: 'warehouse_id', warehouseName: 'warehouse_name',
       sourceBinId: 'source_bin_id', sourceBinCode: 'source_bin_code', targetBinId: 'target_bin_id', targetBinCode: 'target_bin_code',
-      assignedTo: 'assigned_to', assignedTo_Name: 'assigned_to_name', startedAt: 'started_at', completedAt: 'completed_at',
+      assignedTo: 'assigned_to', assignedToName: 'assigned_to_name', startedAt: 'started_at', completedAt: 'completed_at',
       status: 'status', priority: 'priority', remarks: 'remarks',
     }
     for (const [key, col] of Object.entries(fieldMap)) {
@@ -174,7 +174,7 @@ export const putawayTaskRepository = {
     const vals: unknown[] = [tenantId, id]; let idx = 3
     const fieldMap: Record<string, string> = {
       status: 'status', targetBinId: 'target_bin_id', targetBinCode: 'target_bin_code',
-      assignedTo: 'assigned_to', assignedTo_Name: 'assigned_to_name', startedAt: 'started_at', completedAt: 'completed_at', remarks: 'remarks',
+      assignedTo: 'assigned_to', assignedToName: 'assigned_to_name', startedAt: 'started_at', completedAt: 'completed_at', remarks: 'remarks',
     }
     for (const [key, col] of Object.entries(fieldMap)) {
       if (data[key] !== undefined) { setParts.push(`${col} = $${idx++}`); vals.push(data[key]) }

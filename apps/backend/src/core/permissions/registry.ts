@@ -137,7 +137,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.INVENTORY_READ,
   ],
   warehouse_operator: [
-    Permission.INVENTORY_READ, Permission.INVENTORY_POST,
+    Permission.INVENTORY_READ, Permission.INVENTORY_POST, Permission.INVENTORY_ADJUST,
     Permission.GRN_READ, Permission.GRN_POST, Permission.GRN_PUTAWAY,
     Permission.PRODUCT_READ,
     Permission.CUSTOMER_READ,

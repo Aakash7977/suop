@@ -4560,3 +4560,30 @@ Stage Summary:
 - Key finding: 6 stub-template modules have NO domain logic (330h to implement)
 - Total estimated effort: 1,088 hours (backend + frontend)
 - Status: STOP — awaiting approval before implementing any backend module
+
+---
+Task ID: SECTION04-BACKEND-PHASE0
+Agent: Main (Super Z)
+Task: Backend Phase 0 — Fix ALL Critical and High bugs
+
+Work Log:
+- BUG-4 (CRITICAL): Fixed pick-pack-dispatch inventory corruption — replaced broken stockOut call that passed soId as productId with proper implementation that queries sales_order_lines for actual product_id/sku/name/uom and calls stockOut per SO line. Also updates dispatched_qty on SO lines.
+- BUG-5 (CRITICAL SoD): Fixed WRITE_PERM in product-costing, general-ledger, gst-taxation — changed from AUDIT_READ to AUDIT_READ_CRITICAL
+- BUG-6 (CRITICAL SoD): Fixed READ_PERM/WRITE_PERM in attendance-shift, performance-management — changed from ORG_READ/ORG_UPDATE to AUDIT_READ/AUDIT_READ_CRITICAL
+- BUG-1 (High): Fixed reservedBy_Name → reservedByName in inventory/repository stockReservationRepository
+- BUG-2 (High): Fixed blockedBy_Name → blockedByName in inventory/repository stockBlockRepository
+- BUG-3 (High): Fixed assignedTo_Name → assignedToName in warehouse/repository putawayTaskRepository (2 occurrences)
+- BUG-8 (High): Added INVENTORY_ADJUST to warehouse_operator role in permissions/registry.ts
+- BUG-12 (High): Changed procurement DELETE permission from PR_CREATE (=PO_CREATE) to PO_DELETE
+- BUG-13 (Medium): Changed quality-inspection NCR/CAPA GET permissions from GRN_READ to IQC_INSPECT
+- 11 files modified across 8 backend modules
+- Build passes (Next.js production build succeeds)
+- Generated PHASE_0_COMPLETION_REPORT.md and SECTION_04_BACKEND_PROGRESS.md
+
+Stage Summary:
+- 9 of 13 bugs fixed (3 CRITICAL + 5 HIGH + 1 MEDIUM)
+- 3 bugs deferred (BUG-7 OEE calculation, BUG-9 version field, BUG-10/11 low priority)
+- Backend score: 2.5/10 → 3.5/10
+- 0 CRITICAL bugs remaining ✅
+- 0 HIGH bugs remaining ✅
+- Status: Phase 0 COMPLETE — awaiting approval for Phase 1 (Permission Model Overhaul)

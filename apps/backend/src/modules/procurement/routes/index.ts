@@ -77,7 +77,7 @@ procurementRoutes.patch('/requisitions/:id', requirePermission(PR_CREATE), async
 })
 
 // Delete
-procurementRoutes.delete('/requisitions/:id', requirePermission(PR_CREATE), async (c) => {
+procurementRoutes.delete('/requisitions/:id', requirePermission(Permission.PO_DELETE), async (c) => {
   const version = Number(c.req.header('If-Match') ?? '0')
   await procurementService.delete(c.req.param('id')!, version)
   return c.json(success({ deleted: true }, { message: 'Purchase requisition deleted' }))

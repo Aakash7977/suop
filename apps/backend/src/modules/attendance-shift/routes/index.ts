@@ -22,8 +22,8 @@ import { AttendanceShiftService } from '../service'
 
 export const AttendanceShiftRoutes = new Hono()
 
-const READ_PERM = Permission.ORG_READ
-const WRITE_PERM = Permission.ORG_UPDATE
+const READ_PERM = Permission.AUDIT_READ
+const WRITE_PERM = Permission.AUDIT_READ_CRITICAL
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 AttendanceShiftRoutes.get('/', requirePermission(READ_PERM), async (c) => {
