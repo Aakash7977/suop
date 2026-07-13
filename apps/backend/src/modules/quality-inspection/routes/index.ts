@@ -167,12 +167,12 @@ const ncrTransitionSchema = z.object({
   rootCause: z.string().optional(), closureNotes: z.string().optional(), capaId: z.string().uuid().optional(),
 })
 
-qualityInspectionRoutes.get('/ncrs', requirePermission(Permission.NCR_CREATE), async (c) => {
+qualityInspectionRoutes.get('/ncrs', requirePermission(Permission.GRN_READ), async (c) => {
   const result = await qualityInspectionService.listNcrs({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, status: c.req.query('status') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-qualityInspectionRoutes.get('/ncrs/:id', requirePermission(Permission.NCR_CREATE), async (c) => {
+qualityInspectionRoutes.get('/ncrs/:id', requirePermission(Permission.GRN_READ), async (c) => {
   const ncr = await qualityInspectionService.getNcr(c.req.param('id')!)
   return c.json(success(ncr))
 })
@@ -198,7 +198,7 @@ const capaSchema = z.object({
   targetDate: z.string().datetime().optional(),
 })
 
-qualityInspectionRoutes.get('/capas', requirePermission(Permission.NCR_CREATE), async (c) => {
+qualityInspectionRoutes.get('/capas', requirePermission(Permission.GRN_READ), async (c) => {
   const result = await qualityInspectionService.listCapas({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), status: c.req.query('status') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })

@@ -49,9 +49,35 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus, s28PriorityBadge, S28_WAREHOUSES, S28_ZONES } from '../utils/helpers'
+import { workforceApi } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
+import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
+import { exportToCSV } from '@/lib/csv'
 
 export function WorkforceModule() {
   const [view, setView] = useState<'operators' | 'shifts' | 'attendance'>('operators')
+
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadData() {
+      setLoading(true); setError('')
+      try {
+        const res = await workforceApi.listAttendance({ page: 1, search: search || undefined })
+        if (!cancelled) setData(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load data')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    loadData()
+    return () => { cancelled = true }
+  }, [search])
 
   const operators = [
     { id: 'O1', code: 'OP-001', name: 'Rajesh Kumar', shift: 'Morning', shiftTime: '06:00-14:00', zone: 'C-Picking', skill: 'EXPERT', rating: 92, status: 'ACTIVE', online: true, today: 14, week: 78, accuracy: 98.5, util: 87, certs: ['FORKLIFT', 'REACH_TRUCK', 'SCANNER'] },

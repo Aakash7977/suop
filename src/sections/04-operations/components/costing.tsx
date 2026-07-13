@@ -49,9 +49,35 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus, s28PriorityBadge, S28_WAREHOUSES, S28_ZONES } from '../utils/helpers'
+import { costingApi } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
+import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
+import { exportToCSV } from '@/lib/csv'
 
 export function CostingModule() {
   const [tab, setTab] = useState<CostingTab>('overview')
+
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadData() {
+      setLoading(true); setError('')
+      try {
+        const res = await costingApi.list({ page: 1, search: search || undefined })
+        if (!cancelled) setData(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load data')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    loadData()
+    return () => { cancelled = true }
+  }, [search])
   const tabs: Array<{ key: CostingTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
     { key: 'layers', label: 'Cost Layers', icon: <Layers className="h-4 w-4" /> },

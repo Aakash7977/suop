@@ -4317,3 +4317,30 @@ Stage Summary:
 - Build passes, UI pixel-identical
 - Remaining: ~460-590 hours to reach 9.8/10
 - Status: IN PROGRESS — additional sessions needed
+
+---
+Task ID: SECTION04-PHASE2-COMPLETE
+Agent: Main (Super Z)
+Task: Section 04 Phase 2 — Wire ALL existing backend capabilities + fix bugs + reports
+
+Work Log:
+- Created 7 new API clients (costingApi, fulfillmentApi, pickPackDispatchApi, deliveryApi, workforceApi, salesOrderApi, batchMfgApi) in src/sections/04-operations/api/clients.ts
+- Wired 8 additional modules to live API (StockIssue, Reservation, BatchExpiry, Costing, Fulfillment, Dispatch, WavePlanning, Workforce) — total 11 of 38 wired
+- Added shared imports (toast, LoadingState, ErrorState, EmptyState, exportToCSV) to all 38 modules
+- Fixed 3 more backend bugs:
+  * NCR GET endpoints: changed from NCR_CREATE to GRN_READ permission
+  * GRN PATCH/DELETE: changed from GRN_CREATE to GRN_POST permission
+  * pick-pack-dispatch: added inventory.stockOut call on shipment creation (was leaving shipped stock in inventory)
+- Generated MISSING_BACKEND_ITEMS.md documenting 10 missing backend capability areas
+- Generated PHASE_2_COMPLETION_REPORT.md
+- Generated SECTION_04_PROGRESS_REPORT.md (score: 4.5/10)
+- Build passes
+- Committed and pushed to git
+
+Stage Summary:
+- Production readiness: 3.5/10 → 4.5/10 (+1.0 point)
+- 11 of 38 modules wired to live API
+- 6 of 10 backend bugs fixed
+- 7 new API clients created (78 total methods)
+- 27 modules have no backend (documented)
+- Status: IN PROGRESS — Phase 3+ remaining

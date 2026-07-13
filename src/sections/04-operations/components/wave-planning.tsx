@@ -49,9 +49,35 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus, s28PriorityBadge, S28_WAREHOUSES, S28_ZONES } from '../utils/helpers'
+import { fulfillmentApi } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
+import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
+import { exportToCSV } from '@/lib/csv'
 
 export function WavePlanningModule() {
   const [view, setView] = useState<'list' | 'kanban' | 'gantt'>('list')
+
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadData() {
+      setLoading(true); setError('')
+      try {
+        const res = await fulfillmentApi.listWaves({ page: 1, search: search || undefined })
+        if (!cancelled) setData(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load data')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    loadData()
+    return () => { cancelled = true }
+  }, [search])
   const [filterStatus, setFilterStatus] = useState<string>('ALL')
   const [filterType, setFilterType] = useState<string>('ALL')
   const [showCreate, setShowCreate] = useState(false)

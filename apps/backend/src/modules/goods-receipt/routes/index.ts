@@ -99,14 +99,14 @@ goodsReceiptRoutes.post('/grns', requirePermission(Permission.GRN_CREATE), zVali
   return c.json(success(grn, { message: 'Goods Receipt created' }), 201)
 })
 
-goodsReceiptRoutes.patch('/grns/:id', requirePermission(Permission.GRN_CREATE), async (c) => {
+goodsReceiptRoutes.patch('/grns/:id', requirePermission(Permission.GRN_POST), async (c) => {
   const version = Number(c.req.header('If-Match') ?? '0')
   const body = await c.req.json()
   const updated = await goodsReceiptService.update(c.req.param('id')!, body, version)
   return c.json(success(updated, { message: 'Goods Receipt updated' }))
 })
 
-goodsReceiptRoutes.delete('/grns/:id', requirePermission(Permission.GRN_CREATE), async (c) => {
+goodsReceiptRoutes.delete('/grns/:id', requirePermission(Permission.GRN_POST), async (c) => {
   const version = Number(c.req.header('If-Match') ?? '0')
   await goodsReceiptService.delete(c.req.param('id')!, version)
   return c.json(success({ deleted: true }, { message: 'Goods Receipt deleted' }))

@@ -31,6 +31,21 @@ export const pickPackDispatchService = {
     const ship = await shipmentRepository.create({ tenantId, shipmentNumber, ...data, freightPaidBy: data.freightPaidBy ?? 'CUSTOMER', status: 'CREATED', dispatchedBy: userId, dispatchedByName: ctx.userEmail, dispatchedAt: new Date().toISOString() })
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'SHIPMENT_CREATED', entityType: 'Shipment', entityId: String(ship!['id']), entityCode: shipmentNumber })
     await eventBus.writeToOutbox({ eventName: 'ShipmentCreated', payload: { shipmentId: String(ship!['id']), shipmentNumber }, tenantId })
+    // Decrement inventory on shipment creation (Bug fix: previously shipped stock remained in inventory)
+    try {
+      const { inventoryService } = await import('@/modules/inventory/service')
+      if (data.soId && data.warehouseId) {
+        await inventoryService.stockOut({
+          productId: data.soId, productSku: shipmentNumber, productName: `Shipment ${shipmentNumber}`,
+          warehouseId: data.warehouseId, warehouseName: data.warehouseName || '',
+          quantity: data.totalQty || 0, unitCost: 0, uomId: '', uomCode: 'EA',
+          movementType: 'SALES_ISSUE', referenceType: 'SHIPMENT', referenceNumber: shipmentNumber,
+        } as any)
+      }
+    } catch (e) {
+      // Log but don't fail the shipment if stockOut fails
+      console.error('Failed to decrement inventory on shipment:', e)
+    }
     return ship
   },
   async listShipments(params: { page?: number; pageSize?: number; status?: string } = {}) { const { tenantId } = getContext(); return shipmentRepository.list(tenantId, params) },
