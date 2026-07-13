@@ -22,6 +22,18 @@ export const deliveryManagementService = {
     await import('@/core/db/pglite').then(m => m.query(`UPDATE delivery_orders SET status = 'DELIVERED', actual_arrival = NOW(), updated_at = NOW() WHERE tenant_id = $1 AND id = $2`, [tenantId, data.deliveryOrderId]))
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'POD_CREATED', entityType: 'ProofOfDelivery', entityId: String(pod!['id']), after: { deliveredQty: data.deliveredQty, deliveryStatus: data.deliveryStatus ?? 'DELIVERED' } })
     await eventBus.writeToOutbox({ eventName: 'DeliveryConfirmed', payload: { deliveryOrderId: data.deliveryOrderId, deliveredQty: data.deliveredQty }, tenantId })
+    // Update Sales Order status to DELIVERED when POD is confirmed
+    try {
+      const soResult = await import('@/core/db/pglite').then(m => m.query(`SELECT so_id FROM delivery_orders WHERE tenant_id = $1 AND id = $2`, [tenantId, data.deliveryOrderId]))
+      if (soResult.rows.length > 0 && soResult.rows[0]['so_id']) {
+        const soId = String(soResult.rows[0]['so_id'])
+        await import('@/core/db/pglite').then(m => m.query(`UPDATE sales_orders SET status = 'DELIVERED', updated_at = NOW() WHERE tenant_id = $1 AND id = $2`, [tenantId, soId]))
+        await eventBus.writeToOutbox({ eventName: 'SalesOrderDelivered', payload: { soId, deliveryOrderId: data.deliveryOrderId }, tenantId })
+      }
+    } catch (e) {
+      // Log but don't fail POD if SO update fails
+      console.error('Failed to update SO status on POD:', e)
+    }
     return pod
   },
   async listPods(params: { page?: number; pageSize?: number } = {}) { const { tenantId } = getContext(); return proofOfDeliveryRepository.list(tenantId, params) },

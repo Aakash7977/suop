@@ -1,5 +1,6 @@
 import { allocationRepository, wavePlanRepository, generateAllocationNumber, generateWaveNumber } from '../repository'
 import { auditService } from '@/core/audit'
+import { eventBus } from '@/core/events'
 
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
@@ -24,6 +25,7 @@ export const orderFulfillmentService = {
     const allocationNumber = await generateAllocationNumber(tenantId)
     const alloc = await allocationRepository.create({ tenantId, allocationNumber, soId: data.soId, soNumber: data.soNumber, soLineId: data.soLineId, productId: data.productId, productSku: data.productSku, productName: data.productName, warehouseId: data.warehouseId, warehouseName: data.warehouseName, batchId, batchNumber, lotId, lotNumber, uomId: data.uomId, uomCode: data.uomCode, orderedQty: data.orderedQty, allocatedQty, shortQty, allocationStrategy: 'FEFO', isFullyAllocated, isPartial: !isFullyAllocated, status: 'ALLOCATED' })
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'ALLOCATION_CREATED', entityType: 'InventoryAllocation', entityId: String(alloc!['id']), entityCode: allocationNumber, after: { allocatedQty, shortQty, isFullyAllocated } })
+    await eventBus.writeToOutbox({ eventName: 'AllocationCreated', payload: { allocationId: String(alloc!['id']), allocationNumber, soId: data.soId, allocatedQty, isFullyAllocated }, tenantId })
     return alloc
   },
 
@@ -40,6 +42,7 @@ export const orderFulfillmentService = {
     }
     const wave = await wavePlanRepository.create({ tenantId, waveNumber, warehouseId: data.warehouseId, warehouseName: data.warehouseName, waveType: 'PICKING', priority: data.priority ?? 'NORMAL', totalOrders, totalLines, totalQty, allocatedQty: 0, pickedQty: 0, status: 'CREATED' })
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'WAVE_CREATED', entityType: 'WavePlan', entityId: String(wave!['id']), entityCode: waveNumber, after: { totalOrders, totalLines, totalQty } })
+    await eventBus.writeToOutbox({ eventName: 'WavePlanCreated', payload: { waveId: String(wave!['id']), waveNumber, totalOrders, totalLines }, tenantId })
     return wave
   },
 
