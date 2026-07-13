@@ -22,8 +22,8 @@ import { ReportingPlatformService } from '../service'
 
 export const ReportingPlatformRoutes = new Hono()
 
-const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ
+const READ_PERM = Permission.BI_READ
+const WRITE_PERM = Permission.BI_TEMPLATES
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 ReportingPlatformRoutes.get('/', requirePermission(READ_PERM), async (c) => {

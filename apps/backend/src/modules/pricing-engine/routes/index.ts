@@ -8,8 +8,8 @@ import { Permission } from '@/core/permissions'
 import { pricingEngineService } from '../service'
 
 export const pricingEngineRoutes = new Hono()
-const CR = Permission.CUSTOMER_READ
-const CU = Permission.CUSTOMER_UPDATE
+const CR = Permission.PRICING_READ
+const CU = Permission.PRICING_CREATE
 
 const plSchema = z.object({ listCode: z.string().min(1), listName: z.string().min(1), listType: z.string().default('STANDARD'), channel: z.string().optional(), currency: z.string().default('INR'), effectiveFrom: z.string(), effectiveTo: z.string().optional(), description: z.string().optional() })
 const promoSchema = z.object({ promoCode: z.string().min(1), promoName: z.string().min(1), promoType: z.string().min(1), scope: z.string().default('PRODUCT'), productId: z.string().uuid().optional(), productCategoryId: z.string().uuid().optional(), customerId: z.string().uuid().optional(), discountType: z.string().min(1), discountValue: z.number().positive(), minQty: z.number().positive().optional(), maxQty: z.number().positive().optional(), minOrderValue: z.number().positive().optional(), maxDiscountAmount: z.number().positive().optional(), buyQty: z.number().positive().optional(), getQty: z.number().positive().optional(), startDate: z.string(), endDate: z.string(), usageLimit: z.number().int().positive().optional(), description: z.string().optional(), termsConditions: z.string().optional() })

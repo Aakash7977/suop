@@ -22,8 +22,8 @@ import { AiPredictionService } from '../service'
 
 export const AiPredictionRoutes = new Hono()
 
-const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ
+const READ_PERM = Permission.BI_READ
+const WRITE_PERM = Permission.BI_SETTINGS
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 AiPredictionRoutes.get('/', requirePermission(READ_PERM), async (c) => {

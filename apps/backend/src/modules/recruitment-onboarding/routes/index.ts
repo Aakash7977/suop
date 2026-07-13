@@ -22,8 +22,8 @@ import { RecruitmentOnboardingService } from '../service'
 
 export const RecruitmentOnboardingRoutes = new Hono()
 
-const READ_PERM = Permission.ORG_READ
-const WRITE_PERM = Permission.ORG_UPDATE
+const READ_PERM = Permission.HR_READ
+const WRITE_PERM = Permission.HR_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 RecruitmentOnboardingRoutes.get('/', requirePermission(READ_PERM), async (c) => {

@@ -37,43 +37,43 @@ const mergeSchema = z.object({
   warehouseId: z.string().uuid().optional(), warehouseName: z.string().optional(),
 })
 
-batchManufacturingRoutes.get('/batches', requirePermission(Permission.PRODUCT_READ), async (c) => {
+batchManufacturingRoutes.get('/batches', requirePermission(Permission.BATCH_READ), async (c) => {
   const result = await batchManufacturingService.list({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), productId: c.req.query('productId') ?? undefined, status: c.req.query('status') ?? undefined, search: c.req.query('search') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-batchManufacturingRoutes.get('/batches/:id', requirePermission(Permission.PRODUCT_READ), async (c) => {
+batchManufacturingRoutes.get('/batches/:id', requirePermission(Permission.BATCH_READ), async (c) => {
   const batch = await batchManufacturingService.getById(c.req.param('id')!)
   return c.json(success(batch))
 })
-batchManufacturingRoutes.post('/batches', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', batchSchema), async (c) => {
+batchManufacturingRoutes.post('/batches', requirePermission(Permission.BATCH_CREATE), zValidator('json', batchSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof batchSchema>
   const batch = await batchManufacturingService.createBatch(body)
   return c.json(success(batch, { message: 'Production batch created' }), 201)
 })
-batchManufacturingRoutes.post('/batches/:id/transition', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', batchTransitionSchema), async (c) => {
+batchManufacturingRoutes.post('/batches/:id/transition', requirePermission(Permission.BATCH_TRANSITION), zValidator('json', batchTransitionSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof batchTransitionSchema>
   const updated = await batchManufacturingService.transition(c.req.param('id')!, body.targetStatus, body.version)
   return c.json(success(updated, { message: `Batch transitioned to ${body.targetStatus}` }))
 })
-batchManufacturingRoutes.post('/batches/:id/split', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', splitSchema), async (c) => {
+batchManufacturingRoutes.post('/batches/:id/split', requirePermission(Permission.BATCH_TRANSITION), zValidator('json', splitSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof splitSchema>
   const result = await batchManufacturingService.splitBatch(c.req.param('id')!, body)
   return c.json(success(result, { message: 'Batch split completed' }), 201)
 })
-batchManufacturingRoutes.post('/batches/merge', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', mergeSchema), async (c) => {
+batchManufacturingRoutes.post('/batches/merge', requirePermission(Permission.BATCH_TRANSITION), zValidator('json', mergeSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof mergeSchema>
   const result = await batchManufacturingService.mergeBatches(body)
   return c.json(success(result, { message: 'Batch merge completed' }), 201)
 })
-batchManufacturingRoutes.get('/batches/:id/backward-traceability', requirePermission(Permission.PRODUCT_READ), async (c) => {
+batchManufacturingRoutes.get('/batches/:id/backward-traceability', requirePermission(Permission.BATCH_READ), async (c) => {
   const result = await batchManufacturingService.backwardTraceability(c.req.param('id')!)
   return c.json(success(result))
 })
-batchManufacturingRoutes.get('/batches/:id/forward-traceability', requirePermission(Permission.PRODUCT_READ), async (c) => {
+batchManufacturingRoutes.get('/batches/:id/forward-traceability', requirePermission(Permission.BATCH_READ), async (c) => {
   const result = await batchManufacturingService.forwardTraceability(c.req.param('id')!)
   return c.json(success(result))
 })
-batchManufacturingRoutes.get('/batches/:id/genealogy', requirePermission(Permission.PRODUCT_READ), async (c) => {
+batchManufacturingRoutes.get('/batches/:id/genealogy', requirePermission(Permission.BATCH_READ), async (c) => {
   const result = await batchManufacturingService.getGenealogy(c.req.param('id')!)
   return c.json(success(result))
 })

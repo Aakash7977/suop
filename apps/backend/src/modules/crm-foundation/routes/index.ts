@@ -22,8 +22,8 @@ import { CrmFoundationService } from '../service'
 
 export const CrmFoundationRoutes = new Hono()
 
-const READ_PERM = Permission.CUSTOMER_READ
-const WRITE_PERM = Permission.CUSTOMER_UPDATE
+const READ_PERM = Permission.CRM_READ
+const WRITE_PERM = Permission.CRM_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 CrmFoundationRoutes.get('/', requirePermission(READ_PERM), async (c) => {

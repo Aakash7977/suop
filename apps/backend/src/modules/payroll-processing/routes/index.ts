@@ -22,8 +22,8 @@ import { PayrollProcessingService } from '../service'
 
 export const PayrollProcessingRoutes = new Hono()
 
-const READ_PERM = Permission.ORG_READ
-const WRITE_PERM = Permission.ORG_UPDATE
+const READ_PERM = Permission.PAYROLL_READ
+const WRITE_PERM = Permission.PAYROLL_APPROVE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 PayrollProcessingRoutes.get('/', requirePermission(READ_PERM), async (c) => {

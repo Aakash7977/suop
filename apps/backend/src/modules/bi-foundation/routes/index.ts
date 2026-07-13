@@ -22,8 +22,8 @@ import { BiFoundationService } from '../service'
 
 export const BiFoundationRoutes = new Hono()
 
-const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ
+const READ_PERM = Permission.BI_READ
+const WRITE_PERM = Permission.BI_SETTINGS
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 BiFoundationRoutes.get('/', requirePermission(READ_PERM), async (c) => {

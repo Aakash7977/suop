@@ -16,12 +16,12 @@ const zoneSchema = z.object({
   zoneType: z.string().default('STORAGE'), capacity: z.number().nonnegative().optional(), description: z.string().optional(),
 })
 
-warehouseRoutes.get('/zones', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/zones', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const zones = await warehouseService.listZones(c.req.query('warehouseId')!)
   return c.json(success(zones))
 })
 
-warehouseRoutes.post('/zones', requirePermission(Permission.INVENTORY_POST), zValidator('json', zoneSchema), async (c) => {
+warehouseRoutes.post('/zones', requirePermission(Permission.WAREHOUSE_CREATE), zValidator('json', zoneSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof zoneSchema>
   const zone = await warehouseService.createZone(body)
   return c.json(success(zone, { message: 'Zone created' }), 201)
@@ -35,12 +35,12 @@ const aisleSchema = z.object({
   capacity: z.number().nonnegative().optional(), description: z.string().optional(),
 })
 
-warehouseRoutes.get('/aisles', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/aisles', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const aisles = await warehouseService.listAisles(c.req.query('warehouseId')!)
   return c.json(success(aisles))
 })
 
-warehouseRoutes.post('/aisles', requirePermission(Permission.INVENTORY_POST), zValidator('json', aisleSchema), async (c) => {
+warehouseRoutes.post('/aisles', requirePermission(Permission.WAREHOUSE_CREATE), zValidator('json', aisleSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof aisleSchema>
   const aisle = await warehouseService.createAisle(body)
   return c.json(success(aisle, { message: 'Aisle created' }), 201)
@@ -55,12 +55,12 @@ const rackSchema = z.object({
   capacityPerLevel: z.number().nonnegative().optional(), description: z.string().optional(),
 })
 
-warehouseRoutes.get('/racks', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/racks', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const racks = await warehouseService.listRacks(c.req.query('warehouseId')!)
   return c.json(success(racks))
 })
 
-warehouseRoutes.post('/racks', requirePermission(Permission.INVENTORY_POST), zValidator('json', rackSchema), async (c) => {
+warehouseRoutes.post('/racks', requirePermission(Permission.WAREHOUSE_CREATE), zValidator('json', rackSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof rackSchema>
   const rack = await warehouseService.createRack(body)
   return c.json(success(rack, { message: 'Rack created' }), 201)
@@ -76,7 +76,7 @@ const binSchema = z.object({
   position: z.string().optional(), capacity: z.number().nonnegative().optional(), description: z.string().optional(),
 })
 
-warehouseRoutes.get('/bins', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/bins', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const bins = await warehouseService.listBins(c.req.query('warehouseId')!, {
     zoneId: c.req.query('zoneId') ?? undefined,
     aisleId: c.req.query('aisleId') ?? undefined,
@@ -85,7 +85,7 @@ warehouseRoutes.get('/bins', requirePermission(Permission.INVENTORY_READ), async
   return c.json(success(bins))
 })
 
-warehouseRoutes.post('/bins', requirePermission(Permission.INVENTORY_POST), zValidator('json', binSchema), async (c) => {
+warehouseRoutes.post('/bins', requirePermission(Permission.WAREHOUSE_CREATE), zValidator('json', binSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof binSchema>
   const bin = await warehouseService.createBin(body)
   return c.json(success(bin, { message: 'Bin created' }), 201)
@@ -106,7 +106,7 @@ const putawaySchema = z.object({
   priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).default('NORMAL'), remarks: z.string().optional(),
 })
 
-warehouseRoutes.get('/putaway-tasks', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/putaway-tasks', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const result = await warehouseService.listPutawayTasks({
     page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25),
     status: c.req.query('status') ?? undefined, warehouseId: c.req.query('warehouseId') ?? undefined,
@@ -114,13 +114,13 @@ warehouseRoutes.get('/putaway-tasks', requirePermission(Permission.INVENTORY_REA
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-warehouseRoutes.post('/putaway-tasks', requirePermission(Permission.INVENTORY_POST), zValidator('json', putawaySchema), async (c) => {
+warehouseRoutes.post('/putaway-tasks', requirePermission(Permission.WAREHOUSE_CREATE), zValidator('json', putawaySchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof putawaySchema>
   const task = await warehouseService.createPutawayTask(body)
   return c.json(success(task, { message: 'Putaway task created' }), 201)
 })
 
-warehouseRoutes.post('/putaway-tasks/:id/complete', requirePermission(Permission.INVENTORY_POST), async (c) => {
+warehouseRoutes.post('/putaway-tasks/:id/complete', requirePermission(Permission.WAREHOUSE_CREATE), async (c) => {
   const version = Number(c.req.header('If-Match') ?? '0')
   const updated = await warehouseService.completePutaway(c.req.param('id')!, version)
   return c.json(success(updated, { message: 'Putaway task completed' }))
@@ -145,7 +145,7 @@ const scanSchema = z.object({
   deviceId: z.string().optional(), location: z.string().optional(),
 })
 
-warehouseRoutes.get('/barcodes', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/barcodes', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const result = await warehouseService.listBarcodes({
     page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25),
     labelType: c.req.query('labelType') ?? undefined, productId: c.req.query('productId') ?? undefined,
@@ -153,26 +153,26 @@ warehouseRoutes.get('/barcodes', requirePermission(Permission.INVENTORY_READ), a
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-warehouseRoutes.post('/barcodes', requirePermission(Permission.INVENTORY_POST), zValidator('json', barcodeSchema), async (c) => {
+warehouseRoutes.post('/barcodes', requirePermission(Permission.WAREHOUSE_CREATE), zValidator('json', barcodeSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof barcodeSchema>
   const label = await warehouseService.createBarcode(body)
   return c.json(success(label, { message: 'Barcode label created' }), 201)
 })
 
-warehouseRoutes.post('/barcodes/:id/print', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.post('/barcodes/:id/print', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const label = await warehouseService.printBarcode(c.req.param('id')!)
   return c.json(success(label, { message: 'Barcode marked as printed' }))
 })
 
 // ─── Scanner API ────────────────────────────────────────────────────────────
 
-warehouseRoutes.post('/scan', requirePermission(Permission.INVENTORY_READ), zValidator('json', scanSchema), async (c) => {
+warehouseRoutes.post('/scan', requirePermission(Permission.WAREHOUSE_READ), zValidator('json', scanSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof scanSchema>
   const label = await warehouseService.scanBarcode(body)
   return c.json(success(label, { message: 'Barcode scanned successfully' }))
 })
 
-warehouseRoutes.get('/scan-logs', requirePermission(Permission.INVENTORY_READ), async (c) => {
+warehouseRoutes.get('/scan-logs', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
   const result = await warehouseService.listScanLogs({
     page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25),
   })

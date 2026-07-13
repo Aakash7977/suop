@@ -6,8 +6,8 @@ import { requirePermission } from '@/middleware/rbac'
 import { Permission } from '@/core/permissions'
 import { pickPackDispatchService } from '../service'
 export const pickPackDispatchRoutes = new Hono()
-const CR = Permission.CUSTOMER_READ
-const CU = Permission.CUSTOMER_UPDATE
+const CR = Permission.PICK_READ
+const CU = Permission.PICK_CREATE
 const pickSchema = z.object({ waveId: z.string().uuid().optional(), waveNumber: z.string().optional(), warehouseId: z.string().uuid(), warehouseName: z.string().min(1), pickerId: z.string().uuid().optional(), pickerName: z.string().optional(), soIds: z.array(z.string().uuid()).min(1) })
 const packSchema = z.object({ pickListId: z.string().uuid().optional(), pickNumber: z.string().optional(), warehouseId: z.string().uuid(), warehouseName: z.string().min(1), packerId: z.string().uuid().optional(), packerName: z.string().optional(), totalLines: z.number().int().positive(), totalQty: z.number().positive() })
 const shipSchema = z.object({ packingListId: z.string().uuid().optional(), packingNumber: z.string().optional(), soId: z.string().uuid().optional(), soNumber: z.string().optional(), warehouseId: z.string().uuid(), warehouseName: z.string().min(1), customerId: z.string().uuid().optional(), customerName: z.string().optional(), shipToAddress: z.string().optional(), shipToCity: z.string().optional(), shipToState: z.string().optional(), transporterName: z.string().optional(), vehicleNumber: z.string().optional(), driverName: z.string().optional(), driverMobile: z.string().optional(), lrNumber: z.string().optional(), totalQty: z.number().positive().optional(), totalWeight: z.number().positive().optional(), boxCount: z.number().int().positive().optional(), freightAmount: z.number().nonnegative().optional(), freightPaidBy: z.string().default('CUSTOMER') })

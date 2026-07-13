@@ -34,27 +34,27 @@ export const eipRoutes = new Hono()
 registerAllConnectors()
 
 // Phase 56: Event Bus
-eipRoutes.get('/event-bus/stats', requirePermission(Permission.AUDIT_READ), async (c) => c.json(success(await getEventBusStats())))
-eipRoutes.get('/event-bus/registry', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getRegisteredEvents())))
-eipRoutes.post('/event-bus/publish', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.get('/event-bus/stats', requirePermission(Permission.BI_READ), async (c) => c.json(success(await getEventBusStats())))
+eipRoutes.get('/event-bus/registry', requirePermission(Permission.BI_READ), (c) => c.json(success(getRegisteredEvents())))
+eipRoutes.post('/event-bus/publish', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   const eventId = await publishEvent({ eventName: body.eventName, category: body.category ?? 'DOMAIN', version: body.version ?? '1.0.0', payload: body.payload })
   return c.json(success({ eventId }), 201)
 })
-eipRoutes.post('/event-bus/replay', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/event-bus/replay', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   const result = await replayEvents({ eventName: body.eventName, tenantId: body.tenantId, limit: body.limit ?? 1000, handler: async () => {} })
   return c.json(success(result))
 })
 
 // Phase 57: API Gateway
-eipRoutes.get('/gateway/analytics', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getGatewayAnalytics())))
-eipRoutes.get('/gateway/requests', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getRecentRequests(Number(c.req.query('limit') ?? 100)))))
-eipRoutes.post('/gateway/api-keys', requirePermission(Permission.AUDIT_READ), (c) => {
+eipRoutes.get('/gateway/analytics', requirePermission(Permission.BI_READ), (c) => c.json(success(getGatewayAnalytics())))
+eipRoutes.get('/gateway/requests', requirePermission(Permission.BI_READ), (c) => c.json(success(getRecentRequests(Number(c.req.query('limit') ?? 100)))))
+eipRoutes.post('/gateway/api-keys', requirePermission(Permission.BI_READ), (c) => {
   const { keyId, keySecret } = generateApiKey()
   return c.json(success({ keyId, keySecret }), 201)
 })
-eipRoutes.post('/gateway/oauth/clients', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/gateway/oauth/clients', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await registerOAuthClient(body)), 201)
 })
@@ -66,89 +66,89 @@ eipRoutes.post('/gateway/oauth/token', async (c) => {
 })
 
 // Phase 58: Webhooks
-eipRoutes.post('/webhooks/register', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/webhooks/register', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await registerWebhook(body)), 201)
 })
-eipRoutes.post('/webhooks/:id/rotate-secret', requirePermission(Permission.AUDIT_READ), async (c) => c.json(success(await rotateWebhookSecret(c.req.param('id')!))))
-eipRoutes.post('/webhooks/:id/deliver', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/webhooks/:id/rotate-secret', requirePermission(Permission.BI_READ), async (c) => c.json(success(await rotateWebhookSecret(c.req.param('id')!))))
+eipRoutes.post('/webhooks/:id/deliver', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await deliverWebhook({ webhookId: c.req.param('id')!, tenantId: body.tenantId, url: body.url, secret: body.secret, eventName: body.eventName, payload: body.payload })))
 })
-eipRoutes.get('/webhooks/stats', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getWebhookStats())))
+eipRoutes.get('/webhooks/stats', requirePermission(Permission.BI_READ), (c) => c.json(success(getWebhookStats())))
 
 // Phase 59: Connectors
-eipRoutes.get('/connectors', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getRegisteredConnectors())))
-eipRoutes.post('/connectors/:type/execute', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.get('/connectors', requirePermission(Permission.BI_READ), (c) => c.json(success(getRegisteredConnectors())))
+eipRoutes.post('/connectors/:type/execute', requirePermission(Permission.BI_READ), async (c) => {
   const connector = getConnector(c.req.param('type') as ConnectorType)
   if (!connector) return c.json({ success: false, error: { code: 'CONNECTOR_NOT_FOUND' } }, 404)
   const body = await c.req.json()
   return c.json(success(await connector.execute(body.config as ConnectorConfig, body.operation as ConnectorOperation)))
 })
-eipRoutes.post('/connectors/:type/test', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/connectors/:type/test', requirePermission(Permission.BI_READ), async (c) => {
   const connector = getConnector(c.req.param('type') as ConnectorType)
   if (!connector) return c.json({ success: false, error: { code: 'CONNECTOR_NOT_FOUND' } }, 404)
   const body = await c.req.json()
   return c.json(success(await connector.testConnection(body.config as ConnectorConfig)))
 })
-eipRoutes.get('/connectors/:type/operations', requirePermission(Permission.AUDIT_READ), (c) => {
+eipRoutes.get('/connectors/:type/operations', requirePermission(Permission.BI_READ), (c) => {
   const connector = getConnector(c.req.param('type') as ConnectorType)
   if (!connector) return c.json({ success: false, error: { code: 'CONNECTOR_NOT_FOUND' } }, 404)
   return c.json(success(connector.getOperations()))
 })
 
 // Phase 60: Queues
-eipRoutes.get('/queues/brokers', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getRegisteredBrokers())))
-eipRoutes.post('/queues/produce', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.get('/queues/brokers', requirePermission(Permission.BI_READ), (c) => c.json(success(getRegisteredBrokers())))
+eipRoutes.post('/queues/produce', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success({ messageId: await produceMessage(body) }), 201)
 })
-eipRoutes.get('/queues/stats', requirePermission(Permission.AUDIT_READ), async (c) => c.json(success(await getAllQueueStats())))
+eipRoutes.get('/queues/stats', requirePermission(Permission.BI_READ), async (c) => c.json(success(await getAllQueueStats())))
 
 // Phase 61: IoT
-eipRoutes.get('/iot/devices', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(listDevices())))
-eipRoutes.get('/iot/telemetry', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getRecentTelemetry(c.req.query('deviceId') ?? undefined, Number(c.req.query('limit') ?? 100)))))
-eipRoutes.get('/iot/telemetry/stats', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(getTelemetryStats())))
+eipRoutes.get('/iot/devices', requirePermission(Permission.BI_READ), (c) => c.json(success(listDevices())))
+eipRoutes.get('/iot/telemetry', requirePermission(Permission.BI_READ), (c) => c.json(success(getRecentTelemetry(c.req.query('deviceId') ?? undefined, Number(c.req.query('limit') ?? 100)))))
+eipRoutes.get('/iot/telemetry/stats', requirePermission(Permission.BI_READ), (c) => c.json(success(getTelemetryStats())))
 
 // Phase 62-63: Mobile
-eipRoutes.post('/mobile/sync/start', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/mobile/sync/start', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await startSyncSession(body)), 201)
 })
-eipRoutes.post('/mobile/sync/push', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/mobile/sync/push', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await pushChanges(body)))
 })
-eipRoutes.post('/mobile/sync/pull', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/mobile/sync/pull', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await pullChanges(body)))
 })
-eipRoutes.post('/mobile/push-notification', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/mobile/push-notification', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success({ id: await sendPushNotification(body) }), 201)
 })
 
 // Phase 64: AI Copilot
-eipRoutes.post('/ai/chat/start', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/ai/chat/start', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success({ sessionId: await startChatSession(body) }), 201)
 })
-eipRoutes.post('/ai/chat/:sessionId/message', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/ai/chat/:sessionId/message', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await sendChatMessage({ sessionId: c.req.param('sessionId')!, message: body.message, tenantId: body.tenantId, userId: body.userId })))
 })
-eipRoutes.post('/ai/forecast', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/ai/forecast', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await generateForecast(body)))
 })
-eipRoutes.get('/ai/recommendations', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.get('/ai/recommendations', requirePermission(Permission.BI_READ), async (c) => {
   return c.json(success(await generateRecommendations(c.req.query('tenantId') ?? 'default')))
 })
-eipRoutes.post('/ai/ocr/invoice', requirePermission(Permission.AUDIT_READ), async (c) => {
+eipRoutes.post('/ai/ocr/invoice', requirePermission(Permission.BI_READ), async (c) => {
   const body = await c.req.json()
   return c.json(success(await extractInvoiceData(body.imageBase64)))
 })
 
 // Phase 65: Extensibility
-eipRoutes.get('/extensibility/plugins', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(listPlugins(c.req.query('tenantId') ?? undefined))))
-eipRoutes.get('/extensibility/marketplace', requirePermission(Permission.AUDIT_READ), (c) => c.json(success(listMarketplacePlugins())))
+eipRoutes.get('/extensibility/plugins', requirePermission(Permission.BI_READ), (c) => c.json(success(listPlugins(c.req.query('tenantId') ?? undefined))))
+eipRoutes.get('/extensibility/marketplace', requirePermission(Permission.BI_READ), (c) => c.json(success(listMarketplacePlugins())))

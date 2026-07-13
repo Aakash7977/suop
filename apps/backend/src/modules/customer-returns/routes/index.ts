@@ -6,8 +6,8 @@ import { requirePermission } from '@/middleware/rbac'
 import { Permission } from '@/core/permissions'
 import { customerReturnsService } from '../service'
 export const customerReturnsRoutes = new Hono()
-const CR = Permission.CUSTOMER_READ
-const CU = Permission.CUSTOMER_UPDATE
+const CR = Permission.RETURNS_READ
+const CU = Permission.RETURNS_CREATE
 const rmaSchema = z.object({ soId: z.string().uuid().optional(), soNumber: z.string().optional(), deliveryOrderId: z.string().uuid().optional(), deliveryNumber: z.string().optional(), customerId: z.string().uuid(), customerCode: z.string().optional(), customerName: z.string().min(1), returnType: z.enum(['DAMAGE', 'DEFECTIVE', 'WRONG_ITEM', 'EXPIRED', 'NOT_REQUIRED', 'QUALITY_ISSUE']).default('DAMAGE'), returnReason: z.string().min(1), returnReasonDetail: z.string().optional(), lines: z.array(z.object({ productId: z.string().uuid(), productSku: z.string().min(1), productName: z.string().min(1), uomCode: z.string().min(1), shippedQty: z.number().positive(), returnedQty: z.number().positive(), unitPrice: z.number().nonnegative(), batchNumber: z.string().optional(), lotNumber: z.string().optional(), returnReason: z.string().optional(), condition: z.enum(['GOOD', 'DAMAGED', 'DEFECTIVE']).default('GOOD') })).min(1) })
 const rmaTransitionSchema = z.object({ targetStatus: z.enum(['REQUESTED', 'APPROVED', 'REJECTED', 'RETURN_RECEIVED', 'INSPECTION_PENDING', 'INSPECTED', 'RESOLVED', 'CLOSED']), version: z.number().int().min(0) })
 const inspSchema = z.object({ rmaLineId: z.string().uuid().optional(), receivedQty: z.number().positive(), acceptedQty: z.number().nonnegative().default(0), rejectedQty: z.number().nonnegative().default(0), scrapQty: z.number().nonnegative().default(0), repairQty: z.number().nonnegative().default(0), inspectionResult: z.string().default('ACCEPTED'), disposition: z.enum(['RETURN_TO_STOCK', 'SCRAP', 'REPAIR', 'REJECT', 'HOLD']).default('RETURN_TO_STOCK'), qualityHold: z.boolean().default(false), holdReason: z.string().optional(), remarks: z.string().optional() })

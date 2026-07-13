@@ -22,8 +22,8 @@ import { LeadOpportunityService } from '../service'
 
 export const LeadOpportunityRoutes = new Hono()
 
-const READ_PERM = Permission.CUSTOMER_READ
-const WRITE_PERM = Permission.CUSTOMER_UPDATE
+const READ_PERM = Permission.LEAD_READ
+const WRITE_PERM = Permission.CRM_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 LeadOpportunityRoutes.get('/', requirePermission(READ_PERM), async (c) => {

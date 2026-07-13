@@ -22,8 +22,8 @@ import { AccountsReceivableService } from '../service'
 
 export const AccountsReceivableRoutes = new Hono()
 
-const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ
+const READ_PERM = Permission.AR_READ
+const WRITE_PERM = Permission.FINANCE_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 AccountsReceivableRoutes.get('/', requirePermission(READ_PERM), async (c) => {

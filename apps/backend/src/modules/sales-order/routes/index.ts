@@ -9,9 +9,9 @@ import { salesOrderService } from '../service'
 
 export const salesOrderRoutes = new Hono()
 
-const CUSTOMER_READ = Permission.CUSTOMER_READ
-const CUSTOMER_CREATE = Permission.CUSTOMER_CREATE
-const CUSTOMER_UPDATE = Permission.CUSTOMER_UPDATE
+const CUSTOMER_READ = Permission.SO_READ
+const CUSTOMER_CREATE = Permission.SO_CREATE
+const CUSTOMER_UPDATE = Permission.SO_CREATE
 
 const lineSchema = z.object({
   productId: z.string().uuid(), productSku: z.string().min(1), productName: z.string().min(1),
@@ -45,30 +45,30 @@ const transitionSchema = z.object({
 const holdSchema = z.object({ holdType: z.string().min(1), holdReason: z.string().min(1) })
 const releaseHoldSchema = z.object({ releaseReason: z.string().min(1) })
 
-salesOrderRoutes.get('/orders', requirePermission(CUSTOMER_READ), async (c) => {
+salesOrderRoutes.get('/orders', requirePermission(Permission.SO_READ), async (c) => {
   const result = await salesOrderService.list({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, status: c.req.query('status') ?? undefined, customerId: c.req.query('customerId') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-salesOrderRoutes.get('/orders/:id', requirePermission(CUSTOMER_READ), async (c) => {
+salesOrderRoutes.get('/orders/:id', requirePermission(Permission.SO_READ), async (c) => {
   const so = await salesOrderService.getById(c.req.param('id')!)
   return c.json(success(so))
 })
-salesOrderRoutes.post('/orders', requirePermission(CUSTOMER_CREATE), zValidator('json', soSchema), async (c) => {
+salesOrderRoutes.post('/orders', requirePermission(Permission.SO_CREATE), zValidator('json', soSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof soSchema>
   const so = await salesOrderService.create(body)
   return c.json(success(so, { message: 'Sales order created' }), 201)
 })
-salesOrderRoutes.post('/orders/:id/transition', requirePermission(CUSTOMER_UPDATE), zValidator('json', transitionSchema), async (c) => {
+salesOrderRoutes.post('/orders/:id/transition', requirePermission(Permission.SO_UPDATE), zValidator('json', transitionSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof transitionSchema>
   const updated = await salesOrderService.transition(c.req.param('id')!, body.targetStatus, body.version)
   return c.json(success(updated, { message: `SO transitioned to ${body.targetStatus}` }))
 })
-salesOrderRoutes.post('/orders/:id/hold', requirePermission(CUSTOMER_UPDATE), zValidator('json', holdSchema), async (c) => {
+salesOrderRoutes.post('/orders/:id/hold', requirePermission(Permission.SO_UPDATE), zValidator('json', holdSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof holdSchema>
   const result = await salesOrderService.addHold(c.req.param('id')!, body)
   return c.json(success(result, { message: 'Hold placed' }), 201)
 })
-salesOrderRoutes.post('/orders/:id/release-hold', requirePermission(CUSTOMER_UPDATE), zValidator('json', releaseHoldSchema), async (c) => {
+salesOrderRoutes.post('/orders/:id/release-hold', requirePermission(Permission.SO_UPDATE), zValidator('json', releaseHoldSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof releaseHoldSchema>
   const result = await salesOrderService.releaseHold(c.req.param('id')!, body.releaseReason)
   return c.json(success(result, { message: 'Hold released' }))

@@ -6,7 +6,7 @@ import { requirePermission } from '@/middleware/rbac'
 import { Permission } from '@/core/permissions'
 import { financialFoundationService } from '../service'
 export const financialFoundationRoutes = new Hono()
-const FR = Permission.AUDIT_READ; const FU = Permission.AUDIT_READ_CRITICAL // Finance read/update proxy
+const FR = Permission.FINANCE_READ; const FU = Permission.FINANCE_CREATE // Finance read/update proxy
 const accSchema = z.object({ accountCode: z.string().min(1), accountName: z.string().min(1), accountType: z.enum(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE', 'COGS']), accountSubtype: z.string().optional(), parentAccountId: z.string().uuid().optional(), isPostable: z.boolean().default(true), openingBalance: z.number().default(0), currency: z.string().default('INR'), description: z.string().optional() })
 const fySchema = z.object({ fiscalYear: z.string().min(1), startDate: z.string(), endDate: z.string(), description: z.string().optional() })
 const ccSchema = z.object({ ccCode: z.string().min(1), ccName: z.string().min(1), parentCcId: z.string().uuid().optional(), companyId: z.string().uuid().optional(), companyName: z.string().optional(), plantId: z.string().uuid().optional(), plantName: z.string().optional(), description: z.string().optional() })

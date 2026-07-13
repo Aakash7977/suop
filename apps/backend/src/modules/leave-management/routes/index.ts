@@ -22,8 +22,8 @@ import { LeaveManagementService } from '../service'
 
 export const LeaveManagementRoutes = new Hono()
 
-const READ_PERM = Permission.ORG_READ
-const WRITE_PERM = Permission.ORG_UPDATE
+const READ_PERM = Permission.LEAVE_READ
+const WRITE_PERM = Permission.LEAVE_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 LeaveManagementRoutes.get('/', requirePermission(READ_PERM), async (c) => {

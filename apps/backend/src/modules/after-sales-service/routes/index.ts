@@ -22,8 +22,8 @@ import { AfterSalesServiceService } from '../service'
 
 export const AfterSalesServiceRoutes = new Hono()
 
-const READ_PERM = Permission.CUSTOMER_READ
-const WRITE_PERM = Permission.CUSTOMER_UPDATE
+const READ_PERM = Permission.SERVICE_READ
+const WRITE_PERM = Permission.SERVICE_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 AfterSalesServiceRoutes.get('/', requirePermission(READ_PERM), async (c) => {

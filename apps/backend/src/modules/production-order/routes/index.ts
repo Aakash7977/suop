@@ -82,7 +82,7 @@ productionOrderRoutes.post('/orders/:id/transition', requirePermission(Permissio
   const updated = await productionOrderService.transition(c.req.param('id')!, body.targetStatus, body.version)
   return c.json(success(updated, { message: `PO transitioned to ${body.targetStatus}` }))
 })
-productionOrderRoutes.post('/orders/:id/material-issue', requirePermission(Permission.INVENTORY_POST), zValidator('json', materialIssueSchema), async (c) => {
+productionOrderRoutes.post('/orders/:id/material-issue', requirePermission(Permission.PRODUCTION_CREATE), zValidator('json', materialIssueSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof materialIssueSchema>
   const result = await productionOrderService.issueMaterials(c.req.param('id')!, body)
   return c.json(success(result, { message: 'Materials issued' }), 201)

@@ -22,8 +22,8 @@ import { ComplaintManagementService } from '../service'
 
 export const ComplaintManagementRoutes = new Hono()
 
-const READ_PERM = Permission.CUSTOMER_READ
-const WRITE_PERM = Permission.CUSTOMER_UPDATE
+const READ_PERM = Permission.COMPLAINT_READ
+const WRITE_PERM = Permission.COMPLAINT_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 ComplaintManagementRoutes.get('/', requirePermission(READ_PERM), async (c) => {

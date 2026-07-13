@@ -22,8 +22,8 @@ import { GeneralLedgerService } from '../service'
 
 export const GeneralLedgerRoutes = new Hono()
 
-const READ_PERM = Permission.AUDIT_READ
-const WRITE_PERM = Permission.AUDIT_READ_CRITICAL
+const READ_PERM = Permission.GL_READ
+const WRITE_PERM = Permission.GL_CREATE
 
 // ─── LIST ────────────────────────────────────────────────────────────────────
 GeneralLedgerRoutes.get('/', requirePermission(READ_PERM), async (c) => {

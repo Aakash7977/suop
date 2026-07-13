@@ -37,6 +37,11 @@ export interface WorkflowContext {
   tenantId: string | null
   correlationId: string
   payload?: unknown
+  // Phase 1 additions: Permission enforcement
+  roles?: string[]
+  permissions?: string[]
+  dataScope?: string
+  isBreakGlass?: boolean
 }
 
 export interface WorkflowDefinition<TState extends string, TEntity extends WorkflowEntity> {
@@ -105,6 +110,13 @@ export class StateMachine<TState extends string, TEntity extends WorkflowEntity>
     target: TState,
     ctx: WorkflowContext
   ): Promise<TEntity> {
+    // Phase 1: Break-glass users cannot transition workflows
+    if (ctx.isBreakGlass) {
+      throw new Error(
+        `Workflow transition denied: Break-glass users cannot perform workflow transitions (SoD) — ${this.definition.name}`
+      )
+    }
+
     // Check if transition is allowed
     const check = await this.canTransition(entity, target, ctx)
     if (!check.allowed) {

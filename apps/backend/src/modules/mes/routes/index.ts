@@ -47,73 +47,73 @@ const eventSchema = z.object({
 })
 
 // Work Centers
-mesRoutes.get('/work-centers', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/work-centers', requirePermission(Permission.MES_READ), async (c) => {
   const result = await mesService.listWorkCenters({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, isActive: c.req.query('isActive') === 'true' ? true : c.req.query('isActive') === 'false' ? false : undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-mesRoutes.post('/work-centers', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', wcSchema), async (c) => {
+mesRoutes.post('/work-centers', requirePermission(Permission.MES_READ), zValidator('json', wcSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof wcSchema>
   const wc = await mesService.createWorkCenter(body)
   return c.json(success(wc, { message: 'Work center created' }), 201)
 })
 
 // Machines
-mesRoutes.get('/machines', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/machines', requirePermission(Permission.MES_READ), async (c) => {
   const result = await mesService.listMachines({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, isActive: c.req.query('isActive') === 'true' ? true : c.req.query('isActive') === 'false' ? false : undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-mesRoutes.post('/machines', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', machineSchema), async (c) => {
+mesRoutes.post('/machines', requirePermission(Permission.MES_READ), zValidator('json', machineSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof machineSchema>
   const machine = await mesService.createMachine(body)
   return c.json(success(machine, { message: 'Machine created' }), 201)
 })
-mesRoutes.post('/machines/:id/status', requirePermission(Permission.PRODUCT_UPDATE), async (c) => {
+mesRoutes.post('/machines/:id/status', requirePermission(Permission.MES_READ), async (c) => {
   const body = await c.req.json()
   const updated = await mesService.updateMachineStatus(c.req.param('id')!, body.newStatus)
   return c.json(success(updated, { message: 'Machine status updated' }))
 })
 
 // Shifts
-mesRoutes.get('/shifts', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/shifts', requirePermission(Permission.MES_READ), async (c) => {
   const result = await mesService.listShifts()
   return c.json(success(result.rows))
 })
-mesRoutes.post('/shifts', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', shiftSchema), async (c) => {
+mesRoutes.post('/shifts', requirePermission(Permission.MES_READ), zValidator('json', shiftSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof shiftSchema>
   const shift = await mesService.createShift(body)
   return c.json(success(shift, { message: 'Shift created' }), 201)
 })
 
 // Downtime
-mesRoutes.get('/downtime', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/downtime', requirePermission(Permission.MES_READ), async (c) => {
   const result = await mesService.listDowntime({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), machineId: c.req.query('machineId') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-mesRoutes.post('/downtime', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', downtimeSchema), async (c) => {
+mesRoutes.post('/downtime', requirePermission(Permission.MES_READ), zValidator('json', downtimeSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof downtimeSchema>
   const result = await mesService.recordDowntime(body)
   return c.json(success(result, { message: 'Downtime recorded' }), 201)
 })
 
 // Events
-mesRoutes.get('/events', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/events', requirePermission(Permission.MES_READ), async (c) => {
   const result = await mesService.listEvents({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), productionOrderId: c.req.query('productionOrderId') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-mesRoutes.post('/events', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', eventSchema), async (c) => {
+mesRoutes.post('/events', requirePermission(Permission.MES_READ), zValidator('json', eventSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof eventSchema>
   const result = await mesService.recordEvent(body)
   return c.json(success(result, { message: 'Event recorded' }), 201)
 })
 
 // OEE Analytics
-mesRoutes.get('/analytics/oee/:machineId', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/analytics/oee/:machineId', requirePermission(Permission.MES_READ), async (c) => {
   const oee = await mesService.calculateOEE(c.req.param('machineId')!, c.req.query('startDate') ?? new Date(Date.now() - 86400000).toISOString(), c.req.query('endDate') ?? new Date().toISOString())
   return c.json(success(oee))
 })
 
 // Dashboard
-mesRoutes.get('/dashboard', requirePermission(Permission.PRODUCT_READ), async (c) => {
+mesRoutes.get('/dashboard', requirePermission(Permission.MES_READ), async (c) => {
   const dashboard = await mesService.getProductionDashboard()
   return c.json(success(dashboard))
 })

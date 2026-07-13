@@ -19,17 +19,17 @@ const planSchema = z.object({
   description: z.string().optional(),
 })
 
-qualityInspectionRoutes.get('/plans', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/plans', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const result = await qualityInspectionService.listPlans({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-qualityInspectionRoutes.get('/plans/:id', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/plans/:id', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const plan = await qualityInspectionService.getPlan(c.req.param('id')!)
   return c.json(success(plan))
 })
 
-qualityInspectionRoutes.post('/plans', requirePermission(Permission.IQC_APPROVE), zValidator('json', planSchema), async (c) => {
+qualityInspectionRoutes.post('/plans', requirePermission(Permission.QUALITY_APPROVE), zValidator('json', planSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof planSchema>
   const result = await qualityInspectionService.createPlan(body)
   return c.json(success(result, { message: 'Inspection plan created' }), 201)
@@ -45,12 +45,12 @@ const samplingPlanSchema = z.object({
   inspectionLevel: z.string().default('II'), description: z.string().optional(),
 })
 
-qualityInspectionRoutes.get('/sampling-plans', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/sampling-plans', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const plans = await qualityInspectionService.listSamplingPlans()
   return c.json(success(plans))
 })
 
-qualityInspectionRoutes.post('/sampling-plans', requirePermission(Permission.IQC_APPROVE), zValidator('json', samplingPlanSchema), async (c) => {
+qualityInspectionRoutes.post('/sampling-plans', requirePermission(Permission.QUALITY_APPROVE), zValidator('json', samplingPlanSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof samplingPlanSchema>
   const result = await qualityInspectionService.createSamplingPlan(body)
   return c.json(success(result, { message: 'Sampling plan created' }), 201)
@@ -86,35 +86,35 @@ const resultSchema = z.object({
   remarks: z.string().optional(),
 })
 
-qualityInspectionRoutes.get('/lots', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/lots', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const result = await qualityInspectionService.listInspectionLots({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, status: c.req.query('status') ?? undefined, grnId: c.req.query('grnId') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-qualityInspectionRoutes.get('/lots/:id', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/lots/:id', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const lot = await qualityInspectionService.getInspectionLot(c.req.param('id')!)
   return c.json(success(lot))
 })
 
-qualityInspectionRoutes.post('/lots', requirePermission(Permission.IQC_INSPECT), zValidator('json', lotCreateSchema), async (c) => {
+qualityInspectionRoutes.post('/lots', requirePermission(Permission.QUALITY_INSPECT), zValidator('json', lotCreateSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof lotCreateSchema>
   const lot = await qualityInspectionService.createInspectionLot(body)
   return c.json(success(lot, { message: 'Inspection lot created' }), 201)
 })
 
-qualityInspectionRoutes.post('/lots/:id/start', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.post('/lots/:id/start', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const version = Number(c.req.header('If-Match') ?? '0')
   const updated = await qualityInspectionService.startInspection(c.req.param('id')!, version)
   return c.json(success(updated, { message: 'Inspection started' }))
 })
 
-qualityInspectionRoutes.post('/lots/:id/results', requirePermission(Permission.IQC_INSPECT), zValidator('json', resultSchema), async (c) => {
+qualityInspectionRoutes.post('/lots/:id/results', requirePermission(Permission.QUALITY_INSPECT), zValidator('json', resultSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof resultSchema>
   const result = await qualityInspectionService.recordResult(c.req.param('id')!, body)
   return c.json(success(result, { message: 'Result recorded' }), 201)
 })
 
-qualityInspectionRoutes.post('/lots/:id/transition', requirePermission(Permission.IQC_APPROVE), zValidator('json', lotTransitionSchema), async (c) => {
+qualityInspectionRoutes.post('/lots/:id/transition', requirePermission(Permission.QUALITY_APPROVE), zValidator('json', lotTransitionSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof lotTransitionSchema>
   const updated = await qualityInspectionService.transitionInspection(c.req.param('id')!, body.targetStatus, body.version, { startedAt: body.startedAt, acceptQty: body.acceptQty, rejectQty: body.rejectQty, disposition: body.disposition, ncrReason: body.ncrReason, remarks: body.remarks })
   return c.json(success(updated, { message: `Inspection lot transitioned to ${body.targetStatus}` }))
@@ -131,18 +131,18 @@ const holdSchema = z.object({
 
 const holdReleaseSchema = z.object({ releaseReason: z.string().min(1), disposition: z.string().min(1) })
 
-qualityInspectionRoutes.get('/holds', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/holds', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const result = await qualityInspectionService.listQualityHolds({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), status: c.req.query('status') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-qualityInspectionRoutes.post('/holds', requirePermission(Permission.IQC_APPROVE), zValidator('json', holdSchema), async (c) => {
+qualityInspectionRoutes.post('/holds', requirePermission(Permission.QUALITY_APPROVE), zValidator('json', holdSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof holdSchema>
   const result = await qualityInspectionService.createQualityHold(body)
   return c.json(success(result, { message: 'Quality hold created' }), 201)
 })
 
-qualityInspectionRoutes.post('/holds/:id/release', requirePermission(Permission.IQC_APPROVE), zValidator('json', holdReleaseSchema), async (c) => {
+qualityInspectionRoutes.post('/holds/:id/release', requirePermission(Permission.QUALITY_APPROVE), zValidator('json', holdReleaseSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof holdReleaseSchema>
   const released = await qualityInspectionService.releaseQualityHold(c.req.param('id')!, body.releaseReason, body.disposition)
   return c.json(success(released, { message: 'Quality hold released' }))
@@ -167,12 +167,12 @@ const ncrTransitionSchema = z.object({
   rootCause: z.string().optional(), closureNotes: z.string().optional(), capaId: z.string().uuid().optional(),
 })
 
-qualityInspectionRoutes.get('/ncrs', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/ncrs', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const result = await qualityInspectionService.listNcrs({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, status: c.req.query('status') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
 
-qualityInspectionRoutes.get('/ncrs/:id', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/ncrs/:id', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const ncr = await qualityInspectionService.getNcr(c.req.param('id')!)
   return c.json(success(ncr))
 })
@@ -198,7 +198,7 @@ const capaSchema = z.object({
   targetDate: z.string().datetime().optional(),
 })
 
-qualityInspectionRoutes.get('/capas', requirePermission(Permission.IQC_INSPECT), async (c) => {
+qualityInspectionRoutes.get('/capas', requirePermission(Permission.QUALITY_INSPECT), async (c) => {
   const result = await qualityInspectionService.listCapas({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), status: c.req.query('status') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })

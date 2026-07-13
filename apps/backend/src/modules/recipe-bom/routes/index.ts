@@ -73,59 +73,59 @@ const routingSchema = z.object({
 })
 
 // Recipes
-recipeBomRoutes.get('/recipes', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/recipes', requirePermission(Permission.RECIPE_READ), async (c) => {
   const result = await recipeBomService.listRecipes({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), productId: c.req.query('productId') ?? undefined, status: c.req.query('status') ?? undefined, search: c.req.query('search') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-recipeBomRoutes.get('/recipes/:id', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/recipes/:id', requirePermission(Permission.RECIPE_READ), async (c) => {
   const recipe = await recipeBomService.getRecipe(c.req.param('id')!)
   return c.json(success(recipe))
 })
-recipeBomRoutes.post('/recipes', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', recipeSchema), async (c) => {
+recipeBomRoutes.post('/recipes', requirePermission(Permission.RECIPE_CREATE), zValidator('json', recipeSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof recipeSchema>
   const recipe = await recipeBomService.createRecipe(body)
   return c.json(success(recipe, { message: 'Recipe created' }), 201)
 })
-recipeBomRoutes.post('/recipes/:id/transition', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', recipeTransitionSchema), async (c) => {
+recipeBomRoutes.post('/recipes/:id/transition', requirePermission(Permission.RECIPE_APPROVE), zValidator('json', recipeTransitionSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof recipeTransitionSchema>
   const updated = await recipeBomService.transitionRecipe(c.req.param('id')!, body.targetStatus, body.version)
   return c.json(success(updated, { message: `Recipe transitioned to ${body.targetStatus}` }))
 })
 
 // BOMs
-recipeBomRoutes.get('/boms', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/boms', requirePermission(Permission.RECIPE_READ), async (c) => {
   const result = await recipeBomService.listBoms({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), productId: c.req.query('productId') ?? undefined, status: c.req.query('status') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-recipeBomRoutes.get('/boms/:id', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/boms/:id', requirePermission(Permission.RECIPE_READ), async (c) => {
   const bom = await recipeBomService.getBom(c.req.param('id')!)
   return c.json(success(bom))
 })
-recipeBomRoutes.post('/boms', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', bomSchema), async (c) => {
+recipeBomRoutes.post('/boms', requirePermission(Permission.RECIPE_CREATE), zValidator('json', bomSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof bomSchema>
   const bom = await recipeBomService.createBom(body)
   return c.json(success(bom, { message: 'BOM created' }), 201)
 })
-recipeBomRoutes.post('/boms/:id/transition', requirePermission(Permission.PRODUCT_UPDATE), zValidator('json', bomTransitionSchema), async (c) => {
+recipeBomRoutes.post('/boms/:id/transition', requirePermission(Permission.RECIPE_APPROVE), zValidator('json', bomTransitionSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof bomTransitionSchema>
   const updated = await recipeBomService.transitionBom(c.req.param('id')!, body.targetStatus, body.version)
   return c.json(success(updated, { message: `BOM transitioned to ${body.targetStatus}` }))
 })
-recipeBomRoutes.get('/boms/:id/explode', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/boms/:id/explode', requirePermission(Permission.RECIPE_READ), async (c) => {
   const explosion = await recipeBomService.explodeBom(c.req.param('id')!)
   return c.json(success(explosion))
 })
 
 // Routings
-recipeBomRoutes.get('/routings', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/routings', requirePermission(Permission.RECIPE_READ), async (c) => {
   const result = await recipeBomService.listRoutings({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), productId: c.req.query('productId') ?? undefined })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
-recipeBomRoutes.get('/routings/:id', requirePermission(Permission.PRODUCT_READ), async (c) => {
+recipeBomRoutes.get('/routings/:id', requirePermission(Permission.RECIPE_READ), async (c) => {
   const routing = await recipeBomService.getRouting(c.req.param('id')!)
   return c.json(success(routing))
 })
-recipeBomRoutes.post('/routings', requirePermission(Permission.PRODUCT_CREATE), zValidator('json', routingSchema), async (c) => {
+recipeBomRoutes.post('/routings', requirePermission(Permission.RECIPE_CREATE), zValidator('json', routingSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof routingSchema>
   const routing = await recipeBomService.createRouting(body)
   return c.json(success(routing, { message: 'Routing created' }), 201)
