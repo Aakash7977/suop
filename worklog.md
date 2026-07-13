@@ -4344,3 +4344,31 @@ Stage Summary:
 - 7 new API clients created (78 total methods)
 - 27 modules have no backend (documented)
 - Status: IN PROGRESS — Phase 3+ remaining
+
+---
+Task ID: SECTION04-ARCH-REVIEW
+Agent: Main (Super Z)
+Task: Section 04 Architecture Review — API clients, module ownership, shared infrastructure verification
+
+Work Log:
+- Read all 7 newly created API clients in src/sections/04-operations/api/clients.ts
+- Compared against 14 existing API clients in src/modules/*/api/client.ts
+- Verified all use the shared apiFetch from @/lib/api (correct)
+- Identified that all 7 clients are in WRONG LOCATION (section-local instead of module-local)
+- Identified 3 Section 03 clients with same issue (pricingApi, gstApi, financeApi)
+- Identified 12 existing clients with inline apiFetch duplication
+- Verified shared components (LoadingState, ErrorState, EmptyState, toast, exportToCSV) are correctly reused
+- Identified s28PriorityBadge should be promoted to @/lib/badges
+- Identified S28_WAREHOUSES and S28_ZONES as mock data that should be deleted
+- Identified 4 backend modules with NO frontend client at all (mes, customer-returns, performance-management, alerts-kpi-engine)
+- Verified NO duplicate business logic, NO duplicate components
+- Generated SECTION_04_ARCHITECTURE_REVIEW.md with 10 sections
+- NO code changes made. Pure review only.
+
+Stage Summary:
+- Deliverable: /home/z/my-project/docs/frontend/SECTION-04/SECTION_04_ARCHITECTURE_REVIEW.md
+- Key finding: 7 API clients in wrong location (section-local vs module-local)
+- Key finding: 0 duplicate business logic, 0 duplicate components
+- Key finding: Shared infrastructure correctly reused (toast, LoadingState, ErrorState, EmptyState, exportToCSV)
+- Recommendation: Move 7 clients to src/modules/<backend-module>/api/client.ts before Phase 3
+- Status: STOP — awaiting approval for recommendations
