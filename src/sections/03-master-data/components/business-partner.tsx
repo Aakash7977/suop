@@ -268,7 +268,7 @@ function BPPartnersTab() {
           <h3 className="font-semibold">Business Partners</h3>
           <p className="text-xs text-muted-foreground mt-1">{loading ? 'Loading...' : `${filtered.length} partners (${filtered.filter(p => p.type === 'CUSTOMER').length} customers, ${filtered.filter(p => p.type === 'SUPPLIER').length} suppliers)`}</p>
         </div>
-        <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>
+        {hasPermission('customer:export') && <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>}
       </div>
       <div className="flex gap-2 mb-4">
         <div className="relative flex-1">

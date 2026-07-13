@@ -210,7 +210,7 @@ function IDBarcodesTab() {
         <div><h3 className="font-semibold">Barcodes</h3>
         <p className="text-xs text-muted-foreground mt-1">{loading ? 'Loading...' : `${filtered.length} barcodes loaded`}</p></div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>
+          {hasPermission('catalog:export') && <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>}
           {hasPermission('product:update') && <Button size="sm" onClick={() => toast({ title: 'Use Product Master to add barcodes — POST /api/v1/catalog/products/:id/barcodes' })}><Plus className="mr-1 h-4 w-4" /> Generate</Button>}
         </div>
       </div>

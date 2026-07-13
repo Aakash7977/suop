@@ -213,7 +213,7 @@ function WhLocBinsTab() {
           </select>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>
+          {hasPermission('inventory:export') && <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>}
           {hasPermission('inventory:post') && <Button size="sm" onClick={() => toast({ title: 'Create Bin — POST /api/v1/warehouse/bins' })}><Plus className="mr-1 h-3 w-3" /> New Bin</Button>}
         </div>
       </div>

@@ -196,7 +196,7 @@ function WarehouseWarehousesTab() {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div></div>
-          <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>
+          {hasPermission('inventory:export') && <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>}
         </div>
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

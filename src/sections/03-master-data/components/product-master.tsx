@@ -289,7 +289,7 @@ export function ProductMasterModule() {
             <Input placeholder="Search by name, SKU, code, or UPI..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
           </div>
           <Button variant="outline" size="sm" onClick={() => toast({ title: 'Import wizard — use POST /api/v1/catalog/products (batch)' })}><Upload className="mr-1 h-3 w-3" />Import</Button>
-          <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>
+          {hasPermission('catalog:export') && <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>}
           {hasPermission('product:create') && <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="mr-1 h-3 w-3" />New Product</Button>}
         </div>
         {error && <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-md p-3 flex items-center gap-2 mb-3"><AlertCircle className="h-4 w-4 flex-shrink-0" />{error}<Button size="sm" variant="ghost" className="ml-auto" onClick={refresh}>Retry</Button></div>}

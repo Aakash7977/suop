@@ -41,6 +41,7 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
+import { hasModuleAccess } from '@/lib/module-permissions'
 import { cn } from '@/lib/utils'
 
 // ─── Section 03 — Master Data Management (extracted to src/sections/03-master-data/) ─
@@ -599,7 +600,7 @@ const SIDEBAR_SECTIONS: Array<{ section: string; items: Array<{ name: string; ic
 
 // ─── Dashboard Module (Sprint 1 + All Stats) ────────────
 function DashboardModule() {
-  const { isDemoMode, hasPermission } = useAuthStore()
+  const { isDemoMode, hasPermission, user } = useAuthStore()
   const [stats, setStats] = useState({ products: 0, roles: 0, companies: 0, compliance: 0 })
   const [statsLoading, setStatsLoading] = useState(!isDemoMode)
   const [statsError, setStatsError] = useState('')
@@ -691,7 +692,7 @@ function DashboardModule() {
           { label: 'Roles', value: statsLoading ? '...' : isDemoMode ? 15 : stats.roles, icon: <Shield className="h-5 w-5 text-purple-600" />, module: 'rbac' as ModuleKey },
           { label: 'Companies', value: statsLoading ? '...' : isDemoMode ? 8 : stats.companies, icon: <MapPin className="h-5 w-5 text-emerald-600" />, module: 'organization' as ModuleKey },
           { label: 'Compliance', value: isDemoMode ? 6 : stats.compliance, icon: <ShieldCheck className="h-5 w-5 text-amber-600" />, module: 'pim' as ModuleKey },
-        ].map(s => (
+        ].filter(s => hasModuleAccess(s.module, hasPermission, { isDemoMode, isSuperAdmin: user?.roles.includes('SUPER_ADMIN') ?? false })).map(s => (
           <Card key={s.label} className="p-4">
             <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
             <p className="text-2xl font-bold">{s.value}</p>
@@ -26850,7 +26851,7 @@ function ComingSoon({ name }: { name: string }) {
 
 // ─── Main Unified Application ───────────────────────────
 export default function Home() {
-  const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode } = useAuthStore()
+  const { isAuthenticated, isLoading, initialize, login, logout, loginDemo, isDemoMode, hasPermission, user } = useAuthStore()
   const [activeModule, setActiveModule] = useState<ModuleKey>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [zoom, setZoom] = useState(100)
@@ -26929,24 +26930,34 @@ export default function Home() {
         </div>
         <div className="flex-1 px-3 py-4 overflow-y-auto overflow-x-hidden suop-sidebar-scroll">
           <nav className="space-y-6">
-            {SIDEBAR_SECTIONS.map(section => (
-              <div key={section.section}>
-                <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.section}</p>
-                <div className="space-y-1">
-                  {section.items.map(item => (
-                    <button key={item.name} disabled={!item.available}
-                      className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                        activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
-                      )}
-                      onClick={() => { if (item.available) { setActiveModule(item.module); setSidebarOpen(false) } }}
-                    >
-                      {item.icon}{item.name}
-                      {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
-                    </button>
-                  ))}
+            {SIDEBAR_SECTIONS.map(section => {
+              // Phase 1 RBAC: filter sidebar items by permission
+              const visibleItems = section.items.filter(item => {
+                // First check the static "available" flag (legacy soon/feature-flag)
+                if (!item.available) return true  // keep "Soon" items visible (greyed out)
+                // Then check permission via the module-permission map
+                return hasModuleAccess(item.module, hasPermission, { isDemoMode, isSuperAdmin: user?.roles.includes('SUPER_ADMIN') ?? false })
+              })
+              if (visibleItems.length === 0) return null  // hide empty sections
+              return (
+                <div key={section.section}>
+                  <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{section.section}</p>
+                  <div className="space-y-1">
+                    {visibleItems.map(item => (
+                      <button key={item.name} disabled={!item.available}
+                        className={cn('flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                          activeModule === item.module ? 'bg-sidebar-accent text-sidebar-accent-foreground' : item.available ? 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground' : 'text-muted-foreground/40 cursor-not-allowed'
+                        )}
+                        onClick={() => { if (item.available) { setActiveModule(item.module); setSidebarOpen(false) } }}
+                      >
+                        {item.icon}{item.name}
+                        {!item.available && <Badge variant="outline" className="text-xs ml-auto">Soon</Badge>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </nav>
         </div>
         <div className="border-t p-4"><Button variant="ghost" size="sm" onClick={logout} className="w-full">Sign Out</Button></div>
@@ -26993,6 +27004,34 @@ export default function Home() {
               zoom: `${zoom}%`,
             }}
           >
+            {/* Phase 1 RBAC — Module Access Gate */}
+            {(() => {
+              // Dashboard is always accessible to authenticated users
+              if (activeModule === 'dashboard') {
+                return <DashboardModule />
+              }
+              // Check permission for the active module
+              const canAccess = hasModuleAccess(activeModule, hasPermission, {
+                isDemoMode,
+                isSuperAdmin: user?.roles.includes('SUPER_ADMIN') ?? false,
+              })
+              if (!canAccess) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      You do not have permission to access this module. Please contact your administrator if you believe this is an error.
+                    </p>
+                  </div>
+                )
+              }
+              return null
+            })()}
+            {/* Module renders below — only one will match the activeModule value.
+                The access gate above already verified permission; these conditionals
+                are redundant but kept for backward compat (they would render null
+                anyway if the access gate returned the Access Denied view). */}
             {activeModule === 'dashboard' && <DashboardModule />}
             {activeModule === 'organization' && <OrganizationModule />}
             {activeModule === 'rbac' && <RBACModule />}

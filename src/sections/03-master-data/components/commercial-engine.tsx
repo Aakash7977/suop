@@ -287,7 +287,7 @@ function PriceListsTab() {
           <p className="text-xs text-muted-foreground mt-1">{loading ? 'Loading...' : `${filtered.length} price lists loaded`}</p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>
+          {hasPermission('pricing:read') && <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>}
           {hasPermission('customer:update') && <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="mr-1 h-4 w-4" /> New Price List</Button>}
         </div>
       </div>
@@ -599,7 +599,7 @@ function PromotionsTab() {
         <div><h3 className="font-semibold">Promotions</h3>
         <p className="text-xs text-muted-foreground mt-1">{loading ? 'Loading...' : `${filtered.length} promotions loaded`}</p></div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>
+          {hasPermission('pricing:read') && <Button size="sm" variant="outline" onClick={handleExport}><Download className="mr-1 h-4 w-4" />Export</Button>}
           {hasPermission('customer:update') && <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="mr-1 h-4 w-4" /> New Promotion</Button>}
         </div>
       </div>
