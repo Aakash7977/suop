@@ -4403,3 +4403,38 @@ Stage Summary:
 - Key decision: Sections NEVER import API clients from other sections
 - Key decision: Backend module folders (src/modules/) will have components/ but NOT api/
 - Status: STOP — awaiting approval to execute migration plan
+
+---
+Task ID: SECTION04-FINAL-ARCH-REFINEMENT
+Agent: Main (Super Z)
+Task: Final Architecture Refinement — 6 final architecture documents before migration
+
+Work Log:
+- Studied all 24 existing API client method signatures (280+ methods total)
+- Applied enterprise principle: ONE API CLIENT PER BUSINESS AGGREGATE (not per entity)
+- Corrected over-splitting: inventoryApi stays as ONE client (14 methods), warehouseApi stays as ONE client (15 methods), organizationApi MERGED from 7 separate exports into 1 client with sub-namespaces
+- Designed src/api/core/ (9 files): api-fetch, auth, interceptors, errors, pagination, query-builder, upload, retry, index
+- Designed src/types/ (15 files): common + 14 domain type files — types separated from API code
+- Made final decisions: MOVE 24 clients, RENAME 9, MERGE 7→1 (organization), CREATE 5 new, DELETE 18 old files
+- Key aggregate decisions:
+  * organizationApi.companies.list() (not companyApi.list())
+  * inventoryApi.listLedger() (not ledgerApi.list())
+  * warehouseApi.listBins() (not binApi.list())
+  * catalogApi.listCategories() (not categoryApi.list())
+- Generated 6 final architecture documents with enterprise comparison, risks, mitigation
+- NO code changes. Pure architecture refinement.
+
+Stage Summary:
+- 6 deliverables:
+  1. 01_FINAL_FRONTEND_API_ARCHITECTURE.md
+  2. 02_FINAL_DOMAIN_STRUCTURE.md
+  3. 03_FINAL_CLIENT_DECISIONS.md
+  4. 04_API_CORE_ARCHITECTURE.md
+  5. 05_SHARED_TYPES_ARCHITECTURE.md
+  6. 06_FINAL_MIGRATION_PLAN.md
+- Key principle: ONE client per business aggregate, NOT per entity
+- ~25 client objects across 14 domain files (vs ~50 if over-split)
+- src/api/core/ provides shared HTTP infrastructure (eliminates 12 inline apiFetch copies)
+- src/types/ separates interfaces from API code
+- Migration: 7 phases (A-G), 6-8 hours, backward compat via re-export shims
+- Status: STOP — awaiting approval to execute migration
