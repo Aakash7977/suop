@@ -1,0 +1,900 @@
+     1→-- ════════════════════════════════════════════════════════════════════════════
+     2→-- SUOP ERP — Phases 11-14: Warehouse & Inventory Domain
+     3→-- Migration 0012: GRN + IQC + Inventory + Warehouse
+     4→-- ════════════════════════════════════════════════════════════════════════════
+     5→-- 30 tables covering the complete procurement-to-inventory journey:
+     6→--   Phase 11: Goods Receipt (8 tables)
+     7→--   Phase 12: Incoming Quality Inspection (8 tables)
+     8→--   Phase 13: Inventory & Stock Ledger (7 tables)
+     9→--   Phase 14: Warehouse & Barcode (7 tables)
+    10→-- ════════════════════════════════════════════════════════════════════════════
+    11→
+    12→-- ════════════════════════════════════════════════════════════════════════════
+    13→-- PHASE 11: GOODS RECEIPT (GRN) — 8 tables
+    14→-- ════════════════════════════════════════════════════════════════════════════
+    15→
+    16→CREATE TABLE IF NOT EXISTS "goods_receipts" (
+    17→    "id" UUID NOT NULL,
+    18→    "tenant_id" UUID NOT NULL,
+    19→    "grn_number" TEXT NOT NULL,
+    20→    "grn_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    21→    "po_id" UUID,
+    22→    "po_number" TEXT,
+    23→    "supplier_id" UUID NOT NULL,
+    24→    "supplier_code" TEXT NOT NULL,
+    25→    "supplier_name" TEXT NOT NULL,
+    26→    "supplier_invoice_number" TEXT,
+    27→    "supplier_invoice_date" TIMESTAMP(3),
+    28→    "supplier_invoice_amount" DECIMAL(14,2),
+    29→    "delivery_challan_number" TEXT,
+    30→    "delivery_challan_date" TIMESTAMP(3),
+    31→    "company_id" UUID NOT NULL,
+    32→    "company_name" TEXT NOT NULL,
+    33→    "plant_id" UUID NOT NULL,
+    34→    "plant_name" TEXT NOT NULL,
+    35→    "warehouse_id" UUID,
+    36→    "warehouse_name" TEXT,
+    37→    "received_by" UUID,
+    38→    "received_by_name" TEXT,
+    39→    "received_at" TIMESTAMP(3),
+    40→    "verified_by" UUID,
+    41→    "verified_by_name" TEXT,
+    42→    "verified_at" TIMESTAMP(3),
+    43→    "vehicle_number" TEXT,
+    44→    "transport_name" TEXT,
+    45→    "transport_lorry_no" TEXT,
+    46→    "transport_lr_number" TEXT,
+    47→    "transport_lr_date" TIMESTAMP(3),
+    48→    "transport_mode" TEXT DEFAULT 'ROAD',
+    49→    "eway_bill_number" TEXT,
+    50→    "eway_bill_date" TIMESTAMP(3),
+    51→    "total_qty" DECIMAL(14,3) DEFAULT 0,
+    52→    "total_accepted_qty" DECIMAL(14,3) DEFAULT 0,
+    53→    "total_rejected_qty" DECIMAL(14,3) DEFAULT 0,
+    54→    "total_damaged_qty" DECIMAL(14,3) DEFAULT 0,
+    55→    "total_short_qty" DECIMAL(14,3) DEFAULT 0,
+    56→    "total_over_qty" DECIMAL(14,3) DEFAULT 0,
+    57→    "is_partial" BOOLEAN DEFAULT false,
+    58→    "is_short_receipt" BOOLEAN DEFAULT false,
+    59→    "is_over_receipt" BOOLEAN DEFAULT false,
+    60→    "is_fully_received" BOOLEAN DEFAULT false,
+    61→    "po_balance_qty" DECIMAL(14,3) DEFAULT 0,
+    62→    "remarks" TEXT,
+    63→    "internal_notes" TEXT,
+    64→    "status" TEXT NOT NULL DEFAULT 'DRAFT',
+    65→    "rejection_reason" TEXT,
+    66→    "version" INTEGER NOT NULL DEFAULT 0,
+    67→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    68→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    69→    "deleted_at" TIMESTAMP(3),
+    70→    "created_by" UUID,
+    71→    "updated_by" UUID,
+    72→    CONSTRAINT "goods_receipts_pkey" PRIMARY KEY ("id"),
+    73→    CONSTRAINT "uq_grn_tenant_number" UNIQUE ("tenant_id", "grn_number")
+    74→);
+    75→
+    76→CREATE TABLE IF NOT EXISTS "goods_receipt_lines" (
+    77→    "id" UUID NOT NULL,
+    78→    "tenant_id" UUID NOT NULL,
+    79→    "grn_id" UUID NOT NULL,
+    80→    "line_no" INTEGER NOT NULL,
+    81→    "po_line_id" UUID,
+    82→    "product_id" UUID NOT NULL,
+    83→    "product_sku" TEXT NOT NULL,
+    84→    "product_name" TEXT NOT NULL,
+    85→    "uom_id" UUID NOT NULL,
+    86→    "uom_code" TEXT NOT NULL,
+    87→    "ordered_qty" DECIMAL(14,3) DEFAULT 0,
+    88→    "received_qty" DECIMAL(14,3) NOT NULL,
+    89→    "accepted_qty" DECIMAL(14,3) DEFAULT 0,
+    90→    "rejected_qty" DECIMAL(14,3) DEFAULT 0,
+    91→    "damaged_qty" DECIMAL(14,3) DEFAULT 0,
+    92→    "short_qty" DECIMAL(14,3) DEFAULT 0,
+    93→    "over_qty" DECIMAL(14,3) DEFAULT 0,
+    94→    "unit_price" DECIMAL(14,4) NOT NULL,
+    95→    "line_total" DECIMAL(14,2) DEFAULT 0,
+    96→    "batch_number" TEXT,
+    97→    "lot_number" TEXT,
+    98→    "manufacture_date" TIMESTAMP(3),
+    99→    "expiry_date" TIMESTAMP(3),
+   100→    "inspection_status" TEXT DEFAULT 'PENDING',
+   101→    "inspection_lot_id" UUID,
+   102→    "warehouse_id" UUID,
+   103→    "warehouse_name" TEXT,
+   104→    "remarks" TEXT,
+   105→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   106→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   107→    CONSTRAINT "goods_receipt_lines_pkey" PRIMARY KEY ("id")
+   108→);
+   109→
+   110→CREATE TABLE IF NOT EXISTS "grn_attachments" (
+   111→    "id" UUID NOT NULL,
+   112→    "tenant_id" UUID NOT NULL,
+   113→    "grn_id" UUID NOT NULL,
+   114→    "file_name" TEXT NOT NULL,
+   115→    "file_type" TEXT NOT NULL,
+   116→    "file_size" BIGINT NOT NULL,
+   117→    "file_url" TEXT NOT NULL,
+   118→    "category" TEXT DEFAULT 'GENERAL',
+   119→    "uploaded_by" UUID,
+   120→    "uploaded_by_name" TEXT,
+   121→    "remarks" TEXT,
+   122→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   123→    CONSTRAINT "grn_attachments_pkey" PRIMARY KEY ("id")
+   124→);
+   125→
+   126→CREATE TABLE IF NOT EXISTS "grn_vehicle_details" (
+   127→    "id" UUID NOT NULL,
+   128→    "tenant_id" UUID NOT NULL,
+   129→    "grn_id" UUID NOT NULL,
+   130→    "vehicle_number" TEXT NOT NULL,
+   131→    "driver_name" TEXT,
+   132→    "driver_mobile" TEXT,
+   133→    "vehicle_type" TEXT,
+   134→    "container_number" TEXT,
+   135→    "seal_number" TEXT,
+   136→    "arrival_time" TIMESTAMP(3),
+   137→    "departure_time" TIMESTAMP(3),
+   138→    "remarks" TEXT,
+   139→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   140→    CONSTRAINT "grn_vehicle_details_pkey" PRIMARY KEY ("id")
+   141→);
+   142→
+   143→CREATE TABLE IF NOT EXISTS "grn_transport_details" (
+   144→    "id" UUID NOT NULL,
+   145→    "tenant_id" UUID NOT NULL,
+   146→    "grn_id" UUID NOT NULL,
+   147→    "transport_mode" TEXT NOT NULL DEFAULT 'ROAD',
+   148→    "transport_name" TEXT,
+   149→    "lorry_no" TEXT,
+   150→    "lr_number" TEXT NOT NULL,
+   151→    "lr_date" TIMESTAMP(3),
+   152→    "eway_bill_number" TEXT,
+   153→    "eway_bill_date" TIMESTAMP(3),
+   154→    "freight_amount" DECIMAL(14,2),
+   155→    "freight_paid_by" TEXT DEFAULT 'SUPPLIER',
+   156→    "remarks" TEXT,
+   157→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   158→    CONSTRAINT "grn_transport_details_pkey" PRIMARY KEY ("id")
+   159→);
+   160→
+   161→CREATE TABLE IF NOT EXISTS "grn_delivery_challans" (
+   162→    "id" UUID NOT NULL,
+   163→    "tenant_id" UUID NOT NULL,
+   164→    "grn_id" UUID NOT NULL,
+   165→    "challan_number" TEXT NOT NULL,
+   166→    "challan_date" TIMESTAMP(3) NOT NULL,
+   167→    "challan_type" TEXT DEFAULT 'SUPPLIER',
+   168→    "total_qty" DECIMAL(14,3),
+   169→    "total_amount" DECIMAL(14,2),
+   170→    "remarks" TEXT,
+   171→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   172→    CONSTRAINT "grn_delivery_challans_pkey" PRIMARY KEY ("id")
+   173→);
+   174→
+   175→CREATE TABLE IF NOT EXISTS "grn_supplier_invoices" (
+   176→    "id" UUID NOT NULL,
+   177→    "tenant_id" UUID NOT NULL,
+   178→    "grn_id" UUID NOT NULL,
+   179→    "invoice_number" TEXT NOT NULL,
+   180→    "invoice_date" TIMESTAMP(3) NOT NULL,
+   181→    "invoice_amount" DECIMAL(14,2) NOT NULL,
+   182→    "tax_amount" DECIMAL(14,2),
+   183→    "total_amount" DECIMAL(14,2) NOT NULL,
+   184→    "currency" TEXT DEFAULT 'INR',
+   185→    "payment_due_date" TIMESTAMP(3),
+   186→    "remarks" TEXT,
+   187→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   188→    CONSTRAINT "grn_supplier_invoices_pkey" PRIMARY KEY ("id")
+   189→);
+   190→
+   191→CREATE TABLE IF NOT EXISTS "grn_damage_records" (
+   192→    "id" UUID NOT NULL,
+   193→    "tenant_id" UUID NOT NULL,
+   194→    "grn_id" UUID NOT NULL,
+   195→    "grn_line_id" UUID,
+   196→    "product_id" UUID,
+   197→    "product_sku" TEXT,
+   198→    "damage_type" TEXT NOT NULL,
+   199→    "damaged_qty" DECIMAL(14,3) NOT NULL,
+   200→    "damage_reason" TEXT,
+   201→    "damage_severity" TEXT DEFAULT 'MINOR',
+   202→    "action_taken" TEXT,
+   203→    "recorded_by" UUID,
+   204→    "recorded_by_name" TEXT,
+   205→    "photo_url" TEXT,
+   206→    "remarks" TEXT,
+   207→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   208→    CONSTRAINT "grn_damage_records_pkey" PRIMARY KEY ("id")
+   209→);
+   210→
+   211→-- ════════════════════════════════════════════════════════════════════════════
+   212→-- PHASE 12: INCOMING QUALITY INSPECTION (IQC) — 8 tables
+   213→-- ════════════════════════════════════════════════════════════════════════════
+   214→
+   215→CREATE TABLE IF NOT EXISTS "inspection_plans" (
+   216→    "id" UUID NOT NULL,
+   217→    "tenant_id" UUID NOT NULL,
+   218→    "plan_code" TEXT NOT NULL,
+   219→    "plan_name" TEXT NOT NULL,
+   220→    "product_id" UUID,
+   221→    "product_category_id" UUID,
+   222→    "inspection_type" TEXT DEFAULT 'IQC',
+   223→    "sampling_plan_id" UUID,
+   224→    "aql_level" TEXT DEFAULT '2.5',
+   225→    "inspection_critical" TEXT DEFAULT 'NORMAL',
+   226→    "is_active" BOOLEAN DEFAULT true,
+   227→    "description" TEXT,
+   228→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   229→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   230→    "deleted_at" TIMESTAMP(3),
+   231→    CONSTRAINT "inspection_plans_pkey" PRIMARY KEY ("id"),
+   232→    CONSTRAINT "uq_iqp_tenant_code" UNIQUE ("tenant_id", "plan_code")
+   233→);
+   234→
+   235→CREATE TABLE IF NOT EXISTS "sampling_plans" (
+   236→    "id" UUID NOT NULL,
+   237→    "tenant_id" UUID NOT NULL,
+   238→    "plan_code" TEXT NOT NULL,
+   239→    "plan_name" TEXT NOT NULL,
+   240→    "lot_size_min" INTEGER NOT NULL,
+   241→    "lot_size_max" INTEGER NOT NULL,
+   242→    "sample_size" INTEGER NOT NULL,
+   243→    "accept_number" INTEGER NOT NULL DEFAULT 0,
+   244→    "reject_number" INTEGER NOT NULL DEFAULT 1,
+   245→    "aql_level" TEXT DEFAULT '2.5',
+   246→    "inspection_level" TEXT DEFAULT 'II',
+   247→    "is_active" BOOLEAN DEFAULT true,
+   248→    "description" TEXT,
+   249→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   250→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   251→    "deleted_at" TIMESTAMP(3),
+   252→    CONSTRAINT "sampling_plans_pkey" PRIMARY KEY ("id"),
+   253→    CONSTRAINT "uq_sp_tenant_code" UNIQUE ("tenant_id", "plan_code")
+   254→);
+   255→
+   256→CREATE TABLE IF NOT EXISTS "inspection_parameters" (
+   257→    "id" UUID NOT NULL,
+   258→    "tenant_id" UUID NOT NULL,
+   259→    "plan_id" UUID NOT NULL,
+   260→    "parameter_code" TEXT NOT NULL,
+   261→    "parameter_name" TEXT NOT NULL,
+   262→    "parameter_type" TEXT NOT NULL,
+   263→    "target_value" TEXT,
+   264→    "min_value" TEXT,
+   265→    "max_value" TEXT,
+   266→    "unit" TEXT,
+   267→    "is_mandatory" BOOLEAN DEFAULT true,
+   268→    "sort_order" INTEGER DEFAULT 0,
+   269→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   270→    CONSTRAINT "inspection_parameters_pkey" PRIMARY KEY ("id")
+   271→);
+   272→
+   273→CREATE TABLE IF NOT EXISTS "inspection_lots" (
+   274→    "id" UUID NOT NULL,
+   275→    "tenant_id" UUID NOT NULL,
+   276→    "lot_number" TEXT NOT NULL,
+   277→    "grn_id" UUID NOT NULL,
+   278→    "grn_line_id" UUID NOT NULL,
+   279→    "product_id" UUID NOT NULL,
+   280→    "product_sku" TEXT NOT NULL,
+   281→    "product_name" TEXT NOT NULL,
+   282→    "batch_number" TEXT,
+   283→    "lot_quantity" DECIMAL(14,3) NOT NULL,
+   284→    "sample_size" INTEGER NOT NULL,
+   285→    "plan_id" UUID,
+   286→    "plan_code" TEXT,
+   287→    "aql_level" TEXT,
+   288→    "inspection_status" TEXT NOT NULL DEFAULT 'PENDING',
+   289→    "inspection_type" TEXT DEFAULT 'IQC',
+   290→    "inspector_id" UUID,
+   291→    "inspector_name" TEXT,
+   292→    "inspection_started_at" TIMESTAMP(3),
+   293→    "inspection_completed_at" TIMESTAMP(3),
+   294→    "result" TEXT,
+   295→    "disposition" TEXT,
+   296→    "accept_qty" DECIMAL(14,3) DEFAULT 0,
+   297→    "reject_qty" DECIMAL(14,3) DEFAULT 0,
+   298→    "ncr_id" UUID,
+   299→    "remarks" TEXT,
+   300→    "version" INTEGER NOT NULL DEFAULT 0,
+   301→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   302→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   303→    "deleted_at" TIMESTAMP(3),
+   304→    "created_by" UUID,
+   305→    "updated_by" UUID,
+   306→    CONSTRAINT "inspection_lots_pkey" PRIMARY KEY ("id"),
+   307→    CONSTRAINT "uq_iql_tenant_number" UNIQUE ("tenant_id", "lot_number")
+   308→);
+   309→
+   310→CREATE TABLE IF NOT EXISTS "inspection_results" (
+   311→    "id" UUID NOT NULL,
+   312→    "tenant_id" UUID NOT NULL,
+   313→    "inspection_lot_id" UUID NOT NULL,
+   314→    "parameter_id" UUID,
+   315→    "parameter_code" TEXT,
+   316→    "parameter_name" TEXT,
+   317→    "expected_value" TEXT,
+   318→    "actual_value" TEXT NOT NULL,
+   319→    "result" TEXT NOT NULL DEFAULT 'PASS',
+   320→    "remarks" TEXT,
+   321→    "recorded_by" UUID,
+   322→    "recorded_by_name" TEXT,
+   323→    "recorded_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   324→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   325→    CONSTRAINT "inspection_results_pkey" PRIMARY KEY ("id")
+   326→);
+   327→
+   328→CREATE TABLE IF NOT EXISTS "quality_holds" (
+   329→    "id" UUID NOT NULL,
+   330→    "tenant_id" UUID NOT NULL,
+   331→    "hold_number" TEXT NOT NULL,
+   332→    "hold_type" TEXT NOT NULL DEFAULT 'IQC',
+   333→    "source_id" UUID,
+   334→    "source_type" TEXT,
+   335→    "product_id" UUID NOT NULL,
+   336→    "product_sku" TEXT NOT NULL,
+   337→    "batch_number" TEXT,
+   338→    "lot_number" TEXT,
+   339→    "held_qty" DECIMAL(14,3) NOT NULL,
+   340→    "hold_reason" TEXT NOT NULL,
+   341→    "hold_location" TEXT,
+   342→    "held_by" UUID,
+   343→    "held_by_name" TEXT,
+   344→    "held_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   345→    "released_by" UUID,
+   346→    "released_by_name" TEXT,
+   347→    "released_at" TIMESTAMP(3),
+   348→    "release_reason" TEXT,
+   349→    "disposition" TEXT,
+   350→    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+   351→    "remarks" TEXT,
+   352→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   353→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   354→    "deleted_at" TIMESTAMP(3),
+   355→    CONSTRAINT "quality_holds_pkey" PRIMARY KEY ("id"),
+   356→    CONSTRAINT "uq_qh_tenant_number" UNIQUE ("tenant_id", "hold_number")
+   357→);
+   358→
+   359→CREATE TABLE IF NOT EXISTS "ncrs" (
+   360→    "id" UUID NOT NULL,
+   361→    "tenant_id" UUID NOT NULL,
+   362→    "ncr_number" TEXT NOT NULL,
+   363→    "ncr_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   364→    "ncr_type" TEXT DEFAULT 'IQC',
+   365→    "source_id" UUID,
+   366→    "source_type" TEXT,
+   367→    "product_id" UUID NOT NULL,
+   368→    "product_sku" TEXT NOT NULL,
+   369→    "product_name" TEXT NOT NULL,
+   370→    "batch_number" TEXT,
+   371→    "lot_number" TEXT,
+   372→    "supplier_id" UUID,
+   373→    "supplier_name" TEXT,
+   374→    "grn_id" UUID,
+   375→    "grn_number" TEXT,
+   376→    "non_conformance" TEXT NOT NULL,
+   377→    "non_conformance_type" TEXT,
+   378→    "severity" TEXT DEFAULT 'MAJOR',
+   379→    "defect_qty" DECIMAL(14,3) DEFAULT 0,
+   380→    "disposition" TEXT,
+   381→    "root_cause" TEXT,
+   382→    "capa_id" UUID,
+   383→    "status" TEXT NOT NULL DEFAULT 'OPEN',
+   384→    "raised_by" UUID,
+   385→    "raised_by_name" TEXT,
+   386→    "closed_by" UUID,
+   387→    "closed_by_name" TEXT,
+   388→    "closed_at" TIMESTAMP(3),
+   389→    "closure_notes" TEXT,
+   390→    "version" INTEGER NOT NULL DEFAULT 0,
+   391→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   392→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   393→    "deleted_at" TIMESTAMP(3),
+   394→    "created_by" UUID,
+   395→    "updated_by" UUID,
+   396→    CONSTRAINT "ncrs_pkey" PRIMARY KEY ("id"),
+   397→    CONSTRAINT "uq_ncr_tenant_number" UNIQUE ("tenant_id", "ncr_number")
+   398→);
+   399→
+   400→CREATE TABLE IF NOT EXISTS "capa_records" (
+   401→    "id" UUID NOT NULL,
+   402→    "tenant_id" UUID NOT NULL,
+   403→    "capa_number" TEXT NOT NULL,
+   404→    "capa_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   405→    "ncr_id" UUID,
+   406→    "ncr_number" TEXT,
+   407→    "corrective_action" TEXT NOT NULL,
+   408→    "preventive_action" TEXT NOT NULL,
+   409→    "action_owner" UUID,
+   410→    "action_owner_name" TEXT,
+   411→    "target_date" TIMESTAMP(3),
+   412→    "completed_date" TIMESTAMP(3),
+   413→    "effectiveness" TEXT,
+   414→    "status" TEXT NOT NULL DEFAULT 'OPEN',
+   415→    "version" INTEGER NOT NULL DEFAULT 0,
+   416→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   417→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   418→    "deleted_at" TIMESTAMP(3),
+   419→    "created_by" UUID,
+   420→    "updated_by" UUID,
+   421→    CONSTRAINT "capa_records_pkey" PRIMARY KEY ("id"),
+   422→    CONSTRAINT "uq_capa_tenant_number" UNIQUE ("tenant_id", "capa_number")
+   423→);
+   424→
+   425→-- ════════════════════════════════════════════════════════════════════════════
+   426→-- PHASE 13: INVENTORY & STOCK LEDGER — 7 tables
+   427→-- ════════════════════════════════════════════════════════════════════════════
+   428→
+   429→CREATE TABLE IF NOT EXISTS "batches" (
+   430→    "id" UUID NOT NULL,
+   431→    "tenant_id" UUID NOT NULL,
+   432→    "batch_number" TEXT NOT NULL,
+   433→    "product_id" UUID NOT NULL,
+   434→    "product_sku" TEXT NOT NULL,
+   435→    "product_name" TEXT NOT NULL,
+   436→    "manufacture_date" TIMESTAMP(3),
+   437→    "expiry_date" TIMESTAMP(3) NOT NULL,
+   438→    "supplier_id" UUID,
+   439→    "supplier_name" TEXT,
+   440→    "grn_id" UUID,
+   441→    "grn_number" TEXT,
+   442→    "is_blocked" BOOLEAN DEFAULT false,
+   443→    "block_reason" TEXT,
+   444→    "remarks" TEXT,
+   445→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   446→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   447→    "deleted_at" TIMESTAMP(3),
+   448→    CONSTRAINT "batches_pkey" PRIMARY KEY ("id"),
+   449→    CONSTRAINT "uq_batch_tenant_number_product" UNIQUE ("tenant_id", "batch_number", "product_id")
+   450→);
+   451→
+   452→CREATE TABLE IF NOT EXISTS "lots" (
+   453→    "id" UUID NOT NULL,
+   454→    "tenant_id" UUID NOT NULL,
+   455→    "lot_number" TEXT NOT NULL,
+   456→    "batch_id" UUID,
+   457→    "batch_number" TEXT,
+   458→    "product_id" UUID NOT NULL,
+   459→    "product_sku" TEXT NOT NULL,
+   460→    "product_name" TEXT NOT NULL,
+   461→    "manufacture_date" TIMESTAMP(3),
+   462→    "expiry_date" TIMESTAMP(3),
+   463→    "supplier_id" UUID,
+   464→    "supplier_name" TEXT,
+   465→    "grn_id" UUID,
+   466→    "grn_number" TEXT,
+   467→    "is_blocked" BOOLEAN DEFAULT false,
+   468→    "block_reason" TEXT,
+   469→    "remarks" TEXT,
+   470→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   471→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   472→    "deleted_at" TIMESTAMP(3),
+   473→    CONSTRAINT "lots_pkey" PRIMARY KEY ("id"),
+   474→    CONSTRAINT "uq_lot_tenant_number_product" UNIQUE ("tenant_id", "lot_number", "product_id")
+   475→);
+   476→
+   477→CREATE TABLE IF NOT EXISTS "inventory" (
+   478→    "id" UUID NOT NULL,
+   479→    "tenant_id" UUID NOT NULL,
+   480→    "product_id" UUID NOT NULL,
+   481→    "product_sku" TEXT NOT NULL,
+   482→    "product_name" TEXT NOT NULL,
+   483→    "warehouse_id" UUID NOT NULL,
+   484→    "warehouse_name" TEXT,
+   485→    "bin_id" UUID,
+   486→    "bin_code" TEXT,
+   487→    "batch_id" UUID,
+   488→    "batch_number" TEXT,
+   489→    "lot_id" UUID,
+   490→    "lot_number" TEXT,
+   491→    "uom_id" UUID NOT NULL,
+   492→    "uom_code" TEXT NOT NULL,
+   493→    "quantity" DECIMAL(14,3) NOT NULL DEFAULT 0,
+   494→    "reserved_qty" DECIMAL(14,3) DEFAULT 0,
+   495→    "blocked_qty" DECIMAL(14,3) DEFAULT 0,
+   496→    "available_qty" DECIMAL(14,3) NOT NULL DEFAULT 0,
+   497→    "unit_cost" DECIMAL(14,4) DEFAULT 0,
+   498→    "moving_avg_cost" DECIMAL(14,4) DEFAULT 0,
+   499→    "total_value" DECIMAL(14,2) DEFAULT 0,
+   500→    "currency" TEXT DEFAULT 'INR',
+   501→    "manufacture_date" TIMESTAMP(3),
+   502→    "expiry_date" TIMESTAMP(3),
+   503→    "is_expired" BOOLEAN DEFAULT false,
+   504→    "is_blocked" BOOLEAN DEFAULT false,
+   505→    "block_reason" TEXT,
+   506→    "last_movement_at" TIMESTAMP(3),
+   507→    "last_movement_type" TEXT,
+   508→    "version" INTEGER NOT NULL DEFAULT 0,
+   509→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   510→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   511→    "deleted_at" TIMESTAMP(3),
+   512→    CONSTRAINT "inventory_pkey" PRIMARY KEY ("id"),
+   513→    CONSTRAINT "uq_inv_tenant_product_wh_batch_lot_bin" UNIQUE (
+   514→        "tenant_id", "product_id", "warehouse_id", "batch_id", "lot_id", "bin_id"
+   515→    )
+   516→);
+   517→
+   518→CREATE TABLE IF NOT EXISTS "inventory_transactions" (
+   519→    "id" UUID NOT NULL,
+   520→    "tenant_id" UUID NOT NULL,
+   521→    "transaction_number" TEXT NOT NULL,
+   522→    "transaction_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   523→    "transaction_type" TEXT NOT NULL,
+   524→    "movement_type" TEXT NOT NULL,
+   525→    "product_id" UUID NOT NULL,
+   526→    "product_sku" TEXT NOT NULL,
+   527→    "product_name" TEXT NOT NULL,
+   528→    "warehouse_id" UUID NOT NULL,
+   529→    "warehouse_name" TEXT,
+   530→    "bin_id" UUID,
+   531→    "bin_code" TEXT,
+   532→    "batch_id" UUID,
+   533→    "batch_number" TEXT,
+   534→    "lot_id" UUID,
+   535→    "lot_number" TEXT,
+   536→    "uom_id" UUID NOT NULL,
+   537→    "uom_code" TEXT NOT NULL,
+   538→    "quantity" DECIMAL(14,3) NOT NULL,
+   539→    "unit_cost" DECIMAL(14,4) DEFAULT 0,
+   540→    "total_value" DECIMAL(14,2) DEFAULT 0,
+   541→    "currency" TEXT DEFAULT 'INR',
+   542→    "balance_after" DECIMAL(14,3) DEFAULT 0,
+   543→    "reference_type" TEXT,
+   544→    "reference_id" UUID,
+   545→    "reference_number" TEXT,
+   546→    "reason" TEXT,
+   547→    "remarks" TEXT,
+   548→    "performed_by" UUID,
+   549→    "performed_by_name" TEXT,
+   550→    "correlation_id" TEXT,
+   551→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   552→    CONSTRAINT "inventory_transactions_pkey" PRIMARY KEY ("id"),
+   553→    CONSTRAINT "uq_itxn_tenant_number" UNIQUE ("tenant_id", "transaction_number")
+   554→);
+   555→
+   556→CREATE TABLE IF NOT EXISTS "inventory_ledger" (
+   557→    "id" UUID NOT NULL,
+   558→    "tenant_id" UUID NOT NULL,
+   559→    "entry_number" TEXT NOT NULL,
+   560→    "entry_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   561→    "transaction_id" UUID NOT NULL,
+   562→    "transaction_number" TEXT NOT NULL,
+   563→    "product_id" UUID NOT NULL,
+   564→    "product_sku" TEXT NOT NULL,
+   565→    "warehouse_id" UUID NOT NULL,
+   566→    "batch_id" UUID,
+   567→    "batch_number" TEXT,
+   568→    "lot_id" UUID,
+   569→    "lot_number" TEXT,
+   570→    "movement_type" TEXT NOT NULL,
+   571→    "in_qty" DECIMAL(14,3) DEFAULT 0,
+   572→    "out_qty" DECIMAL(14,3) DEFAULT 0,
+   573→    "balance_qty" DECIMAL(14,3) NOT NULL,
+   574→    "unit_cost" DECIMAL(14,4) DEFAULT 0,
+   575→    "total_value" DECIMAL(14,2) DEFAULT 0,
+   576→    "balance_value" DECIMAL(14,2) DEFAULT 0,
+   577→    "reference_type" TEXT,
+   578→    "reference_id" UUID,
+   579→    "reference_number" TEXT,
+   580→    "reason" TEXT,
+   581→    "performed_by" UUID,
+   582→    "performed_by_name" TEXT,
+   583→    "correlation_id" TEXT,
+   584→    "is_immutable" BOOLEAN NOT NULL DEFAULT true,
+   585→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   586→    CONSTRAINT "inventory_ledger_pkey" PRIMARY KEY ("id"),
+   587→    CONSTRAINT "uq_il_tenant_number" UNIQUE ("tenant_id", "entry_number")
+   588→);
+   589→
+   590→CREATE TABLE IF NOT EXISTS "stock_reservations" (
+   591→    "id" UUID NOT NULL,
+   592→    "tenant_id" UUID NOT NULL,
+   593→    "reservation_number" TEXT NOT NULL,
+   594→    "reservation_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   595→    "product_id" UUID NOT NULL,
+   596→    "product_sku" TEXT NOT NULL,
+   597→    "warehouse_id" UUID NOT NULL,
+   598→    "batch_id" UUID,
+   599→    "lot_id" UUID,
+   600→    "reserved_qty" DECIMAL(14,3) NOT NULL,
+   601→    "uom_id" UUID NOT NULL,
+   602→    "uom_code" TEXT NOT NULL,
+   603→    "reservation_type" TEXT,
+   604→    "reference_type" TEXT,
+   605→    "reference_id" UUID,
+   606→    "reference_number" TEXT,
+   607→    "reserved_by" UUID,
+   608→    "reserved_by_name" TEXT,
+   609→    "reserved_for" TEXT,
+   610→    "expires_at" TIMESTAMP(3),
+   611→    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+   612→    "released_at" TIMESTAMP(3),
+   613→    "released_by" UUID,
+   614→    "released_reason" TEXT,
+   615→    "remarks" TEXT,
+   616→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   617→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   618→    "deleted_at" TIMESTAMP(3),
+   619→    CONSTRAINT "stock_reservations_pkey" PRIMARY KEY ("id"),
+   620→    CONSTRAINT "uq_sr_tenant_number" UNIQUE ("tenant_id", "reservation_number")
+   621→);
+   622→
+   623→CREATE TABLE IF NOT EXISTS "stock_blocks" (
+   624→    "id" UUID NOT NULL,
+   625→    "tenant_id" UUID NOT NULL,
+   626→    "block_number" TEXT NOT NULL,
+   627→    "block_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   628→    "product_id" UUID NOT NULL,
+   629→    "product_sku" TEXT NOT NULL,
+   630→    "warehouse_id" UUID NOT NULL,
+   631→    "batch_id" UUID,
+   632→    "lot_id" UUID,
+   633→    "blocked_qty" DECIMAL(14,3) NOT NULL,
+   634→    "uom_id" UUID NOT NULL,
+   635→    "uom_code" TEXT NOT NULL,
+   636→    "block_type" TEXT,
+   637→    "block_reason" TEXT NOT NULL,
+   638→    "source_type" TEXT,
+   639→    "source_id" UUID,
+   640→    "source_number" TEXT,
+   641→    "blocked_by" UUID,
+   642→    "blocked_by_name" TEXT,
+   643→    "released_by" UUID,
+   644→    "released_by_name" TEXT,
+   645→    "released_at" TIMESTAMP(3),
+   646→    "release_reason" TEXT,
+   647→    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+   648→    "remarks" TEXT,
+   649→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   650→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   651→    "deleted_at" TIMESTAMP(3),
+   652→    CONSTRAINT "stock_blocks_pkey" PRIMARY KEY ("id"),
+   653→    CONSTRAINT "uq_sb_tenant_number" UNIQUE ("tenant_id", "block_number")
+   654→);
+   655→
+   656→-- ════════════════════════════════════════════════════════════════════════════
+   657→-- PHASE 14: WAREHOUSE & BARCODE — 7 tables
+   658→-- ════════════════════════════════════════════════════════════════════════════
+   659→
+   660→CREATE TABLE IF NOT EXISTS "warehouse_zones" (
+   661→    "id" UUID NOT NULL,
+   662→    "tenant_id" UUID NOT NULL,
+   663→    "warehouse_id" UUID NOT NULL,
+   664→    "zone_code" TEXT NOT NULL,
+   665→    "zone_name" TEXT NOT NULL,
+   666→    "zone_type" TEXT DEFAULT 'STORAGE',
+   667→    "capacity" DECIMAL(14,3) DEFAULT 0,
+   668→    "used_capacity" DECIMAL(14,3) DEFAULT 0,
+   669→    "is_active" BOOLEAN DEFAULT true,
+   670→    "sort_order" INTEGER DEFAULT 0,
+   671→    "description" TEXT,
+   672→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   673→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   674→    "deleted_at" TIMESTAMP(3),
+   675→    "created_by" UUID,
+   676→    "updated_by" UUID,
+   677→    CONSTRAINT "warehouse_zones_pkey" PRIMARY KEY ("id"),
+   678→    CONSTRAINT "uq_wz_tenant_wh_code" UNIQUE ("tenant_id", "warehouse_id", "zone_code")
+   679→);
+   680→
+   681→CREATE TABLE IF NOT EXISTS "warehouse_aisles" (
+   682→    "id" UUID NOT NULL,
+   683→    "tenant_id" UUID NOT NULL,
+   684→    "warehouse_id" UUID NOT NULL,
+   685→    "zone_id" UUID,
+   686→    "aisle_code" TEXT NOT NULL,
+   687→    "aisle_name" TEXT NOT NULL,
+   688→    "capacity" DECIMAL(14,3) DEFAULT 0,
+   689→    "used_capacity" DECIMAL(14,3) DEFAULT 0,
+   690→    "is_active" BOOLEAN DEFAULT true,
+   691→    "sort_order" INTEGER DEFAULT 0,
+   692→    "description" TEXT,
+   693→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   694→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   695→    "deleted_at" TIMESTAMP(3),
+   696→    "created_by" UUID,
+   697→    "updated_by" UUID,
+   698→    CONSTRAINT "warehouse_aisles_pkey" PRIMARY KEY ("id"),
+   699→    CONSTRAINT "uq_wa_tenant_wh_code" UNIQUE ("tenant_id", "warehouse_id", "aisle_code")
+   700→);
+   701→
+   702→CREATE TABLE IF NOT EXISTS "warehouse_racks" (
+   703→    "id" UUID NOT NULL,
+   704→    "tenant_id" UUID NOT NULL,
+   705→    "warehouse_id" UUID NOT NULL,
+   706→    "zone_id" UUID,
+   707→    "aisle_id" UUID,
+   708→    "rack_code" TEXT NOT NULL,
+   709→    "rack_name" TEXT NOT NULL,
+   710→    "rack_type" TEXT DEFAULT 'STANDARD',
+   711→    "levels" INTEGER DEFAULT 1,
+   712→    "capacity_per_level" DECIMAL(14,3) DEFAULT 0,
+   713→    "capacity" DECIMAL(14,3) DEFAULT 0,
+   714→    "used_capacity" DECIMAL(14,3) DEFAULT 0,
+   715→    "is_active" BOOLEAN DEFAULT true,
+   716→    "sort_order" INTEGER DEFAULT 0,
+   717→    "description" TEXT,
+   718→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   719→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   720→    "deleted_at" TIMESTAMP(3),
+   721→    "created_by" UUID,
+   722→    "updated_by" UUID,
+   723→    CONSTRAINT "warehouse_racks_pkey" PRIMARY KEY ("id"),
+   724→    CONSTRAINT "uq_wr_tenant_wh_code" UNIQUE ("tenant_id", "warehouse_id", "rack_code")
+   725→);
+   726→
+   727→CREATE TABLE IF NOT EXISTS "warehouse_bins" (
+   728→    "id" UUID NOT NULL,
+   729→    "tenant_id" UUID NOT NULL,
+   730→    "warehouse_id" UUID NOT NULL,
+   731→    "zone_id" UUID,
+   732→    "aisle_id" UUID,
+   733→    "rack_id" UUID,
+   734→    "bin_code" TEXT NOT NULL,
+   735→    "bin_name" TEXT NOT NULL,
+   736→    "bin_type" TEXT DEFAULT 'STORAGE',
+   737→    "level" INTEGER DEFAULT 1,
+   738→    "position" TEXT,
+   739→    "capacity" DECIMAL(14,3) DEFAULT 0,
+   740→    "used_capacity" DECIMAL(14,3) DEFAULT 0,
+   741→    "is_active" BOOLEAN DEFAULT true,
+   742→    "is_blocked" BOOLEAN DEFAULT false,
+   743→    "block_reason" TEXT,
+   744→    "sort_order" INTEGER DEFAULT 0,
+   745→    "description" TEXT,
+   746→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   747→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   748→    "deleted_at" TIMESTAMP(3),
+   749→    "created_by" UUID,
+   750→    "updated_by" UUID,
+   751→    CONSTRAINT "warehouse_bins_pkey" PRIMARY KEY ("id"),
+   752→    CONSTRAINT "uq_wb_tenant_wh_code" UNIQUE ("tenant_id", "warehouse_id", "bin_code")
+   753→);
+   754→
+   755→CREATE TABLE IF NOT EXISTS "putaway_tasks" (
+   756→    "id" UUID NOT NULL,
+   757→    "tenant_id" UUID NOT NULL,
+   758→    "task_number" TEXT NOT NULL,
+   759→    "task_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   760→    "grn_id" UUID,
+   761→    "grn_number" TEXT,
+   762→    "grn_line_id" UUID,
+   763→    "inspection_lot_id" UUID,
+   764→    "product_id" UUID NOT NULL,
+   765→    "product_sku" TEXT NOT NULL,
+   766→    "product_name" TEXT NOT NULL,
+   767→    "batch_id" UUID,
+   768→    "batch_number" TEXT,
+   769→    "lot_id" UUID,
+   770→    "lot_number" TEXT,
+   771→    "quantity" DECIMAL(14,3) NOT NULL,
+   772→    "uom_id" UUID NOT NULL,
+   773→    "uom_code" TEXT NOT NULL,
+   774→    "warehouse_id" UUID NOT NULL,
+   775→    "warehouse_name" TEXT,
+   776→    "source_bin_id" UUID,
+   777→    "source_bin_code" TEXT,
+   778→    "target_bin_id" UUID,
+   779→    "target_bin_code" TEXT,
+   780→    "assigned_to" UUID,
+   781→    "assigned_to_name" TEXT,
+   782→    "started_at" TIMESTAMP(3),
+   783→    "completed_at" TIMESTAMP(3),
+   784→    "status" TEXT NOT NULL DEFAULT 'PENDING',
+   785→    "priority" TEXT DEFAULT 'NORMAL',
+   786→    "remarks" TEXT,
+   787→    "version" INTEGER NOT NULL DEFAULT 0,
+   788→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   789→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   790→    "deleted_at" TIMESTAMP(3),
+   791→    "created_by" UUID,
+   792→    "updated_by" UUID,
+   793→    CONSTRAINT "putaway_tasks_pkey" PRIMARY KEY ("id"),
+   794→    CONSTRAINT "uq_pt_tenant_number" UNIQUE ("tenant_id", "task_number")
+   795→);
+   796→
+   797→CREATE TABLE IF NOT EXISTS "barcode_labels" (
+   798→    "id" UUID NOT NULL,
+   799→    "tenant_id" UUID NOT NULL,
+   800→    "barcode" TEXT NOT NULL,
+   801→    "barcode_type" TEXT NOT NULL DEFAULT 'CODE128',
+   802→    "label_type" TEXT NOT NULL,
+   803→    "product_id" UUID,
+   804→    "product_sku" TEXT,
+   805→    "product_name" TEXT,
+   806→    "batch_id" UUID,
+   807→    "batch_number" TEXT,
+   808→    "lot_id" UUID,
+   809→    "lot_number" TEXT,
+   810→    "warehouse_id" UUID,
+   811→    "bin_id" UUID,
+   812→    "bin_code" TEXT,
+   813→    "grn_id" UUID,
+   814→    "grn_number" TEXT,
+   815→    "quantity" DECIMAL(14,3),
+   816→    "uom_code" TEXT,
+   817→    "manufacture_date" TIMESTAMP(3),
+   818→    "expiry_date" TIMESTAMP(3),
+   819→    "gs1_gtin" TEXT,
+   820→    "gs1_batch" TEXT,
+   821→    "gs1_expiry" TEXT,
+   822→    "qr_data" TEXT,
+   823→    "print_count" INTEGER DEFAULT 0,
+   824→    "last_printed_at" TIMESTAMP(3),
+   825→    "is_printed" BOOLEAN DEFAULT false,
+   826→    "is_scanned" BOOLEAN DEFAULT false,
+   827→    "scanned_at" TIMESTAMP(3),
+   828→    "status" TEXT DEFAULT 'ACTIVE',
+   829→    "remarks" TEXT,
+   830→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   831→    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   832→    "deleted_at" TIMESTAMP(3),
+   833→    "created_by" UUID,
+   834→    "updated_by" UUID,
+   835→    CONSTRAINT "barcode_labels_pkey" PRIMARY KEY ("id"),
+   836→    CONSTRAINT "uq_bl_tenant_barcode" UNIQUE ("tenant_id", "barcode")
+   837→);
+   838→
+   839→CREATE TABLE IF NOT EXISTS "scan_logs" (
+   840→    "id" UUID NOT NULL,
+   841→    "tenant_id" UUID NOT NULL,
+   842→    "barcode" TEXT NOT NULL,
+   843→    "scan_type" TEXT NOT NULL,
+   844→    "scan_context" TEXT,
+   845→    "scanned_by" UUID,
+   846→    "scanned_by_name" TEXT,
+   847→    "scanned_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   848→    "device_id" TEXT,
+   849→    "location" TEXT,
+   850→    "result" TEXT,
+   851→    "metadata" JSONB,
+   852→    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   853→    CONSTRAINT "scan_logs_pkey" PRIMARY KEY ("id")
+   854→);
+   855→
+   856→-- ════════════════════════════════════════════════════════════════════════════
+   857→-- INDEXES
+   858→-- ════════════════════════════════════════════════════════════════════════════
+   859→
+   860→-- GRN
+   861→CREATE INDEX IF NOT EXISTS "idx_grn_tenant_status" ON "goods_receipts"("tenant_id", "status");
+   862→CREATE INDEX IF NOT EXISTS "idx_grn_tenant_supplier" ON "goods_receipts"("tenant_id", "supplier_id");
+   863→CREATE INDEX IF NOT EXISTS "idx_grn_tenant_po" ON "goods_receipts"("tenant_id", "po_id");
+   864→CREATE INDEX IF NOT EXISTS "idx_grn_tenant_date" ON "goods_receipts"("tenant_id", "grn_date");
+   865→CREATE INDEX IF NOT EXISTS "idx_grnl_grn" ON "goods_receipt_lines"("grn_id");
+   866→CREATE INDEX IF NOT EXISTS "idx_grnl_product" ON "goods_receipt_lines"("product_id");
+   867→
+   868→-- IQC
+   869→CREATE INDEX IF NOT EXISTS "idx_iql_tenant_status" ON "inspection_lots"("tenant_id", "inspection_status");
+   870→CREATE INDEX IF NOT EXISTS "idx_iql_grn" ON "inspection_lots"("grn_id");
+   871→CREATE INDEX IF NOT EXISTS "idx_iql_product" ON "inspection_lots"("product_id");
+   872→CREATE INDEX IF NOT EXISTS "idx_iqr_lot" ON "inspection_results"("inspection_lot_id");
+   873→CREATE INDEX IF NOT EXISTS "idx_qh_tenant_status" ON "quality_holds"("tenant_id", "status");
+   874→CREATE INDEX IF NOT EXISTS "idx_ncr_tenant_status" ON "ncrs"("tenant_id", "status");
+   875→CREATE INDEX IF NOT EXISTS "idx_capa_tenant_status" ON "capa_records"("tenant_id", "status");
+   876→
+   877→-- Inventory
+   878→CREATE INDEX IF NOT EXISTS "idx_inv_tenant_product_wh" ON "inventory"("tenant_id", "product_id", "warehouse_id");
+   879→CREATE INDEX IF NOT EXISTS "idx_inv_tenant_batch" ON "inventory"("tenant_id", "batch_id");
+   880→CREATE INDEX IF NOT EXISTS "idx_inv_tenant_lot" ON "inventory"("tenant_id", "lot_id");
+   881→CREATE INDEX IF NOT EXISTS "idx_inv_tenant_expiry" ON "inventory"("tenant_id", "expiry_date");
+   882→CREATE INDEX IF NOT EXISTS "idx_itxn_tenant_product" ON "inventory_transactions"("tenant_id", "product_id");
+   883→CREATE INDEX IF NOT EXISTS "idx_itxn_tenant_date" ON "inventory_transactions"("tenant_id", "transaction_date");
+   884→CREATE INDEX IF NOT EXISTS "idx_il_tenant_product" ON "inventory_ledger"("tenant_id", "product_id");
+   885→CREATE INDEX IF NOT EXISTS "idx_il_tenant_date" ON "inventory_ledger"("tenant_id", "entry_date");
+   886→CREATE INDEX IF NOT EXISTS "idx_batch_tenant_product" ON "batches"("tenant_id", "product_id");
+   887→CREATE INDEX IF NOT EXISTS "idx_lot_tenant_product" ON "lots"("tenant_id", "product_id");
+   888→CREATE INDEX IF NOT EXISTS "idx_sr_tenant_status" ON "stock_reservations"("tenant_id", "status");
+   889→CREATE INDEX IF NOT EXISTS "idx_sb_tenant_status" ON "stock_blocks"("tenant_id", "status");
+   890→
+   891→-- Warehouse
+   892→CREATE INDEX IF NOT EXISTS "idx_wz_tenant_wh" ON "warehouse_zones"("tenant_id", "warehouse_id");
+   893→CREATE INDEX IF NOT EXISTS "idx_wa_tenant_wh" ON "warehouse_aisles"("tenant_id", "warehouse_id");
+   894→CREATE INDEX IF NOT EXISTS "idx_wr_tenant_wh" ON "warehouse_racks"("tenant_id", "warehouse_id");
+   895→CREATE INDEX IF NOT EXISTS "idx_wb_tenant_wh" ON "warehouse_bins"("tenant_id", "warehouse_id");
+   896→CREATE INDEX IF NOT EXISTS "idx_pt_tenant_status" ON "putaway_tasks"("tenant_id", "status");
+   897→CREATE INDEX IF NOT EXISTS "idx_bl_tenant_barcode" ON "barcode_labels"("tenant_id", "barcode");
+   898→CREATE INDEX IF NOT EXISTS "idx_bl_tenant_type" ON "barcode_labels"("tenant_id", "label_type");
+   899→CREATE INDEX IF NOT EXISTS "idx_sl_tenant_date" ON "scan_logs"("tenant_id", "scanned_at");
+   900→
