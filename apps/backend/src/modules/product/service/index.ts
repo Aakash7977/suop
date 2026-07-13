@@ -6,6 +6,7 @@ import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { BusinessRuleError, NotFoundError, ConflictError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -79,6 +80,9 @@ export const productService = {
   },
 
   async transition(id: string, targetStatus: string, version: number) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await productRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('Product', id)

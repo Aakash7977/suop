@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function ExceptionCenterModule() {
+  const { hasPermission } = useAuthStore()
   const [filter, setFilter] = useState<string>('ALL')
 
   const exceptions = [
@@ -81,7 +82,7 @@ export function ExceptionCenterModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Exception Center</h2><p className="text-sm text-muted-foreground mt-1">Warehouse exceptions · supervisor workflow · escalation matrix</p></div>
-        <Button size="sm" variant="destructive"><Siren className="mr-2 h-4 w-4" />Report Exception</Button>
+        {hasPermission('quality:inspect') && <Button size="sm" variant="destructive"><Siren className="mr-2 h-4 w-4" />Report Exception</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

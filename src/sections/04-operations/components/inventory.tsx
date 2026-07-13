@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function InventoryModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<InvTab>('overview')
   const tabs: Array<{ key: InvTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },

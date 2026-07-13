@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function CycleCountModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<CycleCountTab>('overview')
   const tabs: Array<{ key: CycleCountTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
@@ -224,7 +225,7 @@ function PhysicalCountsTab() {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold flex items-center gap-2"><ClipboardCheck className="h-5 w-5" /> Physical Inventory Counts</h3>
-        <Button size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />New Count</Button>
+        {hasPermission('cyclecount:execute') && <Button size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />New Count</Button>}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

@@ -10,6 +10,7 @@ import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()

@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function WorkforceModule() {
+  const { hasPermission } = useAuthStore()
   const [view, setView] = useState<'operators' | 'shifts' | 'attendance'>('operators')
 
   const [data, setData] = useState<any[]>([])
@@ -109,7 +110,7 @@ export function WorkforceModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Workforce Management</h2><p className="text-sm text-muted-foreground mt-1">Operator skill matrix · shifts · attendance · KPI tracking</p></div>
-        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Operator</Button>
+        {hasPermission('hr:create') && <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Operator</Button>}
       </div>
 
       {/* Top Stats */}

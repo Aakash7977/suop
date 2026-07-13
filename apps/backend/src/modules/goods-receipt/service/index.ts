@@ -7,6 +7,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -163,6 +164,12 @@ export const goodsReceiptService = {
     const { tenantId, userId, ctx } = getContext()
     const existing = await grnRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('GoodsReceipt', id)
+    // Maker-Checker: cannot transition own GRN (SoD-15)
+    if (targetStatus === 'ACCEPTED' || targetStatus === 'REJECTED' || targetStatus === 'CLOSED') {
+      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
+      enforceMakerChecker(existing['created_by'] as string, 'transition', 'GoodsReceipt')
+    }
+
     if (String(existing['status']) !== 'DRAFT') {
       throw new BusinessRuleError('Can only modify draft GRNs', { code: 'GRN.NOT_DRAFT' })
     }
@@ -192,6 +199,9 @@ export const goodsReceiptService = {
   },
 
   async transition(id: string, targetStatus: string, version: number, options?: { verificationNotes?: string; rejectionReason?: string }) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await grnRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('GoodsReceipt', id)

@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function GateConsoleModule() {
+  const { hasPermission } = useAuthStore()
   const [showCheckIn, setShowCheckIn] = useState(false)
   const entries = [
     { id: 'GE1', num: 'GE-2026-018', pass: 'GP-2026-018', vehicle: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '08:45', expectedExit: '10:30', docs: true, inspect: true, seal: true, status: 'AT_DOCK', photoFront: true, photoSeal: true },
@@ -73,7 +74,7 @@ export function GateConsoleModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Gate Console</h2><p className="text-sm text-muted-foreground mt-1">Vehicle check-in / check-out · gate pass · seal verification · photo evidence</p></div>
-        <Button size="sm" onClick={() => setShowCheckIn(!showCheckIn)}><Plus className="mr-2 h-4 w-4" />New Check-In</Button>
+        {hasPermission('yard:checkin') && <Button size="sm" onClick={() => setShowCheckIn(!showCheckIn)}><Plus className="mr-2 h-4 w-4" />New Check-In</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

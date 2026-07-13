@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function WavePlanningModule() {
+  const { hasPermission } = useAuthStore()
   const [view, setView] = useState<'list' | 'kanban' | 'gantt'>('list')
 
   const [data, setData] = useState<any[]>([])
@@ -114,8 +115,8 @@ export function WavePlanningModule() {
           <p className="text-sm text-muted-foreground mt-1">Group orders into waves · auto-generate tasks · optimize operator assignment</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>
-          <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Wave</Button>
+          {hasPermission('wave:read') && <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>}
+          {hasPermission('wave:create') && <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Wave</Button>}
         </div>
       </div>
 

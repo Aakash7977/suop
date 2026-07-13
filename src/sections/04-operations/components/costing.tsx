@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function CostingModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<CostingTab>('overview')
 
   const [data, setData] = useState<any[]>([])

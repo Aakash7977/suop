@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function EquipmentModule() {
+  const { hasPermission } = useAuthStore()
   const equipment = [
     { id: 'E1', code: 'FL-001', type: 'FORKLIFT', make: 'Toyota', model: '8FBE15', serial: 'TY2024-001', status: 'IN_USE', battery: 78, op: 'Rajesh K.', task: 'TASK-2026-002', wh: 'WH-MUM-MAIN', lastMaint: '2026-06-15', nextMaint: '2026-09-15', hours: 1245.5, tasksDone: 342, certs: ['FORKLIFT'] },
     { id: 'E2', code: 'FL-002', type: 'FORKLIFT', make: 'Godrej', model: 'GXE-15T', serial: 'GD2024-118', status: 'IN_USE', battery: 62, op: 'Suresh M.', task: 'TASK-2026-001', wh: 'WH-MUM-MAIN', lastMaint: '2026-06-20', nextMaint: '2026-09-20', hours: 982.3, tasksDone: 287, certs: ['FORKLIFT'] },
@@ -89,7 +90,7 @@ export function EquipmentModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Equipment Management</h2><p className="text-sm text-muted-foreground mt-1">Forklifts · scanners · reach trucks · battery & maintenance tracking</p></div>
-        <Button size="sm"><Plus className="mr-2 h-4 w-4" />Add Equipment</Button>
+        {hasPermission('eam:create') && <Button size="sm"><Plus className="mr-2 h-4 w-4" />Add Equipment</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

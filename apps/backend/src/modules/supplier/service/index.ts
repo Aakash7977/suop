@@ -10,6 +10,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { BusinessRuleError, NotFoundError, ConflictError, ConcurrencyError, AuthorizationError } from '@/core/errors'
 import { query } from '@/core/db/pglite'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -71,6 +72,12 @@ export const supplierService = {
   async update(id: string, data: Record<string, unknown>, version: number) {
     const { tenantId, userId, ctx } = getContext()
     const existing = await supplierRepository.findById(tenantId, id)
+    // Maker-Checker: cannot approve own supplier (SoD-04)
+    if (targetStatus === 'APPROVED' || targetStatus === 'ACTIVE') {
+      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
+      enforceMakerChecker(existing?.['created_by'] as string, 'approve', 'Supplier')
+    }
+
     if (!existing) throw new NotFoundError('Supplier', id)
     // Business rule: cannot modify blacklisted supplier
     if (existing['status'] === 'BLACKLISTED') throw new BusinessRuleError('Cannot modify a blacklisted supplier', { code: 'SUPPLIER.BLACKLISTED' })
@@ -92,6 +99,9 @@ export const supplierService = {
   },
 
   async transition(id: string, targetStatus: string, version: number) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await supplierRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('Supplier', id)

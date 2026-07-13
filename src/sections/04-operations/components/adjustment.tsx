@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function AdjustmentModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<AdjustmentTab>('overview')
   const tabs: Array<{ key: AdjustmentTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },

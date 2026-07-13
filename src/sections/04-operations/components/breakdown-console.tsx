@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function BreakdownConsoleModule() {
+  const { hasPermission } = useAuthStore()
   const breakdowns = [
     { id: 'BD1', num: 'BD-2026-018', equipment: 'FL-004', type: 'FORKLIFT', category: 'HYDRAULIC', severity: 'CRITICAL', desc: 'Hydraulic pressure loss during loading at DOCK-04', reportedBy: 'Suresh M.', reportedAt: '10:05', technician: 'Suresh Tech', status: 'IN_PROGRESS', diagnosis: 'Hydraulic pump failure', repair: 'Replacing pump + seal kit', parts: ['Hydraulic pump', 'Seal kit'], cost: 18500, downtime: 95, photos: 3 },
     { id: 'BD2', num: 'BD-2026-017', equipment: 'SC-006', type: 'SCANNER', category: 'PHYSICAL_DAMAGE', severity: 'MEDIUM', desc: 'Scanner trigger button broken — dropped on concrete floor', reportedBy: 'Mahesh R.', reportedAt: '09:30', technician: 'Suresh Tech', status: 'ASSIGNED', diagnosis: null, repair: null, parts: [], cost: null, downtime: 45, photos: 2 },
@@ -76,7 +77,7 @@ export function BreakdownConsoleModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Breakdown Console</h2><p className="text-sm text-muted-foreground mt-1">Report · diagnose · repair · test · return to service · downtime tracking</p></div>
-        <Button size="sm" variant="destructive"><AlertOctagon className="mr-2 h-4 w-4" />Report Breakdown</Button>
+        {hasPermission('eam:maintenance') && <Button size="sm" variant="destructive"><AlertOctagon className="mr-2 h-4 w-4" />Report Breakdown</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

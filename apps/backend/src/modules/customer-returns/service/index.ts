@@ -6,6 +6,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 function getContext() { const ctx = getRequestContext(); if (!ctx?.tenantId || !ctx?.userId) throw new AuthorizationError('Authentication required'); return { tenantId: ctx.tenantId, userId: ctx.userId, userEmail: ctx.userEmail ?? '', ctx } }
 
 export const customerReturnsService = {
@@ -25,6 +26,9 @@ export const customerReturnsService = {
   async getById(id: string) { const { tenantId } = getContext(); const rma = await rmaRepository.findById(tenantId, id); if (!rma) throw new NotFoundError('RMA', id); return rma },
   async list(params: { page?: number; pageSize?: number; status?: string } = {}) { const { tenantId } = getContext(); return rmaRepository.list(tenantId, params) },
   async transition(id: string, targetStatus: string, version: number) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await rmaRepository.findById(tenantId, id); if (!existing) throw new NotFoundError('RMA', id)
     const machine = workflowRegistry.get<string, { id: string; status: string; version: number }>('RMALifecycle')

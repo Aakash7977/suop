@@ -19,6 +19,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -516,6 +517,12 @@ export const purchaseOrderService = {
   async update(id: string, data: Record<string, unknown>, version: number) {
     const { tenantId, userId, ctx } = getContext()
     const existing = await poRepository.findById(tenantId, id)
+    // Maker-Checker: cannot approve own PO (SoD)
+    if (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') {
+      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
+      enforceMakerChecker(existing?.['created_by'] as string, 'approve', 'PurchaseOrder')
+    }
+
     if (!existing) throw new NotFoundError('PurchaseOrder', id)
     validateEditable(String(existing['status']))
 
@@ -603,6 +610,9 @@ export const purchaseOrderService = {
       revisionReason?: string
     },
   ) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await poRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('PurchaseOrder', id)

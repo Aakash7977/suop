@@ -27,6 +27,7 @@ import {
 } from '@/core/errors'
 import { logger } from '@/core/logging'
 import '../workflow'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 // ─── Request Context ────────────────────────────────────────────────────────
 
@@ -328,7 +329,10 @@ export const GeneralLedgerService = {
    * (e.g. 'JournalEntryLifecycle'), validates the transition is allowed,
    * updates the entity's status, writes audit + event, and returns the new state.
    */
-  async transition(id: string, targetState: string, reason?: string): Promise<{ status: string; version: number }> {
+  async transition(id: string, targetState: string, reason?: string): Promise<{
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+ status: string; version: number }> {
     const { tenantId, userId, userEmail, correlationId } = getContext()
 
     // Import workflow registry lazily to avoid circular imports

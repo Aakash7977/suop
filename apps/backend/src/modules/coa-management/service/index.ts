@@ -8,6 +8,7 @@ import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { randomUUID } from 'node:crypto'
 import { BusinessRuleError, NotFoundError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()

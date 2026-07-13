@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function EquipmentMasterModule() {
+  const { hasPermission } = useAuthStore()
   const [filterCat, setFilterCat] = useState<string>('ALL')
   const [showCreate, setShowCreate] = useState(false)
 

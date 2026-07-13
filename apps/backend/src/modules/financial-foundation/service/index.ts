@@ -4,6 +4,7 @@ import { auditService } from '@/core/audit'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 function getContext() { const ctx = getRequestContext(); if (!ctx?.tenantId || !ctx?.userId) throw new AuthorizationError('Authentication required'); return { tenantId: ctx.tenantId, userId: ctx.userId, userEmail: ctx.userEmail ?? '', ctx } }
 
 export const financialFoundationService = {

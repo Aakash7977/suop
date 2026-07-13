@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function TruckQueueModule() {
+  const { hasPermission } = useAuthStore()
   const queue = [
     { id: 'Q1', num: 'Q-2026-018', pos: 1, vehicle: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', purpose: 'INBOUND_DELIVERY', queueType: 'PRIORITY', priority: 85, waitMin: 8, estDock: '10:45', status: 'ASSIGNED', dock: 'DOCK-02', delay: null },
     { id: 'Q2', num: 'Q-2026-019', pos: 2, vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', purpose: 'INBOUND_DELIVERY', queueType: 'COLD_CHAIN', priority: 90, waitMin: 15, estDock: '10:55', status: 'WAITING', dock: null, delay: null },
@@ -78,7 +79,7 @@ export function TruckQueueModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Truck Queue Management</h2><p className="text-sm text-muted-foreground mt-1">FIFO · Priority · Cold Chain · Emergency · VIP Supplier · Manual Override</p></div>
-        <div className="flex gap-2"><Button variant="outline" size="sm"><Filter className="mr-1 h-4 w-4" />Filter</Button><Button size="sm"><Plus className="mr-2 h-4 w-4" />Add to Queue</Button></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm"><Filter className="mr-1 h-4 w-4" />Filter</Button>{hasPermission('yard:checkin') && <Button size="sm"><Plus className="mr-2 h-4 w-4" />Add to Queue</Button>}</div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -91,7 +92,7 @@ export function TruckQueueModule() {
             <div className="h-10 w-10 rounded-lg bg-amber-600 flex items-center justify-center text-white"><Workflow className="h-5 w-5" /></div>
             <div><p className="font-semibold text-sm">Queue Engine Active</p><p className="text-xs text-muted-foreground">Priority rules: Emergency &gt; Cold Chain &gt; VIP &gt; Priority &gt; FIFO</p></div>
           </div>
-          <Button size="sm" variant="outline">Configure Rules</Button>
+          {hasPermission('yard:checkin') && <Button size="sm" variant="outline">Configure Rules</Button>}
         </div>
       </Card>
 

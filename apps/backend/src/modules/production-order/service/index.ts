@@ -11,6 +11,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -130,6 +131,9 @@ export const productionOrderService = {
   },
 
   async transition(id: string, targetStatus: string, version: number) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await productionOrderRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('ProductionOrder', id)

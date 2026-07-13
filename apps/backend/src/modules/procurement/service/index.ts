@@ -6,6 +6,7 @@ import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -79,6 +80,12 @@ export const procurementService = {
   async update(id: string, data: Record<string, unknown>, version: number) {
     const { tenantId, userId, ctx } = getContext()
     const existing = await prRepository.findById(tenantId, id)
+    // Maker-Checker: cannot approve own PR (SoD-01)
+    if (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') {
+      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
+      enforceMakerChecker(existing?.['created_by'] as string, 'approve', 'PurchaseRequisition')
+    }
+
     if (!existing) throw new NotFoundError('PurchaseRequisition', id)
     // Business rule: can only modify DRAFT or REJECTED
     if (!['DRAFT', 'REJECTED'].includes(String(existing['status']))) {
@@ -103,6 +110,9 @@ export const procurementService = {
   },
 
   async transition(id: string, targetStatus: string, version: number, approvalData?: { comments?: string }) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await prRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('PurchaseRequisition', id)

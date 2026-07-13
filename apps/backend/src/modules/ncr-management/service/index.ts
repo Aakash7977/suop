@@ -169,3 +169,4 @@ export const ncrManagementService = {
 
 // Need to import randomUUID for autoCreateCapa
 import { randomUUID } from 'node:crypto'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'

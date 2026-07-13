@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function CrossDockConsoleModule() {
+  const { hasPermission } = useAuthStore()
   const [filter, setFilter] = useState<string>('ALL')
   const [showCreate, setShowCreate] = useState(false)
 
@@ -81,7 +82,7 @@ export function CrossDockConsoleModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Cross-Dock Console</h2><p className="text-sm text-muted-foreground mt-1">Direct inbound-to-outbound routing · zero warehouse storage · cost &amp; time savings</p></div>
-        <div className="flex gap-2"><Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button><Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Cross-Dock</Button></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button>{hasPermission('shipment:create') && <Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Cross-Dock</Button>}</div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

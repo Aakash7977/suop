@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function StockTransferModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<TransferTab>('overview')
   const tabs: Array<{ key: TransferTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Dashboard', icon: <Gauge className="h-4 w-4" /> },

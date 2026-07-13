@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function CertificationCenterModule() {
+  const { hasPermission } = useAuthStore()
   const certifications = [
     { id: 'C1', code: 'CERT-001', op: 'OP-001 Rajesh Kumar', type: 'FORKLIFT_LICENSE', name: 'Forklift Operating License', issuedBy: 'NSDC', issuedAt: '2024-03-15', certNum: 'NSDC-FL-2024-001', validFrom: '2024-03-15', validUntil: '2027-03-15', expired: false, expiringSoon: false, score: 92, equipmentType: 'FORKLIFT', status: 'ACTIVE' },
     { id: 'C2', code: 'CERT-002', op: 'OP-001 Rajesh Kumar', type: 'REACH_TRUCK', name: 'Reach Truck Certification', issuedBy: 'MANUFACTURER', issuedAt: '2024-04-20', certNum: 'CROWN-RT-2024-005', validFrom: '2024-04-20', validUntil: '2026-04-20', expired: false, expiringSoon: true, score: 88, equipmentType: 'REACH_TRUCK', status: 'ACTIVE' },
@@ -80,7 +81,7 @@ export function CertificationCenterModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Certification Center</h2><p className="text-sm text-muted-foreground mt-1">Operator licenses · safety training · equipment certifications · expiry tracking</p></div>
-        <Button size="sm"><Plus className="mr-2 h-4 w-4" />Issue Certification</Button>
+        {hasPermission('hr:create') && <Button size="sm"><Plus className="mr-2 h-4 w-4" />Issue Certification</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

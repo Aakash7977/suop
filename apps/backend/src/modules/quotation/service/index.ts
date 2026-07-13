@@ -7,6 +7,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -118,6 +119,9 @@ export const quotationService = {
   },
 
   async transition(id: string, targetStatus: string, version: number, transitionData?: { technicalScore?: number; commercialScore?: number; overallScore?: number; rank?: number; recommendationNotes?: string; rejectionReason?: string }) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
     const existing = await quotationRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('SupplierQuotation', id)

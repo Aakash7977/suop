@@ -54,6 +54,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function DockScheduleModule() {
+  const { hasPermission } = useAuthStore()
   const docks = [
     { code: 'DOCK-01', name: 'Receiving Dock 01', type: 'RECEIVING', status: 'OCCUPIED', vehicle: 'MH12-AB-1234', util: 78, ops: 4, cold: false, bulk: false, leveler: true, seal: false },
     { code: 'DOCK-02', name: 'Receiving Dock 02', type: 'RECEIVING', status: 'OCCUPIED', vehicle: 'KA05-CD-5678', util: 92, ops: 6, cold: false, bulk: false, leveler: true, seal: true },
@@ -84,7 +85,7 @@ export function DockScheduleModule() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div><h2 className="text-2xl font-bold">Dock Door Scheduling</h2><p className="text-sm text-muted-foreground mt-1">Receiving · Dispatch · Shared · Cold · Bulk · Express docks with capacity planning</p></div>
-        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Appointment</Button>
+        {hasPermission('receiving:create') && <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Appointment</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

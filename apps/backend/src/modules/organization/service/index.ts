@@ -25,6 +25,7 @@ import {
   AuthorizationError,
 } from '@/core/errors'
 import type { CompanyInput, PlantInput, WarehouseInput } from '../types'
+import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 // ─── Helper: get tenant + user from context ─────────────────────────────────
 
@@ -164,6 +165,9 @@ export const companyService = {
   },
 
   async transition(id: string, targetStatus: string, version: number) {
+    // Phase 1: Security enforcement
+    enforceNotBreakGlass('transition')
+
     const { tenantId, userId, ctx } = getContext()
 
     const existing = await companyRepository.findById(tenantId, id)

@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function GoodsReceiptModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<GRNTab>('overview')
   const tabs: Array<{ key: GRNTab; label: string; icon: React.ReactNode }> = [
     { key: 'overview', label: 'Dashboard', icon: <Gauge className="h-4 w-4" /> },

@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function BatchExpiryModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<BatchTab>('overview')
 
   const [data, setData] = useState<any[]>([])
@@ -242,7 +243,7 @@ function BatchMastersTab() {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold flex items-center gap-2"><Boxes className="h-5 w-5" /> Batch Master Records</h3>
-        <Button size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />New Batch</Button>
+        {hasPermission('batch:create') && <Button size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />New Batch</Button>}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

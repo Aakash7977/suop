@@ -54,6 +54,7 @@ import { toast } from '@/hooks/use-toast'
 import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 
 export function PutawayModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<PutawayTab>('overview')
   const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)

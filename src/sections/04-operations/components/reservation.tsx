@@ -55,6 +55,7 @@ import { LoadingState, ErrorState, EmptyState } from '@/components/shared'
 import { exportToCSV } from '@/lib/csv'
 
 export function ReservationModule() {
+  const { hasPermission } = useAuthStore()
   const [tab, setTab] = useState<ReservationTab>('overview')
 
   const [data, setData] = useState<any[]>([])
