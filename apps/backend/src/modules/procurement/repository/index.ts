@@ -1,5 +1,7 @@
 /** Procurement Repository — Database operations for Purchase Requisitions */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const prRepository = {
@@ -25,12 +27,12 @@ export const prRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM purchase_requisitions WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM purchase_requisitions WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'purchase_requisitions' })
     return result.rows[0] ?? null
   },
 
   async findByPrNumber(tenantId: string, prNumber: string) {
-    const result = await query(`SELECT * FROM purchase_requisitions WHERE tenant_id = $1 AND pr_number = $2 AND deleted_at IS NULL`, [tenantId, prNumber])
+    const result = await scopedQuery(`SELECT * FROM purchase_requisitions WHERE tenant_id = $1 AND pr_number = $2 AND deleted_at IS NULL`, [tenantId, prNumber], { tableAlias: 'purchase_requisitions' })
     return result.rows[0] ?? null
   },
 
@@ -44,9 +46,8 @@ export const prRepository = {
     if (params.requesterId) { where += ` AND requester_id = $${idx++}`; sqlParams.push(params.requesterId) }
     if (params.plantId) { where += ` AND plant_id = $${idx++}`; sqlParams.push(params.plantId) }
     if (params.departmentId) { where += ` AND department_id = $${idx++}`; sqlParams.push(params.departmentId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM purchase_requisitions WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM purchase_requisitions WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('purchase_requisitions', 'purchase_requisitions', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM purchase_requisitions WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'purchase_requisitions' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -103,7 +104,7 @@ export const prLineRepository = {
   },
 
   async listForPr(tenantId: string, prId: string) {
-    const result = await query(`SELECT * FROM purchase_requisition_lines WHERE tenant_id = $1 AND pr_id = $2 ORDER BY line_no`, [tenantId, prId])
+    const result = await scopedQuery(`SELECT * FROM purchase_requisition_lines WHERE tenant_id = $1 AND pr_id = $2 ORDER BY line_no`, [tenantId, prId], { tableAlias: 'purchase_requisition_lines' })
     return result.rows
   },
 
@@ -120,7 +121,7 @@ export const prApprovalRepository = {
   },
 
   async listForPr(tenantId: string, prId: string) {
-    const result = await query(`SELECT * FROM purchase_requisition_approvals WHERE tenant_id = $1 AND pr_id = $2 ORDER BY approval_level, approved_at`, [tenantId, prId])
+    const result = await scopedQuery(`SELECT * FROM purchase_requisition_approvals WHERE tenant_id = $1 AND pr_id = $2 ORDER BY approval_level, approved_at`, [tenantId, prId], { tableAlias: 'purchase_requisition_approvals' })
     return result.rows
   },
 }

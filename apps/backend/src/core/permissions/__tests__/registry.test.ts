@@ -8,9 +8,9 @@ describe('Permission Registry', () => {
       expect(Permission.ORG_CREATE).toBe('org:create')
     })
 
-    it('defines PO permissions with scopes', () => {
+    it('defines PO permissions with delegation scopes', () => {
       expect(Permission.PO_APPROVE).toBe('po:approve')
-      expect(Permission.PO_APPROVE_ANY).toBe('po:approve:any')
+      expect(Permission.PO_APPROVE_AS_DELEGATE).toBe('po:approve:as-delegate')
     })
 
     it('defines system permissions', () => {
@@ -22,7 +22,7 @@ describe('Permission Registry', () => {
     it('tenant_admin has all permissions', () => {
       const perms = DEFAULT_ROLES['tenant_admin']
       expect(perms).toContain(Permission.ORG_READ)
-      expect(perms).toContain(Permission.PRODUCT_CREATE)
+      expect(perms).toContain(Permission.CATALOG_CREATE)
       expect(perms).toContain(Permission.AUDIT_READ_CRITICAL)
     })
 
@@ -37,7 +37,7 @@ describe('Permission Registry', () => {
       const perms = DEFAULT_ROLES['auditor']
       expect(perms).toContain(Permission.AUDIT_READ)
       expect(perms).toContain(Permission.AUDIT_READ_CRITICAL)
-      expect(perms).not.toContain(Permission.PRODUCT_CREATE)
+      expect(perms).not.toContain(Permission.CATALOG_CREATE)
     })
   })
 
@@ -47,7 +47,7 @@ describe('Permission Registry', () => {
     })
 
     it('hasPermission returns false when role does not grant permission', () => {
-      expect(PermissionChecker.hasPermission(['auditor'], Permission.PRODUCT_CREATE)).toBe(false)
+      expect(PermissionChecker.hasPermission(['auditor'], Permission.CATALOG_CREATE)).toBe(false)
     })
 
     it('hasPermission checks all roles (union)', () => {
@@ -58,13 +58,13 @@ describe('Permission Registry', () => {
 
     it('hasAnyPermission returns true if any permission is granted', () => {
       expect(
-        PermissionChecker.hasAnyPermission(['auditor'], [Permission.PRODUCT_CREATE, Permission.AUDIT_READ])
+        PermissionChecker.hasAnyPermission(['auditor'], [Permission.CATALOG_CREATE, Permission.AUDIT_READ])
       ).toBe(true)
     })
 
     it('hasAnyPermission returns false if none granted', () => {
       expect(
-        PermissionChecker.hasAnyPermission(['auditor'], [Permission.PRODUCT_CREATE, Permission.PO_CREATE])
+        PermissionChecker.hasAnyPermission(['auditor'], [Permission.CATALOG_CREATE, Permission.PO_CREATE])
       ).toBe(false)
     })
 
@@ -73,7 +73,7 @@ describe('Permission Registry', () => {
         PermissionChecker.hasAllPermissions(['quality_manager'], [Permission.IQC_INSPECT, Permission.COA_SIGN])
       ).toBe(true)
       expect(
-        PermissionChecker.hasAllPermissions(['quality_manager'], [Permission.IQC_INSPECT, Permission.PRODUCT_CREATE])
+        PermissionChecker.hasAllPermissions(['quality_manager'], [Permission.IQC_INSPECT, Permission.CATALOG_CREATE])
       ).toBe(false)
     })
 

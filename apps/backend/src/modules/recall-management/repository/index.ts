@@ -1,5 +1,7 @@
 /** Recall Management Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const recallRepository = {
@@ -23,7 +25,7 @@ export const recallRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM recalls WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM recalls WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'recalls' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; productId?: string } = {}) {
@@ -32,9 +34,8 @@ export const recallRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM recalls WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM recalls WHERE ${where} ORDER BY recall_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('recalls', 'recalls', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM recalls WHERE ${where} ORDER BY recall_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'recalls' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number) {
@@ -66,7 +67,7 @@ export const recallAffectedItemRepository = {
     return id
   },
   async listForRecall(tenantId: string, recallId: string) {
-    const result = await query(`SELECT * FROM recall_affected_items WHERE tenant_id = $1 AND recall_id = $2`, [tenantId, recallId])
+    const result = await scopedQuery(`SELECT * FROM recall_affected_items WHERE tenant_id = $1 AND recall_id = $2`, [tenantId, recallId], { tableAlias: 'recall_affected_items' })
     return result.rows
   },
 }
@@ -78,7 +79,7 @@ export const recallAffectedCustomerRepository = {
     return id
   },
   async listForRecall(tenantId: string, recallId: string) {
-    const result = await query(`SELECT * FROM recall_affected_customers WHERE tenant_id = $1 AND recall_id = $2`, [tenantId, recallId])
+    const result = await scopedQuery(`SELECT * FROM recall_affected_customers WHERE tenant_id = $1 AND recall_id = $2`, [tenantId, recallId], { tableAlias: 'recall_affected_customers' })
     return result.rows
   },
 }
@@ -90,7 +91,7 @@ export const recallCommunicationRepository = {
     return id
   },
   async listForRecall(tenantId: string, recallId: string) {
-    const result = await query(`SELECT * FROM recall_communications WHERE tenant_id = $1 AND recall_id = $2 ORDER BY sent_at DESC`, [tenantId, recallId])
+    const result = await scopedQuery(`SELECT * FROM recall_communications WHERE tenant_id = $1 AND recall_id = $2 ORDER BY sent_at DESC`, [tenantId, recallId], { tableAlias: 'recall_communications' })
     return result.rows
   },
 }
@@ -102,7 +103,7 @@ export const recallEffectivenessRepository = {
     return id
   },
   async listForRecall(tenantId: string, recallId: string) {
-    const result = await query(`SELECT * FROM recall_effectiveness WHERE tenant_id = $1 AND recall_id = $2 ORDER BY review_date DESC`, [tenantId, recallId])
+    const result = await scopedQuery(`SELECT * FROM recall_effectiveness WHERE tenant_id = $1 AND recall_id = $2 ORDER BY review_date DESC`, [tenantId, recallId], { tableAlias: 'recall_effectiveness' })
     return result.rows
   },
 }

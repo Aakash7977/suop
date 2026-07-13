@@ -1,5 +1,7 @@
 /** Recipe & BOM Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const recipeRepository = {
@@ -24,11 +26,11 @@ export const recipeRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM recipes WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM recipes WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'recipes' })
     return result.rows[0] ?? null
   },
   async findByCode(tenantId: string, recipeCode: string, version: string) {
-    const result = await query(`SELECT * FROM recipes WHERE tenant_id = $1 AND recipe_code = $2 AND version = $3 AND deleted_at IS NULL`, [tenantId, recipeCode, version])
+    const result = await scopedQuery(`SELECT * FROM recipes WHERE tenant_id = $1 AND recipe_code = $2 AND version = $3 AND deleted_at IS NULL`, [tenantId, recipeCode, version], { tableAlias: 'recipes' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; status?: string; search?: string } = {}) {
@@ -38,9 +40,8 @@ export const recipeRepository = {
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.search) { where += ` AND (recipe_code ILIKE $${idx} OR recipe_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM recipes WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM recipes WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('recipes', 'recipes', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM recipes WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'recipes' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, versionNo: number) {
@@ -68,7 +69,7 @@ export const recipeItemRepository = {
     return id
   },
   async listForRecipe(tenantId: string, recipeId: string) {
-    const result = await query(`SELECT * FROM recipe_items WHERE tenant_id = $1 AND recipe_id = $2 ORDER BY line_no`, [tenantId, recipeId])
+    const result = await scopedQuery(`SELECT * FROM recipe_items WHERE tenant_id = $1 AND recipe_id = $2 ORDER BY line_no`, [tenantId, recipeId], { tableAlias: 'recipe_items' })
     return result.rows
   },
   async deleteForRecipe(recipeId: string) {
@@ -83,7 +84,7 @@ export const recipeByproductRepository = {
     return id
   },
   async listForRecipe(tenantId: string, recipeId: string) {
-    const result = await query(`SELECT * FROM recipe_byproducts WHERE tenant_id = $1 AND recipe_id = $2`, [tenantId, recipeId])
+    const result = await scopedQuery(`SELECT * FROM recipe_byproducts WHERE tenant_id = $1 AND recipe_id = $2`, [tenantId, recipeId], { tableAlias: 'recipe_byproducts' })
     return result.rows
   },
 }
@@ -107,11 +108,11 @@ export const bomHeaderRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM bom_headers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM bom_headers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'bom_headers' })
     return result.rows[0] ?? null
   },
   async findByCode(tenantId: string, bomCode: string) {
-    const result = await query(`SELECT * FROM bom_headers WHERE tenant_id = $1 AND bom_code = $2 AND deleted_at IS NULL`, [tenantId, bomCode])
+    const result = await scopedQuery(`SELECT * FROM bom_headers WHERE tenant_id = $1 AND bom_code = $2 AND deleted_at IS NULL`, [tenantId, bomCode], { tableAlias: 'bom_headers' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; status?: string } = {}) {
@@ -120,9 +121,8 @@ export const bomHeaderRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM bom_headers WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM bom_headers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('bom_headers', 'bom_headers', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM bom_headers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'bom_headers' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number) {
@@ -148,7 +148,7 @@ export const bomLineRepository = {
     return id
   },
   async listForBom(tenantId: string, bomId: string) {
-    const result = await query(`SELECT * FROM bom_lines WHERE tenant_id = $1 AND bom_id = $2 ORDER BY line_no`, [tenantId, bomId])
+    const result = await scopedQuery(`SELECT * FROM bom_lines WHERE tenant_id = $1 AND bom_id = $2 ORDER BY line_no`, [tenantId, bomId], { tableAlias: 'bom_lines' })
     return result.rows
   },
   async deleteForBom(bomId: string) {
@@ -172,7 +172,7 @@ export const routingRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM bom_routings WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM bom_routings WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'bom_routings' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string } = {}) {
@@ -180,9 +180,8 @@ export const routingRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM bom_routings WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM bom_routings WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('bom_routings', 'bom_routings', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM bom_routings WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'bom_routings' })
     return { rows: result.rows, total, page, pageSize }
   },
 }
@@ -194,7 +193,7 @@ export const routingOperationRepository = {
     return id
   },
   async listForRouting(tenantId: string, routingId: string) {
-    const result = await query(`SELECT * FROM routing_operations WHERE tenant_id = $1 AND routing_id = $2 ORDER BY operation_no`, [tenantId, routingId])
+    const result = await scopedQuery(`SELECT * FROM routing_operations WHERE tenant_id = $1 AND routing_id = $2 ORDER BY operation_no`, [tenantId, routingId], { tableAlias: 'routing_operations' })
     return result.rows
   },
 }

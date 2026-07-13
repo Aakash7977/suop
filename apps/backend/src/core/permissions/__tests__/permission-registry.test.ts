@@ -3,7 +3,7 @@
  * Tests for the enterprise permission catalog, roles, SoD, and scope.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect } from 'vitest'
 import { Permission, DEFAULT_ROLES, PermissionChecker, DataScope } from '../registry'
 
 describe('Permission Registry', () => {
@@ -16,7 +16,11 @@ describe('Permission Registry', () => {
 
     test('all permissions should follow naming convention: domain:action[:sub-scope]', () => {
       for (const [key, value] of Object.entries(Permission)) {
-        expect(value).toMatch(/^[a-z]+:[a-z]+(:[a-z-]+)*$/)
+        // Format: <domain>:<action>[:<sub-scope>]
+        // domain = lowercase letters only
+        // action = lowercase letters, hyphens, underscores
+        // sub-scope = lowercase letters, hyphens, underscores (can repeat)
+        expect(value).toMatch(/^[a-z]+:[a-z][a-z_-]*(:[a-z][a-z_-]*)*$/)
       }
     })
 
@@ -101,9 +105,11 @@ describe('Permission Registry', () => {
 
     test('break_glass should have view and read only', () => {
       const bgPerms = DEFAULT_ROLES.break_glass
-      // All permissions should be view, read, or settings/configure
+      // All permissions should be view, read, trace, or settings/configure
+      // (trace is a read-only operation — tracing batches through the supply chain)
+      const readOnlyActions = [':view', ':read', ':trace']
       for (const perm of bgPerms) {
-        const isViewOrRead = perm.includes(':view') || perm.includes(':read')
+        const isViewOrRead = readOnlyActions.some(a => perm.includes(a))
         const isSettings = perm.includes(':settings') || perm.includes(':break-glass')
         expect(isViewOrRead || isSettings).toBe(true)
       }

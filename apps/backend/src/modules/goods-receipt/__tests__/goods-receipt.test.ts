@@ -79,9 +79,10 @@ describe('GRN RBAC', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.GRN_CREATE)).toBe(true)
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.GRN_POST)).toBe(true)
   })
-  it('warehouse_operator can read and post GRNs', () => {
+  it('warehouse_operator can read GRNs but not post (Phase 1 — GRN_POST belongs to warehouse_supervisor)', () => {
     expect(PermissionChecker.hasPermission(['warehouse_operator'], Permission.GRN_READ)).toBe(true)
-    expect(PermissionChecker.hasPermission(['warehouse_operator'], Permission.GRN_POST)).toBe(true)
+    expect(PermissionChecker.hasPermission(['warehouse_operator'], Permission.GRN_POST)).toBe(false)
+    expect(PermissionChecker.hasPermission(['warehouse_supervisor'], Permission.GRN_POST)).toBe(true)
   })
   it('auditor can read GRNs', () => {
     expect(PermissionChecker.hasPermission(['auditor'], Permission.GRN_READ)).toBe(true)

@@ -1,5 +1,7 @@
 /** Warehouse Repository — Zones, Aisles, Racks, Bins, Putaway Tasks, Barcodes */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 // ═══ Zones ═════════════════════════════════════════════════════════════════
@@ -21,11 +23,11 @@ export const zoneRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM warehouse_zones WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM warehouse_zones WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_zones' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, warehouseId: string) {
-    const result = await query(`SELECT * FROM warehouse_zones WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, zone_code`, [tenantId, warehouseId])
+    const result = await scopedQuery(`SELECT * FROM warehouse_zones WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, zone_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_zones' })
     return result.rows
   },
 }
@@ -48,11 +50,11 @@ export const aisleRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM warehouse_aisles WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM warehouse_aisles WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_aisles' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, warehouseId: string) {
-    const result = await query(`SELECT * FROM warehouse_aisles WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, aisle_code`, [tenantId, warehouseId])
+    const result = await scopedQuery(`SELECT * FROM warehouse_aisles WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, aisle_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_aisles' })
     return result.rows
   },
 }
@@ -77,11 +79,11 @@ export const rackRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM warehouse_racks WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM warehouse_racks WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_racks' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, warehouseId: string) {
-    const result = await query(`SELECT * FROM warehouse_racks WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, rack_code`, [tenantId, warehouseId])
+    const result = await scopedQuery(`SELECT * FROM warehouse_racks WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, rack_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_racks' })
     return result.rows
   },
 }
@@ -106,11 +108,11 @@ export const binRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_bins' })
     return result.rows[0] ?? null
   },
   async findByCode(tenantId: string, warehouseId: string, binCode: string) {
-    const result = await query(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND bin_code = $3 AND deleted_at IS NULL`, [tenantId, warehouseId, binCode])
+    const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND bin_code = $3 AND deleted_at IS NULL`, [tenantId, warehouseId, binCode], { tableAlias: 'warehouse_bins' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, warehouseId: string, params: { zoneId?: string; aisleId?: string; rackId?: string } = {}) {
@@ -127,7 +129,7 @@ export const binRepository = {
   },
   /** Find available bin for putaway (capacity validation) */
   async findAvailableBin(tenantId: string, warehouseId: string, requiredCapacity: number) {
-    const result = await query(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL AND is_active = true AND is_blocked = false AND (capacity = 0 OR (capacity - used_capacity) >= $3) ORDER BY used_capacity ASC, bin_code ASC LIMIT 1`, [tenantId, warehouseId, requiredCapacity])
+    const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL AND is_active = true AND is_blocked = false AND (capacity = 0 OR (capacity - used_capacity) >= $3) ORDER BY used_capacity ASC, bin_code ASC LIMIT 1`, [tenantId, warehouseId, requiredCapacity], { tableAlias: 'warehouse_bins' })
     return result.rows[0] ?? null
   },
 }
@@ -155,7 +157,7 @@ export const putawayTaskRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM putaway_tasks WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM putaway_tasks WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'putaway_tasks' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; warehouseId?: string } = {}) {
@@ -164,9 +166,8 @@ export const putawayTaskRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.warehouseId) { where += ` AND warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM putaway_tasks WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM putaway_tasks WHERE ${where} ORDER BY task_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('putaway_tasks', 'putaway_tasks', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM putaway_tasks WHERE ${where} ORDER BY task_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'putaway_tasks' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number, updatedBy?: string) {
@@ -214,11 +215,11 @@ export const barcodeRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM barcode_labels WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM barcode_labels WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'barcode_labels' })
     return result.rows[0] ?? null
   },
   async findByBarcode(tenantId: string, barcode: string) {
-    const result = await query(`SELECT * FROM barcode_labels WHERE tenant_id = $1 AND barcode = $2 AND deleted_at IS NULL`, [tenantId, barcode])
+    const result = await scopedQuery(`SELECT * FROM barcode_labels WHERE tenant_id = $1 AND barcode = $2 AND deleted_at IS NULL`, [tenantId, barcode], { tableAlias: 'barcode_labels' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; labelType?: string; productId?: string } = {}) {
@@ -227,9 +228,8 @@ export const barcodeRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.labelType) { where += ` AND label_type = $${idx++}`; sqlParams.push(params.labelType) }
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM barcode_labels WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM barcode_labels WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('barcode_labels', 'barcode_labels', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM barcode_labels WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'barcode_labels' })
     return { rows: result.rows, total, page, pageSize }
   },
   async markPrinted(tenantId: string, id: string) {
@@ -262,7 +262,7 @@ export const scanLogRepository = {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
     const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM scan_logs WHERE tenant_id = $1`, [tenantId])
     const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM scan_logs WHERE tenant_id = $1 ORDER BY scanned_at DESC LIMIT $2 OFFSET $3`, [tenantId, pageSize, offset])
+    const result = await scopedQuery(`SELECT * FROM scan_logs WHERE tenant_id = $1 ORDER BY scanned_at DESC LIMIT $2 OFFSET $3`, [tenantId, pageSize, offset], { tableAlias: 'scan_logs' })
     return { rows: result.rows, total, page, pageSize }
   },
 }

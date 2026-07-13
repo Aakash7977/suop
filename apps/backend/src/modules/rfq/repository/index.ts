@@ -1,5 +1,7 @@
 /** RFQ Repository — Database operations for RFQ Management */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const rfqRepository = {
@@ -25,12 +27,12 @@ export const rfqRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM rfqs WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM rfqs WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'rfqs' })
     return result.rows[0] ?? null
   },
 
   async findByRfqNumber(tenantId: string, rfqNumber: string) {
-    const result = await query(`SELECT * FROM rfqs WHERE tenant_id = $1 AND rfq_number = $2 AND deleted_at IS NULL`, [tenantId, rfqNumber])
+    const result = await scopedQuery(`SELECT * FROM rfqs WHERE tenant_id = $1 AND rfq_number = $2 AND deleted_at IS NULL`, [tenantId, rfqNumber], { tableAlias: 'rfqs' })
     return result.rows[0] ?? null
   },
 
@@ -42,9 +44,8 @@ export const rfqRepository = {
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.buyerId) { where += ` AND buyer_id = $${idx++}`; sqlParams.push(params.buyerId) }
     if (params.prId) { where += ` AND pr_id = $${idx++}`; sqlParams.push(params.prId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM rfqs WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM rfqs WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('rfqs', 'rfqs', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM rfqs WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'rfqs' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -97,7 +98,7 @@ export const rfqLineRepository = {
   },
 
   async listForRfq(tenantId: string, rfqId: string) {
-    const result = await query(`SELECT * FROM rfq_lines WHERE tenant_id = $1 AND rfq_id = $2 ORDER BY line_no`, [tenantId, rfqId])
+    const result = await scopedQuery(`SELECT * FROM rfq_lines WHERE tenant_id = $1 AND rfq_id = $2 ORDER BY line_no`, [tenantId, rfqId], { tableAlias: 'rfq_lines' })
     return result.rows
   },
 
@@ -114,7 +115,7 @@ export const rfqSupplierRepository = {
   },
 
   async listForRfq(tenantId: string, rfqId: string) {
-    const result = await query(`SELECT * FROM rfq_suppliers WHERE tenant_id = $1 AND rfq_id = $2 ORDER BY is_preferred DESC, invited_at ASC`, [tenantId, rfqId])
+    const result = await scopedQuery(`SELECT * FROM rfq_suppliers WHERE tenant_id = $1 AND rfq_id = $2 ORDER BY is_preferred DESC, invited_at ASC`, [tenantId, rfqId], { tableAlias: 'rfq_suppliers' })
     return result.rows
   },
 

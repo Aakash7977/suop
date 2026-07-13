@@ -1,5 +1,7 @@
 /** Quotation Repository — Database operations for Supplier Quotations */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const quotationRepository = {
@@ -27,12 +29,12 @@ export const quotationRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'supplier_quotations' })
     return result.rows[0] ?? null
   },
 
   async findByNumber(tenantId: string, quotationNumber: string) {
-    const result = await query(`SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND quotation_number = $2 AND deleted_at IS NULL`, [tenantId, quotationNumber])
+    const result = await scopedQuery(`SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND quotation_number = $2 AND deleted_at IS NULL`, [tenantId, quotationNumber], { tableAlias: 'supplier_quotations' })
     return result.rows[0] ?? null
   },
 
@@ -44,9 +46,8 @@ export const quotationRepository = {
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.rfqId) { where += ` AND rfq_id = $${idx++}`; sqlParams.push(params.rfqId) }
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM supplier_quotations WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM supplier_quotations WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('supplier_quotations', 'supplier_quotations', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM supplier_quotations WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'supplier_quotations' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -84,7 +85,7 @@ export const quotationRepository = {
   },
 
   async listForRfq(tenantId: string, rfqId: string) {
-    const result = await query(`SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND rfq_id = $2 AND deleted_at IS NULL AND status IN ('SUBMITTED','TECHNICAL_REVIEW','COMMERCIAL_REVIEW','RECOMMENDED','AWARDED') ORDER BY grand_total ASC`, [tenantId, rfqId])
+    const result = await scopedQuery(`SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND rfq_id = $2 AND deleted_at IS NULL AND status IN ('SUBMITTED','TECHNICAL_REVIEW','COMMERCIAL_REVIEW','RECOMMENDED','AWARDED') ORDER BY grand_total ASC`, [tenantId, rfqId], { tableAlias: 'supplier_quotations' })
     return result.rows
   },
 }
@@ -110,7 +111,7 @@ export const quotationLineRepository = {
   },
 
   async listForQuotation(tenantId: string, quotationId: string) {
-    const result = await query(`SELECT * FROM supplier_quotation_lines WHERE tenant_id = $1 AND quotation_id = $2 ORDER BY line_no`, [tenantId, quotationId])
+    const result = await scopedQuery(`SELECT * FROM supplier_quotation_lines WHERE tenant_id = $1 AND quotation_id = $2 ORDER BY line_no`, [tenantId, quotationId], { tableAlias: 'supplier_quotation_lines' })
     return result.rows
   },
 

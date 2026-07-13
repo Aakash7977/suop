@@ -1,5 +1,7 @@
 /** Sales Order Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 const SO_FIELDS: Record<string, string> = {
@@ -37,11 +39,11 @@ export const salesOrderRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM sales_orders WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM sales_orders WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'sales_orders' })
     return result.rows[0] ?? null
   },
   async findByNumber(tenantId: string, soNumber: string) {
-    const result = await query(`SELECT * FROM sales_orders WHERE tenant_id = $1 AND so_number = $2 AND deleted_at IS NULL`, [tenantId, soNumber])
+    const result = await scopedQuery(`SELECT * FROM sales_orders WHERE tenant_id = $1 AND so_number = $2 AND deleted_at IS NULL`, [tenantId, soNumber], { tableAlias: 'sales_orders' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; search?: string; status?: string; customerId?: string } = {}) {
@@ -51,9 +53,8 @@ export const salesOrderRepository = {
     if (params.search) { where += ` AND (so_number ILIKE $${idx} OR customer_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.customerId) { where += ` AND customer_id = $${idx++}`; sqlParams.push(params.customerId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM sales_orders WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM sales_orders WHERE ${where} ORDER BY so_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('sales_orders', 'sales_orders', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM sales_orders WHERE ${where} ORDER BY so_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'sales_orders' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number, updatedBy?: string) {
@@ -98,7 +99,7 @@ export const salesOrderLineRepository = {
     return id
   },
   async listForSo(tenantId: string, soId: string) {
-    const result = await query(`SELECT * FROM sales_order_lines WHERE tenant_id = $1 AND so_id = $2 ORDER BY line_no`, [tenantId, soId])
+    const result = await scopedQuery(`SELECT * FROM sales_order_lines WHERE tenant_id = $1 AND so_id = $2 ORDER BY line_no`, [tenantId, soId], { tableAlias: 'sales_order_lines' })
     return result.rows
   },
   async deleteForSo(soId: string) {
@@ -113,7 +114,7 @@ export const salesOrderAmendmentRepository = {
     return id
   },
   async listForSo(tenantId: string, soId: string) {
-    const result = await query(`SELECT * FROM sales_order_amendments WHERE tenant_id = $1 AND so_id = $2 ORDER BY amendment_no DESC`, [tenantId, soId])
+    const result = await scopedQuery(`SELECT * FROM sales_order_amendments WHERE tenant_id = $1 AND so_id = $2 ORDER BY amendment_no DESC`, [tenantId, soId], { tableAlias: 'sales_order_amendments' })
     return result.rows
   },
 }
@@ -125,7 +126,7 @@ export const salesOrderHoldRepository = {
     return id
   },
   async listForSo(tenantId: string, soId: string) {
-    const result = await query(`SELECT * FROM sales_order_holds WHERE tenant_id = $1 AND so_id = $2 ORDER BY held_at DESC`, [tenantId, soId])
+    const result = await scopedQuery(`SELECT * FROM sales_order_holds WHERE tenant_id = $1 AND so_id = $2 ORDER BY held_at DESC`, [tenantId, soId], { tableAlias: 'sales_order_holds' })
     return result.rows
   },
 }
@@ -137,7 +138,7 @@ export const salesOrderApprovalRepository = {
     return id
   },
   async listForSo(tenantId: string, soId: string) {
-    const result = await query(`SELECT * FROM sales_order_approvals WHERE tenant_id = $1 AND so_id = $2 ORDER BY created_at`, [tenantId, soId])
+    const result = await scopedQuery(`SELECT * FROM sales_order_approvals WHERE tenant_id = $1 AND so_id = $2 ORDER BY created_at`, [tenantId, soId], { tableAlias: 'sales_order_approvals' })
     return result.rows
   },
 }
@@ -149,7 +150,7 @@ export const salesOrderHistoryRepository = {
     return id
   },
   async listForSo(tenantId: string, soId: string) {
-    const result = await query(`SELECT * FROM sales_order_history WHERE tenant_id = $1 AND so_id = $2 ORDER BY action_date DESC`, [tenantId, soId])
+    const result = await scopedQuery(`SELECT * FROM sales_order_history WHERE tenant_id = $1 AND so_id = $2 ORDER BY action_date DESC`, [tenantId, soId], { tableAlias: 'sales_order_history' })
     return result.rows
   },
 }

@@ -1,5 +1,7 @@
 /** COA Management Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const coaTemplateRepository = {
@@ -21,7 +23,7 @@ export const coaTemplateRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM coa_templates WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM coa_templates WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'coa_templates' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string } = {}) {
@@ -29,9 +31,8 @@ export const coaTemplateRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM coa_templates WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM coa_templates WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('coa_templates', 'coa_templates', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM coa_templates WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'coa_templates' })
     return { rows: result.rows, total, page, pageSize }
   },
 }
@@ -43,7 +44,7 @@ export const coaLabResultRepository = {
     return id
   },
   async listForCoa(tenantId: string, coaId: string) {
-    const result = await query(`SELECT * FROM coa_lab_results WHERE tenant_id = $1 AND coa_id = $2 ORDER BY test_category, created_at`, [tenantId, coaId])
+    const result = await scopedQuery(`SELECT * FROM coa_lab_results WHERE tenant_id = $1 AND coa_id = $2 ORDER BY test_category, created_at`, [tenantId, coaId], { tableAlias: 'coa_lab_results' })
     return result.rows
   },
 }
@@ -55,7 +56,7 @@ export const coaApprovalRepository = {
     return id
   },
   async listForCoa(tenantId: string, coaId: string) {
-    const result = await query(`SELECT * FROM coa_approvals WHERE tenant_id = $1 AND coa_id = $2 ORDER BY created_at`, [tenantId, coaId])
+    const result = await scopedQuery(`SELECT * FROM coa_approvals WHERE tenant_id = $1 AND coa_id = $2 ORDER BY created_at`, [tenantId, coaId], { tableAlias: 'coa_approvals' })
     return result.rows
   },
 }
@@ -67,7 +68,7 @@ export const coaVersionRepository = {
     return id
   },
   async listForCoa(tenantId: string, coaId: string) {
-    const result = await query(`SELECT * FROM coa_versions WHERE tenant_id = $1 AND coa_id = $2 ORDER BY version_number DESC`, [tenantId, coaId])
+    const result = await scopedQuery(`SELECT * FROM coa_versions WHERE tenant_id = $1 AND coa_id = $2 ORDER BY version_number DESC`, [tenantId, coaId], { tableAlias: 'coa_versions' })
     return result.rows
   },
 }

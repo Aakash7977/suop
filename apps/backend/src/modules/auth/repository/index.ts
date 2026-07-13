@@ -4,6 +4,7 @@
  */
 
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
 import { randomUUID } from 'node:crypto'
 import { createHash } from 'node:crypto'
 
@@ -17,22 +18,22 @@ export function hashToken(token: string): string {
 
 export const userRepository = {
   async findByEmail(tenantId: string, email: string) {
-    const result = await query(`SELECT * FROM users WHERE tenant_id = $1 AND email = $2 AND deleted_at IS NULL`, [tenantId, email])
+    const result = await scopedQuery(`SELECT * FROM users WHERE tenant_id = $1 AND email = $2 AND deleted_at IS NULL`, [tenantId, email], { tableAlias: 'users' })
     return result.rows[0] ?? null
   },
 
   async findByUsername(tenantId: string, username: string) {
-    const result = await query(`SELECT * FROM users WHERE tenant_id = $1 AND username = $2 AND deleted_at IS NULL`, [tenantId, username])
+    const result = await scopedQuery(`SELECT * FROM users WHERE tenant_id = $1 AND username = $2 AND deleted_at IS NULL`, [tenantId, username], { tableAlias: 'users' })
     return result.rows[0] ?? null
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM users WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM users WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'users' })
     return result.rows[0] ?? null
   },
 
   async findByIdGlobal(id: string) {
-    const result = await query(`SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`, [id])
+    const result = await scopedQuery(`SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`, [id], { tableAlias: 'users' })
     return result.rows[0] ?? null
   },
 
@@ -238,7 +239,7 @@ export const deviceRepository = {
   },
 
   async listForUser(userId: string) {
-    const result = await query(`SELECT * FROM device_registry WHERE user_id = $1 ORDER BY last_seen_at DESC`, [userId])
+    const result = await scopedQuery(`SELECT * FROM device_registry WHERE user_id = $1 ORDER BY last_seen_at DESC`, [userId], { tableAlias: 'device_registry' })
     return result.rows
   },
 }
@@ -272,7 +273,7 @@ export const invitationRepository = {
   },
 
   async findByTokenHash(tokenHash: string) {
-    const result = await query(`SELECT * FROM user_invitations WHERE token_hash = $1 AND status = 'PENDING'`, [tokenHash])
+    const result = await scopedQuery(`SELECT * FROM user_invitations WHERE token_hash = $1 AND status = 'PENDING'`, [tokenHash], { tableAlias: 'user_invitations' })
     return result.rows[0] ?? null
   },
 
@@ -309,7 +310,7 @@ export const passwordResetRepository = {
   },
 
   async findByTokenHash(tokenHash: string) {
-    const result = await query(`SELECT * FROM password_reset_tokens WHERE token_hash = $1 AND status = 'PENDING' AND expires_at > NOW()`, [tokenHash])
+    const result = await scopedQuery(`SELECT * FROM password_reset_tokens WHERE token_hash = $1 AND status = 'PENDING' AND expires_at > NOW()`, [tokenHash], { tableAlias: 'password_reset_tokens' })
     return result.rows[0] ?? null
   },
 
@@ -343,7 +344,7 @@ export const refreshTokenRepository = {
   },
 
   async findByTokenHash(tokenHash: string) {
-    const result = await query(`SELECT * FROM refresh_tokens WHERE token_hash = $1`, [tokenHash])
+    const result = await scopedQuery(`SELECT * FROM refresh_tokens WHERE token_hash = $1`, [tokenHash], { tableAlias: 'refresh_tokens' })
     return result.rows[0] ?? null
   },
 

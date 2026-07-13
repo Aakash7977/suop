@@ -1,5 +1,7 @@
 /** Customer Repository — Database operations for Customer Master */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const customerRepository = {
@@ -26,17 +28,17 @@ export const customerRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM customers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM customers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'customers' })
     return result.rows[0] ?? null
   },
 
   async findByCode(tenantId: string, code: string) {
-    const result = await query(`SELECT * FROM customers WHERE tenant_id = $1 AND customer_code = $2 AND deleted_at IS NULL`, [tenantId, code])
+    const result = await scopedQuery(`SELECT * FROM customers WHERE tenant_id = $1 AND customer_code = $2 AND deleted_at IS NULL`, [tenantId, code], { tableAlias: 'customers' })
     return result.rows[0] ?? null
   },
 
   async findByGstin(gstin: string) {
-    const result = await query(`SELECT * FROM customers WHERE gstin = $1 AND deleted_at IS NULL LIMIT 1`, [gstin])
+    const result = await scopedQuery(`SELECT * FROM customers WHERE gstin = $1 AND deleted_at IS NULL LIMIT 1`, [gstin], { tableAlias: 'customers' })
     return result.rows[0] ?? null
   },
 
@@ -49,9 +51,8 @@ export const customerRepository = {
     if (params.customerType) { where += ` AND customer_type = $${idx++}`; sqlParams.push(params.customerType) }
     if (params.groupId) { where += ` AND group_id = $${idx++}`; sqlParams.push(params.groupId) }
     if (params.creditHold !== undefined) { where += ` AND credit_hold = $${idx++}`; sqlParams.push(params.creditHold) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM customers WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM customers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('customers', 'customers', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM customers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'customers' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -92,7 +93,7 @@ export const customerContactRepository = {
     return id
   },
   async listForCustomer(tenantId: string, customerId: string) {
-    const result = await query(`SELECT * FROM customer_contacts WHERE tenant_id = $1 AND customer_id = $2 AND is_active = true ORDER BY is_primary DESC`, [tenantId, customerId])
+    const result = await scopedQuery(`SELECT * FROM customer_contacts WHERE tenant_id = $1 AND customer_id = $2 AND is_active = true ORDER BY is_primary DESC`, [tenantId, customerId], { tableAlias: 'customer_contacts' })
     return result.rows
   },
 }
@@ -104,14 +105,14 @@ export const customerAddressRepository = {
     return id
   },
   async listForCustomer(tenantId: string, customerId: string) {
-    const result = await query(`SELECT * FROM customer_addresses WHERE tenant_id = $1 AND customer_id = $2 ORDER BY is_primary DESC`, [tenantId, customerId])
+    const result = await scopedQuery(`SELECT * FROM customer_addresses WHERE tenant_id = $1 AND customer_id = $2 ORDER BY is_primary DESC`, [tenantId, customerId], { tableAlias: 'customer_addresses' })
     return result.rows
   },
 }
 
 export const customerGroupRepository = {
   async list(tenantId: string) {
-    const result = await query(`SELECT * FROM customer_groups WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM customer_groups WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId], { tableAlias: 'customer_groups' })
     return result.rows
   },
   async create(data: { tenantId: string; code: string; name: string; description?: string }) {

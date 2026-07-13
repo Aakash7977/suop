@@ -1,5 +1,7 @@
 /** Production Order Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const productionOrderRepository = {
@@ -27,7 +29,7 @@ export const productionOrderRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM production_orders WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM production_orders WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'production_orders' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; productId?: string; search?: string } = {}) {
@@ -37,9 +39,8 @@ export const productionOrderRepository = {
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
     if (params.search) { where += ` AND (po_number ILIKE $${idx} OR product_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM production_orders WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM production_orders WHERE ${where} ORDER BY po_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('production_orders', 'production_orders', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM production_orders WHERE ${where} ORDER BY po_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'production_orders' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number, updatedBy?: string) {
@@ -73,7 +74,7 @@ export const productionOrderOperationRepository = {
     return id
   },
   async listForOrder(tenantId: string, orderId: string) {
-    const result = await query(`SELECT * FROM production_order_operations WHERE tenant_id = $1 AND production_order_id = $2 ORDER BY operation_no`, [tenantId, orderId])
+    const result = await scopedQuery(`SELECT * FROM production_order_operations WHERE tenant_id = $1 AND production_order_id = $2 ORDER BY operation_no`, [tenantId, orderId], { tableAlias: 'production_order_operations' })
     return result.rows
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number) {
@@ -104,9 +105,8 @@ export const materialIssueRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productionOrderId) { where += ` AND production_order_id = $${idx++}`; sqlParams.push(params.productionOrderId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM material_issues WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM material_issues WHERE ${where} ORDER BY issue_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('material_issues', 'material_issues', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM material_issues WHERE ${where} ORDER BY issue_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'material_issues' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateIssueNumber(tenantId: string): Promise<string> {
@@ -123,7 +123,7 @@ export const materialIssueLineRepository = {
     return id
   },
   async listForIssue(tenantId: string, issueId: string) {
-    const result = await query(`SELECT * FROM material_issue_lines WHERE tenant_id = $1 AND issue_id = $2 ORDER BY line_no`, [tenantId, issueId])
+    const result = await scopedQuery(`SELECT * FROM material_issue_lines WHERE tenant_id = $1 AND issue_id = $2 ORDER BY line_no`, [tenantId, issueId], { tableAlias: 'material_issue_lines' })
     return result.rows
   },
 }
@@ -139,9 +139,8 @@ export const productionConfirmationRepository = {
     let where = 'tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productionOrderId) { where += ` AND production_order_id = $${idx++}`; sqlParams.push(params.productionOrderId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM production_confirmations WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM production_confirmations WHERE ${where} ORDER BY confirmation_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('production_confirmations', 'production_confirmations', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM production_confirmations WHERE ${where} ORDER BY confirmation_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'production_confirmations' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateConfirmationNumber(tenantId: string): Promise<string> {

@@ -1,5 +1,6 @@
 /** CAPA Management Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
 import { randomUUID } from 'node:crypto'
 
 export const capaActionRepository = {
@@ -9,7 +10,7 @@ export const capaActionRepository = {
     return id
   },
   async listForCapa(tenantId: string, capaId: string) {
-    const result = await query(`SELECT * FROM capa_actions WHERE tenant_id = $1 AND capa_id = $2 ORDER BY created_at`, [tenantId, capaId])
+    const result = await scopedQuery(`SELECT * FROM capa_actions WHERE tenant_id = $1 AND capa_id = $2 ORDER BY created_at`, [tenantId, capaId], { tableAlias: 'capa_actions' })
     return result.rows
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>) {
@@ -31,7 +32,7 @@ export const capaVerificationRepository = {
     return id
   },
   async listForCapa(tenantId: string, capaId: string) {
-    const result = await query(`SELECT * FROM capa_verifications WHERE tenant_id = $1 AND capa_id = $2 ORDER BY verification_date DESC`, [tenantId, capaId])
+    const result = await scopedQuery(`SELECT * FROM capa_verifications WHERE tenant_id = $1 AND capa_id = $2 ORDER BY verification_date DESC`, [tenantId, capaId], { tableAlias: 'capa_verifications' })
     return result.rows
   },
 }
@@ -43,7 +44,7 @@ export const capaEffectivenessRepository = {
     return id
   },
   async listForCapa(tenantId: string, capaId: string) {
-    const result = await query(`SELECT * FROM capa_effectiveness_reviews WHERE tenant_id = $1 AND capa_id = $2 ORDER BY review_date DESC`, [tenantId, capaId])
+    const result = await scopedQuery(`SELECT * FROM capa_effectiveness_reviews WHERE tenant_id = $1 AND capa_id = $2 ORDER BY review_date DESC`, [tenantId, capaId], { tableAlias: 'capa_effectiveness_reviews' })
     return result.rows
   },
 }
@@ -55,7 +56,7 @@ export const capaEscalationRepository = {
     return id
   },
   async listForCapa(tenantId: string, capaId: string) {
-    const result = await query(`SELECT * FROM capa_escalations WHERE tenant_id = $1 AND capa_id = $2 ORDER BY escalated_at DESC`, [tenantId, capaId])
+    const result = await scopedQuery(`SELECT * FROM capa_escalations WHERE tenant_id = $1 AND capa_id = $2 ORDER BY escalated_at DESC`, [tenantId, capaId], { tableAlias: 'capa_escalations' })
     return result.rows
   },
 }

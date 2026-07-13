@@ -1,5 +1,7 @@
 /** Quality Foundation Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 function genericRepo(tableName: string, fields: Record<string, string>) {
@@ -63,7 +65,7 @@ export const testParameterRepository = {
     return id
   },
   async listForSpec(tenantId: string, specId: string) {
-    const result = await query(`SELECT * FROM test_parameters WHERE tenant_id = $1 AND spec_id = $2 ORDER BY sort_order`, [tenantId, specId])
+    const result = await scopedQuery(`SELECT * FROM test_parameters WHERE tenant_id = $1 AND spec_id = $2 ORDER BY sort_order`, [tenantId, specId], { tableAlias: 'test_parameters' })
     return result.rows
   },
 }
@@ -80,9 +82,8 @@ export const qualityKpiRepository = {
     let where = 'tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.period) { where += ` AND period = $${idx++}`; sqlParams.push(params.period) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM quality_kpis WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM quality_kpis WHERE ${where} ORDER BY period DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('quality_kpis', 'quality_kpis', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM quality_kpis WHERE ${where} ORDER BY period DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'quality_kpis' })
     return { rows: result.rows, total, page, pageSize }
   },
   async upsert(data: Record<string, unknown>) {

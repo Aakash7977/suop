@@ -182,7 +182,7 @@ describe('Scanner API', () => {
 describe('Warehouse RBAC', () => {
   it('warehouse operations use INVENTORY_READ and INVENTORY_POST permissions', () => {
     expect(Permission.INVENTORY_READ).toBe('inventory:read')
-    expect(Permission.INVENTORY_POST).toBe('inventory:post')
+    expect(Permission.INVENTORY_POST).toBe('inventory:stockin')
   })
   it('tenant_admin can manage warehouse', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.INVENTORY_READ)).toBe(true)

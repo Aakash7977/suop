@@ -3,7 +3,7 @@
  * Tests for SoD enforcement, data scope, break glass, delegation.
  */
 
-import { describe, test, expect } from 'bun:test'
+import { describe, test, expect } from 'vitest'
 import { Permission, DEFAULT_ROLES, PermissionChecker, DataScope } from '../registry'
 
 describe('Phase 1 Additional Tests', () => {

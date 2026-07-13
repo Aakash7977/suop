@@ -1,5 +1,7 @@
 /** FGQC Repository — Inspection lots, test results, holds, COA, shelf life */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const fgqcLotRepository = {
@@ -31,7 +33,7 @@ export const fgqcLotRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM fgqc_inspection_lots WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM fgqc_inspection_lots WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'fgqc_inspection_lots' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; productionBatchId?: string; search?: string } = {}) {
@@ -41,9 +43,8 @@ export const fgqcLotRepository = {
     if (params.status) { where += ` AND inspection_status = $${idx++}`; sqlParams.push(params.status) }
     if (params.productionBatchId) { where += ` AND production_batch_id = $${idx++}`; sqlParams.push(params.productionBatchId) }
     if (params.search) { where += ` AND (lot_number ILIKE $${idx} OR product_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM fgqc_inspection_lots WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM fgqc_inspection_lots WHERE ${where} ORDER BY lot_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('fgqc_inspection_lots', 'fgqc_inspection_lots', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM fgqc_inspection_lots WHERE ${where} ORDER BY lot_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'fgqc_inspection_lots' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number) {
@@ -79,7 +80,7 @@ export const fgqcTestResultRepository = {
     return id
   },
   async listForLot(tenantId: string, lotId: string) {
-    const result = await query(`SELECT * FROM fgqc_test_results WHERE tenant_id = $1 AND inspection_lot_id = $2 ORDER BY tested_at`, [tenantId, lotId])
+    const result = await scopedQuery(`SELECT * FROM fgqc_test_results WHERE tenant_id = $1 AND inspection_lot_id = $2 ORDER BY tested_at`, [tenantId, lotId], { tableAlias: 'fgqc_test_results' })
     return result.rows
   },
 }
@@ -108,9 +109,8 @@ export const fgqcHoldRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM fgqc_holds WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM fgqc_holds WHERE ${where} ORDER BY hold_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('fgqc_holds', 'fgqc_holds', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM fgqc_holds WHERE ${where} ORDER BY hold_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'fgqc_holds' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateHoldNumber(tenantId: string): Promise<string> {
@@ -145,7 +145,7 @@ export const coaRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM coa_records WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM coa_records WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'coa_records' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; productId?: string } = {}) {
@@ -154,9 +154,8 @@ export const coaRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM coa_records WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM coa_records WHERE ${where} ORDER BY coa_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('coa_records', 'coa_records', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM coa_records WHERE ${where} ORDER BY coa_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'coa_records' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateCoaNumber(tenantId: string): Promise<string> {
@@ -193,9 +192,8 @@ export const shelfLifeRepository = {
     let where = 'tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM shelf_life_records WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM shelf_life_records WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('shelf_life_records', 'shelf_life_records', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM shelf_life_records WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'shelf_life_records' })
     return { rows: result.rows, total, page, pageSize }
   },
 }

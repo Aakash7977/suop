@@ -1,5 +1,7 @@
 /** Batch Manufacturing Repository — Production batches, genealogy, splits, merges, traceability */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const productionBatchRepository = {
@@ -24,11 +26,11 @@ export const productionBatchRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM production_batches WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM production_batches WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'production_batches' })
     return result.rows[0] ?? null
   },
   async findByNumber(tenantId: string, batchNumber: string) {
-    const result = await query(`SELECT * FROM production_batches WHERE tenant_id = $1 AND batch_number = $2 AND deleted_at IS NULL`, [tenantId, batchNumber])
+    const result = await scopedQuery(`SELECT * FROM production_batches WHERE tenant_id = $1 AND batch_number = $2 AND deleted_at IS NULL`, [tenantId, batchNumber], { tableAlias: 'production_batches' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; status?: string; search?: string } = {}) {
@@ -38,9 +40,8 @@ export const productionBatchRepository = {
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.search) { where += ` AND (batch_number ILIKE $${idx} OR product_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM production_batches WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM production_batches WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('production_batches', 'production_batches', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM production_batches WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'production_batches' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number) {
@@ -115,7 +116,7 @@ export const traceabilityLogRepository = {
     return id
   },
   async listForBatch(tenantId: string, batchId: string) {
-    const result = await query(`SELECT * FROM traceability_logs WHERE tenant_id = $1 AND (batch_id = $2 OR related_batch_id = $2) AND is_immutable = true ORDER BY event_date DESC`, [tenantId, batchId])
+    const result = await scopedQuery(`SELECT * FROM traceability_logs WHERE tenant_id = $1 AND (batch_id = $2 OR related_batch_id = $2) AND is_immutable = true ORDER BY event_date DESC`, [tenantId, batchId], { tableAlias: 'traceability_logs' })
     return result.rows
   },
 }

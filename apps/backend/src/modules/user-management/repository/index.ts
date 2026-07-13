@@ -2,6 +2,8 @@
  * User Management Repository — Roles, Permissions, Assignments, Delegations, Preferences
  */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const roleRepository = {
@@ -16,12 +18,12 @@ export const roleRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM roles WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM roles WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'roles' })
     return result.rows[0] ?? null
   },
 
   async findByName(tenantId: string, name: string) {
-    const result = await query(`SELECT * FROM roles WHERE tenant_id = $1 AND name = $2 AND deleted_at IS NULL`, [tenantId, name])
+    const result = await scopedQuery(`SELECT * FROM roles WHERE tenant_id = $1 AND name = $2 AND deleted_at IS NULL`, [tenantId, name], { tableAlias: 'roles' })
     return result.rows[0] ?? null
   },
 
@@ -32,9 +34,8 @@ export const roleRepository = {
     if (params.search) { where += ` AND (name ILIKE $${idx} OR display_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
     if (params.category) { where += ` AND category = $${idx++}`; sqlParams.push(params.category) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM roles WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM roles WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('roles', 'roles', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM roles WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'roles' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -78,7 +79,7 @@ export const permissionRepository = {
   },
 
   async findByCode(code: string) {
-    const result = await query(`SELECT * FROM permissions WHERE code = $1`, [code])
+    const result = await scopedQuery(`SELECT * FROM permissions WHERE code = $1`, [code], { tableAlias: 'permissions' })
     return result.rows[0] ?? null
   },
 
@@ -128,12 +129,12 @@ export const userAssignmentRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM user_assignments WHERE tenant_id = $1 AND id = $2`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM user_assignments WHERE tenant_id = $1 AND id = $2`, [tenantId, id], { tableAlias: 'user_assignments' })
     return result.rows[0] ?? null
   },
 
   async listForUser(tenantId: string, userId: string) {
-    const result = await query(`SELECT * FROM user_assignments WHERE tenant_id = $1 AND user_id = $2 AND status = 'ACTIVE' ORDER BY is_primary DESC, assigned_at DESC`, [tenantId, userId])
+    const result = await scopedQuery(`SELECT * FROM user_assignments WHERE tenant_id = $1 AND user_id = $2 AND status = 'ACTIVE' ORDER BY is_primary DESC, assigned_at DESC`, [tenantId, userId], { tableAlias: 'user_assignments' })
     return result.rows
   },
 
@@ -159,9 +160,8 @@ export const delegationRepository = {
     if (params.delegatorId) { where += ` AND delegator_id = $${idx++}`; sqlParams.push(params.delegatorId) }
     if (params.delegateId) { where += ` AND delegate_id = $${idx++}`; sqlParams.push(params.delegateId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM approval_delegations WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM approval_delegations WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('approval_delegations', 'approval_delegations', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM approval_delegations WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'approval_delegations' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -172,7 +172,7 @@ export const delegationRepository = {
 
 export const userPreferenceRepository = {
   async get(tenantId: string, userId: string, key: string) {
-    const result = await query(`SELECT * FROM user_preferences WHERE tenant_id = $1 AND user_id = $2 AND pref_key = $3`, [tenantId, userId, key])
+    const result = await scopedQuery(`SELECT * FROM user_preferences WHERE tenant_id = $1 AND user_id = $2 AND pref_key = $3`, [tenantId, userId, key], { tableAlias: 'user_preferences' })
     return result.rows[0] ?? null
   },
 
@@ -185,7 +185,7 @@ export const userPreferenceRepository = {
   },
 
   async listForUser(tenantId: string, userId: string) {
-    const result = await query(`SELECT * FROM user_preferences WHERE tenant_id = $1 AND user_id = $2`, [tenantId, userId])
+    const result = await scopedQuery(`SELECT * FROM user_preferences WHERE tenant_id = $1 AND user_id = $2`, [tenantId, userId], { tableAlias: 'user_preferences' })
     return result.rows
   },
 }

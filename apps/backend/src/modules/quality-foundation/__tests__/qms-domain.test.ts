@@ -434,8 +434,8 @@ describe('QMS Schemas', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('QMS RBAC', () => {
-  it('IQC_INSPECT permission exists', () => { expect(Permission.IQC_INSPECT).toBe('iqc:inspect') })
-  it('IQC_APPROVE permission exists', () => { expect(Permission.IQC_APPROVE).toBe('iqc:approve') })
+  it('IQC_INSPECT permission exists', () => { expect(Permission.IQC_INSPECT).toBe('quality:inspect') })
+  it('IQC_APPROVE permission exists', () => { expect(Permission.IQC_APPROVE).toBe('quality:approve') })
   it('NCR_CREATE permission exists', () => { expect(Permission.NCR_CREATE).toBe('ncr:create') })
   it('NCR_APPROVE permission exists', () => { expect(Permission.NCR_APPROVE).toBe('ncr:approve') })
   it('COA_SIGN permission exists', () => { expect(Permission.COA_SIGN).toBe('coa:sign') })

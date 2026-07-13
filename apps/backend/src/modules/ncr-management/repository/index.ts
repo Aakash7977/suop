@@ -1,5 +1,7 @@
 /** NCR Management Repository — Root causes, containments, dispositions, material holds, quality costs */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const ncrRootCauseRepository = {
@@ -9,7 +11,7 @@ export const ncrRootCauseRepository = {
     return id
   },
   async listForNcr(tenantId: string, ncrId: string) {
-    const result = await query(`SELECT * FROM ncr_root_causes WHERE tenant_id = $1 AND ncr_id = $2 ORDER BY identified_at DESC`, [tenantId, ncrId])
+    const result = await scopedQuery(`SELECT * FROM ncr_root_causes WHERE tenant_id = $1 AND ncr_id = $2 ORDER BY identified_at DESC`, [tenantId, ncrId], { tableAlias: 'ncr_root_causes' })
     return result.rows
   },
 }
@@ -21,7 +23,7 @@ export const ncrContainmentRepository = {
     return id
   },
   async listForNcr(tenantId: string, ncrId: string) {
-    const result = await query(`SELECT * FROM ncr_containments WHERE tenant_id = $1 AND ncr_id = $2 ORDER BY implemented_at DESC`, [tenantId, ncrId])
+    const result = await scopedQuery(`SELECT * FROM ncr_containments WHERE tenant_id = $1 AND ncr_id = $2 ORDER BY implemented_at DESC`, [tenantId, ncrId], { tableAlias: 'ncr_containments' })
     return result.rows
   },
 }
@@ -33,7 +35,7 @@ export const ncrDispositionRepository = {
     return id
   },
   async listForNcr(tenantId: string, ncrId: string) {
-    const result = await query(`SELECT * FROM ncr_dispositions WHERE tenant_id = $1 AND ncr_id = $2 ORDER BY created_at DESC`, [tenantId, ncrId])
+    const result = await scopedQuery(`SELECT * FROM ncr_dispositions WHERE tenant_id = $1 AND ncr_id = $2 ORDER BY created_at DESC`, [tenantId, ncrId], { tableAlias: 'ncr_dispositions' })
     return result.rows
   },
 }
@@ -61,7 +63,7 @@ export const materialHoldRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM material_holds WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM material_holds WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'material_holds' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; productId?: string } = {}) {
@@ -70,9 +72,8 @@ export const materialHoldRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM material_holds WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM material_holds WHERE ${where} ORDER BY hold_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('material_holds', 'material_holds', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM material_holds WHERE ${where} ORDER BY hold_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'material_holds' })
     return { rows: result.rows, total, page, pageSize }
   },
   async release(tenantId: string, id: string, releasedBy: string, releasedByName: string, releaseReason: string, disposition: string) {
@@ -97,9 +98,8 @@ export const qualityCostRepository = {
     let where = 'tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.costCategory) { where += ` AND cost_category = $${idx++}`; sqlParams.push(params.costCategory) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM quality_costs WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM quality_costs WHERE ${where} ORDER BY cost_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('quality_costs', 'quality_costs', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM quality_costs WHERE ${where} ORDER BY cost_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'quality_costs' })
     return { rows: result.rows, total, page, pageSize }
   },
 }

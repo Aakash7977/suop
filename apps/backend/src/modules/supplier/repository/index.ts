@@ -1,5 +1,7 @@
 /** Supplier Repository — Database operations for Supplier Master */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const supplierRepository = {
@@ -29,17 +31,17 @@ export const supplierRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM suppliers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM suppliers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'suppliers' })
     return result.rows[0] ?? null
   },
 
   async findByVendorCode(tenantId: string, vendorCode: string) {
-    const result = await query(`SELECT * FROM suppliers WHERE tenant_id = $1 AND vendor_code = $2 AND deleted_at IS NULL`, [tenantId, vendorCode])
+    const result = await scopedQuery(`SELECT * FROM suppliers WHERE tenant_id = $1 AND vendor_code = $2 AND deleted_at IS NULL`, [tenantId, vendorCode], { tableAlias: 'suppliers' })
     return result.rows[0] ?? null
   },
 
   async findByGstin(gstin: string) {
-    const result = await query(`SELECT * FROM suppliers WHERE gstin = $1 AND deleted_at IS NULL LIMIT 1`, [gstin])
+    const result = await scopedQuery(`SELECT * FROM suppliers WHERE gstin = $1 AND deleted_at IS NULL LIMIT 1`, [gstin], { tableAlias: 'suppliers' })
     return result.rows[0] ?? null
   },
 
@@ -52,9 +54,8 @@ export const supplierRepository = {
     if (params.vendorType) { where += ` AND vendor_type = $${idx++}`; sqlParams.push(params.vendorType) }
     if (params.categoryId) { where += ` AND category_id = $${idx++}`; sqlParams.push(params.categoryId) }
     if (params.isPreferred !== undefined) { where += ` AND is_preferred = $${idx++}`; sqlParams.push(params.isPreferred) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM suppliers WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM suppliers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('suppliers', 'suppliers', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM suppliers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'suppliers' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -99,7 +100,7 @@ export const supplierContactRepository = {
     return id
   },
   async listForSupplier(tenantId: string, supplierId: string) {
-    const result = await query(`SELECT * FROM supplier_contacts WHERE tenant_id = $1 AND supplier_id = $2 AND is_active = true ORDER BY is_primary DESC`, [tenantId, supplierId])
+    const result = await scopedQuery(`SELECT * FROM supplier_contacts WHERE tenant_id = $1 AND supplier_id = $2 AND is_active = true ORDER BY is_primary DESC`, [tenantId, supplierId], { tableAlias: 'supplier_contacts' })
     return result.rows
   },
 }
@@ -111,7 +112,7 @@ export const supplierAddressRepository = {
     return id
   },
   async listForSupplier(tenantId: string, supplierId: string) {
-    const result = await query(`SELECT * FROM supplier_addresses WHERE tenant_id = $1 AND supplier_id = $2 ORDER BY is_primary DESC`, [tenantId, supplierId])
+    const result = await scopedQuery(`SELECT * FROM supplier_addresses WHERE tenant_id = $1 AND supplier_id = $2 ORDER BY is_primary DESC`, [tenantId, supplierId], { tableAlias: 'supplier_addresses' })
     return result.rows
   },
 }
@@ -123,11 +124,11 @@ export const supplierComplianceRepository = {
     return id
   },
   async listForSupplier(tenantId: string, supplierId: string) {
-    const result = await query(`SELECT * FROM supplier_compliances WHERE tenant_id = $1 AND supplier_id = $2 ORDER BY expiry_date ASC`, [tenantId, supplierId])
+    const result = await scopedQuery(`SELECT * FROM supplier_compliances WHERE tenant_id = $1 AND supplier_id = $2 ORDER BY expiry_date ASC`, [tenantId, supplierId], { tableAlias: 'supplier_compliances' })
     return result.rows
   },
   async findExpiring(tenantId: string, withinDays: number = 30) {
-    const result = await query(`SELECT * FROM supplier_compliances WHERE tenant_id = $1 AND status = 'ACTIVE' AND expiry_date IS NOT NULL AND expiry_date <= NOW() + INTERVAL '${withinDays} days' AND expiry_date > NOW()`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM supplier_compliances WHERE tenant_id = $1 AND status = 'ACTIVE' AND expiry_date IS NOT NULL AND expiry_date <= NOW() + INTERVAL '${withinDays} days' AND expiry_date > NOW()`, [tenantId], { tableAlias: 'supplier_compliances' })
     return result.rows
   },
   async updateStatus(id: string, status: string) {
@@ -156,7 +157,7 @@ export const supplierProductMappingRepository = {
 
 export const supplierCategoryRepository = {
   async list(tenantId: string) {
-    const result = await query(`SELECT * FROM supplier_categories WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM supplier_categories WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId], { tableAlias: 'supplier_categories' })
     return result.rows
   },
   async create(data: { tenantId: string; code: string; name: string; description?: string; supplierType?: string; vendorType?: string }) {

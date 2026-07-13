@@ -262,8 +262,8 @@ describe('Quotation RBAC', () => {
   it('QUOT_REJECT permission exists', () => {
     expect(Permission.QUOT_REJECT).toBe('quot:reject')
   })
-  it('QUOT_AWARD permission exists', () => {
-    expect(Permission.QUOT_AWARD).toBe('quot:award')
+  it('QUOT_AWARD permission aliases to quot:approve (Phase 1 — award collapsed into approve)', () => {
+    expect(Permission.QUOT_AWARD).toBe('quot:approve')
   })
   it('tenant_admin has all quotation permissions', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.QUOT_READ)).toBe(true)

@@ -1,5 +1,7 @@
 /** MES Repository — Work Centers, Production Lines, Machines, Shifts, Downtime, Events */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 function createRepo(tableName: string, fields: Record<string, string>) {
@@ -73,9 +75,8 @@ export const downtimeRepository = {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
     let where = 'tenant_id = $1'; const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.machineId) { where += ` AND machine_id = $${idx++}`; sqlParams.push(params.machineId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM downtime_records WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM downtime_records WHERE ${where} ORDER BY downtime_start DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('downtime_records', 'downtime_records', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM downtime_records WHERE ${where} ORDER BY downtime_start DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'downtime_records' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateDowntimeNumber(tenantId: string): Promise<string> {
@@ -95,9 +96,8 @@ export const productionEventRepository = {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
     let where = 'tenant_id = $1'; const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productionOrderId) { where += ` AND production_order_id = $${idx++}`; sqlParams.push(params.productionOrderId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM production_events WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM production_events WHERE ${where} ORDER BY event_time DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('production_events', 'production_events', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM production_events WHERE ${where} ORDER BY event_time DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'production_events' })
     return { rows: result.rows, total, page, pageSize }
   },
 }

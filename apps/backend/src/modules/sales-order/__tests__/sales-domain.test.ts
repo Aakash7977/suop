@@ -209,15 +209,16 @@ describe('Sales RBAC', () => {
   it('CUSTOMER_READ permission exists', () => { expect(Permission.CUSTOMER_READ).toBe('customer:read') })
   it('CUSTOMER_CREATE permission exists', () => { expect(Permission.CUSTOMER_CREATE).toBe('customer:create') })
   it('CUSTOMER_UPDATE permission exists', () => { expect(Permission.CUSTOMER_UPDATE).toBe('customer:update') })
-  it('CUSTOMER_DELETE permission exists', () => { expect(Permission.CUSTOMER_DELETE).toBe('customer:delete') })
+  it('CUSTOMER_DELETE permission aliases to customer:archive (Phase 1 — enterprise archives, not deletes)', () => { expect(Permission.CUSTOMER_DELETE).toBe('customer:archive') })
   it('tenant_admin has all customer permissions', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.CUSTOMER_READ)).toBe(true)
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.CUSTOMER_CREATE)).toBe(true)
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.CUSTOMER_UPDATE)).toBe(true)
   })
-  it('procurement_manager has customer permissions', () => {
-    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.CUSTOMER_READ)).toBe(true)
-    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.CUSTOMER_CREATE)).toBe(true)
+  it('procurement_manager does NOT have customer permissions (out of scope — has supplier)', () => {
+    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.CUSTOMER_READ)).toBe(false)
+    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.CUSTOMER_CREATE)).toBe(false)
+    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.SUPPLIER_READ)).toBe(true)
   })
   it('warehouse_operator has customer read', () => {
     expect(PermissionChecker.hasPermission(['warehouse_operator'], Permission.CUSTOMER_READ)).toBe(true)

@@ -1,5 +1,7 @@
 /** Goods Receipt Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 const GRN_FIELDS: Record<string, string> = {
@@ -36,11 +38,11 @@ export const grnRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM goods_receipts WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM goods_receipts WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'goods_receipts' })
     return result.rows[0] ?? null
   },
   async findByNumber(tenantId: string, grnNumber: string) {
-    const result = await query(`SELECT * FROM goods_receipts WHERE tenant_id = $1 AND grn_number = $2 AND deleted_at IS NULL`, [tenantId, grnNumber])
+    const result = await scopedQuery(`SELECT * FROM goods_receipts WHERE tenant_id = $1 AND grn_number = $2 AND deleted_at IS NULL`, [tenantId, grnNumber], { tableAlias: 'goods_receipts' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; search?: string; status?: string; supplierId?: string; poId?: string } = {}) {
@@ -51,9 +53,8 @@ export const grnRepository = {
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
     if (params.poId) { where += ` AND po_id = $${idx++}`; sqlParams.push(params.poId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM goods_receipts WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM goods_receipts WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('goods_receipts', 'goods_receipts', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM goods_receipts WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'goods_receipts' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number, updatedBy?: string) {
@@ -104,7 +105,7 @@ export const grnLineRepository = {
     return id
   },
   async listForGrn(tenantId: string, grnId: string) {
-    const result = await query(`SELECT * FROM goods_receipt_lines WHERE tenant_id = $1 AND grn_id = $2 ORDER BY line_no`, [tenantId, grnId])
+    const result = await scopedQuery(`SELECT * FROM goods_receipt_lines WHERE tenant_id = $1 AND grn_id = $2 ORDER BY line_no`, [tenantId, grnId], { tableAlias: 'goods_receipt_lines' })
     return result.rows
   },
   async deleteForGrn(grnId: string) {
@@ -119,7 +120,7 @@ export const grnAttachmentRepository = {
     return id
   },
   async listForGrn(tenantId: string, grnId: string) {
-    const result = await query(`SELECT * FROM grn_attachments WHERE tenant_id = $1 AND grn_id = $2 ORDER BY created_at DESC`, [tenantId, grnId])
+    const result = await scopedQuery(`SELECT * FROM grn_attachments WHERE tenant_id = $1 AND grn_id = $2 ORDER BY created_at DESC`, [tenantId, grnId], { tableAlias: 'grn_attachments' })
     return result.rows
   },
 }
@@ -131,7 +132,7 @@ export const grnDamageRepository = {
     return id
   },
   async listForGrn(tenantId: string, grnId: string) {
-    const result = await query(`SELECT * FROM grn_damage_records WHERE tenant_id = $1 AND grn_id = $2 ORDER BY created_at DESC`, [tenantId, grnId])
+    const result = await scopedQuery(`SELECT * FROM grn_damage_records WHERE tenant_id = $1 AND grn_id = $2 ORDER BY created_at DESC`, [tenantId, grnId], { tableAlias: 'grn_damage_records' })
     return result.rows
   },
 }

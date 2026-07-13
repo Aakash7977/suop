@@ -1,5 +1,7 @@
 /** Supplier Quality Repository — Audits, scorecards, complaints, certifications, risk assessments */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const supplierAuditRepository = {
@@ -21,7 +23,7 @@ export const supplierAuditRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM supplier_audits WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM supplier_audits WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'supplier_audits' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; supplierId?: string; status?: string } = {}) {
@@ -30,9 +32,8 @@ export const supplierAuditRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM supplier_audits WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM supplier_audits WHERE ${where} ORDER BY audit_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('supplier_audits', 'supplier_audits', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM supplier_audits WHERE ${where} ORDER BY audit_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'supplier_audits' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateAuditNumber(tenantId: string): Promise<string> {
@@ -54,9 +55,8 @@ export const supplierScorecardRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
     if (params.period) { where += ` AND period = $${idx++}`; sqlParams.push(params.period) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM supplier_scorecards WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM supplier_scorecards WHERE ${where} ORDER BY period DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('supplier_scorecards', 'supplier_scorecards', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM supplier_scorecards WHERE ${where} ORDER BY period DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'supplier_scorecards' })
     return { rows: result.rows, total, page, pageSize }
   },
 }
@@ -80,7 +80,7 @@ export const supplierComplaintRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM supplier_complaints WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM supplier_complaints WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'supplier_complaints' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; supplierId?: string; status?: string } = {}) {
@@ -89,9 +89,8 @@ export const supplierComplaintRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM supplier_complaints WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM supplier_complaints WHERE ${where} ORDER BY complaint_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('supplier_complaints', 'supplier_complaints', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM supplier_complaints WHERE ${where} ORDER BY complaint_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'supplier_complaints' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateComplaintNumber(tenantId: string): Promise<string> {
@@ -112,15 +111,14 @@ export const supplierCertificationRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM supplier_certifications WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM supplier_certifications WHERE ${where} ORDER BY expiry_date ASC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('supplier_certifications', 'supplier_certifications', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM supplier_certifications WHERE ${where} ORDER BY expiry_date ASC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'supplier_certifications' })
     return { rows: result.rows, total, page, pageSize }
   },
   /** Get expiring certifications */
   async getExpiring(tenantId: string, daysAhead: number = 90) {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + daysAhead)
-    const result = await query(`SELECT * FROM supplier_certifications WHERE tenant_id = $1 AND deleted_at IS NULL AND is_active = true AND expiry_date IS NOT NULL AND expiry_date <= $2 ORDER BY expiry_date ASC`, [tenantId, cutoff.toISOString()])
+    const result = await scopedQuery(`SELECT * FROM supplier_certifications WHERE tenant_id = $1 AND deleted_at IS NULL AND is_active = true AND expiry_date IS NOT NULL AND expiry_date <= $2 ORDER BY expiry_date ASC`, [tenantId, cutoff.toISOString()], { tableAlias: 'supplier_certifications' })
     return result.rows
   },
 }
@@ -136,9 +134,8 @@ export const supplierRiskAssessmentRepository = {
     let where = 'tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.supplierId) { where += ` AND supplier_id = $${idx++}`; sqlParams.push(params.supplierId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM supplier_risk_assessments WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM supplier_risk_assessments WHERE ${where} ORDER BY assessment_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('supplier_risk_assessments', 'supplier_risk_assessments', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM supplier_risk_assessments WHERE ${where} ORDER BY assessment_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'supplier_risk_assessments' })
     return { rows: result.rows, total, page, pageSize }
   },
 }

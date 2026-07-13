@@ -51,6 +51,31 @@ export interface RequestContext {
 
   /** Optional: DB transaction client (set when inside a transaction) */
   tx?: unknown
+
+  // ─── Data Scope (Phase 1 — Enterprise RBAC) ──────────────────────────────
+  /** Resolved data scope for the current user (own|dept|wh|plant|company|bu|region|global) */
+  dataScope?: string
+
+  /** Assigned warehouse IDs (used when dataScope = 'wh') */
+  warehouseIds?: string[]
+
+  /** Assigned plant IDs (used when dataScope = 'plant') */
+  plantIds?: string[]
+
+  /** Assigned company IDs (used when dataScope = 'company') */
+  companyIds?: string[]
+
+  /** Assigned department IDs (used when dataScope = 'dept') */
+  departmentIds?: string[]
+
+  /** Assigned business unit IDs (used when dataScope = 'bu') */
+  businessUnitIds?: string[]
+
+  /** Assigned region IDs (used when dataScope = 'region') */
+  regionIds?: string[]
+
+  /** Active break-glass session ID (if any) — restricts to read+configure only */
+  breakGlassSessionId?: string | null
 }
 
 // ─── AsyncLocalStorage Instance ─────────────────────────────────────────────

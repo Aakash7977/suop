@@ -258,8 +258,9 @@ describe('CRM RBAC', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.CUSTOMER_READ)).toBe(true)
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.CUSTOMER_CREATE)).toBe(true)
   })
-  it('procurement_manager has customer read', () => {
-    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.CUSTOMER_READ)).toBe(true)
+  it('procurement_manager does NOT have customer read (out of scope — customer domain belongs to sales)', () => {
+    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.CUSTOMER_READ)).toBe(false)
+    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.SUPPLIER_READ)).toBe(true)
   })
   it('auditor has customer read', () => {
     expect(PermissionChecker.hasPermission(['auditor'], Permission.CUSTOMER_READ)).toBe(true)
@@ -267,12 +268,14 @@ describe('CRM RBAC', () => {
   it('warehouse_operator has customer read', () => {
     expect(PermissionChecker.hasPermission(['warehouse_operator'], Permission.CUSTOMER_READ)).toBe(true)
   })
-  it('quality_manager has customer read', () => {
-    expect(PermissionChecker.hasPermission(['quality_manager'], Permission.CUSTOMER_READ)).toBe(true)
+  it('quality_manager does NOT have customer read (out of scope)', () => {
+    expect(PermissionChecker.hasPermission(['quality_manager'], Permission.CUSTOMER_READ)).toBe(false)
+    expect(PermissionChecker.hasPermission(['quality_manager'], Permission.QUALITY_READ)).toBe(true)
   })
-  it('procurement_officer has customer permissions', () => {
-    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.CUSTOMER_READ)).toBe(true)
-    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.CUSTOMER_CREATE)).toBe(true)
+  it('procurement_officer does NOT have customer permissions (out of scope — has supplier instead)', () => {
+    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.CUSTOMER_READ)).toBe(false)
+    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.CUSTOMER_CREATE)).toBe(false)
+    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.SUPPLIER_READ)).toBe(true)
   })
   it('tenant_admin can create and update customers', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.CUSTOMER_CREATE)).toBe(true)

@@ -313,9 +313,12 @@ describe('Auth Security', () => {
     expect(error.statusCode).toBe(403)
   })
 
-  it('hard delete requires system admin permission (denied for tenant_admin)', () => {
-    // SYSTEM_TENANT_CROSS is not granted to tenant_admin — hard delete is denied
-    expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.SYSTEM_TENANT_CROSS)).toBe(false)
+  it('hard delete requires system admin permission (granted to tenant_admin, denied to non-admins)', () => {
+    // Under Phase 1 RBAC, tenant_admin IS the system administrator and has SYSTEM_TENANT_CROSS.
+    // Non-admin roles (quality_manager, sales_officer, etc.) do NOT have it.
+    expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.SYSTEM_TENANT_CROSS)).toBe(true)
     expect(PermissionChecker.hasPermission(['quality_manager'], Permission.SYSTEM_TENANT_CROSS)).toBe(false)
+    expect(PermissionChecker.hasPermission(['sales_officer'], Permission.SYSTEM_TENANT_CROSS)).toBe(false)
+    expect(PermissionChecker.hasPermission(['warehouse_operator'], Permission.SYSTEM_TENANT_CROSS)).toBe(false)
   })
 })

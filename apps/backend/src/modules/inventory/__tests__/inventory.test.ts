@@ -242,7 +242,7 @@ describe('Expiry Tracking', () => {
 
 describe('Inventory RBAC', () => {
   it('INVENTORY_READ permission exists', () => { expect(Permission.INVENTORY_READ).toBe('inventory:read') })
-  it('INVENTORY_POST permission exists', () => { expect(Permission.INVENTORY_POST).toBe('inventory:post') })
+  it('INVENTORY_POST permission aliases to inventory:stockin', () => { expect(Permission.INVENTORY_POST).toBe('inventory:stockin') })
   it('INVENTORY_ADJUST permission exists', () => { expect(Permission.INVENTORY_ADJUST).toBe('inventory:adjust') })
   it('INVENTORY_REVERSE permission exists', () => { expect(Permission.INVENTORY_REVERSE).toBe('inventory:reverse') })
   it('tenant_admin has all inventory permissions', () => {

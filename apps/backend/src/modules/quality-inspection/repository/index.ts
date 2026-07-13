@@ -1,5 +1,7 @@
 /** Quality Inspection Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const inspectionPlanRepository = {
@@ -9,7 +11,7 @@ export const inspectionPlanRepository = {
     return id
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM inspection_plans WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM inspection_plans WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'inspection_plans' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; search?: string } = {}) {
@@ -17,9 +19,8 @@ export const inspectionPlanRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.search) { where += ` AND (plan_code ILIKE $${idx} OR plan_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM inspection_plans WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM inspection_plans WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('inspection_plans', 'inspection_plans', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM inspection_plans WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'inspection_plans' })
     return { rows: result.rows, total, page, pageSize }
   },
 }
@@ -31,16 +32,16 @@ export const samplingPlanRepository = {
     return id
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM sampling_plans WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM sampling_plans WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'sampling_plans' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string) {
-    const result = await query(`SELECT * FROM sampling_plans WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY lot_size_min`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM sampling_plans WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY lot_size_min`, [tenantId], { tableAlias: 'sampling_plans' })
     return result.rows
   },
   /** Find appropriate sampling plan for a given lot size */
   async findForLotSize(tenantId: string, lotSize: number) {
-    const result = await query(`SELECT * FROM sampling_plans WHERE tenant_id = $1 AND deleted_at IS NULL AND is_active = true AND $2 BETWEEN lot_size_min AND lot_size_max ORDER BY lot_size_min LIMIT 1`, [tenantId, lotSize])
+    const result = await scopedQuery(`SELECT * FROM sampling_plans WHERE tenant_id = $1 AND deleted_at IS NULL AND is_active = true AND $2 BETWEEN lot_size_min AND lot_size_max ORDER BY lot_size_min LIMIT 1`, [tenantId, lotSize], { tableAlias: 'sampling_plans' })
     return result.rows[0] ?? null
   },
 }
@@ -67,7 +68,7 @@ export const inspectionLotRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM inspection_lots WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM inspection_lots WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'inspection_lots' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; search?: string; status?: string; grnId?: string } = {}) {
@@ -77,9 +78,8 @@ export const inspectionLotRepository = {
     if (params.search) { where += ` AND (lot_number ILIKE $${idx} OR product_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
     if (params.status) { where += ` AND inspection_status = $${idx++}`; sqlParams.push(params.status) }
     if (params.grnId) { where += ` AND grn_id = $${idx++}`; sqlParams.push(params.grnId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM inspection_lots WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM inspection_lots WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('inspection_lots', 'inspection_lots', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM inspection_lots WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'inspection_lots' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number, updatedBy?: string) {
@@ -113,7 +113,7 @@ export const inspectionResultRepository = {
     return id
   },
   async listForLot(tenantId: string, lotId: string) {
-    const result = await query(`SELECT * FROM inspection_results WHERE tenant_id = $1 AND inspection_lot_id = $2 ORDER BY recorded_at`, [tenantId, lotId])
+    const result = await scopedQuery(`SELECT * FROM inspection_results WHERE tenant_id = $1 AND inspection_lot_id = $2 ORDER BY recorded_at`, [tenantId, lotId], { tableAlias: 'inspection_results' })
     return result.rows
   },
 }
@@ -137,7 +137,7 @@ export const qualityHoldRepository = {
     return id
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM quality_holds WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM quality_holds WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'quality_holds' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string } = {}) {
@@ -145,9 +145,8 @@ export const qualityHoldRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM quality_holds WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM quality_holds WHERE ${where} ORDER BY held_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('quality_holds', 'quality_holds', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM quality_holds WHERE ${where} ORDER BY held_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'quality_holds' })
     return { rows: result.rows, total, page, pageSize }
   },
   async release(tenantId: string, id: string, releasedBy: string, releasedByName: string, releaseReason: string, disposition: string) {
@@ -182,7 +181,7 @@ export const ncrRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM ncrs WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM ncrs WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'ncrs' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; search?: string; status?: string } = {}) {
@@ -191,9 +190,8 @@ export const ncrRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.search) { where += ` AND (ncr_number ILIKE $${idx} OR product_name ILIKE $${idx} OR non_conformance ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM ncrs WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM ncrs WHERE ${where} ORDER BY ncr_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('ncrs', 'ncrs', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM ncrs WHERE ${where} ORDER BY ncr_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'ncrs' })
     return { rows: result.rows, total, page, pageSize }
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number, updatedBy?: string) {
@@ -236,7 +234,7 @@ export const capaRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM capa_records WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM capa_records WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'capa_records' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string } = {}) {
@@ -244,9 +242,8 @@ export const capaRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM capa_records WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM capa_records WHERE ${where} ORDER BY capa_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('capa_records', 'capa_records', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM capa_records WHERE ${where} ORDER BY capa_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'capa_records' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateCapaNumber(tenantId: string): Promise<string> {

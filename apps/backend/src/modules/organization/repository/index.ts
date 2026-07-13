@@ -7,6 +7,8 @@ import type { CompanyInput, BusinessUnitInput, PlantInput, WarehouseInput, Depar
  */
 
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 // ─── Helper: Build WHERE clause from filter ─────────────────────────────────
@@ -35,12 +37,12 @@ export const companyRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM companies WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM companies WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'companies' })
     return result.rows[0] ?? null
   },
 
   async findByCode(tenantId: string, code: string) {
-    const result = await query(`SELECT * FROM companies WHERE tenant_id = $1 AND code = $2 AND deleted_at IS NULL`, [tenantId, code])
+    const result = await scopedQuery(`SELECT * FROM companies WHERE tenant_id = $1 AND code = $2 AND deleted_at IS NULL`, [tenantId, code], { tableAlias: 'companies' })
     return result.rows[0] ?? null
   },
 
@@ -70,13 +72,9 @@ export const companyRepository = {
       }
     }
 
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM companies WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
+    const total = await scopedCount('companies', 'companies', where, sqlParams)
 
-    const result = await query(
-      `SELECT * FROM companies WHERE ${where} ORDER BY ${sortBy} ${sortDir} LIMIT $${idx} OFFSET $${idx + 1}`,
-      [...sqlParams, pageSize, offset]
-    )
+    const result = await scopedQuery(`SELECT * FROM companies WHERE ${where} ORDER BY ${sortBy} ${sortDir} LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'companies' })
 
     return { rows: result.rows, total, page, pageSize }
   },
@@ -141,7 +139,7 @@ export const companyRepository = {
   },
 
   async getChildren(tenantId: string, parentId: string) {
-    const result = await query(`SELECT * FROM companies WHERE tenant_id = $1 AND parent_id = $2 AND deleted_at IS NULL`, [tenantId, parentId])
+    const result = await scopedQuery(`SELECT * FROM companies WHERE tenant_id = $1 AND parent_id = $2 AND deleted_at IS NULL`, [tenantId, parentId], { tableAlias: 'companies' })
     return result.rows
   },
 }
@@ -160,7 +158,7 @@ export const businessUnitRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM business_units WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM business_units WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'business_units' })
     return result.rows[0] ?? null
   },
 
@@ -180,9 +178,8 @@ export const businessUnitRepository = {
       where += ` AND company_id = $${idx++}`
       sqlParams.push(params.filter.companyId)
     }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM business_units WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM business_units WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('business_units', 'business_units', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM business_units WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'business_units' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -223,7 +220,7 @@ export const plantRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM plants WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM plants WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'plants' })
     return result.rows[0] ?? null
   },
 
@@ -239,9 +236,8 @@ export const plantRepository = {
       sqlParams.push(`%${params.search}%`)
       idx++
     }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM plants WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM plants WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('plants', 'plants', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM plants WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'plants' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -282,7 +278,7 @@ export const warehouseRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM warehouses WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM warehouses WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouses' })
     return result.rows[0] ?? null
   },
 
@@ -302,9 +298,8 @@ export const warehouseRepository = {
       where += ` AND plant_id = $${idx++}`
       sqlParams.push(params.filter.plantId)
     }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM warehouses WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM warehouses WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('warehouses', 'warehouses', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM warehouses WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'warehouses' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -342,7 +337,7 @@ export const departmentRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM departments WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM departments WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'departments' })
     return result.rows[0] ?? null
   },
 
@@ -358,9 +353,8 @@ export const departmentRepository = {
       sqlParams.push(`%${params.search}%`)
       idx++
     }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM departments WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM departments WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('departments', 'departments', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM departments WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'departments' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -384,7 +378,7 @@ export const costCenterRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM cost_centers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM cost_centers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'cost_centers' })
     return result.rows[0] ?? null
   },
 
@@ -400,9 +394,8 @@ export const costCenterRepository = {
       sqlParams.push(`%${params.search}%`)
       idx++
     }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM cost_centers WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM cost_centers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('cost_centers', 'cost_centers', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM cost_centers WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'cost_centers' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -430,7 +423,7 @@ export const financialYearRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM financial_years WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM financial_years WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'financial_years' })
     return result.rows[0] ?? null
   },
 
@@ -441,12 +434,12 @@ export const financialYearRepository = {
     const where = 'tenant_id = $1 AND deleted_at IS NULL'
     const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM financial_years WHERE ${where}`, [tenantId])
     const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM financial_years WHERE ${where} ORDER BY start_date DESC LIMIT $2 OFFSET $3`, [tenantId, pageSize, offset])
+    const result = await scopedQuery(`SELECT * FROM financial_years WHERE ${where} ORDER BY start_date DESC LIMIT $2 OFFSET $3`, [tenantId, pageSize, offset], { tableAlias: 'financial_years' })
     return { rows: result.rows, total, page, pageSize }
   },
 
   async findCurrent(tenantId: string) {
-    const result = await query(`SELECT * FROM financial_years WHERE tenant_id = $1 AND is_current = true AND deleted_at IS NULL`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM financial_years WHERE tenant_id = $1 AND is_current = true AND deleted_at IS NULL`, [tenantId], { tableAlias: 'financial_years' })
     return result.rows[0] ?? null
   },
 }

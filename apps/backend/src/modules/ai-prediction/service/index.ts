@@ -330,9 +330,9 @@ export const AiPredictionService = {
    * updates the entity's status, writes audit + event, and returns the new state.
    */
   async transition(id: string, targetState: string, reason?: string): Promise<{
+ status: string; version: number }> {
     // Phase 1: Security enforcement
     enforceNotBreakGlass('transition')
- status: string; version: number }> {
     const { tenantId, userId, userEmail, correlationId } = getContext()
 
     // Import workflow registry lazily to avoid circular imports

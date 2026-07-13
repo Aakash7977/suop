@@ -1,5 +1,7 @@
 /** Product Repository — Database operations for Product Master */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const productRepository = {
@@ -39,12 +41,12 @@ export const productRepository = {
   },
 
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM products WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM products WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'products' })
     return result.rows[0] ?? null
   },
 
   async findBySku(tenantId: string, sku: string) {
-    const result = await query(`SELECT * FROM products WHERE tenant_id = $1 AND sku = $2 AND deleted_at IS NULL`, [tenantId, sku])
+    const result = await scopedQuery(`SELECT * FROM products WHERE tenant_id = $1 AND sku = $2 AND deleted_at IS NULL`, [tenantId, sku], { tableAlias: 'products' })
     return result.rows[0] ?? null
   },
 
@@ -66,9 +68,8 @@ export const productRepository = {
     if (params.categoryId) { where += ` AND category_id = $${idx++}`; sqlParams.push(params.categoryId) }
     if (params.brandId) { where += ` AND brand_id = $${idx++}`; sqlParams.push(params.brandId) }
     if (params.abcClass) { where += ` AND abc_class = $${idx++}`; sqlParams.push(params.abcClass) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM products WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM products WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('products', 'products', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM products WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'products' })
     return { rows: result.rows, total, page, pageSize }
   },
 
@@ -124,11 +125,11 @@ export const categoryRepository = {
     return this.findById(data.tenantId, id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM product_categories WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM product_categories WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'product_categories' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string) {
-    const result = await query(`SELECT * FROM product_categories WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM product_categories WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId], { tableAlias: 'product_categories' })
     return result.rows
   },
 }
@@ -140,22 +141,22 @@ export const brandRepository = {
     return this.findById(data.tenantId, id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM product_brands WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM product_brands WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'product_brands' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string) {
-    const result = await query(`SELECT * FROM product_brands WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM product_brands WHERE tenant_id = $1 AND deleted_at IS NULL ORDER BY name`, [tenantId], { tableAlias: 'product_brands' })
     return result.rows
   },
 }
 
 export const uomRepository = {
   async list(tenantId: string) {
-    const result = await query(`SELECT * FROM product_uoms WHERE tenant_id = $1 ORDER BY uom_type, name`, [tenantId])
+    const result = await scopedQuery(`SELECT * FROM product_uoms WHERE tenant_id = $1 ORDER BY uom_type, name`, [tenantId], { tableAlias: 'product_uoms' })
     return result.rows
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM product_uoms WHERE tenant_id = $1 AND id = $2`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM product_uoms WHERE tenant_id = $1 AND id = $2`, [tenantId, id], { tableAlias: 'product_uoms' })
     return result.rows[0] ?? null
   },
 }
@@ -167,11 +168,11 @@ export const barcodeRepository = {
     return id
   },
   async listForProduct(tenantId: string, productId: string) {
-    const result = await query(`SELECT * FROM product_barcodes WHERE tenant_id = $1 AND product_id = $2`, [tenantId, productId])
+    const result = await scopedQuery(`SELECT * FROM product_barcodes WHERE tenant_id = $1 AND product_id = $2`, [tenantId, productId], { tableAlias: 'product_barcodes' })
     return result.rows
   },
   async findByValue(barcode: string) {
-    const result = await query(`SELECT * FROM product_barcodes WHERE \"barcodeValue\" = $1`, [barcode])
+    const result = await scopedQuery(`SELECT * FROM product_barcodes WHERE \"barcodeValue\" = $1`, [barcode], { tableAlias: 'product_barcodes' })
     return result.rows[0] ?? null
   },
   async softDelete(id: string) {

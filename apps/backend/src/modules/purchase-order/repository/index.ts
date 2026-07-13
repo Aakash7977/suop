@@ -1,6 +1,8 @@
 /** Purchase Order Repository — Database operations for all 12 PO entities */
 import { query } from '@/core/db/pglite'
 import { randomUUID } from 'node:crypto'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 
 // ════════════════════════════════════════════════════════════════════════════
 // PURCHASE ORDER HEADER
@@ -129,15 +131,12 @@ export const poRepository = {
     const safeSort = allowedSorts.has(sortCol) ? sortCol : 'created_at'
     const safeDir = sortDir === 'ASC' ? 'ASC' : 'DESC'
 
-    const countResult = await query<{ cnt: string }>(
-      `SELECT COUNT(*) as cnt FROM purchase_orders WHERE ${where}`,
-      sqlParams,
-    )
-    const total = Number(countResult.rows[0]!.cnt)
+    const total = await scopedCount('purchase_orders', 'purchase_orders', where, sqlParams)
 
-    const result = await query(
+    const result = await scopedQuery(
       `SELECT * FROM purchase_orders WHERE ${where} ORDER BY ${safeSort} ${safeDir} LIMIT $${idx} OFFSET $${idx + 1}`,
       [...sqlParams, pageSize, offset],
+      { tableAlias: 'purchase_orders' }
     )
     return { rows: result.rows, total, page, pageSize }
   },
@@ -256,7 +255,7 @@ export const poTaxRepository = {
     return id
   },
   async listForPo(tenantId: string, poId: string) {
-    const result = await query(`SELECT * FROM purchase_order_taxes WHERE tenant_id = $1 AND po_id = $2`, [tenantId, poId])
+    const result = await scopedQuery(`SELECT * FROM purchase_order_taxes WHERE tenant_id = $1 AND po_id = $2`, [tenantId, poId], { tableAlias: 'purchase_order_taxes' })
     return result.rows
   },
   async deleteForPo(poId: string) {
@@ -287,7 +286,7 @@ export const poChargeRepository = {
     return id
   },
   async listForPo(tenantId: string, poId: string) {
-    const result = await query(`SELECT * FROM purchase_order_charges WHERE tenant_id = $1 AND po_id = $2`, [tenantId, poId])
+    const result = await scopedQuery(`SELECT * FROM purchase_order_charges WHERE tenant_id = $1 AND po_id = $2`, [tenantId, poId], { tableAlias: 'purchase_order_charges' })
     return result.rows
   },
   async deleteForPo(poId: string) {

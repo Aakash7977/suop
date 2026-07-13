@@ -410,8 +410,8 @@ describe('Purchase Order RBAC', () => {
   it('PO_UPDATE permission exists', () => {
     expect(Permission.PO_UPDATE).toBe('po:update')
   })
-  it('PO_DELETE permission exists', () => {
-    expect(Permission.PO_DELETE).toBe('po:delete')
+  it('PO_DELETE permission aliases to po:archive (Phase 1 — enterprise ERP archives, not deletes)', () => {
+    expect(Permission.PO_DELETE).toBe('po:archive')
   })
   it('PO_APPROVE permission exists', () => {
     expect(Permission.PO_APPROVE).toBe('po:approve')
@@ -435,11 +435,12 @@ describe('Purchase Order RBAC', () => {
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.PO_CLOSE)).toBe(true)
     expect(PermissionChecker.hasPermission(['tenant_admin'], Permission.PO_EXPORT)).toBe(true)
   })
-  it('procurement_officer can read, create, update, issue but not delete/approve/close', () => {
+  it('procurement_officer can read, create, update but not issue/delete/approve/close', () => {
     expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_READ)).toBe(true)
     expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_CREATE)).toBe(true)
     expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_UPDATE)).toBe(true)
-    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_ISSUE)).toBe(true)
+    // Phase 1: issue is manager-only (release PO to supplier after approval)
+    expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_ISSUE)).toBe(false)
     expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_DELETE)).toBe(false)
     expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_APPROVE)).toBe(false)
     expect(PermissionChecker.hasPermission(['procurement_officer'], Permission.PO_CLOSE)).toBe(false)
@@ -447,6 +448,7 @@ describe('Purchase Order RBAC', () => {
   it('procurement_manager has all PO permissions', () => {
     expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.PO_APPROVE)).toBe(true)
     expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.PO_DELETE)).toBe(true)
+    expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.PO_ISSUE)).toBe(true)
     expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.PO_CLOSE)).toBe(true)
     expect(PermissionChecker.hasPermission(['procurement_manager'], Permission.PO_EXPORT)).toBe(true)
   })

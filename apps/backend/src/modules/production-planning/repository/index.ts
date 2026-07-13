@@ -1,5 +1,7 @@
 /** Production Planning Repository */
 import { query } from '@/core/db/pglite'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScopeOnWrite } from '@/core/security/data-scope'
 import { randomUUID } from 'node:crypto'
 
 export const productionPlanRepository = {
@@ -19,7 +21,7 @@ export const productionPlanRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM production_plans WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM production_plans WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'production_plans' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string } = {}) {
@@ -27,9 +29,8 @@ export const productionPlanRepository = {
     let where = 'tenant_id = $1 AND deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM production_plans WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM production_plans WHERE ${where} ORDER BY plan_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('production_plans', 'production_plans', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM production_plans WHERE ${where} ORDER BY plan_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'production_plans' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generatePlanNumber(tenantId: string): Promise<string> {
@@ -46,7 +47,7 @@ export const productionPlanLineRepository = {
     return id
   },
   async listForPlan(tenantId: string, planId: string) {
-    const result = await query(`SELECT * FROM production_plan_lines WHERE tenant_id = $1 AND plan_id = $2 ORDER BY line_no`, [tenantId, planId])
+    const result = await scopedQuery(`SELECT * FROM production_plan_lines WHERE tenant_id = $1 AND plan_id = $2 ORDER BY line_no`, [tenantId, planId], { tableAlias: 'production_plan_lines' })
     return result.rows
   },
 }
@@ -72,7 +73,7 @@ export const productionScheduleRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM production_schedules WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM production_schedules WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'production_schedules' })
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; workCenterId?: string } = {}) {
@@ -81,9 +82,8 @@ export const productionScheduleRepository = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
     if (params.workCenterId) { where += ` AND work_center_id = $${idx++}`; sqlParams.push(params.workCenterId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM production_schedules WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM production_schedules WHERE ${where} ORDER BY scheduled_start DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('production_schedules', 'production_schedules', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM production_schedules WHERE ${where} ORDER BY scheduled_start DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'production_schedules' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateScheduleNumber(tenantId: string): Promise<string> {
@@ -95,11 +95,11 @@ export const productionScheduleRepository = {
 
 export const capacityPlanRepository = {
   async findOrCreate(tenantId: string, workCenterId: string, planDate: string, shiftId: string | null, availableMinutes: number): Promise<Record<string, unknown>> {
-    const existing = await query(`SELECT * FROM capacity_plans WHERE tenant_id = $1 AND work_center_id = $2 AND plan_date = $3 AND COALESCE(shift_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($4::uuid, '00000000-0000-0000-0000-000000000000'::uuid)`, [tenantId, workCenterId, planDate, shiftId])
+    const existing = await scopedQuery(`SELECT * FROM capacity_plans WHERE tenant_id = $1 AND work_center_id = $2 AND plan_date = $3 AND COALESCE(shift_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($4::uuid, '00000000-0000-0000-0000-000000000000'::uuid)`, [tenantId, workCenterId, planDate, shiftId], { tableAlias: 'capacity_plans' })
     if (existing.rows.length > 0) return existing.rows[0] as Record<string, unknown>
     const id = randomUUID()
     await query(`INSERT INTO capacity_plans (id, tenant_id, work_center_id, work_center_code, plan_date, shift_id, available_capacity_minutes, allocated_capacity_minutes, remaining_capacity_minutes, utilization_percent, created_at, updated_at) VALUES ($1,$2,$3,NULL,$4,$5,$6,0,$6,0,NOW(),NOW())`, [id, tenantId, workCenterId, planDate, shiftId, availableMinutes])
-    const result = await query(`SELECT * FROM capacity_plans WHERE id = $1`, [id])
+    const result = await scopedQuery(`SELECT * FROM capacity_plans WHERE id = $1`, [id], { tableAlias: 'capacity_plans' })
     return result.rows[0] as Record<string, unknown>
   },
   async allocate(tenantId: string, workCenterId: string, planDate: string, shiftId: string | null, minutes: number) {
@@ -138,9 +138,8 @@ export const materialReservationRepo = {
     const sqlParams: unknown[] = [tenantId]; let idx = 2
     if (params.productionOrderId) { where += ` AND production_order_id = $${idx++}`; sqlParams.push(params.productionOrderId) }
     if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM material_reservations WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM material_reservations WHERE ${where} ORDER BY reservation_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    const total = await scopedCount('material_reservations', 'material_reservations', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM material_reservations WHERE ${where} ORDER BY reservation_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'material_reservations' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateReservationNumber(tenantId: string): Promise<string> {

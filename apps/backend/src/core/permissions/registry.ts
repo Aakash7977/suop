@@ -378,16 +378,28 @@ export const Permission = {
   CONTROLTOWER_READ: 'controltower:read',
 
   // ─── Backward Compatibility Aliases (to be removed after all routes updated) ───
+  // NOTE: NCR_CREATE, NCR_APPROVE, RECALL_INITIATE are defined above; do not duplicate.
   INVENTORY_POST: 'inventory:stockin',
   INVENTORY_ADJUST_OLD: 'inventory:adjust',
   IQC_INSPECT: 'quality:inspect',
   IQC_APPROVE: 'quality:approve',
-  NCR_CREATE: 'ncr:create',
-  NCR_APPROVE: 'ncr:approve',
   COA_SIGN_ALIAS: 'coa:sign',
-  RECALL_INITIATE: 'recall:initiate',
   GRN_PUTAWAY: 'putaway:create',
   SYSTEM_REFERENCE_UPDATE: 'system:settings',
+
+  // ─── Backward-Compat Aliases (RC1 → Phase 1 renames) ──────────────────
+  // These exist so that older routes/tests referencing the RC1 names continue
+  // to work. New code MUST use the canonical Phase 1 names above.
+  PRODUCT_READ: 'catalog:read',
+  PRODUCT_CREATE: 'catalog:create',
+  PRODUCT_UPDATE: 'catalog:update',
+  PRODUCT_DELETE: 'catalog:archive',
+  ORG_DELETE: 'org:archive',
+  CUSTOMER_DELETE: 'customer:archive',
+  SUPPLIER_DELETE: 'supplier:archive',
+  PO_DELETE: 'po:archive',
+  QUOT_AWARD: 'quot:approve',
+  QUOT_REJECT: 'quot:reject',
 } as const
 
 export type Permission = (typeof Permission)[keyof typeof Permission]
@@ -469,7 +481,7 @@ export const DEFAULT_ROLES: Record<string, Permission[]> = {
     Permission.PO_APPROVE, Permission.PO_REJECT, Permission.PO_RELEASE, Permission.PO_ISSUE, Permission.PO_CANCEL,
     Permission.PO_CLOSE, Permission.PO_REOPEN, Permission.PO_EXPORT, Permission.PO_DELEGATE, Permission.PO_APPROVE_AS_DELEGATE,
     Permission.PO_OVERRIDE,
-    Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE,
+    Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT,
     Permission.RFQ_READ, Permission.RFQ_CREATE,
     Permission.SUPPLIER_VIEW, Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE,
     Permission.SUPPLIER_ARCHIVE, Permission.SUPPLIER_APPROVE, Permission.SUPPLIER_BLACKLIST,

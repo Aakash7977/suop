@@ -1,6 +1,13 @@
-/** Inventory Repository — Stock, Batches, Lots, Transactions, Ledger, Reservations, Blocks */
+/** Inventory Repository — Stock, Batches, Lots, Transactions, Ledger, Reservations, Blocks
+ *
+ * Phase 1 Enterprise RBAC: All read methods use scopedQuery() for automatic
+ * data-scope filtering. All write methods use enforceScope() to validate the
+ * record is in-scope before mutation.
+ */
 import { query } from '@/core/db/pglite'
 import { randomUUID } from 'node:crypto'
+import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
+import { enforceScope, enforceScopeOnWrite } from '@/core/security/data-scope'
 
 // ═══ Batches ═══════════════════════════════════════════════════════════════
 
@@ -22,22 +29,34 @@ export const batchRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM batches WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    // Scope-aware: filters by warehouse_id (via batch's grn/warehouse association if present)
+    const result = await scopedQuery(
+      `SELECT * FROM batches WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`,
+      [tenantId, id],
+      { tableAlias: 'batches' }
+    )
     return result.rows[0] ?? null
   },
   async findByNumber(tenantId: string, batchNumber: string, productId: string) {
-    const result = await query(`SELECT * FROM batches WHERE tenant_id = $1 AND batch_number = $2 AND product_id = $3 AND deleted_at IS NULL`, [tenantId, batchNumber, productId])
+    const result = await scopedQuery(
+      `SELECT * FROM batches WHERE tenant_id = $1 AND batch_number = $2 AND product_id = $3 AND deleted_at IS NULL`,
+      [tenantId, batchNumber, productId],
+      { tableAlias: 'batches' }
+    )
     return result.rows[0] ?? null
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; search?: string } = {}) {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
-    let where = 'tenant_id = $1 AND deleted_at IS NULL'
+    let where = 'batches.tenant_id = $1 AND batches.deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
-    if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    if (params.search) { where += ` AND (batch_number ILIKE $${idx} OR product_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM batches WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM batches WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    if (params.productId) { where += ` AND batches.product_id = $${idx++}`; sqlParams.push(params.productId) }
+    if (params.search) { where += ` AND (batches.batch_number ILIKE $${idx} OR batches.product_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
+    const total = await scopedCount('batches', 'batches', where, sqlParams)
+    const result = await scopedQuery(
+      `SELECT * FROM batches WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+      [...sqlParams, pageSize, offset],
+      { tableAlias: 'batches' }
+    )
     return { rows: result.rows, total, page, pageSize }
   },
 }
@@ -63,11 +82,11 @@ export const lotRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM lots WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(`SELECT * FROM lots WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'lots' })
     return result.rows[0] ?? null
   },
   async findByNumber(tenantId: string, lotNumber: string, productId: string) {
-    const result = await query(`SELECT * FROM lots WHERE tenant_id = $1 AND lot_number = $2 AND product_id = $3 AND deleted_at IS NULL`, [tenantId, lotNumber, productId])
+    const result = await scopedQuery(`SELECT * FROM lots WHERE tenant_id = $1 AND lot_number = $2 AND product_id = $3 AND deleted_at IS NULL`, [tenantId, lotNumber, productId], { tableAlias: 'lots' })
     return result.rows[0] ?? null
   },
 }
@@ -76,11 +95,19 @@ export const lotRepository = {
 
 export const inventoryRepository = {
   async findById(tenantId: string, id: string) {
-    const result = await query(`SELECT * FROM inventory WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id])
+    const result = await scopedQuery(
+      `SELECT * FROM inventory WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`,
+      [tenantId, id],
+      { tableAlias: 'inventory' }
+    )
     return result.rows[0] ?? null
   },
   async findByKey(tenantId: string, productId: string, warehouseId: string, batchId: string | null, lotId: string | null, binId: string | null) {
-    const result = await query(`SELECT * FROM inventory WHERE tenant_id = $1 AND product_id = $2 AND warehouse_id = $3 AND COALESCE(batch_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($4::uuid, '00000000-0000-0000-0000-000000000000'::uuid) AND COALESCE(lot_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid) AND COALESCE(bin_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($6::uuid, '00000000-0000-0000-0000-000000000000'::uuid) AND deleted_at IS NULL`, [tenantId, productId, warehouseId, batchId, lotId, binId])
+    const result = await scopedQuery(
+      `SELECT * FROM inventory WHERE tenant_id = $1 AND product_id = $2 AND warehouse_id = $3 AND COALESCE(batch_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($4::uuid, '00000000-0000-0000-0000-000000000000'::uuid) AND COALESCE(lot_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($5::uuid, '00000000-0000-0000-0000-000000000000'::uuid) AND COALESCE(bin_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE($6::uuid, '00000000-0000-0000-0000-000000000000'::uuid) AND deleted_at IS NULL`,
+      [tenantId, productId, warehouseId, batchId, lotId, binId],
+      { tableAlias: 'inventory' }
+    )
     return result.rows[0] ?? null
   },
   async create(data: Record<string, unknown>) {
@@ -102,6 +129,10 @@ export const inventoryRepository = {
     return this.findById(String(data['tenantId']), id)
   },
   async update(tenantId: string, id: string, data: Record<string, unknown>, version: number) {
+    // Phase 1: enforce scope on write — verify the record is in-scope before update
+    const existing = await this.findById(tenantId, id)
+    if (existing) enforceScopeOnWrite(existing as Record<string, unknown>, 'Inventory', 'update')
+
     const setParts: string[] = ['version = version + 1', 'updated_at = NOW()']
     const vals: unknown[] = [tenantId, id]; let idx = 3
     const fieldMap: Record<string, string> = {
@@ -120,26 +151,37 @@ export const inventoryRepository = {
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; warehouseId?: string; batchId?: string; expired?: boolean } = {}) {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
-    let where = 'tenant_id = $1 AND deleted_at IS NULL AND quantity > 0'
+    let where = 'inventory.tenant_id = $1 AND inventory.deleted_at IS NULL AND inventory.quantity > 0'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
-    if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    if (params.warehouseId) { where += ` AND warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
-    if (params.batchId) { where += ` AND batch_id = $${idx++}`; sqlParams.push(params.batchId) }
-    if (params.expired) { where += ` AND expiry_date < NOW()` }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM inventory WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM inventory WHERE ${where} ORDER BY updated_at DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    if (params.productId) { where += ` AND inventory.product_id = $${idx++}`; sqlParams.push(params.productId) }
+    if (params.warehouseId) { where += ` AND inventory.warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
+    if (params.batchId) { where += ` AND inventory.batch_id = $${idx++}`; sqlParams.push(params.batchId) }
+    if (params.expired) { where += ` AND inventory.expiry_date < NOW()` }
+    const total = await scopedCount('inventory', 'inventory', where, sqlParams)
+    const result = await scopedQuery(
+      `SELECT * FROM inventory WHERE ${where} ORDER BY updated_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+      [...sqlParams, pageSize, offset],
+      { tableAlias: 'inventory' }
+    )
     return { rows: result.rows, total, page, pageSize }
   },
   /** FEFO: Get stock ordered by expiry date ascending (First Expiry First Out) */
   async listFefo(tenantId: string, productId: string, warehouseId: string, _qtyNeeded: number) {
-    const result = await query(`SELECT * FROM inventory WHERE tenant_id = $1 AND product_id = $2 AND warehouse_id = $3 AND available_qty > 0 AND deleted_at IS NULL AND is_blocked = false ORDER BY expiry_date ASC, created_at ASC`, [tenantId, productId, warehouseId])
+    const result = await scopedQuery(
+      `SELECT * FROM inventory WHERE tenant_id = $1 AND product_id = $2 AND warehouse_id = $3 AND available_qty > 0 AND deleted_at IS NULL AND is_blocked = false ORDER BY expiry_date ASC, created_at ASC`,
+      [tenantId, productId, warehouseId],
+      { tableAlias: 'inventory' }
+    )
     return result.rows
   },
   /** FIFO: Get stock ordered by creation date ascending (First In First Out) */
   async listFifo(tenantId: string, productId: string, warehouseId: string, _qtyNeeded: number) {
     void _qtyNeeded
-    const result = await query(`SELECT * FROM inventory WHERE tenant_id = $1 AND product_id = $2 AND warehouse_id = $3 AND available_qty > 0 AND deleted_at IS NULL AND is_blocked = false ORDER BY created_at ASC`, [tenantId, productId, warehouseId])
+    const result = await scopedQuery(
+      `SELECT * FROM inventory WHERE tenant_id = $1 AND product_id = $2 AND warehouse_id = $3 AND available_qty > 0 AND deleted_at IS NULL AND is_blocked = false ORDER BY created_at ASC`,
+      [tenantId, productId, warehouseId],
+      { tableAlias: 'inventory' }
+    )
     return result.rows
   },
 }
@@ -169,14 +211,13 @@ export const inventoryTransactionRepository = {
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; warehouseId?: string; movementType?: string } = {}) {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
-    let where = 'tenant_id = $1'
+    let where = 'inventory_transactions.tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
-    if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    if (params.warehouseId) { where += ` AND warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
-    if (params.movementType) { where += ` AND movement_type = $${idx++}`; sqlParams.push(params.movementType) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM inventory_transactions WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM inventory_transactions WHERE ${where} ORDER BY transaction_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    if (params.productId) { where += ` AND inventory_transactions.product_id = $${idx++}`; sqlParams.push(params.productId) }
+    if (params.warehouseId) { where += ` AND inventory_transactions.warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
+    if (params.movementType) { where += ` AND inventory_transactions.movement_type = $${idx++}`; sqlParams.push(params.movementType) }
+    const total = await scopedCount('inventory_transactions', 'inventory_transactions', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM inventory_transactions WHERE ${where} ORDER BY transaction_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'inventory_transactions' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateTransactionNumber(tenantId: string): Promise<string> {
@@ -212,13 +253,12 @@ export const inventoryLedgerRepository = {
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; productId?: string; warehouseId?: string } = {}) {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
-    let where = 'tenant_id = $1'
+    let where = 'inventory_ledger.tenant_id = $1'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
-    if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    if (params.warehouseId) { where += ` AND warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM inventory_ledger WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM inventory_ledger WHERE ${where} ORDER BY entry_date DESC, entry_number DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    if (params.productId) { where += ` AND inventory_ledger.product_id = $${idx++}`; sqlParams.push(params.productId) }
+    if (params.warehouseId) { where += ` AND inventory_ledger.warehouse_id = $${idx++}`; sqlParams.push(params.warehouseId) }
+    const total = await scopedCount('inventory_ledger', 'inventory_ledger', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM inventory_ledger WHERE ${where} ORDER BY entry_date DESC, entry_number DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'inventory_ledger' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateEntryNumber(tenantId: string): Promise<string> {
@@ -258,13 +298,12 @@ export const stockReservationRepository = {
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string; productId?: string } = {}) {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
-    let where = 'tenant_id = $1 AND deleted_at IS NULL'
+    let where = 'stock_reservations.tenant_id = $1 AND stock_reservations.deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
-    if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    if (params.productId) { where += ` AND product_id = $${idx++}`; sqlParams.push(params.productId) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM stock_reservations WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM stock_reservations WHERE ${where} ORDER BY reservation_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    if (params.status) { where += ` AND stock_reservations.status = $${idx++}`; sqlParams.push(params.status) }
+    if (params.productId) { where += ` AND stock_reservations.product_id = $${idx++}`; sqlParams.push(params.productId) }
+    const total = await scopedCount('stock_reservations', 'stock_reservations', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM stock_reservations WHERE ${where} ORDER BY reservation_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'stock_reservations' })
     return { rows: result.rows, total, page, pageSize }
   },
   async release(tenantId: string, id: string, releasedBy: string, releasedReason: string) {
@@ -301,12 +340,11 @@ export const stockBlockRepository = {
   },
   async list(tenantId: string, params: { page?: number; pageSize?: number; status?: string } = {}) {
     const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
-    let where = 'tenant_id = $1 AND deleted_at IS NULL'
+    let where = 'stock_blocks.tenant_id = $1 AND stock_blocks.deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId]; let idx = 2
-    if (params.status) { where += ` AND status = $${idx++}`; sqlParams.push(params.status) }
-    const countResult = await query<{ cnt: string }>(`SELECT COUNT(*) as cnt FROM stock_blocks WHERE ${where}`, sqlParams)
-    const total = Number(countResult.rows[0]!.cnt)
-    const result = await query(`SELECT * FROM stock_blocks WHERE ${where} ORDER BY block_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset])
+    if (params.status) { where += ` AND stock_blocks.status = $${idx++}`; sqlParams.push(params.status) }
+    const total = await scopedCount('stock_blocks', 'stock_blocks', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM stock_blocks WHERE ${where} ORDER BY block_date DESC LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'stock_blocks' })
     return { rows: result.rows, total, page, pageSize }
   },
   async generateBlockNumber(tenantId: string): Promise<string> {
