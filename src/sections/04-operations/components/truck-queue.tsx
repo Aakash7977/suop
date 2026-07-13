@@ -95,6 +95,14 @@ export function TruckQueueModule() {
         </div>
       </Card>
 
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Backend Not Available</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">This module requires: <code className="font-mono">New yard/ module with TruckQueue, DockSchedule, YardMap</code>. See <code>MISSING_BACKEND_ITEMS.md</code> for details. Data shown below is mock.</p>
+        </div>
+      </div>
+
       <Card className="overflow-hidden">
         <div className="p-4 border-b"><h3 className="font-semibold">Live Queue</h3></div>
         <div className="overflow-x-auto">

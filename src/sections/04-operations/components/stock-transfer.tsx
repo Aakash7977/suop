@@ -77,6 +77,14 @@ export function StockTransferModule() {
           <Badge className="bg-blue-500 text-blue-950 hover:bg-blue-500">Sprint 15</Badge>
         </div>
       </Card>
+
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Backend Not Available</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Requires: <code className="font-mono">POST /api/v1/inventory/inventory/transfer</code>. Data shown is mock. See MISSING_BACKEND_ITEMS.md.</p>
+        </div>
+      </div>
       <div className="flex flex-wrap gap-2 border-b pb-3">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}

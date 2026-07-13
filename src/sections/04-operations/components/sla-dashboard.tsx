@@ -86,6 +86,14 @@ export function SLADashboardModule() {
           { label: 'Open Violations', value: violations.filter(v => v.status === 'OPEN' || v.status === 'INVESTIGATING').length, color: 'text-rose-600' },
           { label: 'Penalty (30d)', value: `₹${slaConfigs.reduce((a, s) => a + s.penalty, 0).toLocaleString('en-IN')}`, color: 'text-amber-600' },
         ].map(s => <Card key={s.label} className="p-4"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Backend Not Available</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Requires: <code className="font-mono">Operations SLA endpoint</code>. Data shown is mock. See MISSING_BACKEND_ITEMS.md.</p>
+        </div>
+      </div>
       </div>
 
       {/* SLA Compliance Table */}

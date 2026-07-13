@@ -113,6 +113,14 @@ export function ReceivingModule() {
         </div>
       </Card>
 
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3 flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Backend Not Available</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Requires: <code className="font-mono">New receiving/ module (ASN, Appointments, Docks)</code>. Data shown is mock. See MISSING_BACKEND_ITEMS.md.</p>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {tabs.map(t => (
           <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)} className="gap-2">
