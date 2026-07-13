@@ -1,0 +1,772 @@
+  4044→function InventoryModule() {
+  4045→  const [tab, setTab] = useState<InvTab>('overview')
+  4046→  const tabs: Array<{ key: InvTab; label: string; icon: React.ReactNode }> = [
+  4047→    { key: 'overview', label: 'Overview', icon: <Gauge className="h-4 w-4" /> },
+  4048→    { key: 'transactions', label: 'Transactions', icon: <ArrowLeftRight className="h-4 w-4" /> },
+  4049→    { key: 'balances', label: 'Stock Balances', icon: <Boxes className="h-4 w-4" /> },
+  4050→    { key: 'ledger', label: 'Stock Ledger', icon: <BookOpen className="h-4 w-4" /> },
+  4051→    { key: 'movements', label: 'Movements', icon: <PackageOpen className="h-4 w-4" /> },
+  4052→    { key: 'journal', label: 'Journal', icon: <Layers3 className="h-4 w-4" /> },
+  4053→    { key: 'availability', label: 'Availability', icon: <ActivityIcon className="h-4 w-4" /> },
+  4054→  ]
+  4055→
+  4056→  return (
+  4057→    <div className="space-y-6">
+  4058→      <Card className="p-6 bg-gradient-to-r from-red-950 via-orange-900 to-amber-900 text-white border-0">
+  4059→        <div className="flex items-start justify-between">
+  4060→          <div>
+  4061→            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+  4062→              <Boxes className="h-7 w-7" /> Enterprise Inventory Engine
+  4063→            </h2>
+  4064→            <p className="text-orange-200 text-sm max-w-3xl">
+  4065→              Universal Stock Ledger — the single source of truth for inventory.
+  4066→              <span className="font-semibold text-white"> NEVER update stock directly.</span> Every stock change creates an immutable ledger transaction.
+  4067→              Stock balances are DERIVED from the ledger. This is the core engine that Manufacturing, Warehouse, Retail, Restaurant, and Finance all depend on.
+  4068→            </p>
+  4069→          </div>
+  4070→          <Badge className="bg-red-500 text-red-950 hover:bg-red-500">Sprint 12 · Part 3</Badge>
+  4071→        </div>
+  4072→      </Card>
+  4073→
+  4074→      <Card className="p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
+  4075→        <div className="flex items-center gap-3 text-sm">
+  4076→          <ShieldCheck className="h-5 w-5 text-blue-600 flex-shrink-0" />
+  4077→          <div>
+  4078→            <p className="font-semibold text-blue-900 dark:text-blue-200">Core Architecture Principle</p>
+  4079→            <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+  4080→              Available = Received − Issued − Reserved − Damaged. The <code className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">stock_balances</code> table is a performance cache only — it must always be reconstructable from the immutable <code className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">stock_ledger</code>.
+  4081→            </p>
+  4082→          </div>
+  4083→        </div>
+  4084→      </Card>
+  4085→
+  4086→      <div className="flex flex-wrap gap-2 border-b pb-3">
+  4087→        {tabs.map(t => (
+  4088→          <button key={t.key} onClick={() => setTab(t.key)}
+  4089→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  4090→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+  4091→            {t.icon}{t.label}
+  4092→          </button>
+  4093→        ))}
+  4094→      </div>
+  4095→
+  4096→      {tab === 'overview' && <InvOverviewTab />}
+  4097→      {tab === 'transactions' && <InvTransactionsTab />}
+  4098→      {tab === 'balances' && <InvBalancesTab />}
+  4099→      {tab === 'ledger' && <InvLedgerTab />}
+  4100→      {tab === 'movements' && <InvMovementsTab />}
+  4101→      {tab === 'journal' && <InvJournalTab />}
+  4102→      {tab === 'availability' && <InvAvailabilityTab />}
+  4103→    </div>
+  4104→  )
+  4105→}
+  4106→
+  4107→function InvOverviewTab() {
+  4108→  const stats = [
+  4109→    { label: 'Total Inventory Value', value: '₹5.16L', sub: 'Across 10 stock balances', icon: <IndianRupee className="h-5 w-5 text-emerald-600" /> },
+  4110→    { label: 'Available Units', value: '4,904', sub: 'Ready for sale/issue', icon: <PackageCheck className="h-5 w-5 text-blue-600" /> },
+  4111→    { label: 'Reserved Units', value: '24', sub: 'For Infosys order', icon: <ShieldCheck className="h-5 w-5 text-purple-600" /> },
+  4112→    { label: 'Expired Units', value: '56', sub: 'Batch KK-2606-05', icon: <AlertOctagon className="h-5 w-5 text-red-600" /> },
+  4113→    { label: 'Transactions', value: '10', sub: '8 POSTED · 2 PENDING', icon: <ArrowLeftRight className="h-5 w-5 text-amber-600" /> },
+  4114→    { label: 'Ledger Entries', value: '10', sub: 'Immutable audit trail', icon: <BookOpen className="h-5 w-5 text-cyan-600" /> },
+  4115→    { label: 'Journal Entries', value: '6', sub: 'Double-entry style', icon: <Layers3 className="h-5 w-5 text-indigo-600" /> },
+  4116→    { label: 'Transaction Types', value: '18', sub: 'Goods Receipt to Stock Take', icon: <ListChecks className="h-5 w-5 text-teal-600" /> },
+  4117→  ]
+  4118→  return (
+  4119→    <div className="space-y-6">
+  4120→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  4121→        {stats.map(s => (
+  4122→          <Card key={s.label} className="p-4">
+  4123→            <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+  4124→            <p className="text-2xl font-bold">{s.value}</p>
+  4125→            <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+  4126→          </Card>
+  4127→        ))}
+  4128→      </div>
+  4129→      <Card className="p-6">
+  4130→        <h3 className="font-semibold mb-4 flex items-center gap-2"><ActivityIcon className="h-5 w-5" /> Transaction Flow (Universal Ledger)</h3>
+  4131→        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 font-mono text-xs space-y-2">
+  4132→          <p className="text-muted-foreground">// Every module calls the Inventory Engine — never updates stock directly</p>
+  4133→          <div className="space-y-1 pt-2">
+  4134→            <p><Badge variant="outline" className="font-mono">1</Badge> <span className="text-blue-600">Inventory Transaction</span> (Goods Receipt, Issue, Transfer, Adjustment, etc.)</p>
+  4135→            <p><Badge variant="outline" className="font-mono">2</Badge> → Posts to <span className="text-purple-600">Stock Ledger</span> (immutable, append-only)</p>
+  4136→            <p><Badge variant="outline" className="font-mono">3</Badge> → Posts to <span className="text-indigo-600">Inventory Journal</span> (double-entry: DEBIT/CREDIT)</p>
+  4137→            <p><Badge variant="outline" className="font-mono">4</Badge> → Creates <span className="text-cyan-600">Stock Movement</span> record (from→to)</p>
+  4138→            <p><Badge variant="outline" className="font-mono">5</Badge> → <span className="text-emerald-600">Stock Balance</span> cache updated (derived from ledger)</p>
+  4139→            <p><Badge variant="outline" className="font-mono">6</Badge> → <span className="text-amber-600">Availability Service</span> exposes current state to all modules</p>
+  4140→          </div>
+  4141→        </div>
+  4142→        <div className="mt-4 grid sm:grid-cols-5 gap-2 text-center text-xs">
+  4143→          {['Manufacturing', 'Warehouse', 'Retail POS', 'Restaurant POS', 'Finance'].map(ch => (
+  4144→            <div key={ch} className="p-2 rounded-md bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900">
+  4145→              <p className="font-semibold text-orange-700 dark:text-orange-400">{ch}</p>
+  4146→              <p className="text-muted-foreground mt-1">Consumes via API</p>
+  4147→            </div>
+  4148→          ))}
+  4149→        </div>
+  4150→      </Card>
+  4151→    </div>
+  4152→  )
+  4153→}
+  4154→
+  4155→function InvTransactionsTab() {
+  4156→  const transactions = [
+  4157→    { id: 'it-001', number: 'INV-2026-00142', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', partner: 'Konkan Cashew Processors', status: 'POSTED', lines: 3, totalQty: 380, totalValue: 114000, createdBy: 'Suresh Patil' },
+  4158→    { id: 'it-002', number: 'INV-2026-00143', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', partner: 'Sri Balaji Sugar', status: 'POSTED', lines: 1, totalQty: 500, totalValue: 25000, createdBy: 'Suresh Patil' },
+  4159→    { id: 'it-003', number: 'INV-2026-00144', type: 'PRODUCTION_RECEIPT', date: '2026-07-01', refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 1, totalQty: 500, totalValue: 175000, createdBy: 'Anita Desai' },
+  4160→    { id: 'it-004', number: 'INV-2026-00145', type: 'TRANSFER', date: '2026-07-03', refType: 'TRANSFER_ORDER', refNumber: 'TO-2026-0042', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 1, totalQty: 358, totalValue: 125300, createdBy: 'Anita Desai' },
+  4161→    { id: 'it-005', number: 'INV-2026-00146', type: 'SALES', date: '2026-07-05', refType: 'INVOICE', refNumber: 'INV-2026-00892', warehouse: 'Mumbai DC', partner: 'Tata Consumer Products', status: 'POSTED', lines: 1, totalQty: 100, totalValue: 54000, createdBy: 'Vikram Iyer' },
+  4162→    { id: 'it-006', number: 'INV-2026-00147', type: 'SALES', date: '2026-07-06', refType: 'INVOICE', refNumber: 'INV-2026-00915', warehouse: 'Mumbai DC', partner: 'Reliance Retail', status: 'POSTED', lines: 1, totalQty: 48, totalValue: 25920, createdBy: 'Vikram Iyer' },
+  4163→    { id: 'it-007', number: 'INV-2026-00148', type: 'RESERVATION', date: '2026-07-08', refType: 'SALES_ORDER', refNumber: 'SO-2026-0234', warehouse: 'Mumbai DC', partner: 'Infosys', status: 'POSTED', lines: 1, totalQty: 24, totalValue: 12960, createdBy: 'Vikram Iyer' },
+  4164→    { id: 'it-008', number: 'INV-2026-00149', type: 'DAMAGE', date: '2026-07-07', refType: 'DAMAGE_REPORT', refNumber: 'DMG-2026-0012', warehouse: 'Mumbai DC', partner: null, status: 'PENDING_APPROVAL', lines: 1, totalQty: 8, totalValue: 4320, createdBy: 'Anita Desai' },
+  4165→    { id: 'it-009', number: 'INV-2026-00150', type: 'ADJUSTMENT', date: '2026-07-09', refType: 'ADJUSTMENT_REQUEST', refNumber: 'ADJ-2026-0034', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'PENDING_APPROVAL', lines: 2, totalQty: 12, totalValue: 6480, createdBy: 'Suresh Patil' },
+  4166→    { id: 'it-010', number: 'INV-2026-00151', type: 'OPENING_STOCK', date: '2026-01-01', refType: 'OPENING_STOCK', refNumber: 'OS-2026-001', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 12, totalQty: 2400, totalValue: 840000, createdBy: 'System' },
+  4167→  ]
+  4168→  const typeColor: Record<string, string> = {
+  4169→    GOODS_RECEIPT: 'bg-emerald-100 text-emerald-800', GOODS_ISSUE: 'bg-red-100 text-red-800',
+  4170→    TRANSFER: 'bg-blue-100 text-blue-800', ADJUSTMENT: 'bg-amber-100 text-amber-800',
+  4171→    PRODUCTION_RECEIPT: 'bg-emerald-100 text-emerald-800', PRODUCTION_CONSUMPTION: 'bg-orange-100 text-orange-800',
+  4172→    SALES: 'bg-purple-100 text-purple-800', SALES_RETURN: 'bg-cyan-100 text-cyan-800',
+  4173→    PURCHASE_RETURN: 'bg-red-100 text-red-800', OPENING_STOCK: 'bg-slate-100 text-slate-800',
+  4174→    CYCLE_COUNT: 'bg-teal-100 text-teal-800', RESERVATION: 'bg-indigo-100 text-indigo-800',
+  4175→    ALLOCATION: 'bg-violet-100 text-violet-800', RELEASE: 'bg-pink-100 text-pink-800',
+  4176→    SCRAP: 'bg-red-200 text-red-900', DAMAGE: 'bg-orange-200 text-orange-900',
+  4177→    EXPIRY: 'bg-gray-200 text-gray-800', STOCK_TAKE: 'bg-teal-100 text-teal-800',
+  4178→  }
+  4179→  const statusColor: Record<string, string> = { POSTED: 'bg-emerald-600 hover:bg-emerald-600', PENDING_APPROVAL: 'bg-amber-500 hover:bg-amber-500', DRAFT: 'bg-slate-500 hover:bg-slate-500', REVERSED: 'bg-red-600 hover:bg-red-600', CANCELLED: 'bg-gray-600 hover:bg-gray-600' }
+  4180→  return (
+  4181→    <Card className="p-6">
+  4182→      <div className="flex items-center justify-between mb-4">
+  4183→        <div><h3 className="font-semibold">Inventory Transactions</h3>
+  4184→        <p className="text-xs text-muted-foreground mt-1">18 transaction types supported. Every transaction posts to the immutable ledger. Negative stock blocked by default. Reversible (except Opening Stock, Scrap, Expiry).</p></div>
+  4185→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Transaction</Button>
+  4186→      </div>
+  4187→      <div className="overflow-x-auto">
+  4188→        <table className="w-full text-sm">
+  4189→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  4190→            <th className="py-2 font-medium">Transaction #</th><th className="font-medium">Type</th>
+  4191→            <th className="font-medium">Date</th><th className="font-medium">Reference</th>
+  4192→            <th className="font-medium">Warehouse</th><th className="font-medium">Partner</th>
+  4193→            <th className="font-medium text-right">Qty</th><th className="font-medium text-right">Value</th>
+  4194→            <th className="font-medium">Status</th>
+  4195→          </tr></thead>
+  4196→          <tbody>
+  4197→            {transactions.map(t => (
+  4198→              <tr key={t.id} className="border-b hover:bg-muted/40">
+  4199→                <td className="py-2.5 font-mono text-xs">{t.number}</td>
+  4200→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[t.type])}>{t.type.replace(/_/g, ' ')}</span></td>
+  4201→                <td className="text-xs text-muted-foreground">{t.date}</td>
+  4202→                <td className="text-xs"><span className="font-mono">{t.refNumber}</span><br /><span className="text-muted-foreground">{t.refType.replace(/_/g, ' ')}</span></td>
+  4203→                <td className="text-xs">{t.warehouse}</td>
+  4204→                <td className="text-xs">{t.partner || <span className="text-muted-foreground">—</span>}</td>
+  4205→                <td className="text-right font-mono">{t.totalQty}</td>
+  4206→                <td className="text-right font-mono">₹{t.totalValue.toLocaleString('en-IN')}</td>
+  4207→                <td><Badge className={statusColor[t.status] + ' text-xs'}>{t.status.replace(/_/g, ' ')}</Badge></td>
+  4208→              </tr>
+  4209→            ))}
+  4210→          </tbody>
+  4211→        </table>
+  4212→      </div>
+  4213→    </Card>
+  4214→  )
+  4215→}
+  4216→
+  4217→function InvBalancesTab() {
+  4218→  const balances = [
+  4219→    { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', available: 142, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 142, unitCost: 350, totalValue: 49700, expiry: '2026-07-31' },
+  4220→    { product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', available: 186, reserved: 24, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 210, unitCost: 350, totalValue: 73500, expiry: '2026-07-31' },
+  4221→    { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2606-05', available: 0, reserved: 0, allocated: 0, damaged: 0, expired: 56, inTransit: 0, total: 56, unitCost: 345, totalValue: 19320, expiry: '2026-07-25' },
+  4222→    { product: 'Soan Cake 1kg', warehouse: 'Mumbai Plant Warehouse', batch: 'SC-2606-04', available: 89, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 89, unitCost: 625, totalValue: 55625, expiry: '2026-09-15' },
+  4223→    { product: 'Mixed Namkeen 200g', warehouse: 'Mumbai Plant Warehouse', batch: 'MN-2607-03', available: 1180, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 1180, unitCost: 53, totalValue: 62540, expiry: '2026-08-22' },
+  4224→    { product: 'Gulab Jamun 1kg', warehouse: 'Mumbai DC', batch: 'GJ-2607-01', available: 412, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 412, unitCost: 304, totalValue: 125248, expiry: '2026-08-05' },
+  4225→    { product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 35, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 35, unitCost: 850, totalValue: 29750, expiry: null },
+  4226→    { product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 28, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 28, unitCost: 45, totalValue: 1260, expiry: null },
+  4227→    { product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 12, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 12, unitCost: 520, totalValue: 6240, expiry: null },
+  4228→    { product: 'Packaging Boxes', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 2840, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 2840, unitCost: 12, totalValue: 34080, expiry: null },
+  4229→  ]
+  4230→  return (
+  4231→    <Card className="p-6">
+  4232→      <div className="flex items-center justify-between mb-4">
+  4233→        <div><h3 className="font-semibold">Stock Balances (Derived Cache)</h3>
+  4234→        <p className="text-xs text-muted-foreground mt-1">Computed from the immutable ledger. Formula: Total = Available + Reserved + Allocated + Damaged + Expired + In Transit. Multi-dimensional: product × warehouse × batch × location × bin.</p></div>
+  4235→      </div>
+  4236→      <div className="overflow-x-auto">
+  4237→        <table className="w-full text-sm">
+  4238→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  4239→            <th className="py-2 font-medium">Product</th><th className="font-medium">Warehouse</th>
+  4240→            <th className="font-medium">Batch</th><th className="font-medium text-right">Avail</th>
+  4241→            <th className="font-medium text-right">Resv</th><th className="font-medium text-right">Alloc</th>
+  4242→            <th className="font-medium text-right">Dmg</th><th className="font-medium text-right">Exp</th>
+  4243→            <th className="font-medium text-right">Total</th><th className="font-medium text-right">Value</th>
+  4244→            <th className="font-medium">Expiry</th>
+  4245→          </tr></thead>
+  4246→          <tbody>
+  4247→            {balances.map((b, i) => (
+  4248→              <tr key={i} className="border-b hover:bg-muted/40">
+  4249→                <td className="py-2.5 font-medium">{b.product}</td>
+  4250→                <td className="text-xs">{b.warehouse}</td>
+  4251→                <td className="font-mono text-xs">{b.batch || <span className="text-muted-foreground">—</span>}</td>
+  4252→                <td className="text-right font-mono font-semibold text-emerald-600">{b.available}</td>
+  4253→                <td className="text-right font-mono text-blue-600">{b.reserved}</td>
+  4254→                <td className="text-right font-mono text-purple-600">{b.allocated}</td>
+  4255→                <td className="text-right font-mono text-orange-600">{b.damaged}</td>
+  4256→                <td className="text-right font-mono text-red-600">{b.expired}</td>
+  4257→                <td className="text-right font-mono font-semibold">{b.total}</td>
+  4258→                <td className="text-right font-mono">₹{b.totalValue.toLocaleString('en-IN')}</td>
+  4259→                <td className="text-xs text-muted-foreground">{b.expiry || '—'}</td>
+  4260→              </tr>
+  4261→            ))}
+  4262→          </tbody>
+  4263→        </table>
+  4264→      </div>
+  4265→    </Card>
+  4266→  )
+  4267→}
+  4268→
+  4269→function InvLedgerTab() {
+  4270→  const entries = [
+  4271→    { id: 'sl-001', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 200, availDelta: 200, postingDate: '2026-07-08 10:15', isReversal: false },
+  4272→    { id: 'sl-002', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 150, availDelta: 150, postingDate: '2026-07-08 10:15', isReversal: false },
+  4273→    { id: 'sl-003', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 30, availDelta: 30, postingDate: '2026-07-08 10:15', isReversal: false },
+  4274→    { id: 'sl-004', txnNumber: 'INV-2026-00143', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 500, availDelta: 500, postingDate: '2026-07-08 10:20', isReversal: false },
+  4275→    { id: 'sl-005', txnNumber: 'INV-2026-00144', txnType: 'PRODUCTION_RECEIPT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', qtyDelta: 500, availDelta: 500, postingDate: '2026-07-01 16:00', isReversal: false },
+  4276→    { id: 'sl-006', txnNumber: 'INV-2026-00145', txnType: 'TRANSFER', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', qtyDelta: -358, availDelta: -358, postingDate: '2026-07-03 10:00', isReversal: false },
+  4277→    { id: 'sl-007', txnNumber: 'INV-2026-00145', txnType: 'TRANSFER', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: 358, availDelta: 358, postingDate: '2026-07-03 10:00', isReversal: false },
+  4278→    { id: 'sl-008', txnNumber: 'INV-2026-00146', txnType: 'SALES', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -100, availDelta: -100, postingDate: '2026-07-05 14:00', isReversal: false },
+  4279→    { id: 'sl-009', txnNumber: 'INV-2026-00147', txnType: 'SALES', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -48, availDelta: -48, postingDate: '2026-07-06 11:30', isReversal: false },
+  4280→    { id: 'sl-010', txnNumber: 'INV-2026-00148', txnType: 'RESERVATION', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -24, availDelta: -24, postingDate: '2026-07-08 09:00', isReversal: false },
+  4281→  ]
+  4282→  return (
+  4283→    <Card className="p-6">
+  4284→      <div className="flex items-center justify-between mb-4">
+  4285→        <div><h3 className="font-semibold flex items-center gap-2"><BookOpen className="h-5 w-5" /> Stock Ledger (Immutable Source of Truth)</h3>
+  4286→        <p className="text-xs text-muted-foreground mt-1">Append-only. Never edited. Never deleted. Reversals create new entries with negative deltas. This is the single source from which all stock balances are derived.</p></div>
+  4287→      </div>
+  4288→      <div className="overflow-x-auto">
+  4289→        <table className="w-full text-sm">
+  4290→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  4291→            <th className="py-2 font-medium">Txn Number</th><th className="font-medium">Type</th>
+  4292→            <th className="font-medium">Product</th><th className="font-medium">Warehouse</th>
+  4293→            <th className="font-medium">Batch</th><th className="font-medium text-right">Qty Delta</th>
+  4294→            <th className="font-medium text-right">Avail Delta</th><th className="font-medium">Posted</th>
+  4295→            <th className="font-medium">Reversal?</th>
+  4296→          </tr></thead>
+  4297→          <tbody>
+  4298→            {entries.map(e => (
+  4299→              <tr key={e.id} className="border-b hover:bg-muted/40 font-mono text-xs">
+  4300→                <td className="py-2.5">{e.txnNumber}</td>
+  4301→                <td><Badge variant="outline" className="text-xs">{e.txnType.replace(/_/g, ' ')}</Badge></td>
+  4302→                <td className="font-sans font-medium">{e.product}</td>
+  4303→                <td className="font-sans">{e.warehouse}</td>
+  4304→                <td>{e.batch || <span className="text-muted-foreground">—</span>}</td>
+  4305→                <td className={cn('text-right font-bold', e.qtyDelta > 0 ? 'text-emerald-600' : 'text-red-600')}>{e.qtyDelta > 0 ? '+' : ''}{e.qtyDelta}</td>
+  4306→                <td className={cn('text-right font-bold', e.availDelta > 0 ? 'text-emerald-600' : 'text-red-600')}>{e.availDelta > 0 ? '+' : ''}{e.availDelta}</td>
+  4307→                <td className="text-muted-foreground">{e.postingDate}</td>
+  4308→                <td>{e.isReversal ? <Badge variant="destructive" className="text-xs">Yes</Badge> : <span className="text-muted-foreground">No</span>}</td>
+  4309→              </tr>
+  4310→            ))}
+  4311→          </tbody>
+  4312→        </table>
+  4313→      </div>
+  4314→    </Card>
+  4315→  )
+  4316→}
+  4317→
+  4318→function InvMovementsTab() {
+  4319→  const movements = [
+  4320→    { id: 'sm-001', product: 'Cashew Nuts (Raw)', type: 'IN', qty: 200, from: 'Konkan Cashew Processors', to: 'Mumbai Plant Warehouse', ref: 'PO-2026-0142', partner: 'Konkan Cashew', performedBy: 'Suresh Patil', reason: 'Purchase receipt', date: '2026-07-08 10:15' },
+  4321→    { id: 'sm-002', product: 'Sugar (Raw)', type: 'IN', qty: 500, from: 'Sri Balaji Sugar', to: 'Mumbai Plant Warehouse', ref: 'PO-2026-0156', partner: 'Sri Balaji Sugar', performedBy: 'Suresh Patil', reason: 'Purchase receipt', date: '2026-07-08 10:20' },
+  4322→    { id: 'sm-003', product: 'Kaju Katli 500g', type: 'IN', qty: 500, from: 'Production Line 1', to: 'Mumbai Plant Warehouse', ref: 'MO-2026-0089', partner: null, performedBy: 'Anita Desai', reason: 'Production output', date: '2026-07-01 16:00' },
+  4323→    { id: 'sm-004', product: 'Kaju Katli 500g', type: 'TRANSFER', qty: 358, from: 'Mumbai Plant Warehouse', to: 'Mumbai DC', ref: 'TO-2026-0042', partner: null, performedBy: 'Anita Desai', reason: 'Inter-warehouse transfer', date: '2026-07-03 10:00' },
+  4324→    { id: 'sm-005', product: 'Kaju Katli 500g', type: 'OUT', qty: 100, from: 'Mumbai DC', to: 'Tata Consumer Products', ref: 'INV-2026-00892', partner: 'Tata Consumer', performedBy: 'Vikram Iyer', reason: 'Sales dispatch', date: '2026-07-05 14:00' },
+  4325→    { id: 'sm-006', product: 'Kaju Katli 500g', type: 'OUT', qty: 48, from: 'Mumbai DC', to: 'Reliance Retail', ref: 'INV-2026-00915', partner: 'Reliance Retail', performedBy: 'Vikram Iyer', reason: 'Sales dispatch', date: '2026-07-06 11:30' },
+  4326→    { id: 'sm-007', product: 'Kaju Katli 500g', type: 'RESERVATION', qty: 24, from: 'Mumbai DC', to: 'Mumbai DC (Reserved)', ref: 'SO-2026-0234', partner: 'Infosys', performedBy: 'Vikram Iyer', reason: 'Customer order reservation', date: '2026-07-08 09:00' },
+  4327→  ]
+  4328→  const typeColor: Record<string, string> = { IN: 'bg-emerald-100 text-emerald-800', OUT: 'bg-red-100 text-red-800', TRANSFER: 'bg-blue-100 text-blue-800', ADJUSTMENT: 'bg-amber-100 text-amber-800', RESERVATION: 'bg-indigo-100 text-indigo-800', ALLOCATION: 'bg-violet-100 text-violet-800', RELEASE: 'bg-pink-100 text-pink-800' }
+  4329→  return (
+  4330→    <Card className="p-6">
+  4331→      <div className="flex items-center justify-between mb-4">
+  4332→        <div><h3 className="font-semibold">Stock Movement History</h3>
+  4333→        <p className="text-xs text-muted-foreground mt-1">Tracks every movement: who, when, from, to, reason, reference. Supports forward and backward traceability.</p></div>
+  4334→      </div>
+  4335→      <div className="space-y-2">
+  4336→        {movements.map(m => (
+  4337→          <div key={m.id} className="border rounded-lg p-3 flex items-start gap-3">
+  4338→            <span className={cn('inline-block px-2 py-1 rounded text-xs font-bold flex-shrink-0', typeColor.type])}>{m.type}</span>
+  4339→            <div className="flex-1 min-w-0">
+  4340→              <div className="flex items-center gap-2 mb-1 flex-wrap">
+  4341→                <p className="font-medium text-sm">{m.product}</p>
+  4342→                <Badge variant="outline" className="text-xs font-mono">{m.qty} units</Badge>
+  4343→              </div>
+  4344→              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+  4345→                <span className="font-medium text-foreground">{m.from}</span>
+  4346→                <ArrowRight className="h-3 w-3" />
+  4347→                <span className="font-medium text-foreground">{m.to}</span>
+  4348→              </div>
+  4349→              <p className="text-xs text-muted-foreground mt-1">
+  4350→                Ref: <span className="font-mono">{m.ref}</span> · {m.partner && `Partner: ${m.partner} · `}By: {m.performedBy} · {m.date}
+  4351→              </p>
+  4352→              <p className="text-xs text-muted-foreground">Reason: {m.reason}</p>
+  4353→            </div>
+  4354→          </div>
+  4355→        ))}
+  4356→      </div>
+  4357→    </Card>
+  4358→  )
+  4359→}
+  4360→
+  4361→function InvJournalTab() {
+  4362→  const entries = [
+  4363→    { id: 'ij-001', entryNumber: 'IJ-2026-00284', txnNumber: 'INV-2026-00142', entryType: 'DEBIT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qty: 200, unitCost: 850, totalValue: 170000, account: 'RAW_MATERIAL', offsetAccount: 'GRNI', ref: 'PO-2026-0142', postingDate: '2026-07-08 10:15' },
+  4364→    { id: 'ij-002', entryNumber: 'IJ-2026-00285', txnNumber: 'INV-2026-00142', entryType: 'CREDIT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qty: 200, unitCost: 850, totalValue: 170000, account: 'GRNI', offsetAccount: 'RAW_MATERIAL', ref: 'PO-2026-0142', postingDate: '2026-07-08 10:15' },
+  4365→    { id: 'ij-003', entryNumber: 'IJ-2026-00286', txnNumber: 'INV-2026-00144', entryType: 'DEBIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', qty: 500, unitCost: 350, totalValue: 175000, account: 'FINISHED_GOODS', offsetAccount: 'WIP', ref: 'MO-2026-0089', postingDate: '2026-07-01 16:00' },
+  4366→    { id: 'ij-004', entryNumber: 'IJ-2026-00287', txnNumber: 'INV-2026-00144', entryType: 'CREDIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', qty: 500, unitCost: 350, totalValue: 175000, account: 'WIP', offsetAccount: 'FINISHED_GOODS', ref: 'MO-2026-0089', postingDate: '2026-07-01 16:00' },
+  4367→    { id: 'ij-005', entryNumber: 'IJ-2026-00288', txnNumber: 'INV-2026-00146', entryType: 'CREDIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', qty: 100, unitCost: 540, totalValue: 54000, account: 'FINISHED_GOODS', offsetAccount: 'COGS', ref: 'INV-2026-00892', postingDate: '2026-07-05 14:00' },
+  4368→    { id: 'ij-006', entryNumber: 'IJ-2026-00289', txnNumber: 'INV-2026-00146', entryType: 'DEBIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', qty: 100, unitCost: 540, totalValue: 54000, account: 'COGS', offsetAccount: 'FINISHED_GOODS', ref: 'INV-2026-00892', postingDate: '2026-07-05 14:00' },
+  4369→  ]
+  4370→  const typeColor: Record<string, string> = { DEBIT: 'bg-emerald-100 text-emerald-800', CREDIT: 'bg-red-100 text-red-800' }
+  4371→  return (
+  4372→    <Card className="p-6">
+  4373→      <div className="flex items-center justify-between mb-4">
+  4374→        <div><h3 className="font-semibold flex items-center gap-2"><Layers3 className="h-5 w-5" /> Inventory Journal (Immutable, Double-Entry)</h3>
+  4375→        <p className="text-xs text-muted-foreground mt-1">Accounting-style immutable journal. Never edited. Never deleted. Only reversal entries. Every transaction creates paired DEBIT/CREDIT entries for inventory valuation.</p></div>
+  4376→      </div>
+  4377→      <div className="overflow-x-auto">
+  4378→        <table className="w-full text-sm">
+  4379→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  4380→            <th className="py-2 font-medium">Entry #</th><th className="font-medium">Type</th>
+  4381→            <th className="font-medium">Product</th><th className="font-medium text-right">Qty</th>
+  4382→            <th className="font-medium text-right">Unit Cost</th><th className="font-medium text-right">Total Value</th>
+  4383→            <th className="font-medium">Account</th><th className="font-medium">Offset Account</th>
+  4384→            <th className="font-medium">Reference</th><th className="font-medium">Posted</th>
+  4385→          </tr></thead>
+  4386→          <tbody>
+  4387→            {entries.map(e => (
+  4388→              <tr key={e.id} className="border-b hover:bg-muted/40 font-mono text-xs">
+  4389→                <td className="py-2.5">{e.entryNumber}</td>
+  4390→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-bold', typeColor[e.entryType])}>{e.entryType}</span></td>
+  4391→                <td className="font-sans font-medium">{e.product}</td>
+  4392→                <td className="text-right">{e.qty}</td>
+  4393→                <td className="text-right">₹{e.unitCost}</td>
+  4394→                <td className="text-right font-semibold">₹{e.totalValue.toLocaleString('en-IN')}</td>
+  4395→                <td><Badge variant="outline" className="text-xs">{e.account}</Badge></td>
+  4396→                <td><Badge variant="outline" className="text-xs">{e.offsetAccount}</Badge></td>
+  4397→                <td>{e.ref}</td>
+  4398→                <td className="text-muted-foreground">{e.postingDate}</td>
+  4399→              </tr>
+  4400→            ))}
+  4401→          </tbody>
+  4402→        </table>
+  4403→      </div>
+  4404→    </Card>
+  4405→  )
+  4406→}
+  4407→
+  4408→function InvAvailabilityTab() {
+  4409→  const summary = {
+  4410→    totalAvailable: 4904,
+  4411→    totalReserved: 24,
+  4412→    totalAllocated: 0,
+  4413→    totalDamaged: 0,
+  4414→    totalExpired: 56,
+  4415→    totalInTransit: 0,
+  4416→    totalUnits: 4984,
+  4417→    totalValue: 516258,
+  4418→  }
+  4419→  const byProduct = [
+  4420→    { product: 'Kaju Katli 500g', available: 328, reserved: 24, expired: 56, value: 142520 },
+  4421→    { product: 'Soan Cake 1kg', available: 89, reserved: 0, expired: 0, value: 55625 },
+  4422→    { product: 'Mixed Namkeen 200g', available: 1180, reserved: 0, expired: 0, value: 62540 },
+  4423→    { product: 'Gulab Jamun 1kg', available: 412, reserved: 0, expired: 0, value: 125248 },
+  4424→    { product: 'Cashew Nuts (Raw)', available: 35, reserved: 0, expired: 0, value: 29750 },
+  4425→    { product: 'Sugar (Raw)', available: 28, reserved: 0, expired: 0, value: 1260 },
+  4426→    { product: 'Ghee (Raw)', available: 12, reserved: 0, expired: 0, value: 6240 },
+  4427→    { product: 'Packaging Boxes', available: 2840, reserved: 0, expired: 0, value: 34080 },
+  4428→  ]
+  4429→  return (
+  4430→    <Card className="p-6">
+  4431→      <div className="flex items-center justify-between mb-4">
+  4432→        <div><h3 className="font-semibold flex items-center gap-2"><ActivityIcon className="h-5 w-5" /> Stock Availability Service</h3>
+  4433→        <p className="text-xs text-muted-foreground mt-1">Shared service that every module calls instead of reading stock directly. Returns available, reserved, allocated, in-transit, and projected quantities.</p></div>
+  4434→      </div>
+  4435→      <div className="grid gap-3 sm:grid-cols-4 mb-6">
+  4436→        <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900">
+  4437→          <p className="text-xs text-muted-foreground">Available</p>
+  4438→          <p className="text-2xl font-bold text-emerald-600">{summary.totalAvailable.toLocaleString('en-IN')}</p>
+  4439→        </div>
+  4440→        <div className="p-3 rounded-lg border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
+  4441→          <p className="text-xs text-muted-foreground">Reserved</p>
+  4442→          <p className="text-2xl font-bold text-blue-600">{summary.totalReserved}</p>
+  4443→        </div>
+  4444→        <div className="p-3 rounded-lg border bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900">
+  4445→          <p className="text-xs text-muted-foreground">Expired</p>
+  4446→          <p className="text-2xl font-bold text-red-600">{summary.totalExpired}</p>
+  4447→        </div>
+  4448→        <div className="p-3 rounded-lg border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900">
+  4449→          <p className="text-xs text-muted-foreground">Total Value</p>
+  4450→          <p className="text-2xl font-bold text-amber-600">₹{summary.totalValue.toLocaleString('en-IN')}</p>
+  4451→        </div>
+  4452→      </div>
+  4453→      <h4 className="font-semibold text-sm mb-3">Availability by Product</h4>
+  4454→      <div className="overflow-x-auto">
+  4455→        <table className="w-full text-sm">
+  4456→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  4457→            <th className="py-2 font-medium">Product</th>
+  4458→            <th className="font-medium text-right">Available</th>
+  4459→            <th className="font-medium text-right">Reserved</th>
+  4460→            <th className="font-medium text-right">Expired</th>
+  4461→            <th className="font-medium text-right">Value</th>
+  4462→          </tr></thead>
+  4463→          <tbody>
+  4464→            {byProduct.map(p => (
+  4465→              <tr key={p.product} className="border-b hover:bg-muted/40">
+  4466→                <td className="py-2.5 font-medium">{p.product}</td>
+  4467→                <td className="text-right font-mono font-semibold text-emerald-600">{p.available}</td>
+  4468→                <td className="text-right font-mono text-blue-600">{p.reserved}</td>
+  4469→                <td className="text-right font-mono text-red-600">{p.expired}</td>
+  4470→                <td className="text-right font-mono">₹{p.value.toLocaleString('en-IN')}</td>
+  4471→              </tr>
+  4472→            ))}
+  4473→          </tbody>
+  4474→        </table>
+  4475→      </div>
+  4476→    </Card>
+  4477→  )
+  4478→}
+  4479→
+  4480→// ─── Goods Receipt & Putaway Module (Sprint 13) ─────────
+  4481→type GRNTab = 'overview' | 'grns' | 'putaway' | 'quality' | 'rules'
+  4482→
+  4483→function GoodsReceiptModule() {
+  4484→  const [tab, setTab] = useState<GRNTab>('overview')
+  4485→  const tabs: Array<{ key: GRNTab; label: string; icon: React.ReactNode }> = [
+  4486→    { key: 'overview', label: 'Dashboard', icon: <Gauge className="h-4 w-4" /> },
+  4487→    { key: 'grns', label: 'Goods Receipts', icon: <Truck className="h-4 w-4" /> },
+  4488→    { key: 'putaway', label: 'Putaway Tasks', icon: <PackageOpen className="h-4 w-4" /> },
+  4489→    { key: 'quality', label: 'Quality Holds', icon: <FlaskConical className="h-4 w-4" /> },
+  4490→    { key: 'rules', label: 'Putaway Rules', icon: <ListChecks className="h-4 w-4" /> },
+  4491→  ]
+  4492→
+  4493→  return (
+  4494→    <div className="space-y-6">
+  4495→      <Card className="p-6 bg-gradient-to-r from-cyan-950 via-blue-900 to-indigo-900 text-white border-0">
+  4496→        <div className="flex items-start justify-between">
+  4497→          <div>
+  4498→            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+  4499→              <Truck className="h-7 w-7" /> Goods Receipt & Intelligent Putaway Engine
+  4500→            </h2>
+  4501→            <p className="text-blue-200 text-sm max-w-3xl">
+  4502→              The first real inventory operation — stock physically enters SUOP. Create GRNs, scan barcodes,
+  4503→              verify supplier deliveries, assign batches, quality hold for inspection, intelligent putaway with
+  4504→              FIFO/FEFO/ABC strategies, and automatic ledger posting.
+  4505→            </p>
+  4506→          </div>
+  4507→          <Badge className="bg-cyan-500 text-cyan-950 hover:bg-cyan-500">Sprint 13</Badge>
+  4508→        </div>
+  4509→      </Card>
+  4510→
+  4511→      <Card className="p-4 bg-cyan-50 dark:bg-cyan-950/20 border-cyan-200 dark:border-cyan-900">
+  4512→        <div className="flex items-center gap-3 text-sm">
+  4513→          <ShieldCheck className="h-5 w-5 text-cyan-600 flex-shrink-0" />
+  4514→          <div>
+  4515→            <p className="font-semibold text-cyan-900 dark:text-cyan-200">Receiving Flow (Food Manufacturing Best Practice)</p>
+  4516→            <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-0.5">
+  4517→              Supplier Truck → Receiving Dock → Goods Receipt → Quality Check → Temporary Receiving Area → Putaway → Storage Bin → Available Stock. Stock is NOT available until quality release + putaway completion.
+  4518→            </p>
+  4519→          </div>
+  4520→        </div>
+  4521→      </Card>
+  4522→
+  4523→      <div className="flex flex-wrap gap-2 border-b pb-3">
+  4524→        {tabs.map(t => (
+  4525→          <button key={t.key} onClick={() => setTab(t.key)}
+  4526→            className={cn('flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  4527→              tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}>
+  4528→            {t.icon}{t.label}
+  4529→          </button>
+  4530→        ))}
+  4531→      </div>
+  4532→
+  4533→      {tab === 'overview' && <GRNOverviewTab />}
+  4534→      {tab === 'grns' && <GRNListTab />}
+  4535→      {tab === 'putaway' && <GRNPutawayTab />}
+  4536→      {tab === 'quality' && <GRNQualityTab />}
+  4537→      {tab === 'rules' && <GRNRulesTab />}
+  4538→    </div>
+  4539→  )
+  4540→}
+  4541→
+  4542→function GRNOverviewTab() {
+  4543→  const stats = [
+  4544→    { label: 'Total GRNs', value: '8', sub: '5 COMPLETED · 1 PENDING', icon: <Truck className="h-5 w-5 text-blue-600" /> },
+  4545→    { label: "Today's Receipts", value: '3', sub: '5,393 units · ₹3.63L value', icon: <PackageCheckIcon className="h-5 w-5 text-emerald-600" /> },
+  4546→    { label: 'Pending Putaway', value: '3', sub: 'Awaiting storage assignment', icon: <PackageOpen className="h-5 w-5 text-amber-600" /> },
+  4547→    { label: 'Quality Holds (Active)', value: '2', sub: 'Ghee lab test + Customer return', icon: <FlaskConical className="h-5 w-5 text-red-600" /> },
+  4548→    { label: 'Rejected Quantity', value: '5', sub: 'Cashew damaged in transit', icon: <AlertOctagon className="h-5 w-5 text-orange-600" /> },
+  4549→    { label: 'Putaway Tasks', value: '6', sub: '4 COMPLETED · 1 IN PROGRESS · 1 PENDING', icon: <ClipboardCheck className="h-5 w-5 text-purple-600" /> },
+  4550→    { label: 'Putaway Rules', value: '5', sub: 'FIFO, FEFO, ABC, ZONE, TEMPERATURE', icon: <ListChecks className="h-5 w-5 text-teal-600" /> },
+  4551→    { label: 'Inventory Posted', value: '5/8', sub: 'Auto-posted to ledger on approval', icon: <BookOpen className="h-5 w-5 text-indigo-600" /> },
+  4552→  ]
+  4553→  return (
+  4554→    <div className="space-y-6">
+  4555→      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  4556→        {stats.map(s => (
+  4557→          <Card key={s.label} className="p-4">
+  4558→            <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
+  4559→            <p className="text-2xl font-bold">{s.value}</p>
+  4560→            <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
+  4561→          </Card>
+  4562→        ))}
+  4563→      </div>
+  4564→      <Card className="p-6">
+  4565→        <h3 className="font-semibold mb-4 flex items-center gap-2"><Truck className="h-5 w-5" /> Receiving & Putaway Flow</h3>
+  4566→        <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 font-mono text-xs space-y-2">
+  4567→          <p className="text-muted-foreground">// 10 receipt types: Purchase, Manufacturing, Sales Return, Customer Return, Opening Stock, Inter-Branch, Warehouse Transfer, Stock Correction, Donation, Sample</p>
+  4568→          <div className="space-y-1 pt-2">
+  4569→            <p><Badge variant="outline" className="font-mono">1</Badge> <span className="text-blue-600">Supplier Delivery</span> arrives at Receiving Dock (vehicle, driver, gate entry)</p>
+  4570→            <p><Badge variant="outline" className="font-mono">2</Badge> → Create <span className="text-cyan-600">Goods Receipt Note (GRN)</span> with line items (ordered vs received vs accepted vs rejected)</p>
+  4571→            <p><Badge variant="outline" className="font-mono">3</Badge> → <span className="text-amber-600">Quality Hold</span> (if required) — stock held in quarantine until inspection</p>
+  4572→            <p><Badge variant="outline" className="font-mono">4</Badge> → <span className="text-purple-600">Putaway Engine</span> suggests storage bin based on rules (FIFO/FEFO/ABC/Zone/Temperature)</p>
+  4573→            <p><Badge variant="outline" className="font-mono">5</Badge> → Warehouse operator completes <span className="text-indigo-600">Putaway Task</span> — stock moved to storage bin</p>
+  4574→            <p><Badge variant="outline" className="font-mono">6</Badge> → <span className="text-emerald-600">Inventory Ledger</span> auto-posted — stock becomes AVAILABLE</p>
+  4575→            <p><Badge variant="outline" className="font-mono">7</Badge> → <span className="text-pink-600">Finance</span> notified — GRNI account credited, Raw Material account debited</p>
+  4576→          </div>
+  4577→        </div>
+  4578→      </Card>
+  4579→    </div>
+  4580→  )
+  4581→}
+  4582→
+  4583→function GRNListTab() {
+  4584→  const grns = [
+  4585→    { id: 'gr-001', grnNumber: 'GRN-2026-00142', type: 'PURCHASE_RECEIPT', date: '2026-07-08', supplier: 'Konkan Cashew Processors', ref: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-12-AB-4521', status: 'COMPLETED', qualityHold: true, qualityStatus: 'APPROVED', lines: 3, ordered: 380, received: 380, accepted: 380, rejected: 0, value: 114000, posted: true, putaway: true, receivedBy: 'Suresh Patil' },
+  4586→    { id: 'gr-002', grnNumber: 'GRN-2026-00143', type: 'PURCHASE_RECEIPT', date: '2026-07-08', supplier: 'Sri Balaji Sugar', ref: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', vehicle: 'AP-09-CD-8832', status: 'COMPLETED', qualityHold: false, qualityStatus: 'APPROVED', lines: 1, ordered: 500, received: 500, accepted: 500, rejected: 0, value: 25000, posted: true, putaway: true, receivedBy: 'Suresh Patil' },
+  4587→    { id: 'gr-003', grnNumber: 'GRN-2026-00144', type: 'MANUFACTURING_RECEIPT', date: '2026-07-01', supplier: null, ref: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', vehicle: null, status: 'COMPLETED', qualityHold: true, qualityStatus: 'APPROVED', lines: 1, ordered: 500, received: 500, accepted: 500, rejected: 0, value: 175000, posted: true, putaway: true, receivedBy: 'Anita Desai' },
+  4588→    { id: 'gr-004', grnNumber: 'GRN-2026-00145', type: 'PURCHASE_RECEIPT', date: '2026-07-09', supplier: 'Amul', ref: 'PO-2026-0178', warehouse: 'Mumbai Plant Warehouse', vehicle: 'GJ-01-EF-1192', status: 'APPROVED', qualityHold: true, qualityStatus: 'INSPECTION', lines: 2, ordered: 100, received: 98, accepted: 0, rejected: 0, value: 52000, posted: false, putaway: false, receivedBy: 'Suresh Patil' },
+  4589→    { id: 'gr-005', grnNumber: 'GRN-2026-00146', type: 'PURCHASE_RECEIPT', date: '2026-07-09', supplier: 'Mumbai Packaging Solutions', ref: 'PO-2026-0203', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-04-GH-7745', status: 'PUTAWAY_IN_PROGRESS', qualityHold: false, qualityStatus: 'APPROVED', lines: 1, ordered: 5000, received: 5000, accepted: 5000, rejected: 0, value: 60000, posted: true, putaway: false, receivedBy: 'Suresh Patil' },
+  4590→    { id: 'gr-006', grnNumber: 'GRN-2026-00147', type: 'SALES_RETURN', date: '2026-07-07', supplier: null, ref: 'INV-2026-00789', warehouse: 'Mumbai DC', vehicle: null, status: 'APPROVED', qualityHold: true, qualityStatus: 'PENDING', lines: 1, ordered: 0, received: 24, accepted: 0, rejected: 0, value: 12960, posted: false, putaway: false, receivedBy: 'Vikram Iyer' },
+  4591→    { id: 'gr-007', grnNumber: 'GRN-2026-00148', type: 'PURCHASE_RECEIPT', date: '2026-07-09', supplier: 'Konkan Cashew Processors', ref: 'PO-2026-0210', warehouse: 'Mumbai Plant Warehouse', vehicle: 'MH-12-AB-4521', status: 'PENDING_APPROVAL', qualityHold: true, qualityStatus: 'PENDING', lines: 2, ordered: 300, received: 295, accepted: 0, rejected: 5, value: 250750, posted: false, putaway: false, receivedBy: 'Suresh Patil' },
+  4592→    { id: 'gr-008', grnNumber: 'GRN-2026-00149', type: 'OPENING_STOCK', date: '2026-01-01', supplier: null, ref: 'OS-2026-001', warehouse: 'Mumbai Plant Warehouse', vehicle: null, status: 'COMPLETED', qualityHold: false, qualityStatus: 'APPROVED', lines: 12, ordered: 0, received: 2400, accepted: 2400, rejected: 0, value: 840000, posted: true, putaway: true, receivedBy: 'System' },
+  4593→  ]
+  4594→  const typeColor: Record<string, string> = {
+  4595→    PURCHASE_RECEIPT: 'bg-blue-100 text-blue-800', MANUFACTURING_RECEIPT: 'bg-emerald-100 text-emerald-800',
+  4596→    SALES_RETURN: 'bg-purple-100 text-purple-800', CUSTOMER_RETURN: 'bg-pink-100 text-pink-800',
+  4597→    OPENING_STOCK: 'bg-slate-100 text-slate-800', INTER_BRANCH_RECEIPT: 'bg-cyan-100 text-cyan-800',
+  4598→    WAREHOUSE_TRANSFER_RECEIPT: 'bg-indigo-100 text-indigo-800', STOCK_CORRECTION: 'bg-amber-100 text-amber-800',
+  4599→    DONATION_RECEIPT: 'bg-teal-100 text-teal-800', SAMPLE_RECEIPT: 'bg-violet-100 text-violet-800',
+  4600→  }
+  4601→  const statusColor: Record<string, string> = { COMPLETED: 'bg-emerald-600 hover:bg-emerald-600', APPROVED: 'bg-blue-600 hover:bg-blue-600', PUTAWAY_IN_PROGRESS: 'bg-amber-500 hover:bg-amber-500', PENDING_APPROVAL: 'bg-orange-500 hover:bg-orange-500', DRAFT: 'bg-slate-500 hover:bg-slate-500', REJECTED: 'bg-red-600 hover:bg-red-600' }
+  4602→  return (
+  4603→    <Card className="p-6">
+  4604→      <div className="flex items-center justify-between mb-4">
+  4605→        <div><h3 className="font-semibold">Goods Receipt Notes (GRN)</h3>
+  4606→        <p className="text-xs text-muted-foreground mt-1">10 receipt types. Each GRN tracks ordered vs received vs accepted vs rejected quantities. Quality hold separates receiving from putaway for food safety.</p></div>
+  4607→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New GRN</Button>
+  4608→      </div>
+  4609→      <div className="overflow-x-auto">
+  4610→        <table className="w-full text-sm">
+  4611→          <thead><tr className="border-b text-left text-xs text-muted-foreground">
+  4612→            <th className="py-2 font-medium">GRN #</th><th className="font-medium">Type</th>
+  4613→            <th className="font-medium">Date</th><th className="font-medium">Supplier / Source</th>
+  4614→            <th className="font-medium">Reference</th><th className="font-medium">Warehouse</th>
+  4615→            <th className="font-medium text-right">Ordered</th><th className="font-medium text-right">Received</th>
+  4616→            <th className="font-medium text-right">Accepted</th><th className="font-medium text-right">Rejected</th>
+  4617→            <th className="font-medium text-right">Value</th><th className="font-medium">Quality</th>
+  4618→            <th className="font-medium">Posted</th><th className="font-medium">Status</th>
+  4619→          </tr></thead>
+  4620→          <tbody>
+  4621→            {grns.map(g => (
+  4622→              <tr key={g.id} className="border-b hover:bg-muted/40">
+  4623→                <td className="py-2.5 font-mono text-xs">{g.grnNumber}</td>
+  4624→                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[g.type])}>{g.type.replace(/_/g, ' ')}</span></td>
+  4625→                <td className="text-xs text-muted-foreground">{g.date}</td>
+  4626→                <td className="text-xs">{g.supplier || <span className="text-muted-foreground">—</span>}</td>
+  4627→                <td className="font-mono text-xs">{g.ref}</td>
+  4628→                <td className="text-xs">{g.warehouse}</td>
+  4629→                <td className="text-right font-mono">{g.ordered || '—'}</td>
+  4630→                <td className="text-right font-mono">{g.received}</td>
+  4631→                <td className="text-right font-mono text-emerald-600">{g.accepted || '—'}</td>
+  4632→                <td className="text-right font-mono text-red-600">{g.rejected || '—'}</td>
+  4633→                <td className="text-right font-mono">₹{g.value.toLocaleString('en-IN')}</td>
+  4634→                <td>{g.qualityHold ? <Badge variant="outline" className="text-xs">{g.qualityStatus}</Badge> : <Badge variant="outline" className="text-xs text-emerald-600">N/A</Badge>}</td>
+  4635→                <td className="text-center">{g.posted ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mx-auto" /> : <Clock className="h-4 w-4 text-amber-500 mx-auto" />}</td>
+  4636→                <td><Badge className={statusColor[g.status] + ' text-xs'}>{g.status.replace(/_/g, ' ')}</Badge></td>
+  4637→              </tr>
+  4638→            ))}
+  4639→          </tbody>
+  4640→        </table>
+  4641→      </div>
+  4642→    </Card>
+  4643→  )
+  4644→}
+  4645→
+  4646→function GRNPutawayTab() {
+  4647→  const tasks = [
+  4648→    { id: 'pt-001', taskNumber: 'PT-2026-00142', grnNumber: 'GRN-2026-00142', product: 'Cashew Nuts (Raw)', batch: null, qty: 200, from: 'Receiving Dock 1', to: 'Zone A - Rack A1, Bin 03', zone: 'Zone A - Raw Materials', strategy: 'FIFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-08 11:30' },
+  4649→    { id: 'pt-002', taskNumber: 'PT-2026-00143', grnNumber: 'GRN-2026-00142', product: 'Sugar (Raw)', batch: null, qty: 150, from: 'Receiving Dock 1', to: 'Zone A - Rack A2, Bin 01', zone: 'Zone A - Raw Materials', strategy: 'FIFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-08 11:45' },
+  4650→    { id: 'pt-003', taskNumber: 'PT-2026-00144', grnNumber: 'GRN-2026-00142', product: 'Ghee (Raw)', batch: null, qty: 30, from: 'Receiving Dock 1', to: 'Zone C - Cold Storage, Rack C1', zone: 'Zone C - Cold Storage', strategy: 'FEFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-08 12:00' },
+  4651→    { id: 'pt-004', taskNumber: 'PT-2026-00145', grnNumber: 'GRN-2026-00144', product: 'Kaju Katli 500g', batch: 'KK-2607-01', qty: 500, from: 'Production Line 1', to: 'Zone C - Cold Storage, Rack C2', zone: 'Zone C - Cold Storage', strategy: 'FEFO', status: 'COMPLETED', assignedTo: 'Ramesh Yadav', completedAt: '2026-07-01 17:00' },
+  4652→    { id: 'pt-005', taskNumber: 'PT-2026-00146', grnNumber: 'GRN-2026-00146', product: 'Packaging Boxes', batch: null, qty: 5000, from: 'Receiving Dock 2', to: 'Zone B - Rack B1, Bin 01-05', zone: 'Zone B - Packaging Bulk', strategy: 'ZONE', status: 'IN_PROGRESS', assignedTo: 'Sandeep Kumar', completedAt: null },
+  4653→    { id: 'pt-006', taskNumber: 'PT-2026-00147', grnNumber: 'GRN-2026-00145', product: 'Ghee (Raw)', batch: null, qty: 98, from: 'Receiving Dock 1', to: 'PENDING - Quality Hold', zone: null, strategy: 'FEFO', status: 'PENDING', assignedTo: null, completedAt: null },
+  4654→  ]
+  4655→  const statusColor: Record<string, string> = { COMPLETED: 'bg-emerald-600 hover:bg-emerald-600', IN_PROGRESS: 'bg-blue-600 hover:bg-blue-600', PENDING: 'bg-amber-500 hover:bg-amber-500', ASSIGNED: 'bg-cyan-600 hover:bg-cyan-600', CANCELLED: 'bg-red-600 hover:bg-red-600' }
+  4656→  const strategyColor: Record<string, string> = { FIFO: 'bg-blue-100 text-blue-800', FEFO: 'bg-emerald-100 text-emerald-800', ABC: 'bg-purple-100 text-purple-800', ZONE: 'bg-amber-100 text-amber-800', TEMPERATURE: 'bg-cyan-100 text-cyan-800', MANUAL: 'bg-slate-100 text-slate-800' }
+  4657→  return (
+  4658→    <Card className="p-6">
+  4659→      <div className="flex items-center justify-between mb-4">
+  4660→        <div><h3 className="font-semibold">Putaway Tasks</h3>
+  4661→        <p className="text-xs text-muted-foreground mt-1">Intelligent putaway engine suggests storage bins based on product type, temperature zone, and strategy (FIFO/FEFO/ABC/Zone). Operators complete tasks by moving stock to assigned bins.</p></div>
+  4662→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> Generate Tasks</Button>
+  4663→      </div>
+  4664→      <div className="space-y-3">
+  4665→        {tasks.map(t => (
+  4666→          <div key={t.id} className="border rounded-lg p-3">
+  4667→            <div className="flex items-start justify-between mb-2">
+  4668→              <div>
+  4669→                <div className="flex items-center gap-2 mb-1 flex-wrap">
+  4670→                  <p className="font-mono text-xs">{t.taskNumber}</p>
+  4671→                  <Badge variant="outline" className="text-xs">{t.grnNumber}</Badge>
+  4672→                  <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', strategyColor[t.strategy])}>{t.strategy}</span>
+  4673→                </div>
+  4674→                <p className="font-medium">{t.product}{t.batch && <span className="text-muted-foreground ml-2 text-xs">Batch: {t.batch}</span>}</p>
+  4675→                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+  4676→                  <Badge variant="outline" className="text-xs font-mono">{t.qty} units</Badge>
+  4677→                  <span className="flex items-center gap-1"><MapPinIcon className="h-3 w-3" />{t.from}</span>
+  4678→                  <ArrowRight className="h-3 w-3" />
+  4679→                  <span className="flex items-center gap-1"><MapPinIcon className="h-3 w-3" />{t.to}</span>
+  4680→                </div>
+  4681→              </div>
+  4682→              <div className="text-right">
+  4683→                <Badge className={statusColor[t.status] + ' text-xs'}>{t.status.replace(/_/g, ' ')}</Badge>
+  4684→                {t.assignedTo && <p className="text-xs text-muted-foreground mt-1">{t.assignedTo}</p>}
+  4685→                {t.completedAt && <p className="text-xs text-muted-foreground">{t.completedAt}</p>}
+  4686→              </div>
+  4687→            </div>
+  4688→            {t.status !== 'COMPLETED' && t.status !== 'PENDING' && (
+  4689→              <Button size="sm" variant="outline" className="h-7 text-xs mt-1"><CheckCircle2 className="mr-1 h-3 w-3" /> Complete Putaway</Button>
+  4690→            )}
+  4691→            {t.status === 'PENDING' && t.to.includes('Quality Hold') && (
+  4692→              <p className="text-xs text-amber-600 mt-1">⚠ Blocked by quality hold — cannot putaway until inspection complete</p>
+  4693→            )}
+  4694→          </div>
+  4695→        ))}
+  4696→      </div>
+  4697→    </Card>
+  4698→  )
+  4699→}
+  4700→
+  4701→function GRNQualityTab() {
+  4702→  const holds = [
+  4703→    { id: 'qh-001', holdNumber: 'QH-2026-0012', grnNumber: 'GRN-2026-00145', product: 'Ghee (Raw)', batch: null, qtyHeld: 98, reason: 'QUALITY_CHECK', inspectionType: 'LAB_TEST', result: 'PENDING', status: 'ACTIVE', resolution: 'PENDING', createdBy: 'Suresh Patil', notes: 'Sample sent to external lab for adulteration test' },
+  4704→    { id: 'qh-002', holdNumber: 'QH-2026-0013', grnNumber: 'GRN-2026-00147', product: 'Customer Return Kaju Katli', batch: 'KK-2606-05', qtyHeld: 24, reason: 'SUPPLIER_ISSUE', inspectionType: 'VISUAL', result: 'PENDING', status: 'ACTIVE', resolution: 'PENDING', createdBy: 'Vikram Iyer', notes: 'Customer returned - taste deviation complaint. Awaiting investigation.' },
+  4705→    { id: 'qh-003', holdNumber: 'QH-2026-0011', grnNumber: 'GRN-2026-00142', product: 'Cashew Nuts (Raw)', batch: null, qtyHeld: 200, reason: 'QUALITY_CHECK', inspectionType: 'SAMPLE_TEST', result: 'PASSED', status: 'RESOLVED', resolution: 'RELEASED', releasedQty: 200, rejectedQty: 0, createdBy: 'Suresh Patil', resolvedBy: 'Anita Desai', notes: 'Sample tested - quality approved. Released for production.' },
+  4706→    { id: 'qh-004', holdNumber: 'QH-2026-0010', grnNumber: 'GRN-2026-00144', product: 'Kaju Katli 500g', batch: 'KK-2607-01', qtyHeld: 500, reason: 'QUALITY_CHECK', inspectionType: 'VISUAL', result: 'PASSED', status: 'RESOLVED', resolution: 'RELEASED', releasedQty: 500, rejectedQty: 0, createdBy: 'Anita Desai', resolvedBy: 'Anita Desai', notes: 'Production batch quality check passed. Grade A.' },
+  4707→    { id: 'qh-005', holdNumber: 'QH-2026-0014', grnNumber: 'GRN-2026-00147', product: 'Cashew Nuts (Raw)', batch: null, qtyHeld: 5, reason: 'DAMAGE_SUSPECTED', inspectionType: 'VISUAL', result: 'FAILED', status: 'RESOLVED', resolution: 'REJECTED', releasedQty: 0, rejectedQty: 5, createdBy: 'Suresh Patil', resolvedBy: 'Anita Desai', notes: '5 units damaged in transit - packaging crushed. Rejected and scrapped.' },
+  4708→  ]
+  4709→  const reasonColor: Record<string, string> = { QUALITY_CHECK: 'bg-blue-100 text-blue-800', SUPPLIER_ISSUE: 'bg-amber-100 text-amber-800', DAMAGE_SUSPECTED: 'bg-orange-100 text-orange-800', EXPIRY_CHECK: 'bg-red-100 text-red-800', SPEC_VERIFICATION: 'bg-purple-100 text-purple-800', RANDOM_SAMPLE: 'bg-teal-100 text-teal-800' }
+  4710→  const resultColor: Record<string, string> = { PENDING: 'text-amber-600', PASSED: 'text-emerald-600', FAILED: 'text-red-600', CONDITIONAL_PASS: 'text-blue-600' }
+  4711→  const statusColor: Record<string, string> = { ACTIVE: 'bg-red-600 hover:bg-red-600', RESOLVED: 'bg-emerald-600 hover:bg-emerald-600', CANCELLED: 'bg-gray-500 hover:bg-gray-500' }
+  4712→  return (
+  4713→    <Card className="p-6">
+  4714→      <div className="flex items-center justify-between mb-4">
+  4715→        <div><h3 className="font-semibold flex items-center gap-2"><FlaskConical className="h-5 w-5" /> Quality Hold Management</h3>
+  4716→        <p className="text-xs text-muted-foreground mt-1">6 hold reasons: Quality Check, Supplier Issue, Damage Suspected, Expiry Check, Spec Verification, Random Sample. Stock held in quarantine until released, rejected, or scrapped.</p></div>
+  4717→      </div>
+  4718→      <div className="space-y-3">
+  4719→        {holds.map(h => (
+  4720→          <div key={h.id} className={cn('border rounded-lg p-3', h.status === 'ACTIVE' && 'border-red-200 bg-red-50/50 dark:bg-red-950/20')}>
+  4721→            <div className="flex items-start justify-between mb-2">
+  4722→              <div>
+  4723→                <div className="flex items-center gap-2 mb-1 flex-wrap">
+  4724→                  <p className="font-mono text-xs">{h.holdNumber}</p>
+  4725→                  <Badge variant="outline" className="text-xs">{h.grnNumber}</Badge>
+  4726→                  <span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', reasonColor.reason])}>{h.reason.replace(/_/g, ' ')}</span>
+  4727→                  <Badge variant="outline" className="text-xs">{h.inspectionType.replace(/_/g, ' ')}</Badge>
+  4728→                </div>
+  4729→                <p className="font-medium">{h.product}{h.batch && <span className="text-muted-foreground ml-2 text-xs">Batch: {h.batch}</span>}</p>
+  4730→                <p className="text-xs text-muted-foreground mt-0.5">Quantity held: <span className="font-mono font-semibold text-foreground">{h.qtyHeld}</span> units</p>
+  4731→                {h.notes && <p className="text-xs text-muted-foreground mt-1">{h.notes}</p>}
+  4732→              </div>
+  4733→              <div className="text-right">
+  4734→                <Badge className={statusColor.status] + ' text-xs'}>{h.status}</Badge>
+  4735→                <p className="text-xs mt-1">Result: <span className={cn('font-semibold', resultColor.result || 'PENDING'])}>{h.result || 'PENDING'}</span></p>
+  4736→                <p className="text-xs text-muted-foreground">{h.resolution.replace(/_/g, ' ')}</p>
+  4737→              </div>
+  4738→            </div>
+  4739→            {h.status === 'RESOLVED' && (
+  4740→              <div className="flex items-center gap-3 text-xs pt-2 border-t">
+  4741→                <span>Released: <span className="font-mono font-semibold text-emerald-600">{h.releasedQty || 0}</span></span>
+  4742→                <span>Rejected: <span className="font-mono font-semibold text-red-600">{h.rejectedQty || 0}</span></span>
+  4743→                <span className="text-muted-foreground">By: {h.resolvedBy}</span>
+  4744→              </div>
+  4745→            )}
+  4746→            {h.status === 'ACTIVE' && (
+  4747→              <div className="flex gap-2 mt-2">
+  4748→                <Button size="sm" variant="default" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700"><CheckCircle2 className="mr-1 h-3 w-3" />Release</Button>
+  4749→                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-300">Reject</Button>
+  4750→                <Button size="sm" variant="outline" className="h-7 text-xs">Partial Release</Button>
+  4751→              </div>
+  4752→            )}
+  4753→          </div>
+  4754→        ))}
+  4755→      </div>
+  4756→    </Card>
+  4757→  )
+  4758→}
+  4759→
+  4760→function GRNRulesTab() {
+  4761→  const rules = [
+  4762→    { code: 'PA-RAW-FIFO', name: 'Raw Materials → FIFO Zone A', strategy: 'FIFO', productType: 'RAW_MATERIAL', targetZone: 'Zone A - Raw Materials', tempZone: 'AMBIENT', priority: 50, status: 'ACTIVE' },
+  4763→    { code: 'PA-FG-FEFO', name: 'Finished Goods → FEFO Cold Storage', strategy: 'FEFO', productType: 'FINISHED_GOOD', targetZone: 'Zone C - Cold Storage', tempZone: 'REFRIGERATED', priority: 30, status: 'ACTIVE' },
+  4764→    { code: 'PA-PKG-ZONE', name: 'Packaging → Zone B Bulk', strategy: 'ZONE', productType: 'PACKAGING', targetZone: 'Zone B - Packaging Bulk', tempZone: 'AMBIENT', priority: 100, status: 'ACTIVE' },
+  4765→    { code: 'PA-ABC-HIGH', name: 'High-Value Items → Secure Zone', strategy: 'ABC', productType: 'FINISHED_GOOD', targetZone: 'Zone D - Secure', tempZone: 'AMBIENT', priority: 20, status: 'ACTIVE' },
+  4766→    { code: 'PA-FROZEN', name: 'Frozen Items → Freezer Zone', strategy: 'TEMPERATURE', productType: 'FINISHED_GOOD', targetZone: 'Zone E - Freezer', tempZone: 'FROZEN', priority: 10, status: 'ACTIVE' },
+  4767→  ]
+  4768→  const strategyColor: Record<string, string> = { FIFO: 'bg-blue-100 text-blue-800', FEFO: 'bg-emerald-100 text-emerald-800', ABC: 'bg-purple-100 text-purple-800', ZONE: 'bg-amber-100 text-amber-800', TEMPERATURE: 'bg-cyan-100 text-cyan-800', MANUAL: 'bg-slate-100 text-slate-800' }
+  4769→  const tempColor: Record<string, string> = { AMBIENT: 'text-amber-600', REFRIGERATED: 'text-blue-600', FROZEN: 'text-cyan-600' }
+  4770→  return (
+  4771→    <Card className="p-6">
+  4772→      <div className="flex items-center justify-between mb-4">
+  4773→        <div><h3 className="font-semibold">Putaway Rules</h3>
+  4774→        <p className="text-xs text-muted-foreground mt-1">5 strategies: FIFO (First In First Out), FEFO (First Expiry First Out), ABC (High-value secure), ZONE (by product type), TEMPERATURE (cold chain). Rules matched by priority — lower number = higher priority.</p></div>
+  4775→        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
+  4776→      </div>
+  4777→      <div className="space-y-3">
+  4778→        {rules.map(r => (
+  4779→          <div key={r.code} className="border rounded-lg p-3 flex items-center gap-3">
+  4780→            <span className={cn('inline-block px-3 py-1 rounded text-xs font-bold flex-shrink-0', strategyColor[r.strategy])}>{r.strategy}</span>
+  4781→            <div className="flex-1">
+  4782→              <div className="flex items-center gap-2 mb-1">
+  4783→                <p className="font-mono text-xs text-muted-foreground">{r.code}</p>
+  4784→                <p className="font-medium">{r.name}</p>
+  4785→              </div>
+  4786→              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+  4787→                <span>Product type: <span className="font-medium text-foreground">{r.productType.replace(/_/g, ' ')}</span></span>
+  4788→                <span>·</span>
+  4789→                <span className="flex items-center gap-1"><MapPinIcon className="h-3 w-3" />{r.targetZone}</span>
+  4790→                <span>·</span>
+  4791→                <span className={cn('font-medium', tempColor[r.tempZone])}>{r.tempZone}</span>
+  4792→              </div>
+  4793→            </div>
+  4794→            <div className="text-right flex-shrink-0">
+  4795→              <p className="text-xs text-muted-foreground">Priority</p>
+  4796→              <p className="font-mono font-bold text-lg">{r.priority}</p>
+  4797→            </div>
+  4798→            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-xs flex-shrink-0">{r.status}</Badge>
+  4799→          </div>
+  4800→        ))}
+  4801→      </div>
+  4802→    </Card>
+  4803→  )
+  4804→}
+  4805→
+  4806→// ─── Stock Issue & Outbound Module (Sprint 14) ──────────
+  4807→type SITab = 'overview' | 'issues' | 'picking' | 'scrap' | 'damage'
+  4808→
+  4809→function StockIssueModule() {
+  4810→  const [tab, setTab] = useState<SITab>('overview')
+  4811→  const tabs: Array<{ key: SITab; label: string; icon: React.ReactNode }> = [
+  4812→    { key: 'overview', label: 'Dashboard', icon: <Gauge className="h-4 w-4" /> },
+  4813→    { key: 'issues', label: 'Stock Issues', icon: <ArrowUpFromLine className="h-4 w-4" /> },
+
+[showing lines 4044-4813 of 37620; use offset=4814 with limit to continue reading]

@@ -1,0 +1,400 @@
+=== workforce_analytics.txt (150 lines) ===
+function WorkforceAnalyticsModule() {
+  const operatorKPIs = [
+    { rank: 1, code: 'OP-003', name: 'Suresh Mehta', tasks: 92, accuracy: 99.1, util: 94, idle: 12, travel: 38, avgDur: 3.8, rating: 88 },
+    { rank: 2, code: 'OP-001', name: 'Rajesh Kumar', tasks: 78, accuracy: 98.5, util: 87, idle: 18, travel: 42, avgDur: 4.2, rating: 92 },
+    { rank: 3, code: 'OP-002', name: 'Anita Sharma', tasks: 65, accuracy: 97.2, util: 82, idle: 22, travel: 48, avgDur: 4.6, rating: 85 },
+    { rank: 4, code: 'OP-005', name: 'Ramesh Patel', tasks: 52, accuracy: 95.5, util: 79, idle: 28, travel: 52, avgDur: 5.1, rating: 79 },
+    { rank: 5, code: 'OP-006', name: 'Mahesh Reddy', tasks: 38, accuracy: 97.8, util: 71, idle: 35, travel: 58, avgDur: 5.4, rating: 81 },
+    { rank: 6, code: 'OP-004', name: 'Lakshmi V.', tasks: 41, accuracy: 96.0, util: 68, idle: 32, travel: 45, avgDur: 5.2, rating: 72 },
+    { rank: 7, code: 'OP-008', name: 'Priya Nair', tasks: 18, accuracy: 92.0, util: 54, idle: 48, travel: 65, avgDur: 6.8, rating: 55 },
+    { rank: 8, code: 'OP-007', name: 'Anil Kumar', tasks: 22, accuracy: 94.3, util: 0, idle: 0, travel: 0, avgDur: 0, rating: 68 },
+  ]
+
+  const dailyTrend = [
+    { day: 'Mon', tasks: 312, accuracy: 97.2 }, { day: 'Tue', tasks: 345, accuracy: 96.8 },
+    { day: 'Wed', tasks: 389, accuracy: 97.5 }, { day: 'Thu', tasks: 367, accuracy: 98.1 },
+    { day: 'Fri', tasks: 412, accuracy: 96.5 }, { day: 'Sat', tasks: 298, accuracy: 97.8 },
+    { day: 'Sun', tasks: 187, accuracy: 98.5 },
+  ]
+  const maxTasks = Math.max(...dailyTrend.map(d => d.tasks))
+
+  const skillMatrix = [
+    { skill: 'FORKLIFT', certified: 6, expert: 2, advanced: 3, intermediate: 1, beginner: 0 },
+    { skill: 'REACH_TRUCK', certified: 4, expert: 1, advanced: 2, intermediate: 1, beginner: 0 },
+    { skill: 'STACKER', certified: 5, expert: 1, advanced: 2, intermediate: 2, beginner: 0 },
+    { skill: 'PICKER', certified: 8, expert: 3, advanced: 3, intermediate: 2, beginner: 0 },
+    { skill: 'PACKER', certified: 7, expert: 2, advanced: 2, intermediate: 2, beginner: 1 },
+    { skill: 'RECEIVER', certified: 5, expert: 1, advanced: 2, intermediate: 1, beginner: 1 },
+    { skill: 'CYCLE_COUNT', certified: 4, expert: 1, advanced: 1, intermediate: 2, beginner: 0 },
+    { skill: 'SCANNER', certified: 8, expert: 8, advanced: 0, intermediate: 0, beginner: 0 },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Workforce Analytics</h2><p className="text-sm text-muted-foreground mt-1">Operator productivity · skill matrix · accuracy · utilization insights</p></div>
+
+      {/* Top KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Tasks Completed (7d)', value: dailyTrend.reduce((a, d) => a + d.tasks, 0), icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />, change: '+12%' },
+          { label: 'Avg Accuracy', value: `${(dailyTrend.reduce((a, d) => a + d.accuracy, 0) / dailyTrend.length).toFixed(1)}%`, icon: <Target className="h-5 w-5 text-blue-600" />, change: '+0.3%' },
+          { label: 'Avg Utilization', value: '78%', icon: <Gauge className="h-5 w-5 text-orange-600" />, change: '+5%' },
+          { label: 'Idle Hours (7d)', value: '142h', icon: <Clock className="h-5 w-5 text-amber-600" />, change: '-8%' },
+        ].map(s => (
+          <Card key={s.label} className="p-4">
+            <div className="flex items-center justify-between"><div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">{s.icon}</div><span className="text-xs text-emerald-600">{s.change}</span></div>
+
+=== crossdock.txt (134 lines) ===
+function CrossDockConsoleModule() {
+  const [filter, setFilter] = useState<string>('ALL')
+  const [showCreate, setShowCreate] = useState(false)
+
+  const crossDockOrders = [
+    { id: 'CD1', num: 'CD-2026-001', type: 'PRE_DISTRIBUTIVE', status: 'IN_PROGRESS', priority: 'HIGH', supplier: 'Sudhamrit Foods Pvt', outbound: 'SO-2026-1024 (Retail Replen)', partner: 'Sudhamrit Retail Bandra', inDock: 'DOCK-02', outDock: 'DOCK-07', lines: 12, qty: '480 PCS', weight: 142.5, expectedIn: '10:30', actualIn: '10:32', expectedOut: '11:30', storageAvoided: true, costSaved: 1850, timeSaved: 90, progress: 65 },
+    { id: 'CD2', num: 'CD-2026-002', type: 'OPPORTUNISTIC', status: 'COMPLETED', priority: 'NORMAL', supplier: 'Mysore Sweets Co', outbound: 'SO-2026-1031 (Distributor)', partner: 'Mumbai Distributors', inDock: 'DOCK-01', outDock: 'DOCK-05', lines: 8, qty: '240 PCS', weight: 78.2, expectedIn: '08:00', actualIn: '07:58', expectedOut: '09:00', storageAvoided: true, costSaved: 1240, timeSaved: 75, progress: 100 },
+    { id: 'CD3', num: 'CD-2026-003', type: 'PRE_DISTRIBUTIVE', status: 'PLANNED', priority: 'EMERGENCY', supplier: 'Shwet Idli Batter', outbound: 'SO-2026-1042 (Restaurant Replen)', partner: 'Sudhamrit Restaurant Hub', inDock: 'DOCK-02', outDock: 'DOCK-08', lines: 5, qty: '60 BOX', weight: 36.0, expectedIn: '14:00', actualIn: null, expectedOut: '15:00', storageAvoided: true, costSaved: 950, timeSaved: 60, progress: 0 },
+    { id: 'CD4', num: 'CD-2026-004', type: 'POST_DISTRIBUTIVE', status: 'OUTBOUND_LOADED', priority: 'NORMAL', supplier: 'Multiple', outbound: 'SO-2026-1038 (Multi-Partner)', partner: 'Multi-partner consolidation', inDock: 'DOCK-03', outDock: 'DOCK-06', lines: 18, qty: '720 PCS', weight: 215.8, expectedIn: '09:00', actualIn: '08:55', expectedOut: '12:00', storageAvoided: true, costSaved: 2680, timeSaved: 120, progress: 88 },
+    { id: 'CD5', num: 'CD-2026-005', type: 'PRE_DISTRIBUTIVE', status: 'INBOUND_ARRIVED', priority: 'HIGH', supplier: 'Cold Chain Logistics', outbound: 'SO-2026-1045 (Cold Chain)', partner: 'Sudhamrit Cold Hub', inDock: 'DOCK-COLD-01', outDock: 'DOCK-COLD-02', lines: 6, qty: '120 BOX', weight: 84.0, expectedIn: '11:00', actualIn: '11:05', expectedOut: '12:30', storageAvoided: true, costSaved: 1620, timeSaved: 90, progress: 25 },
+    { id: 'CD6', num: 'CD-2026-006', type: 'OPPORTUNISTIC', status: 'EXCEPTION', priority: 'HIGH', supplier: 'Banu Sweets Supplier', outbound: 'SO-2026-1029 (Retail)', partner: 'Sudhamrit Retail Andheri', inDock: 'DOCK-04', outDock: 'DOCK-06', lines: 4, qty: '48 PCS', weight: 28.5, expectedIn: '13:00', actualIn: '13:10', expectedOut: '14:00', storageAvoided: false, costSaved: 0, timeSaved: 0, progress: 30 },
+  ]
+
+  const filtered = crossDockOrders.filter(o => filter === 'ALL' || o.status === filter || o.type === filter)
+
+  const stats = [
+    { label: 'Cross-Dock Orders', value: crossDockOrders.length, color: 'text-blue-600' },
+    { label: 'In Progress', value: crossDockOrders.filter(o => o.status === 'IN_PROGRESS' || o.status === 'INBOUND_ARRIVED' || o.status === 'OUTBOUND_LOADED').length, color: 'text-amber-600' },
+    { label: 'Completed', value: crossDockOrders.filter(o => o.status === 'COMPLETED').length, color: 'text-emerald-600' },
+    { label: 'Exceptions', value: crossDockOrders.filter(o => o.status === 'EXCEPTION').length, color: 'text-rose-600' },
+    { label: 'Storage Avoided', value: `${crossDockOrders.filter(o => o.storageAvoided).length}/${crossDockOrders.length}`, color: 'text-purple-600' },
+    { label: 'Cost Saved (₹)', value: crossDockOrders.reduce((a, o) => a + o.costSaved, 0).toLocaleString('en-IN'), color: 'text-emerald-700' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Cross-Dock Console</h2><p className="text-sm text-muted-foreground mt-1">Direct inbound-to-outbound routing · zero warehouse storage · cost &amp; time savings</p></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />Export</Button><Button size="sm" onClick={() => setShowCreate(!showCreate)}><Plus className="mr-2 h-4 w-4" />New Cross-Dock</Button></div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {/* Workflow Diagram */}
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300">
+        <h3 className="font-semibold mb-3 text-sm">Cross-Dock Workflow</h3>
+        <div className="flex items-center gap-2 text-xs overflow-x-auto">
+          {['Inbound Shipment', 'Order Matching', 'Cross-Dock Eligible?', 'Outbound Dock', 'Load Vehicle', 'Dispatch'].map((step, i, arr) => (
+            <div key={step} className="flex items-center gap-2 flex-shrink-0">
+              <div className="px-3 py-1.5 bg-white border rounded-md font-medium">{step}</div>
+              {i < arr.length - 1 && <ArrowRight className="h-3 w-3 text-blue-600" />}
+            </div>
+          ))}
+
+=== truck_queue.txt (96 lines) ===
+function TruckQueueModule() {
+  const queue = [
+    { id: 'Q1', num: 'Q-2026-018', pos: 1, vehicle: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', purpose: 'INBOUND_DELIVERY', queueType: 'PRIORITY', priority: 85, waitMin: 8, estDock: '10:45', status: 'ASSIGNED', dock: 'DOCK-02', delay: null },
+    { id: 'Q2', num: 'Q-2026-019', pos: 2, vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', purpose: 'INBOUND_DELIVERY', queueType: 'COLD_CHAIN', priority: 90, waitMin: 15, estDock: '10:55', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q3', num: 'Q-2026-020', pos: 3, vehicle: 'DL01-EF-9012', type: 'MINI_TRUCK', driver: 'Suresh Yadav', purpose: 'OUTBOUND_DISPATCH', queueType: 'FIFO', priority: 50, waitMin: 22, estDock: '11:10', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q4', num: 'Q-2026-021', pos: 4, vehicle: 'TN09-GH-3456', type: 'TRAILER', driver: 'Anand Pillai', purpose: 'OUTBOUND_DISPATCH', queueType: 'FIFO', priority: 50, waitMin: 35, estDock: '11:25', status: 'WAITING', dock: null, delay: 'Dock occupied' },
+    { id: 'Q5', num: 'Q-2026-022', pos: 5, vehicle: 'MH04-IJ-7890', type: 'BULK_TRUCK', driver: 'Vijay More', purpose: 'INBOUND_DELIVERY', queueType: 'FIFO', priority: 50, waitMin: 42, estDock: '11:40', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q6', num: 'Q-2026-023', pos: 6, vehicle: 'GJ01-KL-1234', type: 'SMALL_VAN', driver: 'Prakash Patel', purpose: 'PICKUP', queueType: 'PRIORITY', priority: 75, waitMin: 5, estDock: '10:50', status: 'PRIORITY_BOOSTED', dock: null, delay: null },
+    { id: 'Q7', num: 'Q-2026-024', pos: 7, vehicle: 'MH12-MN-5678', type: 'COURIER_VEHICLE', driver: 'Deepak Jha', purpose: 'OUTBOUND_DISPATCH', queueType: 'FIFO', priority: 50, waitMin: 18, estDock: '11:05', status: 'WAITING', dock: null, delay: null },
+    { id: 'Q8', num: 'Q-2026-025', pos: 8, vehicle: 'KA03-OP-9012', type: 'MILK_TANKER', driver: 'Mohan Das', purpose: 'INBOUND_DELIVERY', queueType: 'EMERGENCY', priority: 100, waitMin: 2, estDock: '10:40', status: 'PRIORITY_BOOSTED', dock: null, delay: null },
+  ]
+
+  const queueTypeColors: Record<string, string> = { FIFO: 'bg-slate-100 text-slate-700', PRIORITY: 'bg-orange-100 text-orange-700', COLD_CHAIN: 'bg-blue-100 text-blue-700', EMERGENCY: 'bg-red-100 text-red-700', VIP_SUPPLIER: 'bg-purple-100 text-purple-700', MANUAL_OVERRIDE: 'bg-amber-100 text-amber-700' }
+
+  const stats = [
+    { label: 'In Queue', value: queue.length, color: 'text-blue-600' },
+    { label: 'Avg Wait', value: `${Math.round(queue.reduce((a, q) => a + q.waitMin, 0) / queue.length)}m`, color: 'text-amber-600' },
+    { label: 'Priority Boosted', value: queue.filter(q => q.status === 'PRIORITY_BOOSTED').length, color: 'text-orange-600' },
+    { label: 'Delayed', value: queue.filter(q => q.delay).length, color: 'text-rose-600' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Truck Queue Management</h2><p className="text-sm text-muted-foreground mt-1">FIFO · Priority · Cold Chain · Emergency · VIP Supplier · Manual Override</p></div>
+        <div className="flex gap-2"><Button variant="outline" size="sm"><Filter className="mr-1 h-4 w-4" />Filter</Button><Button size="sm"><Plus className="mr-2 h-4 w-4" />Add to Queue</Button></div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {stats.map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-600 flex items-center justify-center text-white"><Workflow className="h-5 w-5" /></div>
+            <div><p className="font-semibold text-sm">Queue Engine Active</p><p className="text-xs text-muted-foreground">Priority rules: Emergency &gt; Cold Chain &gt; VIP &gt; Priority &gt; FIFO</p></div>
+          </div>
+          <Button size="sm" variant="outline">Configure Rules</Button>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        <div className="p-4 border-b"><h3 className="font-semibold">Live Queue</h3></div>
+        <div className="overflow-x-auto">
+
+=== dock_schedule.txt (98 lines) ===
+function DockScheduleModule() {
+  const docks = [
+    { code: 'DOCK-01', name: 'Receiving Dock 01', type: 'RECEIVING', status: 'OCCUPIED', vehicle: 'MH12-AB-1234', util: 78, ops: 4, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-02', name: 'Receiving Dock 02', type: 'RECEIVING', status: 'OCCUPIED', vehicle: 'KA05-CD-5678', util: 92, ops: 6, cold: false, bulk: false, leveler: true, seal: true },
+    { code: 'DOCK-03', name: 'Shared Dock 03', type: 'SHARED', status: 'AVAILABLE', vehicle: null, util: 45, ops: 3, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-04', name: 'Bulk Dock 04', type: 'BULK', status: 'MAINTENANCE', vehicle: null, util: 0, ops: 0, cold: false, bulk: true, leveler: true, seal: false },
+    { code: 'DOCK-05', name: 'Dispatch Dock 05', type: 'DISPATCH', status: 'OCCUPIED', vehicle: 'DL01-EF-9012', util: 85, ops: 5, cold: false, bulk: false, leveler: true, seal: true },
+    { code: 'DOCK-06', name: 'Dispatch Dock 06', type: 'DISPATCH', status: 'AVAILABLE', vehicle: null, util: 62, ops: 4, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-07', name: 'Express Dock 07', type: 'EXPRESS', status: 'AVAILABLE', vehicle: null, util: 38, ops: 8, cold: false, bulk: false, leveler: true, seal: false },
+    { code: 'DOCK-COLD-01', name: 'Cold Receiving Dock', type: 'COLD', status: 'OCCUPIED', vehicle: 'TN09-GH-3456', util: 71, ops: 2, cold: true, bulk: false, leveler: true, seal: true },
+    { code: 'DOCK-COLD-02', name: 'Cold Dispatch Dock', type: 'COLD', status: 'AVAILABLE', vehicle: null, util: 55, ops: 3, cold: true, bulk: false, leveler: true, seal: false },
+  ]
+
+  const schedule = [
+    { dock: 'DOCK-01', time: '10:00-11:00', vehicle: 'MH12-AB-1234', carrier: 'VRL Logistics', type: 'APPOINTMENT', status: 'IN_PROGRESS' },
+    { dock: 'DOCK-01', time: '11:30-12:30', vehicle: 'MH04-XY-1111', carrier: 'In-House', type: 'APPOINTMENT', status: 'CONFIRMED' },
+    { dock: 'DOCK-02', time: '10:00-11:00', vehicle: 'KA05-CD-5678', carrier: 'In-House', type: 'APPOINTMENT', status: 'IN_PROGRESS' },
+    { dock: 'DOCK-02', time: '11:30-12:30', vehicle: '—', carrier: '—', type: 'WALK_IN', status: 'SCHEDULED' },
+    { dock: 'DOCK-05', time: '10:00-11:00', vehicle: 'DL01-EF-9012', carrier: 'Blue Dart', type: 'CROSS_DOCK', status: 'IN_PROGRESS' },
+    { dock: 'DOCK-05', time: '11:30-13:00', vehicle: 'TN09-BB-4444', carrier: 'In-House', type: 'PRIORITY', status: 'CONFIRMED' },
+    { dock: 'DOCK-07', time: '10:00-10:30', vehicle: 'GJ01-KL-1234', carrier: '—', type: 'PRIORITY', status: 'COMPLETED' },
+    { dock: 'DOCK-COLD-01', time: '11:00-12:30', vehicle: 'TN09-GH-3456', carrier: 'Cold Chain Logistics', type: 'APPOINTMENT', status: 'IN_PROGRESS' },
+  ]
+
+  const typeIcons: Record<string, React.ReactNode> = { RECEIVING: <ArrowDownToLine className="h-4 w-4" />, DISPATCH: <ArrowUpFromLine className="h-4 w-4" />, SHARED: <ArrowLeftRight className="h-4 w-4" />, COLD: <Snowflake className="h-4 w-4" />, BULK: <Package className="h-4 w-4" />, EXPRESS: <Zap className="h-4 w-4" /> }
+  const typeColors: Record<string, string> = { RECEIVING: 'bg-emerald-100 text-emerald-700', DISPATCH: 'bg-amber-100 text-amber-700', SHARED: 'bg-blue-100 text-blue-700', COLD: 'bg-cyan-100 text-cyan-700', BULK: 'bg-purple-100 text-purple-700', EXPRESS: 'bg-orange-100 text-orange-700' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Dock Door Scheduling</h2><p className="text-sm text-muted-foreground mt-1">Receiving · Dispatch · Shared · Cold · Bulk · Express docks with capacity planning</p></div>
+        <Button size="sm"><Plus className="mr-2 h-4 w-4" />New Appointment</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Total Docks', value: docks.length, color: 'text-blue-600' },
+          { label: 'Available', value: docks.filter(d => d.status === 'AVAILABLE').length, color: 'text-emerald-600' },
+          { label: 'Occupied', value: docks.filter(d => d.status === 'OCCUPIED').length, color: 'text-amber-600' },
+          { label: 'Maintenance', value: docks.filter(d => d.status === 'MAINTENANCE').length, color: 'text-orange-600' },
+          { label: 'Avg Utilization', value: `${Math.round(docks.reduce((a, d) => a + d.util, 0) / docks.length)}%`, color: 'text-purple-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+=== yard_map.txt (104 lines) ===
+function YardMapModule() {
+  const yardZones = [
+    { zone: 'GATE_ZONE', label: 'Gate Zone', slots: ['G-01', 'G-02', 'G-03'], occupied: 2, capacity: 3, color: 'border-blue-400 bg-blue-50' },
+    { zone: 'WAITING', label: 'Waiting Area', slots: ['W-01', 'W-02', 'W-03', 'W-04', 'W-05'], occupied: 4, capacity: 5, color: 'border-amber-400 bg-amber-50' },
+    { zone: 'HOLDING', label: 'Holding Area', slots: ['H-01', 'H-02', 'H-03'], occupied: 1, capacity: 3, color: 'border-purple-400 bg-purple-50' },
+    { zone: 'STAGING', label: 'Staging Area', slots: ['S-01', 'S-02', 'S-03', 'S-04'], occupied: 3, capacity: 4, color: 'border-emerald-400 bg-emerald-50' },
+    { zone: 'COLD_HOLD', label: 'Cold Holding', slots: ['C-01', 'C-02'], occupied: 2, capacity: 2, color: 'border-cyan-400 bg-cyan-50' },
+    { zone: 'MAINTENANCE', label: 'Maintenance Bay', slots: ['M-01', 'M-02'], occupied: 1, capacity: 2, color: 'border-orange-400 bg-orange-50' },
+  ]
+
+  const vehicles = [
+    { slot: 'G-01', vehicle: 'MH12-AB-1234', type: 'CONTAINER', purpose: 'INBOUND', since: '08:45', status: 'AT_GATE' },
+    { slot: 'G-02', vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', purpose: 'INBOUND', since: '09:10', status: 'AT_GATE' },
+    { slot: 'W-01', vehicle: 'DL01-EF-9012', type: 'MINI_TRUCK', purpose: 'OUTBOUND', since: '08:30', status: 'WAITING' },
+    { slot: 'W-02', vehicle: 'TN09-GH-3456', type: 'TRAILER', purpose: 'OUTBOUND', since: '08:50', status: 'WAITING' },
+    { slot: 'W-03', vehicle: 'MH04-IJ-7890', type: 'BULK_TRUCK', purpose: 'INBOUND', since: '09:00', status: 'WAITING' },
+    { slot: 'W-04', vehicle: 'GJ01-KL-1234', type: 'SMALL_VAN', purpose: 'PICKUP', since: '09:15', status: 'WAITING' },
+    { slot: 'H-01', vehicle: 'MH12-MN-5678', type: 'COURIER_VEHICLE', purpose: 'OUTBOUND', since: '08:40', status: 'IN_YARD' },
+    { slot: 'S-01', vehicle: 'KA03-OP-9012', type: 'MILK_TANKER', purpose: 'INBOUND', since: '09:05', status: 'READY' },
+    { slot: 'S-02', vehicle: 'DL01-ST-9012', type: 'CONTAINER', purpose: 'OUTBOUND', since: '08:55', status: 'READY' },
+    { slot: 'S-03', vehicle: 'MH12-XY-2222', type: 'TRAILER', purpose: 'OUTBOUND', since: '09:00', status: 'READY' },
+    { slot: 'C-01', vehicle: 'TN09-COLD-01', type: 'COLD_TRUCK', purpose: 'INBOUND', since: '08:50', status: 'IN_YARD' },
+    { slot: 'C-02', vehicle: 'KA05-COLD-02', type: 'COLD_TRUCK', purpose: 'OUTBOUND', since: '09:00', status: 'READY' },
+    { slot: 'M-01', vehicle: 'MH04-REP-01', type: 'OWN_FLEET', purpose: 'SERVICE', since: '08:00', status: 'IN_YARD' },
+  ]
+
+  const getVehicleForSlot = (slot: string) => vehicles.find(v => v.slot === slot)
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Yard Map</h2><p className="text-sm text-muted-foreground mt-1">Visual layout of yard zones · slot occupancy · vehicle positions</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Total Slots', value: yardZones.reduce((a, z) => a + z.capacity, 0), color: 'text-blue-600' },
+          { label: 'Occupied', value: yardZones.reduce((a, z) => a + z.occupied, 0), color: 'text-amber-600' },
+          { label: 'Available', value: yardZones.reduce((a, z) => a + z.capacity - z.occupied, 0), color: 'text-emerald-600' },
+          { label: 'Vehicles in Yard', value: vehicles.length, color: 'text-purple-600' },
+          { label: 'Ready to Exit', value: vehicles.filter(v => v.status === 'READY').length, color: 'text-emerald-700' },
+          { label: 'At Gate', value: vehicles.filter(v => v.status === 'AT_GATE').length, color: 'text-blue-700' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <Card className="p-6">
+        <h3 className="font-semibold mb-4">Yard Layout — WH-MUM-MAIN</h3>
+
+=== vehicle_tracker.txt (67 lines) ===
+function VehicleTrackerModule() {
+  const vehicles = [
+    { id: 'V1', num: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', phone: '+91 98765 43210', purpose: 'INBOUND_DELIVERY', location: 'DOCK-02', status: 'UNLOADING', arrival: '08:45', expectedDep: '10:30', waitMin: 8, dock: 'DOCK-02', asn: 'ASN-2026-018', carrier: 'VRL Logistics', ownership: 'THIRD_PARTY', capacity: '24 T', pallets: 18, refrigerated: false },
+    { id: 'V2', num: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', phone: '+91 98765 43211', purpose: 'INBOUND_DELIVERY', location: 'C-01 (Cold Hold)', status: 'IN_YARD', arrival: '09:10', expectedDep: '11:00', waitMin: 15, dock: null, asn: 'ASN-2026-019', carrier: 'Cold Chain Logistics', ownership: 'THIRD_PARTY', capacity: '8 T', pallets: 10, refrigerated: true, temp: '4°C' },
+    { id: 'V3', num: 'DL01-EF-9012', type: 'MINI_TRUCK', driver: 'Suresh Yadav', phone: '+91 98765 43212', purpose: 'OUTBOUND_DISPATCH', location: 'DOCK-05', status: 'LOADING', arrival: '08:30', expectedDep: '10:45', waitMin: 22, dock: 'DOCK-05', asn: null, dispatch: 'DSP-2026-008', carrier: 'Blue Dart', ownership: 'COURIER', capacity: '3 T', pallets: 6, refrigerated: false },
+    { id: 'V4', num: 'TN09-GH-3456', type: 'TRAILER', driver: 'Anand Pillai', phone: '+91 98765 43213', purpose: 'OUTBOUND_DISPATCH', location: 'W-02 (Waiting)', status: 'WAITING', arrival: '08:50', expectedDep: '11:30', waitMin: 35, dock: null, asn: null, dispatch: 'DSP-2026-009', carrier: 'In-House', ownership: 'OWN_FLEET', capacity: '20 T', pallets: 24, refrigerated: false },
+    { id: 'V5', num: 'MH04-IJ-7890', type: 'BULK_TRUCK', driver: 'Vijay More', phone: '+91 98765 43214', purpose: 'INBOUND_DELIVERY', location: 'W-03 (Waiting)', status: 'WAITING', arrival: '09:00', expectedDep: '11:45', waitMin: 42, dock: null, asn: 'ASN-2026-020', carrier: 'In-House', ownership: 'OWN_FLEET', capacity: '15 T', pallets: 0, refrigerated: false },
+    { id: 'V6', num: 'GJ01-KL-1234', type: 'SMALL_VAN', driver: 'Prakash Patel', phone: '+91 98765 43215', purpose: 'PICKUP', location: 'W-04 (Waiting)', status: 'WAITING', arrival: '09:15', expectedDep: '10:30', waitMin: 5, dock: null, asn: null, dispatch: null, carrier: '—', ownership: 'THIRD_PARTY', capacity: '1 T', pallets: 2, refrigerated: false },
+    { id: 'V7', num: 'MH12-MN-5678', type: 'COURIER_VEHICLE', driver: 'Deepak Jha', phone: '+91 98765 43216', purpose: 'OUTBOUND_DISPATCH', location: 'H-01 (Holding)', status: 'IN_YARD', arrival: '08:40', expectedDep: '10:15', waitMin: 18, dock: null, asn: null, dispatch: 'DSP-2026-010', carrier: 'Delhivery', ownership: 'COURIER', capacity: '2 T', pallets: 4, refrigerated: false },
+    { id: 'V8', num: 'KA03-OP-9012', type: 'MILK_TANKER', driver: 'Mohan Das', phone: '+91 98765 43217', purpose: 'INBOUND_DELIVERY', location: 'S-01 (Staging)', status: 'READY', arrival: '09:05', expectedDep: '10:30', waitMin: 2, dock: null, asn: 'ASN-2026-021', carrier: 'In-House', ownership: 'OWN_FLEET', capacity: '12 T', pallets: 0, refrigerated: true, temp: '2°C' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div><h2 className="text-2xl font-bold">Vehicle Tracker</h2><p className="text-sm text-muted-foreground mt-1">Real-time vehicle location · driver info · capacity · temperature · dock status</p></div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Total Vehicles', value: vehicles.length, color: 'text-blue-600' },
+          { label: 'Loading', value: vehicles.filter(v => v.status === 'LOADING').length, color: 'text-amber-600' },
+          { label: 'Unloading', value: vehicles.filter(v => v.status === 'UNLOADING').length, color: 'text-purple-600' },
+          { label: 'Waiting', value: vehicles.filter(v => v.status === 'WAITING').length, color: 'text-orange-600' },
+          { label: 'Ready', value: vehicles.filter(v => v.status === 'READY').length, color: 'text-emerald-600' },
+          { label: 'Cold Chain', value: vehicles.filter(v => v.refrigerated).length, color: 'text-cyan-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {vehicles.map(v => {
+          const b = s28BadgeForStatus(v.status)
+          const purposeColors: Record<string, string> = { INBOUND_DELIVERY: 'bg-emerald-100 text-emerald-700', OUTBOUND_DISPATCH: 'bg-amber-100 text-amber-700', PICKUP: 'bg-blue-100 text-blue-700', RETURN: 'bg-rose-100 text-rose-700', TRANSFER: 'bg-purple-100 text-purple-700', SERVICE: 'bg-slate-100 text-slate-700' }
+          return (
+            <Card key={v.id} className={`p-4 ${v.refrigerated ? 'border-cyan-300 bg-cyan-50/30' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${v.refrigerated ? 'bg-cyan-100' : 'bg-muted'}`}><Truck className={`h-5 w-5 ${v.refrigerated ? 'text-cyan-700' : 'text-slate-700'}`} /></div>
+                  <div>
+                    <div className="font-mono font-semibold text-sm">{v.num}</div>
+                    <div className="text-[10px] text-muted-foreground">{v.type.replace(/_/g, ' ')}</div>
+                  </div>
+                </div>
+                <span className={`text-[10px] px-2 py-1 rounded ${b.cls}`}>{b.label}</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">Driver:</span><span>{v.driver}</span></div>
+
+=== gate_console.txt (130 lines) ===
+function GateConsoleModule() {
+  const [showCheckIn, setShowCheckIn] = useState(false)
+  const entries = [
+    { id: 'GE1', num: 'GE-2026-018', pass: 'GP-2026-018', vehicle: 'MH12-AB-1234', type: 'CONTAINER', driver: 'Imran Sheikh', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '08:45', expectedExit: '10:30', docs: true, inspect: true, seal: true, status: 'AT_DOCK', photoFront: true, photoSeal: true },
+    { id: 'GE2', num: 'GE-2026-019', pass: 'GP-2026-019', vehicle: 'KA05-CD-5678', type: 'COLD_TRUCK', driver: 'Ravi Kumar', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '09:10', expectedExit: '11:00', docs: true, inspect: true, seal: false, status: 'IN_YARD', photoFront: true, photoSeal: false },
+    { id: 'GE3', num: 'GE-2026-020', pass: 'GP-2026-020', vehicle: 'DL01-EF-9012', type: 'MINI_TRUCK', driver: 'Suresh Yadav', purpose: 'OUTBOUND_DISPATCH', gate: 'GATE-02', officer: 'Suresh Pillai', entryTime: '08:30', expectedExit: '10:45', docs: true, inspect: false, seal: true, status: 'AT_DOCK', photoFront: true, photoSeal: true },
+    { id: 'GE4', num: 'GE-2026-021', pass: 'GP-2026-021', vehicle: 'TN09-GH-3456', type: 'TRAILER', driver: 'Anand Pillai', purpose: 'OUTBOUND_DISPATCH', gate: 'GATE-02', officer: 'Suresh Pillai', entryTime: '08:50', expectedExit: '11:30', docs: true, inspect: true, seal: true, status: 'IN_YARD', photoFront: true, photoSeal: true },
+    { id: 'GE5', num: 'GE-2026-022', pass: 'GP-2026-022', vehicle: 'MH04-IJ-7890', type: 'BULK_TRUCK', driver: 'Vijay More', purpose: 'INBOUND_DELIVERY', gate: 'GATE-01', officer: 'Mahesh Tiwari', entryTime: '09:00', expectedExit: '11:45', docs: true, inspect: false, seal: false, status: 'IN_YARD', photoFront: true, photoSeal: false },
+    { id: 'GE6', num: 'GE-2026-023', pass: 'GP-2026-023', vehicle: 'GJ01-KL-1234', type: 'SMALL_VAN', driver: 'Prakash Patel', purpose: 'PICKUP', gate: 'GATE-02', officer: 'Suresh Pillai', entryTime: '09:15', expectedExit: '10:30', docs: true, inspect: true, seal: false, status: 'IN_YARD', photoFront: true, photoSeal: false },
+  ]
+
+  const exits = [
+    { id: 'GX1', num: 'GX-2026-008', entry: 'GE-2026-015', pass: 'GP-2026-015', vehicle: 'MH12-EXIT-01', driver: 'Imran Khan', gate: 'GATE-01', officer: 'Mahesh Tiwari', exitTime: '08:30', yardMin: 95, docs: true, seal: true, inspect: true, status: 'EXITED' },
+    { id: 'GX2', num: 'GX-2026-007', entry: 'GE-2026-014', pass: 'GP-2026-014', vehicle: 'KA05-EXIT-02', driver: 'Vijay Kumar', gate: 'GATE-02', officer: 'Suresh Pillai', exitTime: '07:45', yardMin: 68, docs: true, seal: true, inspect: false, status: 'EXITED' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Gate Console</h2><p className="text-sm text-muted-foreground mt-1">Vehicle check-in / check-out · gate pass · seal verification · photo evidence</p></div>
+        <Button size="sm" onClick={() => setShowCheckIn(!showCheckIn)}><Plus className="mr-2 h-4 w-4" />New Check-In</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {[
+          { label: 'Entered Today', value: entries.length, color: 'text-emerald-600' },
+          { label: 'In Yard', value: entries.filter(e => e.status === 'IN_YARD').length, color: 'text-amber-600' },
+          { label: 'At Dock', value: entries.filter(e => e.status === 'AT_DOCK').length, color: 'text-blue-600' },
+          { label: 'Exited Today', value: exits.length, color: 'text-slate-600' },
+          { label: 'Seal Verified', value: entries.filter(e => e.seal).length, color: 'text-purple-600' },
+          { label: 'Photo Evidence', value: entries.filter(e => e.photoFront).length, color: 'text-cyan-600' },
+        ].map(s => <Card key={s.label} className="p-3"><p className="text-xs text-muted-foreground">{s.label}</p><p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p></Card>)}
+      </div>
+
+      {showCheckIn && (
+        <Card className="p-4 border-emerald-300 bg-emerald-50/50">
+          <h3 className="font-semibold mb-3">New Vehicle Check-In</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div><Label className="text-xs">Vehicle Number</Label><Input className="mt-1" placeholder="MH12-AB-XXXX" /></div>
+            <div><Label className="text-xs">Vehicle Type</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>SMALL_VAN</option><option>MINI_TRUCK</option><option>CONTAINER</option><option>TRAILER</option><option>COLD_TRUCK</option><option>BULK_TRUCK</option></select></div>
+            <div><Label className="text-xs">Driver Name</Label><Input className="mt-1" placeholder="Full name" /></div>
+            <div><Label className="text-xs">Driver Phone</Label><Input className="mt-1" placeholder="+91 XXXXX XXXXX" /></div>
+            <div><Label className="text-xs">Purpose</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>INBOUND_DELIVERY</option><option>OUTBOUND_DISPATCH</option><option>PICKUP</option><option>RETURN</option><option>TRANSFER</option><option>SERVICE</option></select></div>
+            <div><Label className="text-xs">ASN / Dispatch #</Label><Input className="mt-1" placeholder="ASN-2026-XXX" /></div>
+            <div><Label className="text-xs">Gate</Label><select className="w-full mt-1 px-2 py-1.5 text-sm border rounded-md"><option>GATE-01</option><option>GATE-02</option></select></div>
+
+=== yard_tower.txt (115 lines) ===
+function YardControlTowerModule() {
+  const [liveMode, setLiveMode] = useState(true)
+
+  const kpis = [
+    { label: 'Vehicles Waiting', value: 5, target: 3, trend: '+2', color: 'text-amber-600' },
+    { label: 'Loading', value: 2, target: 4, trend: '-1', color: 'text-blue-600' },
+    { label: 'Unloading', value: 1, target: 2, trend: '0', color: 'text-purple-600' },
+    { label: 'Avg Yard Time', value: '38m', target: '30m', trend: '+8m', color: 'text-amber-600' },
+    { label: 'Dock Util %', value: '67%', target: '80%', trend: '+5%', color: 'text-emerald-600' },
+    { label: 'Truck Turnaround', value: '52m', target: '45m', trend: '+7m', color: 'text-rose-600' },
+    { label: 'Avg Queue Time', value: '18m', target: '15m', trend: '+3m', color: 'text-amber-600' },
+    { label: 'Cross-Dock %', value: '34%', target: '40%', trend: '+2%', color: 'text-emerald-600' },
+  ]
+
+  const dockActivity = [
+    { dock: 'DOCK-01', status: 'OCCUPIED', vehicle: 'MH12-AB-1234', operation: 'UNLOADING', progress: 65, eta: '15 min' },
+    { dock: 'DOCK-02', status: 'OCCUPIED', vehicle: 'KA05-CD-5678', operation: 'UNLOADING', progress: 40, eta: '25 min' },
+    { dock: 'DOCK-03', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+    { dock: 'DOCK-05', status: 'OCCUPIED', vehicle: 'DL01-EF-9012', operation: 'LOADING', progress: 85, eta: '5 min' },
+    { dock: 'DOCK-06', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+    { dock: 'DOCK-07', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+    { dock: 'DOCK-COLD-01', status: 'OCCUPIED', vehicle: 'TN09-GH-3456', operation: 'UNLOADING', progress: 71, eta: '10 min' },
+    { dock: 'DOCK-COLD-02', status: 'AVAILABLE', vehicle: null, operation: null, progress: 0, eta: null },
+  ]
+
+  const alerts = [
+    { sev: 'CRITICAL', msg: 'Milk Tanker KA03-OP-9012 waiting 2m — cold chain priority boosted', time: '1 min ago' },
+    { sev: 'HIGH', msg: 'Truck turnaround exceeded target by 7 minutes (52m vs 45m)', time: '5 min ago' },
+    { sev: 'WARNING', msg: 'DOCK-04 still under maintenance — 1 hour delayed', time: '15 min ago' },
+    { sev: 'WARNING', msg: 'Average queue time 18m — exceeds 15m target', time: '20 min ago' },
+    { sev: 'INFO', msg: 'Cross-dock CD-2026-002 completed — 75 minutes saved', time: '30 min ago' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h2 className="text-2xl font-bold">Yard Control Tower</h2><p className="text-sm text-muted-foreground mt-1">Real-time yard operations · dock activity · queue · gate · cross-dock</p></div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2"><Switch checked={liveMode} onCheckedChange={setLiveMode} />{liveMode ? <span className="text-xs text-emerald-600 flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />LIVE</span> : <span className="text-xs text-muted-foreground">PAUSED</span>}</div>
+          <Badge variant="outline"><Activity className="mr-1 h-3 w-3" />Updated: just now</Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        {kpis.map(k => (
+
+=== crossdock_analytics.txt (179 lines) ===
+function CrossDockAnalyticsModule() {
+  const dailyTrend = [
+    { day: 'Mon', crossDock: 18, total: 45, savings: 28500 },
+    { day: 'Tue', crossDock: 22, total: 52, savings: 34200 },
+    { day: 'Wed', crossDock: 28, total: 58, savings: 42800 },
+    { day: 'Thu', crossDock: 24, total: 51, savings: 36500 },
+    { day: 'Fri', crossDock: 32, total: 67, savings: 51200 },
+    { day: 'Sat', crossDock: 19, total: 41, savings: 29800 },
+    { day: 'Sun', crossDock: 12, total: 28, savings: 18400 },
+  ]
+  const maxTotal = Math.max(...dailyTrend.map(d => d.total))
+
+  const topProducts = [
+    { product: 'Shwet Idli Batter', crossDockOps: 42, storageAvoided: 92, savings: 18400 },
+    { product: 'Kaju Katli 500g', crossDockOps: 28, storageAvoided: 76, savings: 12800 },
+    { product: 'Mysore Pak 250g', crossDockOps: 24, storageAvoided: 68, savings: 9600 },
+    { product: 'Gulab Jamun 1kg', crossDockOps: 18, storageAvoided: 52, savings: 7200 },
+    { product: 'Dry Fruit Mix', crossDockOps: 15, storageAvoided: 45, savings: 6800 },
+  ]
+
+  const supplierPerf = [
+    { supplier: 'Sudhamrit Foods Pvt', onTime: 96, avgDelay: 4, crossDockEligible: 92 },
+    { supplier: 'Mysore Sweets Co', onTime: 91, avgDelay: 8, crossDockEligible: 85 },
