@@ -4372,3 +4372,34 @@ Stage Summary:
 - Key finding: Shared infrastructure correctly reused (toast, LoadingState, ErrorState, EmptyState, exportToCSV)
 - Recommendation: Move 7 clients to src/modules/<backend-module>/api/client.ts before Phase 3
 - Status: STOP — awaiting approval for recommendations
+
+---
+Task ID: SECTION04-ARCH-CORRECTION
+Agent: Main (Super Z)
+Task: Section 04 Architecture Correction — Design frontend API layer (src/api/) + 6 architecture documents
+
+Work Log:
+- Read architecture review and validated against enterprise principles
+- Key insight: Frontend and Backend are SEPARATE systems — API clients must NOT live in backend module folders (src/modules/) or section folders (src/sections/)
+- Designed new src/api/ domain structure with 14 business domains (organization, inventory, warehouse, manufacturing, sales, procurement, quality, finance, crm, hr, administration, catalog, partners, bi)
+- Mapped all 24 existing clients (14 from src/modules + 3 from Section 03 + 7 from Section 04) to their new domain locations
+- Identified 6 new clients needed (recipe, mes, production-orders, returns, gl, alerts)
+- Created migration plan: MOVE 24 clients, SPLIT 2 monoliths (inventoryApi, warehouseApi), RENAME 2 (workforceApi→attendanceApi, batchMfgApi→batchApi), DELETE 16 old files
+- Reviewed shared infrastructure: 8 lib files, 7 hooks, 5 shared components — all correctly located
+- Identified 5 duplications (inline apiFetch, s28PriorityBadge, mock data, manual useState, manual search)
+- Registered 12 technical debt items with priority and effort
+- Generated 6 architecture documents
+- NO code changes. Pure architecture design.
+
+Stage Summary:
+- Deliverables (6 documents):
+  1. 01_FRONTEND_API_ARCHITECTURE.md — Enterprise API layer design (src/api/)
+  2. 02_FRONTEND_DOMAIN_STRUCTURE.md — Complete domain→file mapping (14 domains, 61 files, 47 clients)
+  3. 03_CLIENT_MIGRATION_PLAN.md — KEEP/MERGE/MOVE/DELETE for every client + migration order
+  4. 04_SHARED_INFRASTRUCTURE_REVIEW.md — Hooks, components, utilities verification
+  5. 05_TECHNICAL_DEBT_UPDATE.md — 12 debt items with priority
+  6. 06_SECTION_04_PROGRESS_REPORT.md — Current score 4.5/10
+- Key decision: src/api/ is the SINGLE SOURCE OF TRUTH for all frontend API clients
+- Key decision: Sections NEVER import API clients from other sections
+- Key decision: Backend module folders (src/modules/) will have components/ but NOT api/
+- Status: STOP — awaiting approval to execute migration plan
