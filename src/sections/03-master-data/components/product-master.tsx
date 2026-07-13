@@ -23,7 +23,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Package, CheckCircle2, Layers, GitBranch, Search, Upload, Download, Plus,
-  X, Loader2, AlertCircle,
+  X, Loader2, AlertCircle, Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -307,7 +307,7 @@ export function ProductMasterModule() {
                 <thead className="bg-muted/50">
                   <tr className="text-xs font-semibold text-muted-foreground uppercase">
                     <th className="text-left px-4 py-3">UPI</th><th className="text-left px-4 py-3">Product</th><th className="text-left px-4 py-3">SKU</th>
-                    <th className="text-left px-4 py-3">Brand</th><th className="text-right px-4 py-3">MRP</th><th className="text-center px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">Brand</th><th className="text-right px-4 py-3">MRP</th><th className="text-center px-4 py-3">Status</th><th className="text-center px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -319,6 +319,48 @@ export function ProductMasterModule() {
                       <td className="px-4 py-3 text-sm">{p.brand_id || '—'}</td>
                       <td className="px-4 py-3 text-right font-mono text-sm">{p.mrp ? `₹${p.mrp}` : '—'}</td>
                       <td className="px-4 py-3 text-center"><Badge className={cn('text-xs', STATUS_COLORS[p.status] || 'bg-slate-500 text-white')}>{p.status}</Badge></td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {hasPermission('product:update') && PRODUCT_LIFECYCLE_TRANSITIONS[p.status]?.length > 0 && (
+                            <select
+                              className="h-7 text-xs rounded border bg-background px-1"
+                              value=""
+                              onChange={async (e) => {
+                                if (!e.target.value) return
+                                try {
+                                  await productApi.transition(p.id, e.target.value, p.version)
+                                  toast({ title: `Product transitioned to ${e.target.value}` })
+                                  refresh()
+                                } catch (err: unknown) {
+                                  toast({ title: err instanceof Error ? err.message : 'Transition failed', variant: 'destructive' })
+                                }
+                              }}
+                            >
+                              <option value="">Transition...</option>
+                              {PRODUCT_LIFECYCLE_TRANSITIONS[p.status]?.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          )}
+                          {hasPermission('product:delete') && p.status !== 'ACTIVE' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs text-destructive"
+                              onClick={async () => {
+                                if (!confirm(`Delete product "${p.name}"? This cannot be undone.`)) return
+                                try {
+                                  await productApi.delete(p.id, p.version)
+                                  toast({ title: 'Product deleted' })
+                                  refresh()
+                                } catch (err: unknown) {
+                                  toast({ title: err instanceof Error ? err.message : 'Delete failed', variant: 'destructive' })
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
