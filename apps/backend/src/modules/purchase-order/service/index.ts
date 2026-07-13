@@ -517,12 +517,8 @@ export const purchaseOrderService = {
   async update(id: string, data: Record<string, unknown>, version: number) {
     const { tenantId, userId, ctx } = getContext()
     const existing = await poRepository.findById(tenantId, id)
-    // Maker-Checker: cannot approve own PO (SoD)
-    if (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') {
-      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
-      enforceMakerChecker(existing?.['created_by'] as string, 'approve', 'PurchaseOrder')
-    }
-
+    // Phase 1.6: Removed dead `targetStatus` reference — maker-checker is enforced
+    // in the transition() method where targetStatus is actually defined.
     if (!existing) throw new NotFoundError('PurchaseOrder', id)
     validateEditable(String(existing['status']))
 

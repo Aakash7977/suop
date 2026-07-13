@@ -23,6 +23,9 @@ import { requirePermission } from '@/middleware/rbac'
 import { Permission } from '@/core/permissions'
 import { authService } from '../service'
 import { getRequestContext } from '@/core/context'
+import { verifyAccessToken } from '@/core/auth/jwt'
+import { blockJti } from '@/core/security/jwt-security'
+import { loginRateLimit, passwordResetRateLimit } from '@/middleware/security/rate-limit'
 
 export const authRoutes = new Hono()
 
@@ -71,8 +74,8 @@ const acceptInvitationSchema = z.object({
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 
-// Login (public)
-authRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
+// Login (public) — Phase 1.6: login rate limit applied (5 attempts per 5 min per IP)
+authRoutes.post('/login', loginRateLimit, zValidator('json', loginSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof loginSchema>
   const result = await authService.login(body)
   return c.json(success(result, { message: 'Login successful' }))
@@ -84,6 +87,21 @@ authRoutes.post('/logout', async (c) => {
   if (body.refreshToken) {
     await authService.logout(body.refreshToken)
   }
+
+  // Phase 1.6: Block the current access token's JTI so it can't be reused
+  const authHeader = c.req.header('Authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.slice(7)
+      const payload = verifyAccessToken(token)
+      if (payload.jti && payload.exp) {
+        await blockJti(payload.jti, payload.exp)
+      }
+    } catch {
+      // Token verification failure is acceptable on logout — the token may already be expired
+    }
+  }
+
   return c.json(success({ loggedOut: true }, { message: 'Logout successful' }))
 })
 
@@ -102,7 +120,7 @@ authRoutes.post('/refresh', async (c) => {
 })
 
 // Forgot password (public)
-authRoutes.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c) => {
+authRoutes.post('/forgot-password', passwordResetRateLimit, zValidator('json', forgotPasswordSchema), async (c) => {
   const body = c.req.valid('json' as never) as z.infer<typeof forgotPasswordSchema>
   const result = await authService.forgotPassword(body.email)
   return c.json(success(result, { message: 'If the email exists, a reset link has been sent' }))
@@ -130,14 +148,17 @@ authRoutes.post('/change-password', zValidator('json', changePasswordSchema), as
   return c.json(success({ changed: true }, { message: 'Password changed. All sessions have been revoked.' }))
 })
 
-// Get current user (authenticated)
+// Get current user (authenticated) — Phase 1.6: includes scope context for frontend
 authRoutes.get('/me', async (c) => {
   const ctx = getRequestContext()
   if (!ctx?.userId) {
     return c.json({ success: false, error: { code: 'AUTH.TOKEN_MISSING', message: 'Authentication required' } }, 401)
   }
   const user = await authService.getCurrentUser()
-  return c.json(success(user))
+  // Phase 1.6: Return scope context for frontend RBAC
+  const { getScopeContextForFrontend } = await import('@/middleware/scope-context')
+  const scope = getScopeContextForFrontend()
+  return c.json(success({ ...user, scope }))
 })
 
 // List sessions (authenticated)

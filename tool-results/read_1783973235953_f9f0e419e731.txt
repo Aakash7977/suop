@@ -1,0 +1,1005 @@
+     1→/** Purchase Order Service — Business logic, business rules, comparison-to-PO engine, PDF engine
+     2→ *
+     3→ * Implements 20+ business rules per Phase 10 requirements.
+     4→ * All mutations go through workflow + audit.
+     5→ */
+     6→import '@/modules/purchase-order/workflow'
+     7→import {
+     8→  poRepository,
+     9→  poLineRepository,
+    10→  poTaxRepository,
+    11→  poChargeRepository,
+    12→  poApprovalRepository,
+    13→  poRevisionRepository,
+    14→  poHistoryRepository,
+    15→} from '../repository'
+    16→import { workflowRegistry } from '@/core/workflow'
+    17→import { auditService } from '@/core/audit'
+    18→import { eventBus } from '@/core/events'
+    19→import { getRequestContext } from '@/core/context'
+    20→import { query } from '@/core/db/pglite'
+    21→import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
+    22→import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
+    23→
+    24→function getContext() {
+    25→  const ctx = getRequestContext()
+    26→  if (!ctx?.tenantId || !ctx?.userId) throw new AuthorizationError('Authentication required')
+    27→  return { tenantId: ctx.tenantId, userId: ctx.userId, userEmail: ctx.userEmail, ctx }
+    28→}
+    29→
+    30→// ════════════════════════════════════════════════════════════════════════════
+    31→// BUSINESS RULES
+    32→// ════════════════════════════════════════════════════════════════════════════
+    33→
+    34→/** Rule 1: Supplier must be ACTIVE (not DRAFT, not BLOCKED, not BLACKLISTED, not ARCHIVED) */
+    35→async function validateSupplierActive(tenantId: string, supplierId: string) {
+    36→  const result = await query(`SELECT status FROM suppliers WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [
+    37→    tenantId,
+    38→    supplierId,
+    39→  ])
+    40→  if (result.rows.length === 0) throw new BusinessRuleError('Supplier not found', { code: 'PO.SUPPLIER_NOT_FOUND' })
+    41→  const status = String(result.rows[0]!['status'])
+    42→  if (status !== 'ACTIVE') {
+    43→    throw new BusinessRuleError(`Supplier must be ACTIVE (current: ${status})`, { code: 'PO.SUPPLIER_NOT_ACTIVE' })
+    44→  }
+    45→}
+    46→
+    47→/** Rule 2: Supplier cannot be BLACKLISTED (defense-in-depth even though rule 1 catches it) */
+    48→async function validateSupplierNotBlacklisted(tenantId: string, supplierId: string) {
+    49→  const result = await query(`SELECT status FROM suppliers WHERE tenant_id = $1 AND id = $2`, [tenantId, supplierId])
+    50→  if (result.rows.length > 0 && result.rows[0]!['status'] === 'BLACKLISTED') {
+    51→    throw new BusinessRuleError('Supplier is blacklisted', { code: 'PO.SUPPLIER_BLACKLISTED' })
+    52→  }
+    53→}
+    54→
+    55→/** Rule 3: Products must be ACTIVE (not DRAFT, not DISCONTINUED, not ARCHIVED) */
+    56→async function validateProductsActive(tenantId: string, lines: Array<Record<string, unknown>>) {
+    57→  for (const line of lines) {
+    58→    const result = await query(`SELECT status FROM products WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [
+    59→      tenantId,
+    60→      String(line['productId']),
+    61→    ])
+    62→    if (result.rows.length === 0) {
+    63→      throw new BusinessRuleError(`Product not found: ${line['productSku']}`, { code: 'PO.PRODUCT_NOT_FOUND' })
+    64→    }
+    65→    const status = String(result.rows[0]!['status'])
+    66→    if (status !== 'ACTIVE' && status !== 'APPROVED') {
+    67→      throw new BusinessRuleError(`Product ${line['productSku']} must be ACTIVE (current: ${status})`, {
+    68→        code: 'PO.PRODUCT_NOT_ACTIVE',
+    69→      })
+    70→    }
+    71→  }
+    72→}
+    73→
+    74→/** Rule 4: No duplicate PO numbers */
+    75→async function validateUniquePoNumber(tenantId: string, poNumber: string) {
+    76→  const existing = await poRepository.findByNumber(tenantId, poNumber)
+    77→  if (existing) throw new BusinessRuleError(`PO number already exists: ${poNumber}`, { code: 'PO.DUPLICATE_NUMBER' })
+    78→}
+    79→
+    80→/** Rule 5: Lead Time Validation — expected delivery date must allow for supplier lead time */
+    81→function validateLeadTime(leadTimeDays: number | undefined, expectedDeliveryDate: string | undefined) {
+    82→  if (!leadTimeDays || !expectedDeliveryDate) return
+    83→  const minDate = new Date()
+    84→  minDate.setDate(minDate.getDate() + leadTimeDays)
+    85→  const expected = new Date(expectedDeliveryDate)
+    86→  if (expected < minDate) {
+    87→    throw new BusinessRuleError(
+    88→      `Expected delivery date must be at least ${leadTimeDays} days from now (supplier lead time)`,
+    89→      { code: 'PO.LEAD_TIME_VIOLATION' },
+    90→    )
+    91→  }
+    92→}
+    93→
+    94→/** Rule 6: Minimum Order Quantity check */
+    95→function validateMoq(orderedQty: number, minOrderQty: number | undefined): boolean {
+    96→  if (minOrderQty !== undefined && orderedQty < minOrderQty) {
+    97→    return false // MOQ violated — caller decides whether to throw or warn
+    98→  }
+    99→  return true
+   100→}
+   101→
+   102→/** Rule 7: Maximum Order Quantity check */
+   103→function validateMaxQty(orderedQty: number, maxOrderQty: number | undefined, _productSku: string) {
+   104→  if (maxOrderQty !== undefined && orderedQty > maxOrderQty) {
+   105→    throw new BusinessRuleError(`Order quantity ${orderedQty} exceeds max ${maxOrderQty}`, {
+   106→      code: 'PO.MAX_QTY_EXCEEDED',
+   107→    })
+   108→  }
+   109→}
+   110→
+   111→/** Rule 8: Price variance validation — unit price should not vary > 20% from last PO */
+   112→async function validatePriceVariance(
+   113→  tenantId: string,
+   114→  supplierId: string,
+   115→  productId: string,
+   116→  unitPrice: number,
+   117→) {
+   118→  const lastPoResult = await query(
+   119→    `SELECT pol.unit_price FROM purchase_order_lines pol
+   120→     JOIN purchase_orders po ON pol.po_id = po.id
+   121→     WHERE pol.tenant_id = $1 AND po.supplier_id = $2 AND pol.product_id = $3
+   122→     AND po.status IN ('CLOSED', 'FULLY_RECEIVED')
+   123→     ORDER BY po.po_date DESC LIMIT 1`,
+   124→    [tenantId, supplierId, productId],
+   125→  )
+   126→  if (lastPoResult.rows.length === 0) return // no history — OK
+   127→  const lastPrice = Number(lastPoResult.rows[0]!['unit_price'])
+   128→  if (lastPrice === 0) return
+   129→  const variance = Math.abs((unitPrice - lastPrice) / lastPrice) * 100
+   130→  if (variance > 20) {
+   131→    throw new BusinessRuleError(
+   132→      `Price variance of ${variance.toFixed(2)}% exceeds 20% threshold (last price: ${lastPrice}, new: ${unitPrice})`,
+   133→      { code: 'PO.PRICE_VARIANCE_EXCEEDED' },
+   134→    )
+   135→  }
+   136→}
+   137→
+   138→/** Rule 9: Tax calculation */
+   139→function calculateTax(taxableAmount: number, taxPercent: number): number {
+   140→  return Math.round(taxableAmount * (taxPercent / 100) * 100) / 100
+   141→}
+   142→
+   143→/** Rule 10: Discount calculation */
+   144→function calculateDiscount(amount: number, discountPercent: number): number {
+   145→  return Math.round(amount * (discountPercent / 100) * 100) / 100
+   146→}
+   147→
+   148→/** Rule 11: Freight calculation (flat or percent of subtotal) */
+   149→function calculateFreight(subtotal: number, freightAmount?: number, freightPercent?: number): number {
+   150→  if (freightAmount) return freightAmount
+   151→  if (freightPercent) return Math.round(subtotal * (freightPercent / 100) * 100) / 100
+   152→  return 0
+   153→}
+   154→
+   155→/** Rule 12: Round-off calculation */
+   156→function calculateRoundOff(amount: number): number {
+   157→  return Math.round(amount) - amount
+   158→}
+   159→
+   160→/** Rule 13: Currency handling — default INR, validate ISO code */
+   161→function validateCurrency(currency: string | undefined): string {
+   162→  const valid = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'JPY']
+   163→  const c = (currency ?? 'INR').toUpperCase()
+   164→  if (!valid.includes(c)) throw new BusinessRuleError(`Unsupported currency: ${c}`, { code: 'PO.INVALID_CURRENCY' })
+   165→  return c
+   166→}
+   167→
+   168→/** Rule 14: Expected Delivery Date calculation from lead time */
+   169→function calculateExpectedDeliveryDate(leadTimeDays: number): string {
+   170→  const d = new Date()
+   171→  d.setDate(d.getDate() + leadTimeDays)
+   172→  return d.toISOString()
+   173→}
+   174→
+   175→/** Rule 15: Validity date must be in the future */
+   176→function validateValidityDate(validityDate: string | undefined) {
+   177→  if (!validityDate) return
+   178→  if (new Date(validityDate) < new Date()) {
+   179→    throw new BusinessRuleError('Validity date cannot be in the past', { code: 'PO.PAST_VALIDITY' })
+   180→  }
+   181→}
+   182→
+   183→/** Rule 16: PO type validation */
+   184→function validatePoType(poType: string): string {
+   185→  const valid = [
+   186→    'STANDARD',
+   187→    'BLANKET',
+   188→    'CONTRACT',
+   189→    'SERVICE',
+   190→    'SUBCONTRACTING',
+   191→    'EMERGENCY',
+   192→    'CONSIGNMENT',
+   193→    'CAPITAL',
+   194→  ]
+   195→  if (!valid.includes(poType)) throw new BusinessRuleError(`Invalid PO type: ${poType}`, { code: 'PO.INVALID_TYPE' })
+   196→  return poType
+   197→}
+   198→
+   199→/** Rule 17: Emergency PO — bypasses some approval levels */
+   200→function isEmergencyPo(poType: string): boolean {
+   201→  return poType === 'EMERGENCY'
+   202→}
+   203→
+   204→/** Rule 18: Blanket PO — must have validity date and max amount */
+   205→function validateBlanketPo(poType: string, validityDate: string | undefined, _grandTotal: number) {
+   206→  if (poType === 'BLANKET' && !validityDate) {
+   207→    throw new BusinessRuleError('Blanket PO must have a validity date', { code: 'PO.BLANKET_NO_VALIDITY' })
+   208→  }
+   209→}
+   210→
+   211→/** Rule 19: At least one line required */
+   212→function validateLinesPresent(lines: Array<Record<string, unknown>>) {
+   213→  if (!lines || lines.length === 0) {
+   214→    throw new BusinessRuleError('Purchase Order must have at least one line item', { code: 'PO.NO_LINES' })
+   215→  }
+   216→}
+   217→
+   218→/** Rule 20: Only DRAFT or REVISION_REQUESTED POs can be edited */
+   219→function validateEditable(status: string) {
+   220→  if (!['DRAFT', 'REVISION_REQUESTED'].includes(status)) {
+   221→    throw new BusinessRuleError(`Cannot modify PO in ${status} status`, { code: 'PO.NOT_EDITABLE' })
+   222→  }
+   223→}
+   224→
+   225→// ════════════════════════════════════════════════════════════════════════════
+   226→// TOTALS CALCULATION
+   227→// ════════════════════════════════════════════════════════════════════════════
+   228→
+   229→interface TotalsResult {
+   230→  subtotal: number
+   231→  discountAmount: number
+   232→  taxAmount: number
+   233→  freightAmount: number
+   234→  insuranceAmount: number
+   235→  otherCharges: number
+   236→  roundOff: number
+   237→  grandTotal: number
+   238→  lines: Array<{ lineTotal: number; discountAmount: number; taxAmount: number }>
+   239→}
+   240→
+   241→function calculateTotals(
+   242→  lines: Array<{ qty: number; unitPrice: number; discountPercent?: number; taxPercent?: number }>,
+   243→  options: {
+   244→    discountPercent?: number
+   245→    freightAmount?: number
+   246→    insuranceAmount?: number
+   247→    otherCharges?: number
+   248→  } = {},
+   249→): TotalsResult {
+   250→  let subtotal = 0
+   251→  const lineResults: TotalsResult['lines'] = []
+   252→
+   253→  for (const line of lines) {
+   254→    const lineSubtotal = line.qty * line.unitPrice
+   255→    const lineDiscount = calculateDiscount(lineSubtotal, line.discountPercent ?? 0)
+   256→    const lineTaxable = lineSubtotal - lineDiscount
+   257→    const lineTax = calculateTax(lineTaxable, line.taxPercent ?? 0)
+   258→    const lineTotal = lineTaxable + lineTax
+   259→    subtotal += lineSubtotal
+   260→    lineResults.push({ lineTotal, discountAmount: lineDiscount, taxAmount: lineTax })
+   261→  }
+   262→
+   263→  const headerDiscount = calculateDiscount(subtotal, options.discountPercent ?? 0)
+   264→  const taxableAfterDiscount = subtotal - headerDiscount
+   265→  const taxAmount = lineResults.reduce((sum, l) => sum + l.taxAmount, 0)
+   266→  const freightAmount = calculateFreight(subtotal, options.freightAmount)
+   267→  const insuranceAmount = options.insuranceAmount ?? 0
+   268→  const otherCharges = options.otherCharges ?? 0
+   269→
+   270→  const beforeRoundOff = taxableAfterDiscount + taxAmount + freightAmount + insuranceAmount + otherCharges - headerDiscount + lineResults.reduce((s, l) => s + l.discountAmount, 0)
+   271→  void beforeRoundOff
+   272→  // Simplified: grand total = subtotal - all discounts + tax + charges
+   273→  const allDiscounts = headerDiscount + lineResults.reduce((s, l) => s + l.discountAmount, 0)
+   274→  const rawTotal = subtotal - allDiscounts + taxAmount + freightAmount + insuranceAmount + otherCharges
+   275→  const roundOff = calculateRoundOff(rawTotal)
+   276→  const grandTotal = rawTotal + roundOff
+   277→
+   278→  return {
+   279→    subtotal: Math.round(subtotal * 100) / 100,
+   280→    discountAmount: Math.round(allDiscounts * 100) / 100,
+   281→    taxAmount: Math.round(taxAmount * 100) / 100,
+   282→    freightAmount: Math.round(freightAmount * 100) / 100,
+   283→    insuranceAmount: Math.round(insuranceAmount * 100) / 100,
+   284→    otherCharges: Math.round(otherCharges * 100) / 100,
+   285→    roundOff: Math.round(roundOff * 100) / 100,
+   286→    grandTotal: Math.round(grandTotal * 100) / 100,
+   287→    lines: lineResults,
+   288→  }
+   289→}
+   290→
+   291→// ════════════════════════════════════════════════════════════════════════════
+   292→// SERVICE
+   293→// ════════════════════════════════════════════════════════════════════════════
+   294→
+   295→export const purchaseOrderService = {
+   296→  async create(data: {
+   297→    poType?: string
+   298→    supplierId: string
+   299→    supplierCode: string
+   300→    supplierName: string
+   301→    supplierGstin?: string
+   302→    companyId: string
+   303→    companyName: string
+   304→    plantId: string
+   305→    plantName: string
+   306→    warehouseId?: string
+   307→    warehouseName?: string
+   308→    departmentId?: string
+   309→    costCenterId?: string
+   310→    buyerId?: string
+   311→    buyerName?: string
+   312→    rfqId?: string
+   313→    rfqNumber?: string
+   314→    quotationId?: string
+   315→    quotationNumber?: string
+   316→    prId?: string
+   317→    prNumber?: string
+   318→    expectedDeliveryDate?: string
+   319→    deliveryTerms?: string
+   320→    deliveryLocation?: string
+   321→    shippingAddress?: string
+   322→    billingAddress?: string
+   323→    currency?: string
+   324→    exchangeRate?: number
+   325→    discountPercent?: number
+   326→    freightAmount?: number
+   327→    insuranceAmount?: number
+   328→    otherCharges?: number
+   329→    paymentTerms?: string
+   330→    paymentTermsDays?: number
+   331→    creditPeriodDays?: number
+   332→    advancePercent?: number
+   333→    validityDate?: string
+   334→    remarks?: string
+   335→    internalNotes?: string
+   336→    supplierNotes?: string
+   337→    lines: Array<Record<string, unknown>>
+   338→  }) {
+   339→    const { tenantId, userId, ctx } = getContext()
+   340→
+   341→    // Business rule validations
+   342→    validateLinesPresent(data.lines)
+   343→    const poType = validatePoType(data.poType ?? 'STANDARD')
+   344→    const currency = validateCurrency(data.currency)
+   345→    validateValidityDate(data.validityDate)
+   346→    await validateSupplierActive(tenantId, data.supplierId)
+   347→    await validateSupplierNotBlacklisted(tenantId, data.supplierId)
+   348→    await validateProductsActive(tenantId, data.lines)
+   349→
+   350→    // Per-line validations
+   351→    for (const line of data.lines) {
+   352→      const orderedQty = Number(line['orderedQty'] ?? 0)
+   353→      const unitPrice = Number(line['unitPrice'] ?? 0)
+   354→      if (orderedQty <= 0) throw new BusinessRuleError('Ordered quantity must be positive', { code: 'PO.INVALID_QTY' })
+   355→      if (unitPrice < 0) throw new BusinessRuleError('Unit price cannot be negative', { code: 'PO.INVALID_PRICE' })
+   356→      validateMaxQty(orderedQty, line['maxOrderQty'] as number | undefined, String(line['productSku']))
+   357→      if (line['leadTimeDays']) validateLeadTime(line['leadTimeDays'] as number, data.expectedDeliveryDate)
+   358→      await validatePriceVariance(tenantId, data.supplierId, String(line['productId']), unitPrice)
+   359→    }
+   360→
+   361→    // Generate PO number
+   362→    const poNumber = await poRepository.generatePoNumber(tenantId, poType)
+   363→    await validateUniquePoNumber(tenantId, poNumber)
+   364→
+   365→    // Calculate totals
+   366→    const linesForCalc = data.lines.map((l) => ({
+   367→      qty: Number(l['orderedQty']),
+   368→      unitPrice: Number(l['unitPrice']),
+   369→      discountPercent: l['discountPercent'] as number | undefined,
+   370→      taxPercent: l['taxPercent'] as number | undefined,
+   371→    }))
+   372→    const totals = calculateTotals(linesForCalc, {
+   373→      discountPercent: data.discountPercent,
+   374→      freightAmount: data.freightAmount,
+   375→      insuranceAmount: data.insuranceAmount,
+   376→      otherCharges: data.otherCharges,
+   377→    })
+   378→
+   379→    validateBlanketPo(poType, data.validityDate, totals.grandTotal)
+   380→
+   381→    const po = await poRepository.create({
+   382→      tenantId,
+   383→      poNumber,
+   384→      poType,
+   385→      rfqId: data.rfqId,
+   386→      rfqNumber: data.rfqNumber,
+   387→      quotationId: data.quotationId,
+   388→      quotationNumber: data.quotationNumber,
+   389→      prId: data.prId,
+   390→      prNumber: data.prNumber,
+   391→      supplierId: data.supplierId,
+   392→      supplierCode: data.supplierCode,
+   393→      supplierName: data.supplierName,
+   394→      supplierGstin: data.supplierGstin,
+   395→      companyId: data.companyId,
+   396→      companyName: data.companyName,
+   397→      plantId: data.plantId,
+   398→      plantName: data.plantName,
+   399→      warehouseId: data.warehouseId,
+   400→      warehouseName: data.warehouseName,
+   401→      departmentId: data.departmentId,
+   402→      costCenterId: data.costCenterId,
+   403→      buyerId: data.buyerId,
+   404→      buyerName: data.buyerName,
+   405→      expectedDeliveryDate: data.expectedDeliveryDate,
+   406→      deliveryTerms: data.deliveryTerms,
+   407→      deliveryLocation: data.deliveryLocation,
+   408→      shippingAddress: data.shippingAddress,
+   409→      billingAddress: data.billingAddress,
+   410→      currency,
+   411→      exchangeRate: data.exchangeRate ?? 1,
+   412→      subtotal: totals.subtotal,
+   413→      discountPercent: data.discountPercent,
+   414→      discountAmount: totals.discountAmount,
+   415→      taxAmount: totals.taxAmount,
+   416→      freightAmount: totals.freightAmount,
+   417→      insuranceAmount: totals.insuranceAmount,
+   418→      otherCharges: totals.otherCharges,
+   419→      roundOff: totals.roundOff,
+   420→      grandTotal: totals.grandTotal,
+   421→      paymentTerms: data.paymentTerms ?? 'NET30',
+   422→      paymentTermsDays: data.paymentTermsDays ?? 30,
+   423→      creditPeriodDays: data.creditPeriodDays ?? 30,
+   424→      advancePercent: data.advancePercent,
+   425→      validityDate: data.validityDate,
+   426→      remarks: data.remarks,
+   427→      internalNotes: data.internalNotes,
+   428→      supplierNotes: data.supplierNotes,
+   429→      status: 'DRAFT',
+   430→    })
+   431→    if (!po) throw new Error('Failed to create PO')
+   432→
+   433→    // Create lines
+   434→    let lineNo = 1
+   435→    for (const line of data.lines) {
+   436→      const lineTotals = totals.lines[lineNo - 1]!
+   437→      const moqOk = validateMoq(
+   438→        Number(line['orderedQty']),
+   439→        line['minOrderQty'] as number | undefined,
+   440→      )
+   441→      await poLineRepository.create({
+   442→        ...line,
+   443→        tenantId,
+   444→        poId: po['id'],
+   445→        lineNo,
+   446→        discountAmount: lineTotals.discountAmount,
+   447→        taxAmount: lineTotals.taxAmount,
+   448→        lineTotal: lineTotals.lineTotal,
+   449→        pendingQty: Number(line['orderedQty']),
+   450→        moqViolated: !moqOk,
+   451→        currency,
+   452→      })
+   453→      lineNo++
+   454→    }
+   455→
+   456→    // Audit + history
+   457→    await auditService.log({
+   458→      tenantId,
+   459→      correlationId: ctx.correlationId,
+   460→      actorType: 'USER',
+   461→      actorId: userId,
+   462→      actorName: ctx.userEmail,
+   463→      action: 'CREATE',
+   464→      entityType: 'PurchaseOrder',
+   465→      entityId: String(po['id']),
+   466→      entityCode: poNumber,
+   467→      after: po,
+   468→    })
+   469→    await poHistoryRepository.create({
+   470→      tenantId,
+   471→      poId: String(po['id']),
+   472→      action: 'CREATE',
+   473→      toStatus: 'DRAFT',
+   474→      actionBy: userId,
+   475→      actionByName: ctx.userEmail,
+   476→      correlationId: ctx.correlationId,
+   477→    })
+   478→    await eventBus.writeToOutbox({
+   479→      eventName: 'PurchaseOrderCreated',
+   480→      payload: { poId: String(po['id']), poNumber, supplierId: data.supplierId, grandTotal: totals.grandTotal },
+   481→      tenantId,
+   482→    })
+   483→
+   484→    return po
+   485→  },
+   486→
+   487→  async getById(id: string) {
+   488→    const { tenantId } = getContext()
+   489→    const po = await poRepository.findById(tenantId, id)
+   490→    if (!po) throw new NotFoundError('PurchaseOrder', id)
+   491→    const [lines, taxes, charges, approvals, revisions, history] = await Promise.all([
+   492→      poLineRepository.listForPo(tenantId, id),
+   493→      poTaxRepository.listForPo(tenantId, id),
+   494→      poChargeRepository.listForPo(tenantId, id),
+   495→      poApprovalRepository.listForPo(tenantId, id),
+   496→      poRevisionRepository.listForPo(tenantId, id),
+   497→      poHistoryRepository.listForPo(tenantId, id),
+   498→    ])
+   499→    return { ...po, lines, taxes, charges, approvals, revisions, history }
+   500→  },
+   501→
+   502→  async list(params: {
+   503→    page?: number
+   504→    pageSize?: number
+   505→    search?: string
+   506→    status?: string
+   507→    poType?: string
+   508→    supplierId?: string
+   509→    plantId?: string
+   510→    sortBy?: string
+   511→    sortOrder?: 'ASC' | 'DESC'
+   512→  } = {}) {
+   513→    const { tenantId } = getContext()
+   514→    return poRepository.list(tenantId, params)
+   515→  },
+   516→
+   517→  async update(id: string, data: Record<string, unknown>, version: number) {
+   518→    const { tenantId, userId, ctx } = getContext()
+   519→    const existing = await poRepository.findById(tenantId, id)
+   520→    // Maker-Checker: cannot approve own PO (SoD)
+   521→    if (targetStatus === 'APPROVED' || targetStatus === 'REJECTED') {
+   522→      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
+   523→      enforceMakerChecker(existing?.['created_by'] as string, 'approve', 'PurchaseOrder')
+   524→    }
+   525→
+   526→    if (!existing) throw new NotFoundError('PurchaseOrder', id)
+   527→    validateEditable(String(existing['status']))
+   528→
+   529→    // Create revision snapshot before update
+   530→    const revisionNo = Number(existing['revision_no']) + 1
+   531→    await poRevisionRepository.create({
+   532→      tenantId,
+   533→      poId: id,
+   534→      revisionNo,
+   535→      revisionReason: String(data['revisionReason'] ?? 'Updated'),
+   536→      previousSnapshot: existing,
+   537→      changedFields: Object.keys(data),
+   538→      revisedBy: userId,
+   539→      revisedByName: ctx.userEmail,
+   540→    })
+   541→
+   542→    const updated = await poRepository.update(tenantId, id, { ...data, revisionNo }, version, userId)
+   543→    if (!updated) throw new ConcurrencyError('PO was modified by another transaction')
+   544→
+   545→    await auditService.log({
+   546→      tenantId,
+   547→      correlationId: ctx.correlationId,
+   548→      actorType: 'USER',
+   549→      actorId: userId,
+   550→      actorName: ctx.userEmail,
+   551→      action: 'UPDATE',
+   552→      entityType: 'PurchaseOrder',
+   553→      entityId: id,
+   554→      entityCode: String(existing['po_number']),
+   555→      before: existing,
+   556→      after: updated,
+   557→    })
+   558→    await poHistoryRepository.create({
+   559→      tenantId,
+   560→      poId: id,
+   561→      action: 'UPDATE',
+   562→      actionBy: userId,
+   563→      actionByName: ctx.userEmail,
+   564→      correlationId: ctx.correlationId,
+   565→      metadata: { revisionNo },
+   566→    })
+   567→    return updated
+   568→  },
+   569→
+   570→  async delete(id: string, version: number) {
+   571→    const { tenantId, userId, ctx } = getContext()
+   572→    const existing = await poRepository.findById(tenantId, id)
+   573→    if (!existing) throw new NotFoundError('PurchaseOrder', id)
+   574→    if (String(existing['status']) !== 'DRAFT') {
+   575→      throw new BusinessRuleError('Can only delete draft POs', { code: 'PO.NOT_DRAFT' })
+   576→    }
+   577→    const deleted = await poRepository.softDelete(tenantId, id, version)
+   578→    if (!deleted) throw new ConcurrencyError('PO was modified by another transaction')
+   579→    await poLineRepository.deleteForPo(id)
+   580→    await auditService.log({
+   581→      tenantId,
+   582→      correlationId: ctx.correlationId,
+   583→      actorType: 'USER',
+   584→      actorId: userId,
+   585→      actorName: ctx.userEmail,
+   586→      action: 'DELETE',
+   587→      entityType: 'PurchaseOrder',
+   588→      entityId: id,
+   589→      entityCode: String(existing['po_number']),
+   590→    })
+   591→    await poHistoryRepository.create({
+   592→      tenantId,
+   593→      poId: id,
+   594→      action: 'DELETE',
+   595→      actionBy: userId,
+   596→      actionByName: ctx.userEmail,
+   597→      correlationId: ctx.correlationId,
+   598→    })
+   599→  },
+   600→
+   601→  async transition(
+   602→    id: string,
+   603→    targetStatus: string,
+   604→    version: number,
+   605→    transitionData?: {
+   606→      approvalLevel?: string
+   607→      approvalNotes?: string
+   608→      rejectionReason?: string
+   609→      cancelReason?: string
+   610→      revisionReason?: string
+   611→    },
+   612→  ) {
+   613→    // Phase 1: Security enforcement
+   614→    enforceNotBreakGlass('transition')
+   615→
+   616→    const { tenantId, userId, ctx } = getContext()
+   617→    const existing = await poRepository.findById(tenantId, id)
+   618→    if (!existing) throw new NotFoundError('PurchaseOrder', id)
+   619→
+   620→    const machine = workflowRegistry.get<string, { id: string; status: string; version: number }>(
+   621→      'PurchaseOrderLifecycle',
+   622→    )
+   623→    const check = await machine.canTransition(
+   624→      { id, status: String(existing['status']), version: Number(existing['version']) },
+   625→      targetStatus,
+   626→      { userId, tenantId, correlationId: ctx.correlationId },
+   627→    )
+   628→    if (!check.allowed) {
+   629→      throw new BusinessRuleError(`Transition denied: ${check.reason}`, { code: 'PO.TRANSITION_DENIED' })
+   630→    }
+   631→
+   632→    const updateData: Record<string, unknown> = { status: targetStatus }
+   633→    if (targetStatus === 'REJECTED' && transitionData?.rejectionReason) {
+   634→      updateData.rejectionReason = transitionData.rejectionReason
+   635→    }
+   636→    if (targetStatus === 'CANCELLED' && transitionData?.cancelReason) {
+   637→      updateData.cancelReason = transitionData.cancelReason
+   638→    }
+   639→    if (targetStatus === 'REVISION_REQUESTED' && transitionData?.revisionReason) {
+   640→      updateData.revisionReason = transitionData.revisionReason
+   641→    }
+   642→    if (transitionData?.approvalNotes) {
+   643→      updateData.approvalNotes = transitionData.approvalNotes
+   644→    }
+   645→
+   646→    const updated = await poRepository.update(tenantId, id, updateData, version, userId)
+   647→    if (!updated) throw new ConcurrencyError('PO was modified by another transaction')
+   648→
+   649→    // Record approval if transitioning through approval levels
+   650→    if (transitionData?.approvalLevel && ['DEPT_APPROVAL', 'FINANCE_APPROVAL', 'MANAGEMENT_APPROVAL', 'APPROVED', 'REJECTED'].includes(targetStatus)) {
+   651→      await poApprovalRepository.create({
+   652→        tenantId,
+   653→        poId: id,
+   654→        approvalLevel: transitionData.approvalLevel,
+   655→        approvalStatus: targetStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED',
+   656→        approverId: userId,
+   657→        approverName: ctx.userEmail,
+   658→        approvalDate: new Date().toISOString(),
+   659→        approvalNotes: transitionData.approvalNotes,
+   660→        rejectionReason: transitionData.rejectionReason,
+   661→        approvedAmount: Number(existing['grand_total']),
+   662→      })
+   663→    }
+   664→
+   665→    await auditService.log({
+   666→      tenantId,
+   667→      correlationId: ctx.correlationId,
+   668→      actorType: 'USER',
+   669→      actorId: userId,
+   670→      actorName: ctx.userEmail,
+   671→      action: 'TRANSITION',
+   672→      entityType: 'PurchaseOrder',
+   673→      entityId: id,
+   674→      entityCode: String(existing['po_number']),
+   675→      before: { status: existing['status'] },
+   676→      after: { status: targetStatus },
+   677→    })
+   678→    await poHistoryRepository.create({
+   679→      tenantId,
+   680→      poId: id,
+   681→      action: targetStatus,
+   682→      fromStatus: String(existing['status']),
+   683→      toStatus: targetStatus,
+   684→      actionBy: userId,
+   685→      actionByName: ctx.userEmail,
+   686→      actionNotes: transitionData?.approvalNotes ?? transitionData?.rejectionReason,
+   687→      correlationId: ctx.correlationId,
+   688→    })
+   689→
+   690→    // Fire domain events
+   691→    const eventMap: Record<string, string> = {
+   692→      SUBMITTED: 'PurchaseOrderSubmitted',
+   693→      APPROVED: 'PurchaseOrderApproved',
+   694→      ISSUED: 'PurchaseOrderIssued',
+   695→      CLOSED: 'PurchaseOrderClosed',
+   696→      REJECTED: 'PurchaseOrderRejected',
+   697→      CANCELLED: 'PurchaseOrderCancelled',
+   698→    }
+   699→    if (eventMap[targetStatus]) {
+   700→      await eventBus.writeToOutbox({
+   701→        eventName: eventMap[targetStatus],
+   702→        payload: { poId: id, poNumber: String(existing['po_number']), supplierId: String(existing['supplier_id']) },
+   703→        tenantId,
+   704→      })
+   705→    }
+   706→    return updated
+   707→  },
+   708→
+   709→  /** Supplier Acknowledgement — Accept, Reject, Counter Offer, Date/Qty Change Request */
+   710→  async supplierAcknowledge(
+   711→    id: string,
+   712→    ackStatus: 'ACCEPTED' | 'REJECTED' | 'COUNTER_OFFER' | 'DATE_CHANGE_REQUESTED' | 'QTY_CHANGE_REQUESTED',
+   713→    version: number,
+   714→    options?: { notes?: string; counterTotal?: number },
+   715→  ) {
+   716→    const { tenantId, userId, ctx } = getContext()
+   717→    const existing = await poRepository.findById(tenantId, id)
+   718→    if (!existing) throw new NotFoundError('PurchaseOrder', id)
+   719→    if (String(existing['status']) !== 'ISSUED') {
+   720→      throw new BusinessRuleError('PO must be ISSUED to receive supplier acknowledgement', {
+   721→        code: 'PO.NOT_ISSUED',
+   722→      })
+   723→    }
+   724→
+   725→    let targetStatus: string
+   726→    if (ackStatus === 'ACCEPTED') targetStatus = 'SUPPLIER_ACCEPTED'
+   727→    else if (ackStatus === 'REJECTED') targetStatus = 'REVISION_REQUESTED'
+   728→    else targetStatus = 'REVISION_REQUESTED' // counter/date/qty change
+   729→
+   730→    const updated = await poRepository.update(
+   731→      tenantId,
+   732→      id,
+   733→      {
+   734→        status: targetStatus,
+   735→        supplierAckStatus: ackStatus,
+   736→        supplierAckDate: new Date().toISOString(),
+   737→        supplierAckNotes: options?.notes,
+   738→        supplierAckCounterTotal: options?.counterTotal,
+   739→      },
+   740→      version,
+   741→      userId,
+   742→    )
+   743→    if (!updated) throw new ConcurrencyError('PO was modified by another transaction')
+   744→
+   745→    await auditService.log({
+   746→      tenantId,
+   747→      correlationId: ctx.correlationId,
+   748→      actorType: 'USER',
+   749→      actorId: userId,
+   750→      actorName: ctx.userEmail,
+   751→      action: 'SUPPLIER_ACK',
+   752→      entityType: 'PurchaseOrder',
+   753→      entityId: id,
+   754→      entityCode: String(existing['po_number']),
+   755→      after: { ackStatus, notes: options?.notes },
+   756→    })
+   757→    await poHistoryRepository.create({
+   758→      tenantId,
+   759→      poId: id,
+   760→      action: 'SUPPLIER_ACK',
+   761→      fromStatus: 'ISSUED',
+   762→      toStatus: targetStatus,
+   763→      actionBy: userId,
+   764→      actionByName: ctx.userEmail,
+   765→      actionNotes: `${ackStatus}: ${options?.notes ?? ''}`,
+   766→      correlationId: ctx.correlationId,
+   767→    })
+   768→
+   769→    const eventName =
+   770→      ackStatus === 'ACCEPTED' ? 'SupplierAccepted' : ackStatus === 'REJECTED' ? 'SupplierRejected' : 'SupplierCounterOffer'
+   771→    await eventBus.writeToOutbox({
+   772→      eventName,
+   773→      payload: { poId: id, poNumber: String(existing['po_number']), ackStatus, counterTotal: options?.counterTotal },
+   774→      tenantId,
+   775→    })
+   776→
+   777→    return updated
+   778→  },
+   779→
+   780→  // ════════════════════════════════════════════════════════════════════════════
+   781→  // COMPARISON ENGINE — Generate PO from winning quotation
+   782→  // ════════════════════════════════════════════════════════════════════════════
+   783→
+   784→  async createFromQuotation(quotationId: string, options: {
+   785→    companyId: string
+   786→    companyName: string
+   787→    plantId: string
+   788→    plantName: string
+   789→    warehouseId?: string
+   790→    warehouseName?: string
+   791→    buyerId?: string
+   792→    buyerName?: string
+   793→    expectedDeliveryDate?: string
+   794→    shippingAddress?: string
+   795→    billingAddress?: string
+   796→    paymentTerms?: string
+   797→  }) {
+   798→    const { tenantId } = getContext()
+   799→
+   800→    // Load the awarded quotation
+   801→    const quotResult = await query(
+   802→      `SELECT * FROM supplier_quotations WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL AND status = 'AWARDED'`,
+   803→      [tenantId, quotationId],
+   804→    )
+   805→    if (quotResult.rows.length === 0) {
+   806→      throw new BusinessRuleError('Quotation not found or not awarded', { code: 'PO.QUOT_NOT_AWARDED' })
+   807→    }
+   808→    const quot = quotResult.rows[0]!
+   809→
+   810→    // Load quotation lines
+   811→    const quotLinesResult = await query(
+   812→      `SELECT * FROM supplier_quotation_lines WHERE tenant_id = $1 AND quotation_id = $2 ORDER BY line_no`,
+   813→      [tenantId, quotationId],
+   814→    )
+   815→    const quotLines = quotLinesResult.rows
+   816→
+   817→    // Load RFQ for company/plant context if available (future use)
+   818→    let rfqData: Record<string, unknown> | null = null
+   819→    if (quot['rfq_id']) {
+   820→      const rfqResult = await query(
+   821→        `SELECT * FROM rfqs WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`,
+   822→        [tenantId, quot['rfq_id']],
+   823→      )
+   824→      rfqData = rfqResult.rows[0] ?? null
+   825→    }
+   826→    void rfqData // retained for future RFQ-context enrichment
+   827→
+   828→    // Create PO from quotation — copy supplier, items, taxes, charges, delivery, terms
+   829→    const po = await this.create({
+   830→      poType: 'STANDARD',
+   831→      supplierId: String(quot['supplier_id']),
+   832→      supplierCode: String(quot['supplier_code']),
+   833→      supplierName: String(quot['supplier_name']),
+   834→      rfqId: quot['rfq_id'] ? String(quot['rfq_id']) : undefined,
+   835→      rfqNumber: quot['rfq_number'] ? String(quot['rfq_number']) : undefined,
+   836→      quotationId,
+   837→      quotationNumber: String(quot['quotation_number']),
+   838→      companyId: options.companyId,
+   839→      companyName: options.companyName,
+   840→      plantId: options.plantId,
+   841→      plantName: options.plantName,
+   842→      warehouseId: options.warehouseId,
+   843→      warehouseName: options.warehouseName,
+   844→      buyerId: options.buyerId,
+   845→      buyerName: options.buyerName,
+   846→      expectedDeliveryDate: options.expectedDeliveryDate ?? (quot['validity_date'] ? String(quot['validity_date']) : undefined),
+   847→      shippingAddress: options.shippingAddress,
+   848→      billingAddress: options.billingAddress,
+   849→      paymentTerms: String(quot['payment_terms'] ?? options.paymentTerms ?? 'NET30'),
+   850→      currency: String(quot['currency'] ?? 'INR'),
+   851→      discountPercent: quot['discount_percent'] ? Number(quot['discount_percent']) : undefined,
+   852→      freightAmount: quot['freight_amount'] ? Number(quot['freight_amount']) : undefined,
+   853→      insuranceAmount: quot['insurance_amount'] ? Number(quot['insurance_amount']) : undefined,
+   854→      validityDate: quot['validity_date'] ? String(quot['validity_date']) : undefined,
+   855→      remarks: `Auto-generated from quotation ${quot['quotation_number']}`,
+   856→      lines: quotLines.map((ql: Record<string, unknown>) => ({
+   857→        productId: String(ql['product_id']),
+   858→        productSku: String(ql['product_sku']),
+   859→        productName: String(ql['product_name']),
+   860→        uomId: String(ql['uom_id']),
+   861→        uomCode: String(ql['uom_code']),
+   862→        orderedQty: Number(ql['quoted_qty']),
+   863→        unitPrice: Number(ql['unit_price']),
+   864→        discountPercent: ql['discount_percent'] ? Number(ql['discount_percent']) : 0,
+   865→        taxPercent: Number(quot['tax_percent'] ?? 0),
+   866→        leadTimeDays: quot['lead_time_days'] ? Number(quot['lead_time_days']) : undefined,
+   867→        quotationLineId: String(ql['id']),
+   868→        rfqLineId: ql['rfq_line_id'] ? String(ql['rfq_line_id']) : undefined,
+   869→        remarks: ql['remarks'] ? String(ql['remarks']) : undefined,
+   870→      })),
+   871→    })
+   872→
+   873→    await eventBus.writeToOutbox({
+   874→      eventName: 'PurchaseOrderCreatedFromQuotation',
+   875→      payload: { poId: po!['id'], quotationId, supplierId: quot['supplier_id'] },
+   876→      tenantId,
+   877→    })
+   878→
+   879→    return po
+   880→  },
+   881→
+   882→  // ════════════════════════════════════════════════════════════════════════════
+   883→  // PDF ENGINE — Generate PO PDF (returns structured data for PDF rendering)
+   884→  // ════════════════════════════════════════════════════════════════════════════
+   885→
+   886→  async generatePdf(id: string) {
+   887→    const po = (await this.getById(id)) as Record<string, unknown>
+   888→    const poLines = po['lines'] as Array<Record<string, unknown>>
+   889→    const poTaxes = (po['taxes'] as Array<Record<string, unknown>>) ?? []
+   890→    const poTerms = (po['terms'] as Array<Record<string, unknown>>) ?? []
+   891→    return {
+   892→      documentType: 'PURCHASE_ORDER',
+   893→      poNumber: String(po['po_number']),
+   894→      poDate: String(po['po_date']),
+   895→      poType: String(po['po_type']),
+   896→      revisionNo: Number(po['revision_no']),
+   897→
+   898→      // Company info (placeholder — would come from organization module)
+   899→      company: {
+   900→        name: String(po['company_name']),
+   901→        plant: String(po['plant_name']),
+   902→        warehouse: po['warehouse_name'],
+   903→        address: po['shipping_address'],
+   904→        gstin: 'placeholder-company-gstin',
+   905→      },
+   906→
+   907→      // Supplier info
+   908→      supplier: {
+   909→        code: String(po['supplier_code']),
+   910→        name: String(po['supplier_name']),
+   911→        gstin: po['supplier_gstin'],
+   912→      },
+   913→
+   914→      // Items
+   915→      items: poLines.map((l) => ({
+   916→        lineNo: Number(l['line_no']),
+   917→        sku: String(l['product_sku']),
+   918→        name: String(l['product_name']),
+   919→        qty: Number(l['ordered_qty']),
+   920→        uom: String(l['uom_code']),
+   921→        unitPrice: Number(l['unit_price']),
+   922→        discountPercent: Number(l['discount_percent'] ?? 0),
+   923→        taxPercent: Number(l['tax_percent'] ?? 0),
+   924→        lineTotal: Number(l['line_total']),
+   925→      })),
+   926→
+   927→      // Tax summary
+   928→      taxes: poTaxes.map((t) => ({
+   929→        type: String(t['tax_type']),
+   930→        name: String(t['tax_name']),
+   931→        percent: Number(t['tax_percent']),
+   932→        amount: Number(t['tax_amount']),
+   933→      })),
+   934→
+   935→      // Totals
+   936→      totals: {
+   937→        subtotal: Number(po['subtotal']),
+   938→        discountAmount: Number(po['discount_amount']),
+   939→        taxAmount: Number(po['tax_amount']),
+   940→        freightAmount: Number(po['freight_amount'] ?? 0),
+   941→        insuranceAmount: Number(po['insurance_amount'] ?? 0),
+   942→        otherCharges: Number(po['other_charges'] ?? 0),
+   943→        roundOff: Number(po['round_off'] ?? 0),
+   944→        grandTotal: Number(po['grand_total']),
+   945→        currency: String(po['currency']),
+   946→      },
+   947→
+   948→      // Terms
+   949→      terms: poTerms.map((t) => ({
+   950→        type: String(t['term_type']),
+   951→        name: String(t['term_name']),
+   952→        description: String(t['term_description']),
+   953→      })),
+   954→
+   955→      // Payment
+   956→      payment: {
+   957→        terms: String(po['payment_terms']),
+   958→        creditDays: po['credit_days'],
+   959→        advancePercent: po['advance_percent'],
+   960→      },
+   961→
+   962→      // Delivery
+   963→      delivery: {
+   964→        expectedDate: po['expected_delivery_date'],
+   965→        terms: po['delivery_terms'],
+   966→        location: po['delivery_location'],
+   967→      },
+   968→
+   969→      // Metadata for PDF layout
+   970→      qrCodeData: `PO:${po['po_number']}:REV:${po['revision_no']}:TOTAL:${po['grand_total']}`,
+   971→      signaturePlaceholder: true,
+   972→      generatedAt: new Date().toISOString(),
+   973→    }
+   974→  },
+   975→}
+   976→
+   977→// Export calculation helpers for testing
+   978→export const poCalculations = {
+   979→  calculateTotals,
+   980→  calculateTax,
+   981→  calculateDiscount,
+   982→  calculateFreight,
+   983→  calculateRoundOff,
+   984→  calculateExpectedDeliveryDate,
+   985→}
+   986→
+   987→// Export validation helpers for testing
+   988→export const poValidations = {
+   989→  validateSupplierActive,
+   990→  validateSupplierNotBlacklisted,
+   991→  validateProductsActive,
+   992→  validateUniquePoNumber,
+   993→  validateLeadTime,
+   994→  validateMoq,
+   995→  validateMaxQty,
+   996→  validatePriceVariance,
+   997→  validateCurrency,
+   998→  validateValidityDate,
+   999→  validatePoType,
+  1000→  validateBlanketPo,
+  1001→  validateLinesPresent,
+  1002→  validateEditable,
+  1003→  isEmergencyPo,
+  1004→}
+  1005→

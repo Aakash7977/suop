@@ -14,7 +14,9 @@ export {
   createTokenPair,
   blockToken,
   isTokenBlocked,
+  isTokenBlockedAsync,
   type JwtPayload,
+  type JwtScopeClaims,
   type TokenPair,
 } from './jwt'
 

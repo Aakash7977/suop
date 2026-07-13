@@ -23,7 +23,7 @@ import { workflowRegistry } from '@/core/workflow'
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { hashPassword, verifyPassword, checkPasswordStrength } from '@/core/auth/password'
-import { signAccessToken, generateRefreshToken, hashRefreshToken } from '@/core/auth/jwt'
+import { signAccessToken, generateRefreshToken, hashRefreshToken, type JwtScopeClaims } from '@/core/auth/jwt'
 import { PermissionChecker } from '@/core/permissions'
 import { getRequestContext } from '@/core/context'
 import { env } from '@/config/env'
@@ -218,13 +218,17 @@ export const authService = {
     // Get roles
     const roles = await userRoleRepository.getRoles(userId)
 
-    // Generate tokens
-    const { token: accessToken, expiresAt: accessExpiresAt } = signAccessToken({
+    // Phase 1.6: Load data-scope claims for this user
+    const scope = await loadUserScopeClaims(tenantId!, userId!, user!)
+
+    // Generate tokens — include scope claims in access token
+    const { token: accessToken, expiresAt: accessExpiresAt, jti } = signAccessToken({
       userId,
       tenantId,
       email: String(user!['email']),
       roles,
       permissions: resolvePermissions(roles),
+      scope,
     })
 
     const { raw: rawRefresh, hash: refreshHash } = generateRefreshToken()
@@ -272,6 +276,12 @@ export const authService = {
 
     const ctx = getRequestContext()
     if (ctx?.userId) {
+      // Phase 1.6: Block the current access token's JTI so it can't be reused
+      // The JTI is extracted from the request's JWT by the auth middleware and
+      // is not directly available here, but we can block via the context if set.
+      // For now, the access token will expire naturally (15 min).
+      // A full implementation would extract the JTI from the request and call blockJti().
+
       await auditService.log({
         tenantId: ctx.tenantId!,
         correlationId,
@@ -777,3 +787,79 @@ export const authService = {
 // ─── Import query for cross-tenant lookup ───────────────────────────────────
 
 import { query } from '@/core/db/pglite'
+
+// ─── Phase 1.6: User Scope Loader ───────────────────────────────────────────
+
+/**
+ * Load a user's data-scope assignments from the database.
+ *
+ * This reads the user's default company/plant/department from the Users table
+ * and looks up any user_assignments table (if present) for additional warehouse/plant
+ * assignments. If the user_assignments table doesn't exist, falls back to using
+ * just the default company/plant from the user profile.
+ */
+async function loadUserScopeClaims(
+  tenantId: string,
+  userId: string,
+  user: Record<string, unknown>
+): Promise<JwtScopeClaims> {
+  const scope: JwtScopeClaims = {}
+
+  // Company scope — from user's default_company_id
+  const defaultCompanyId = user['default_company_id'] as string | null
+  if (defaultCompanyId) {
+    scope.companyIds = [defaultCompanyId]
+  }
+
+  // Plant scope — from user's default_plant_id
+  const defaultPlantId = user['default_plant_id'] as string | null
+  if (defaultPlantId) {
+    scope.plantIds = [defaultPlantId]
+  }
+
+  // Department scope — from user's department_id
+  const departmentId = user['department_id'] as string | null
+  if (departmentId) {
+    scope.departmentIds = [departmentId]
+  }
+
+  // Try to load additional warehouse/plant assignments from user_assignments table
+  // (if it exists). This allows a user to be assigned to multiple warehouses.
+  try {
+    const assignments = await query<{
+      warehouse_id: string | null
+      plant_id: string | null
+      company_id: string | null
+      department_id: string | null
+    }>(
+      `SELECT warehouse_id, plant_id, company_id, department_id
+       FROM user_assignments
+       WHERE tenant_id = $1 AND user_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+      [tenantId, userId]
+    )
+
+    if (assignments.rows.length > 0) {
+      const warehouseIds = new Set<string>(scope.warehouseIds ?? [])
+      const plantIds = new Set<string>(scope.plantIds ?? [])
+      const companyIds = new Set<string>(scope.companyIds ?? [])
+      const departmentIds = new Set<string>(scope.departmentIds ?? [])
+
+      for (const row of assignments.rows) {
+        if (row.warehouse_id) warehouseIds.add(row.warehouse_id)
+        if (row.plant_id) plantIds.add(row.plant_id)
+        if (row.company_id) companyIds.add(row.company_id)
+        if (row.department_id) departmentIds.add(row.department_id)
+      }
+
+      if (warehouseIds.size > 0) scope.warehouseIds = Array.from(warehouseIds)
+      if (plantIds.size > 0) scope.plantIds = Array.from(plantIds)
+      if (companyIds.size > 0) scope.companyIds = Array.from(companyIds)
+      if (departmentIds.size > 0) scope.departmentIds = Array.from(departmentIds)
+    }
+  } catch {
+    // user_assignments table may not exist yet — fall back to defaults only
+    // (already set above from user profile)
+  }
+
+  return scope
+}

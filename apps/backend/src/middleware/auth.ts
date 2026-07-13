@@ -4,12 +4,18 @@
  * Validates JWT access token from Authorization header.
  * Populates request context with user info.
  * Public routes bypass this middleware.
+ *
+ * Phase 1.6 Hardening:
+ *   - JTI blocklist check (Redis-backed with in-memory fallback)
+ *   - Scope claims propagation (warehouseIds, plantIds, companyIds, etc.)
+ *   - Key rotation support (tries current + previous keys)
  */
 
 import type { Context, Next } from 'hono'
-import { verifyAccessToken, type JwtPayload } from '@/core/auth'
+import { verifyAccessToken, isTokenBlockedAsync, type JwtPayload } from '@/core/auth'
 import { AuthenticationError } from '@/core/errors'
 import { updateContext } from '@/core/context'
+import { logger } from '@/core/logging'
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = new Set([
@@ -57,20 +63,39 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   const token = authHeader.slice(7)
-  let payload: JwtPayload
-  try {
-    payload = verifyAccessToken(token)
-  } catch (err) {
-    throw err
+  const payload = verifyAccessToken(token)
+
+  // Phase 1.6: JTI blocklist check — reject revoked tokens immediately
+  if (payload.jti) {
+    try {
+      const blocked = await isTokenBlockedAsync(payload.jti)
+      if (blocked) {
+        throw new AuthenticationError('Token has been revoked', 'AUTH.TOKEN_REVOKED')
+      }
+    } catch (err) {
+      // Re-throw AuthenticationError, log other errors (Redis unavailable)
+      if (err instanceof AuthenticationError) throw err
+      logger.warn('JTI blocklist check failed — allowing request (fail-open)', {
+        jti: payload.jti,
+        error: (err as Error).message,
+      })
+    }
   }
 
-  // Populate request context with user info
+  // Populate request context with user info + Phase 1.6 scope claims
   updateContext({
     userId: payload.sub,
     userEmail: payload.email,
     tenantId: payload.tenantId,
     roles: payload.roles,
     permissions: payload.permissions,
+    // Phase 1.6: Propagate scope claims from JWT
+    warehouseIds: payload.scope?.warehouseIds,
+    plantIds: payload.scope?.plantIds,
+    companyIds: payload.scope?.companyIds,
+    departmentIds: payload.scope?.departmentIds,
+    businessUnitIds: payload.scope?.businessUnitIds,
+    regionIds: payload.scope?.regionIds,
   })
 
   await next()

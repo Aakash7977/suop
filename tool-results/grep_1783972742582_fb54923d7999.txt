@@ -1,0 +1,252 @@
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:121:      correlationId: ctx!.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-122-      action: 'CREATE',
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-123-      severity: 'INFO',
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-124-      entityType: 'SmokeTest',
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-125-      entityId: null,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-126-      metadata: { message: body.message, source: 'smoke-test' },
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-127-    })
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-128-    middlewareTrace.push('3. DATABASE ✓ — Audit log written to PostgreSQL')
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-129-
+--
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:149:      correlationId: ctx!.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-150-    })
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-151-    if (!canTransition.allowed) {
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-152-      throw new Error('Workflow guard rejected transition')
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-153-    }
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-154-
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-155-    const validated = await machine.transition(entity, 'VALIDATED', {
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-156-      userId: ctx!.userId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-157-      tenantId: ctx!.tenantId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:158:      correlationId: ctx!.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-159-    })
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-160-    middlewareTrace.push('4. WORKFLOW ✓ — State machine transitioned: CREATED → VALIDATED')
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-161-    middlewareTrace.push(`   Entity ID: ${validated.id}, Version: ${validated.version}`)
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-162-
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-163-    // ─── 5. Event Bus — publish domain event ────────────────────────────────
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-164-    let eventReceived = false
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-165-    const testHandler = {
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-166-      eventName: EventName.SystemError,
+--
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:179:      correlationId: ctx!.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-180-      actorId: ctx!.userId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-181-      timestamp: new Date(),
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-182-      version: 1,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-183-    }
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-184-    await eventBus.publish(event)
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-185-    middlewareTrace.push('5. EVENT BUS ✓ — Domain event published and received')
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-186-    middlewareTrace.push(`   Event: ${event.name}, ID: ${event.id}`)
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-187-
+--
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:197:      correlationId: ctx!.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-198-    })
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-199-    middlewareTrace.push('6. NOTIFICATION ✓ — Notification queued')
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-200-
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-201-    // Verify notification in DB
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-202-    const notifCount = await query<{ cnt: string }>(
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-203-      `SELECT COUNT(*) as cnt FROM notification_outbox WHERE tenant_id = $1 AND template_id = 'smoke-test-template'`,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-204-      [ctx!.tenantId]
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-205-    )
+--
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:225:          correlationId: ctx!.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-226-          userId: ctx!.userId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-227-          tenantId: ctx!.tenantId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-228-          method: ctx!.method,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-229-          path: ctx!.path,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-230-        },
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-231-      })
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-232-    )
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-233-  }
+--
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts:258:        correlationId: ctx?.correlationId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-259-        userId: ctx?.userId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-260-        tenantId: ctx?.tenantId,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-261-        roles: ctx?.roles,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-262-        permissions: ctx?.permissions,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-263-        ip: ctx?.ip,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-264-        method: ctx?.method,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-265-        path: ctx?.path,
+/home/z/my-project/apps/backend/src/routes/smoke-test.ts-266-      },
+--
+/home/z/my-project/apps/backend/src/middleware/logging.ts:19:    correlationId: ctx?.correlationId,
+/home/z/my-project/apps/backend/src/middleware/logging.ts-20-  })
+/home/z/my-project/apps/backend/src/middleware/logging.ts-21-
+/home/z/my-project/apps/backend/src/middleware/logging.ts-22-  await next()
+/home/z/my-project/apps/backend/src/middleware/logging.ts-23-
+/home/z/my-project/apps/backend/src/middleware/logging.ts-24-  const durationMs = Date.now() - startedAt
+/home/z/my-project/apps/backend/src/middleware/logging.ts-25-  const status = c.res.status
+/home/z/my-project/apps/backend/src/middleware/logging.ts-26-
+/home/z/my-project/apps/backend/src/middleware/logging.ts-27-  if (status >= 500) {
+--
+/home/z/my-project/apps/backend/src/middleware/audit.ts:45:    correlationId: ctx.correlationId,
+/home/z/my-project/apps/backend/src/middleware/audit.ts-46-    action: method.toUpperCase(),
+/home/z/my-project/apps/backend/src/middleware/audit.ts-47-    entityType: 'API_REQUEST',
+/home/z/my-project/apps/backend/src/middleware/audit.ts-48-    entityId: null,
+/home/z/my-project/apps/backend/src/middleware/audit.ts-49-    metadata: {
+/home/z/my-project/apps/backend/src/middleware/audit.ts-50-      method,
+/home/z/my-project/apps/backend/src/middleware/audit.ts-51-      path: c.req.path,
+/home/z/my-project/apps/backend/src/middleware/audit.ts-52-      status: c.res.status,
+/home/z/my-project/apps/backend/src/middleware/audit.ts-53-    },
+--
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts:37:    correlationId: c.req.header('X-Request-Id') ?? '',
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-38-    page: r.page,
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-39-    pageSize: r.pageSize,
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-40-    total: r.total,
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-41-  }))
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-42-})
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-43-
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-44-// ─── COUNT ───────────────────────────────────────────────────────────────────
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/routes/index.ts-45-RecruitmentOnboardingRoutes.get('/count', requirePermission(READ_PERM), async (c) => {
+--
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts:43:    correlationId: ctx.correlationId,
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-44-    ctx,
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-45-  }
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-46-}
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-47-
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-48-// ─── Types ──────────────────────────────────────────────────────────────────
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-49-
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-50-export interface ListParams {
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/service/index.ts-51-  page?: number
+--
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts:77:        { userId: 'u1', tenantId: 't1', userEmail: 'test@test.com', correlationId: 'c1' },
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-78-        async () => {
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-79-          await expect(RecruitmentOnboardingService.create({})).rejects.toThrow(ValidationError)
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-80-        }
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-81-      )
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-82-    })
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-83-  })
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-84-
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-85-  
+--
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts:98:        { userId: 'u1', tenantId: 't1', userEmail: 'test@test.com', correlationId: 'c1' },
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-99-        async () => {
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-100-          // The service will throw NotFoundError (entity not in DB) which is fine —
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-101-          // we\'re verifying the workflow lookup itself doesn\'t throw
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-102-          await expect(RecruitmentOnboardingService.transition('nonexistent-id', 'BOGUS_STATE'))
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-103-            .rejects.toThrow()
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-104-        }
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-105-      )
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding.test.ts-106-    })
+--
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts:68:  correlationId: 'corr-001',
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-69-}
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-70-
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-71-describe('RecruitmentOnboardingService — business logic', () => {
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-72-  beforeEach(() => {
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-73-    vi.clearAllMocks()
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-74-  })
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-75-
+/home/z/my-project/apps/backend/src/modules/recruitment-onboarding/__tests__/recruitment-onboarding-business.test.ts-76-  // ═══ create() ═══════════════════════════════════════════════════════════════
+--
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts:37:    correlationId: c.req.header('X-Request-Id') ?? '',
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-38-    page: r.page,
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-39-    pageSize: r.pageSize,
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-40-    total: r.total,
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-41-  }))
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-42-})
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-43-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-44-// ─── COUNT ───────────────────────────────────────────────────────────────────
+/home/z/my-project/apps/backend/src/modules/crm-foundation/routes/index.ts-45-CrmFoundationRoutes.get('/count', requirePermission(READ_PERM), async (c) => {
+--
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts:44:    correlationId: ctx.correlationId,
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-45-    ctx,
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-46-  }
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-47-}
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-48-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-49-// ─── Types ──────────────────────────────────────────────────────────────────
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-50-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-51-export interface ListParams {
+/home/z/my-project/apps/backend/src/modules/crm-foundation/service/index.ts-52-  page?: number
+--
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts:68:  correlationId: 'corr-001',
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-69-}
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-70-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-71-describe('CrmFoundationService — business logic', () => {
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-72-  beforeEach(() => {
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-73-    vi.clearAllMocks()
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-74-  })
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-75-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation-business.test.ts-76-  // ═══ create() ═══════════════════════════════════════════════════════════════
+--
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:16:financialFoundationRoutes.get('/accounts', requirePermission(FR), async (c) => { const r = await financialFoundationService.listAccounts({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, isActive: c.req.query('isActive') === 'true' ? true : c.req.query('isActive') === 'false' ? false : undefined }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-17-financialFoundationRoutes.post('/accounts', requirePermission(FU), zValidator('json', accSchema), async (c) => { const b = c.req.valid('json' as never) as z.infer<typeof accSchema>; const a = await financialFoundationService.createAccount(b); return c.json(success(a, { message: 'Account created' }), 201) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:18:financialFoundationRoutes.get('/fiscal-years', requirePermission(FR), async (c) => { const r = await financialFoundationService.listFiscalYears({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25) }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-19-financialFoundationRoutes.post('/fiscal-years', requirePermission(FU), zValidator('json', fySchema), async (c) => { const b = c.req.valid('json' as never) as z.infer<typeof fySchema>; const f = await financialFoundationService.createFiscalYear(b); return c.json(success(f, { message: 'Fiscal year created' }), 201) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:20:financialFoundationRoutes.get('/fiscal-periods', requirePermission(FR), async (c) => { const r = await financialFoundationService.listFiscalPeriods({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25) }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-21-financialFoundationRoutes.post('/fiscal-periods/close', requirePermission(FU), async (c) => { const b = await c.req.json(); const r = await financialFoundationService.closePeriod(b); return c.json(success(r, { message: 'Period closed' })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:22:financialFoundationRoutes.get('/cost-centers', requirePermission(FR), async (c) => { const r = await financialFoundationService.listCostCenters({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, isActive: c.req.query('isActive') === 'true' ? true : c.req.query('isActive') === 'false' ? false : undefined }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-23-financialFoundationRoutes.post('/cost-centers', requirePermission(FU), zValidator('json', ccSchema), async (c) => { const b = c.req.valid('json' as never) as z.infer<typeof ccSchema>; const cc = await financialFoundationService.createCostCenter(b); return c.json(success(cc, { message: 'Cost center created' }), 201) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:24:financialFoundationRoutes.get('/profit-centers', requirePermission(FR), async (c) => { const r = await financialFoundationService.listProfitCenters({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, isActive: c.req.query('isActive') === 'true' ? true : c.req.query('isActive') === 'false' ? false : undefined }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-25-financialFoundationRoutes.post('/profit-centers', requirePermission(FU), zValidator('json', pcSchema), async (c) => { const b = c.req.valid('json' as never) as z.infer<typeof pcSchema>; const pc = await financialFoundationService.createProfitCenter(b); return c.json(success(pc, { message: 'Profit center created' }), 201) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:26:financialFoundationRoutes.get('/currencies', requirePermission(FR), async (c) => { const r = await financialFoundationService.listCurrencies({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25), search: c.req.query('search') ?? undefined, isActive: c.req.query('isActive') === 'true' ? true : c.req.query('isActive') === 'false' ? false : undefined }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-27-financialFoundationRoutes.post('/currencies', requirePermission(FU), zValidator('json', currSchema), async (c) => { const b = c.req.valid('json' as never) as z.infer<typeof currSchema>; const cu = await financialFoundationService.createCurrency(b); return c.json(success(cu, { message: 'Currency created' }), 201) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts:28:financialFoundationRoutes.get('/exchange-rates', requirePermission(FR), async (c) => { const r = await financialFoundationService.listExchangeRates({ page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25) }); return c.json(paginated(r.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: r.page, pageSize: r.pageSize, total: r.total })) })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/routes/index.ts-29-financialFoundationRoutes.post('/exchange-rates', requirePermission(FU), zValidator('json', erSchema), async (c) => { const b = c.req.valid('json' as never) as z.infer<typeof erSchema>; const er = await financialFoundationService.setExchangeRate(b); return c.json(success(er, { message: 'Exchange rate set' }), 201) })
+--
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:16:    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'CREATE', entityType: 'ChartOfAccounts', entityId: String(account!['id']), entityCode: data.accountCode, after: data })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-17-    return account
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-18-  },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-19-  async listAccounts(params: { page?: number; pageSize?: number; search?: string; isActive?: boolean } = {}) { const { tenantId } = getContext(); return chartOfAccountsRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-20-  async createFiscalYear(data: { fiscalYear: string; startDate: string; endDate: string; description?: string }) {
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-21-    const { tenantId, userId, ctx } = getContext()
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-22-    if (new Date(data.endDate) < new Date(data.startDate)) throw new BusinessRuleError('End date must be after start date', { code: 'FIN.INVALID_DATES' })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-23-    const fy = await fiscalYearRepository.create({ tenantId, ...data, isCurrent: false, isClosed: false })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-24-    // Auto-create 12 periods
+--
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:26:    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'CREATE', entityType: 'FiscalYear', entityId: String(fy!['id']), entityCode: data.fiscalYear, after: data })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-27-    return fy
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-28-  },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-29-  async listFiscalYears(params: { page?: number; pageSize?: number } = {}) { const { tenantId } = getContext(); return fiscalYearRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-30-  async listFiscalPeriods(params: { page?: number; pageSize?: number; isActive?: boolean } = {}) { const { tenantId } = getContext(); return fiscalPeriodRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-31-  async closePeriod(data: { fiscalYear: string; periodNumber: number }) {
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-32-    const { tenantId, userId, ctx } = getContext()
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-33-    const result = await query(`UPDATE fiscal_periods SET status = 'CLOSED', closed_at = NOW(), closed_by = $3, closed_by_name = $4, updated_at = NOW() WHERE tenant_id = $1 AND fiscal_year = $2 AND period_number = $5 AND status = 'OPEN' RETURNING *`, [tenantId, data.fiscalYear, userId, ctx.userEmail, data.periodNumber])
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-34-    if (result.rows.length === 0) throw new BusinessRuleError('Period not found or already closed', { code: 'FIN.PERIOD_NOT_OPEN' })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:35:    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'PERIOD_CLOSED', entityType: 'FiscalPeriod', entityId: String(result.rows[0]!['id']), after: data })
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-36-    return result.rows[0]
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-37-  },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:38:  async createCostCenter(data: { ccCode: string; ccName: string; parentCcId?: string; companyId?: string; companyName?: string; plantId?: string; plantName?: string; description?: string }) { const { tenantId, userId, ctx } = getContext(); const cc = await costCenterRepository.create({ tenantId, ...data, isActive: true }); await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'CREATE', entityType: 'CostCenter', entityId: String(cc!['id']), entityCode: data.ccCode }); return cc },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-39-  async listCostCenters(params: { page?: number; pageSize?: number; search?: string; isActive?: boolean } = {}) { const { tenantId } = getContext(); return costCenterRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:40:  async createProfitCenter(data: { pcCode: string; pcName: string; parentPcId?: string; companyId?: string; companyName?: string; description?: string }) { const { tenantId, userId, ctx } = getContext(); const pc = await profitCenterRepository.create({ tenantId, ...data, isActive: true }); await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'CREATE', entityType: 'ProfitCenter', entityId: String(pc!['id']), entityCode: data.pcCode }); return pc },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-41-  async listProfitCenters(params: { page?: number; pageSize?: number; search?: string; isActive?: boolean } = {}) { const { tenantId } = getContext(); return profitCenterRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:42:  async createCurrency(data: { currencyCode: string; currencyName: string; symbol?: string; decimalPlaces?: number; isBaseCurrency?: boolean }) { const { tenantId, userId, ctx } = getContext(); const c = await currencyRepository.create({ tenantId, ...data, isActive: true }); await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'CREATE', entityType: 'Currency', entityId: String(c!['id']), entityCode: data.currencyCode }); return c },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-43-  async listCurrencies(params: { page?: number; pageSize?: number; search?: string; isActive?: boolean } = {}) { const { tenantId } = getContext(); return currencyRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts:44:  async setExchangeRate(data: { fromCurrency: string; toCurrency: string; rate: number; rateDate: string; rateType?: string }) { const { tenantId, userId, ctx } = getContext(); if (data.rate <= 0) throw new BusinessRuleError('Exchange rate must be positive', { code: 'FIN.INVALID_RATE' }); const er = await exchangeRateRepository.create({ tenantId, ...data }); await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'SET_EXCHANGE_RATE', entityType: 'ExchangeRate', entityId: String(er!['id']), after: data }); return er },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-45-  async listExchangeRates(params: { page?: number; pageSize?: number } = {}) { const { tenantId } = getContext(); return exchangeRateRepository.list(tenantId, params) },
+/home/z/my-project/apps/backend/src/modules/financial-foundation/service/index.ts-46-}
+--
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts:12:const wfCtx = { userId: 'u1', tenantId: 't1', correlationId: 'c1' }
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-13-
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-14-// ════════════════════════════════════════════════════════════════════════════
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-15-// JOURNAL ENTRY WORKFLOW (15 tests)
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-16-// ════════════════════════════════════════════════════════════════════════════
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-17-
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-18-type JEStatus = 'DRAFT' | 'POSTED' | 'REVERSED' | 'CANCELLED'
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-19-interface JEEntity extends WorkflowEntity { id: string; status: JEStatus; version: number }
+/home/z/my-project/apps/backend/src/modules/financial-foundation/__tests__/finance-domain.test.ts-20-
+--
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts:12:const wfCtx = { userId: 'u1', tenantId: 't1', correlationId: 'c1' }
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-13-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-14-// ════════════════════════════════════════════════════════════════════════════
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-15-// LEAD WORKFLOW (15 tests)
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-16-// ════════════════════════════════════════════════════════════════════════════
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-17-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-18-type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'UNQUALIFIED' | 'CONVERTED' | 'LOST'
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-19-interface LeadEntity extends WorkflowEntity { id: string; status: LeadStatus; version: number }
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-domain.test.ts-20-
+--
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts:77:        { userId: 'u1', tenantId: 't1', userEmail: 'test@test.com', correlationId: 'c1' },
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-78-        async () => {
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-79-          await expect(CrmFoundationService.create({})).rejects.toThrow(ValidationError)
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-80-        }
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-81-      )
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-82-    })
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-83-  })
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-84-
+/home/z/my-project/apps/backend/src/modules/crm-foundation/__tests__/crm-foundation.test.ts-85-  
+--
+/home/z/my-project/apps/backend/src/modules/general-ledger/routes/index.ts:37:    correlationId: c.req.header('X-Request-Id') ?? '',
+/home/z/my-project/apps/backend/src/modules/general-ledger/routes/index.ts-38-    page: r.page,
+/home/z/my-project/apps/backend/src/modules/general-ledger/routes/index.ts-39-    pageSize: r.pageSize,
+/home/z/my-project/apps/backend/src/modules/general-ledger/routes/index.ts-40-    total: r.total,
+
+[Showing results with pagination = limit: 250]

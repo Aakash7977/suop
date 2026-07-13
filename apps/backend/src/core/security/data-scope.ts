@@ -418,6 +418,30 @@ export function enforceScope(
 
   // For each scope level, check the corresponding column
   switch (scope) {
+    case DataScope.REGION: {
+      // Phase 1.6: Added REGION case (was fail-open)
+      const regionIds = ctx.regionIds ?? []
+      if (regionIds.length === 0) {
+        throw new AuthorizationError(`${entityType} out of scope — no region assignment`)
+      }
+      const recordRegionId = record['region_id'] as string | null
+      if (recordRegionId && !regionIds.includes(recordRegionId)) {
+        throw new AuthorizationError(`${entityType} out of scope — region mismatch`)
+      }
+      break
+    }
+    case DataScope.BU: {
+      // Phase 1.6: Added BU case (was fail-open)
+      const buIds = ctx.businessUnitIds ?? []
+      if (buIds.length === 0) {
+        throw new AuthorizationError(`${entityType} out of scope — no BU assignment`)
+      }
+      const recordBuId = record['bu_id'] as string | null
+      if (recordBuId && !buIds.includes(recordBuId)) {
+        throw new AuthorizationError(`${entityType} out of scope — BU mismatch`)
+      }
+      break
+    }
     case DataScope.COMPANY: {
       const companyIds = ctx.companyIds ?? []
       const recordCompanyId = record['company_id'] as string | null
@@ -459,6 +483,10 @@ export function enforceScope(
       }
       break
     }
+    default: {
+      // Phase 1.6: Unknown scope — fail closed
+      throw new AuthorizationError(`${entityType} out of scope — unknown scope: ${scope}`)
+    }
   }
 }
 
@@ -498,6 +526,16 @@ export function requireScopeContext(): void {
 
   // For each scope level, verify the corresponding IDs are populated
   switch (scope) {
+    case DataScope.REGION:
+      if (!ctx.regionIds || ctx.regionIds.length === 0) {
+        throw new BusinessRuleError('Region scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+      }
+      break
+    case DataScope.BU:
+      if (!ctx.businessUnitIds || ctx.businessUnitIds.length === 0) {
+        throw new BusinessRuleError('BU scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+      }
+      break
     case DataScope.COMPANY:
       if (!ctx.companyIds || ctx.companyIds.length === 0) {
         throw new BusinessRuleError('Company scope context not populated — cannot enforce data scope', {
@@ -614,6 +652,11 @@ export function filterResultSetByScope<T extends Record<string, unknown>>(
 
   return records.filter((record) => {
     switch (scope) {
+      case DataScope.REGION:
+        // Phase 1.6: fail-closed (was returning true in default)
+        return !record['region_id'] || (ctx.regionIds ?? []).includes(record['region_id'] as string)
+      case DataScope.BU:
+        return !record['bu_id'] || (ctx.businessUnitIds ?? []).includes(record['bu_id'] as string)
       case DataScope.COMPANY:
         return !record['company_id'] || (ctx.companyIds ?? []).includes(record['company_id'] as string)
       case DataScope.PLANT:
@@ -625,7 +668,8 @@ export function filterResultSetByScope<T extends Record<string, unknown>>(
       case DataScope.OWN:
         return record['created_by'] === ctx.userId || record['assigned_to'] === ctx.userId
       default:
-        return true
+        // Phase 1.6: Unknown scope — fail closed (was returning true)
+        return false
     }
   })
 }

@@ -6,14 +6,35 @@
  *   - 15-min access tokens
  *   - 30-day refresh tokens (rotated on each use)
  *   - JTI blocklist for compromised token revocation
+ *
+ * Phase 1.6 Hardening:
+ *   - JWT carries `scope` claims (warehouseIds, plantIds, companyIds, etc.)
+ *   - Key rotation: verify path uses getVerificationKeys() (current + previous)
+ *   - JTI blocklist: async isTokenBlocked() backed by Redis (fallback to in-memory)
  */
 
 import jwt from 'jsonwebtoken'
 import { randomUUID, createHash } from 'node:crypto'
 import { env } from '@/config/env'
 import { AuthenticationError } from '@/core/errors'
+import { getVerificationKeys } from '@/core/security/jwt-security'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface JwtScopeClaims {
+  /** Assigned warehouse IDs (for WAREHOUSE data scope) */
+  warehouseIds?: string[]
+  /** Assigned plant IDs (for PLANT data scope) */
+  plantIds?: string[]
+  /** Assigned company IDs (for COMPANY data scope) */
+  companyIds?: string[]
+  /** Assigned department IDs (for DEPT data scope) */
+  departmentIds?: string[]
+  /** Assigned business unit IDs (for BU data scope) */
+  businessUnitIds?: string[]
+  /** Assigned region IDs (for REGION data scope) */
+  regionIds?: string[]
+}
 
 export interface JwtPayload {
   sub: string // user ID
@@ -21,6 +42,8 @@ export interface JwtPayload {
   email: string
   roles: string[]
   permissions: string[]
+  /** Phase 1.6: Data scope claims for frontend + backend RBAC */
+  scope?: JwtScopeClaims
   iat: number
   exp: number
   iss: string
@@ -43,44 +66,65 @@ export function signAccessToken(params: {
   email: string
   roles: string[]
   permissions: string[]
-}): { token: string; expiresAt: number } {
+  /** Phase 1.6: Data scope claims */
+  scope?: JwtScopeClaims
+}): { token: string; expiresAt: number; jti: string } {
   const now = Math.floor(Date.now() / 1000)
   const exp = now + env.JWT_ACCESS_TTL_MIN * 60
-  const payload: Omit<JwtPayload, 'iat' | 'exp' | 'iss' | 'aud' | 'jti'> = {
+  const jti = randomUUID()
+  const payload: Omit<JwtPayload, 'iat' | 'exp' | 'iss' | 'aud'> = {
     sub: params.userId,
     tenantId: params.tenantId,
     email: params.email,
     roles: params.roles,
     permissions: params.permissions,
+    jti,
   }
-  const token = jwt.sign(
-    { ...payload, jti: randomUUID() },
-    env.JWT_SECRET,
-    {
-      algorithm: 'HS256',
-      issuer: env.JWT_ISSUER,
-      audience: env.JWT_AUDIENCE,
-      expiresIn: env.JWT_ACCESS_TTL_MIN * 60,
+  // Only include scope if it has at least one populated field
+  if (params.scope) {
+    const hasScope = Object.values(params.scope).some(
+      (v) => Array.isArray(v) && v.length > 0
+    )
+    if (hasScope) {
+      payload.scope = params.scope
     }
-  )
-  return { token, expiresAt: exp }
+  }
+  const token = jwt.sign(payload, env.JWT_SECRET, {
+    algorithm: 'HS256',
+    issuer: env.JWT_ISSUER,
+    audience: env.JWT_AUDIENCE,
+    expiresIn: env.JWT_ACCESS_TTL_MIN * 60,
+  })
+  return { token, expiresAt: exp, jti }
 }
 
 export function verifyAccessToken(token: string): JwtPayload {
-  try {
-    const decoded = jwt.verify(token, env.JWT_SECRET, {
-      algorithms: ['HS256'],
-      issuer: env.JWT_ISSUER,
-      audience: env.JWT_AUDIENCE,
-    }) as JwtPayload
-    return decoded
-  } catch (err) {
-    const jwtErr = err as { name?: string }
-    if (jwtErr.name === 'TokenExpiredError') {
+  // Phase 1.6: Try all verification keys (current + previous during rotation window)
+  const keys = getVerificationKeys()
+  let decoded: JwtPayload | null = null
+  let lastErr: unknown = null
+
+  for (const key of keys) {
+    try {
+      decoded = jwt.verify(token, key, {
+        algorithms: ['HS256'],
+        issuer: env.JWT_ISSUER,
+        audience: env.JWT_AUDIENCE,
+      }) as JwtPayload
+      break
+    } catch (err) {
+      lastErr = err
+    }
+  }
+
+  if (!decoded) {
+    const jwtErr = lastErr as { name?: string }
+    if (jwtErr?.name === 'TokenExpiredError') {
       throw new AuthenticationError('Access token expired', 'AUTH.TOKEN_EXPIRED')
     }
     throw new AuthenticationError('Invalid access token', 'AUTH.TOKEN_INVALID')
   }
+  return decoded
 }
 
 // ─── Refresh Token ──────────────────────────────────────────────────────────
@@ -109,7 +153,9 @@ export function createTokenPair(params: {
   email: string
   roles: string[]
   permissions: string[]
-}): TokenPair {
+  /** Phase 1.6: Data scope claims */
+  scope?: JwtScopeClaims
+}): TokenPair & { jti: string } {
   const access = signAccessToken(params)
   const refresh = generateRefreshToken()
 
@@ -121,14 +167,19 @@ export function createTokenPair(params: {
     refreshToken: refresh.raw,
     accessExpiresAt: access.expiresAt,
     refreshExpiresAt,
+    jti: access.jti,
   }
 }
 
 // ─── JTI Blocklist ──────────────────────────────────────────────────────────
 
 /**
- * In-memory JTI blocklist. In production, this would be Redis.
+ * In-memory JTI blocklist (fallback when Redis is unavailable).
  * Used to revoke access tokens before their natural expiry.
+ *
+ * Phase 1.6: For multi-instance deployments, use the Redis-backed
+ * `blockJti()` / `isJtiBlocked()` from `@/core/security/jwt-security`.
+ * The in-memory blocklist is a single-instance fallback.
  */
 const jtiBlocklist = new Map<string, number>() // jti → expiry epoch
 
@@ -143,4 +194,21 @@ export function blockToken(jti: string, expiresAt: number): void {
 
 export function isTokenBlocked(jti: string): boolean {
   return jtiBlocklist.has(jti)
+}
+
+/**
+ * Phase 1.6: Async JTI blocklist check — tries Redis first, falls back to in-memory.
+ * Use this in middleware for multi-instance deployments.
+ */
+export async function isTokenBlockedAsync(jti: string): Promise<boolean> {
+  // Check in-memory first (fast path)
+  if (jtiBlocklist.has(jti)) return true
+  // Then check Redis (for multi-instance)
+  try {
+    const { isJtiBlocked } = await import('@/core/security/jwt-security')
+    return await isJtiBlocked(jti)
+  } catch {
+    // Redis unavailable — in-memory is the only source of truth
+    return false
+  }
 }

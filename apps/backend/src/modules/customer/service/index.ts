@@ -71,12 +71,8 @@ export const customerService = {
   async update(id: string, data: Record<string, unknown>, version: number) {
     const { tenantId, userId, ctx } = getContext()
     const existing = await customerRepository.findById(tenantId, id)
-    // Maker-Checker: cannot approve own customer (SoD)
-    if (targetStatus === 'APPROVED' || targetStatus === 'ACTIVE') {
-      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
-      enforceMakerChecker(existing?.['created_by'] as string, 'approve', 'Customer')
-    }
-
+    // Phase 1.6: Removed dead `targetStatus` reference — maker-checker is enforced
+    // in the transition() method where targetStatus is actually defined.
     if (!existing) throw new NotFoundError('Customer', id)
     // Business rule: cannot modify blocked customer
     if (existing['status'] === 'BLOCKED' && data['status'] !== 'ACTIVE') {

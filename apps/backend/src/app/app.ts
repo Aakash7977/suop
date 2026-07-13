@@ -19,6 +19,7 @@ import { loggingMiddleware } from '@/middleware/logging'
 import { authMiddleware } from '@/middleware/auth'
 import { tenantMiddleware } from '@/middleware/tenant'
 import { auditMiddleware } from '@/middleware/audit'
+import { scopeContextMiddleware } from '@/middleware/scope-context'
 // RC1 Fix Pack 2: Security + Performance middleware
 import { helmetMiddleware } from '@/middleware/security/helmet'
 import { corsMiddleware } from '@/middleware/security/cors'
@@ -138,6 +139,7 @@ export function createApp() {
   app.use('*', xssGuard)
   app.use('*', compressionMiddleware)
   app.use('*', authMiddleware)
+  app.use('*', scopeContextMiddleware) // Phase 1.6: populate data scope from JWT claims
   app.use('*', tenantMiddleware)
   app.use('*', csrfMiddleware)
   app.use('*', auditMiddleware)

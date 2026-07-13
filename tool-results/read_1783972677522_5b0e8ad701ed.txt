@@ -1,0 +1,842 @@
+     1→/**
+     2→ * @suop/backend — Data Scope Enforcement Tests
+     3→ *
+     4→ * Tests for the Phase 1 Enterprise Data Scope system.
+     5→ * Verifies:
+     6→ *   - Scope resolution per role
+     7→ *   - Scope filter generation for all 8 scope levels
+     8→ *   - ScopedQueryBuilder produces correct SQL
+     9→ *   - scopedQuery auto-injects WHERE clauses
+    10→ *   - enforceScope blocks out-of-scope reads
+    11→ *   - enforceScopeOnWrite blocks out-of-scope writes
+    12→ *   - filterResultSetByScope filters in-memory results
+    13→ *   - Multi-table scope filter for dashboards
+    14→ *   - Audit/Notification/Workflow scope filters
+    15→ *   - Break-glass scope restrictions
+    16→ *   - Cross-tenant isolation
+    17→ */
+    18→
+    19→import { describe, test, expect, beforeEach, afterEach } from 'vitest'
+    20→import {
+    21→  resolveDataScope,
+    22→  getCurrentDataScope,
+    23→  buildScopeFilter,
+    24→  ScopedQueryBuilder,
+    25→  enforceScope,
+    26→  enforceScopeOnWrite,
+    27→  filterResultSetByScope,
+    28→  buildMultiTableScopeFilter,
+    29→  buildAuditScopeFilter,
+    30→  buildNotificationScopeFilter,
+    31→  buildWorkflowScopeFilter,
+    32→  populateScopeContext,
+    33→  requireScopeContext,
+    34→  SCOPE_RANK,
+    35→} from '../data-scope'
+    36→import { DataScope } from '@/core/permissions/registry'
+    37→import { _runInTestContext, getRequestContext } from '@/core/context'
+    38→
+    39→// ─── Helpers ────────────────────────────────────────────────────────────────
+    40→
+    41→function withContext<T>(ctx: Partial<ReturnType<typeof getRequestContext> & object>, fn: () => Promise<T>): Promise<T> {
+    42→  return _runInTestContext(ctx as any, fn)
+    43→}
+    44→
+    45→// ─── Scope Resolution ───────────────────────────────────────────────────────
+    46→
+    47→describe('Data Scope Resolution', () => {
+    48→  test('tenant_admin → global', () => {
+    49→    expect(resolveDataScope(['tenant_admin'])).toBe(DataScope.GLOBAL)
+    50→  })
+    51→
+    52→  test('auditor → global (read-only)', () => {
+    53→    expect(resolveDataScope(['auditor'])).toBe(DataScope.GLOBAL)
+    54→  })
+    55→
+    56→  test('break_glass → global (read-only, time-limited)', () => {
+    57→    expect(resolveDataScope(['break_glass'])).toBe(DataScope.GLOBAL)
+    58→  })
+    59→
+    60→  test('sales_manager → company', () => {
+    61→    expect(resolveDataScope(['sales_manager'])).toBe(DataScope.COMPANY)
+    62→  })
+    63→
+    64→  test('procurement_manager → company', () => {
+    65→    expect(resolveDataScope(['procurement_manager'])).toBe(DataScope.COMPANY)
+    66→  })
+    67→
+    68→  test('finance_manager → company', () => {
+    69→    expect(resolveDataScope(['finance_manager'])).toBe(DataScope.COMPANY)
+    70→  })
+    71→
+    72→  test('hr_manager → company', () => {
+    73→    expect(resolveDataScope(['hr_manager'])).toBe(DataScope.COMPANY)
+    74→  })
+    75→
+    76→  test('manufacturing_supervisor → plant', () => {
+    77→    expect(resolveDataScope(['manufacturing_supervisor'])).toBe(DataScope.PLANT)
+    78→  })
+    79→
+    80→  test('quality_manager → plant', () => {
+    81→    expect(resolveDataScope(['quality_manager'])).toBe(DataScope.PLANT)
+    82→  })
+    83→
+    84→  test('warehouse_supervisor → plant', () => {
+    85→    expect(resolveDataScope(['warehouse_supervisor'])).toBe(DataScope.PLANT)
+    86→  })
+    87→
+    88→  test('warehouse_operator → wh', () => {
+    89→    expect(resolveDataScope(['warehouse_operator'])).toBe(DataScope.WAREHOUSE)
+    90→  })
+    91→
+    92→  test('sales_officer → dept', () => {
+    93→    expect(resolveDataScope(['sales_officer'])).toBe(DataScope.DEPT)
+    94→  })
+    95→
+    96→  test('procurement_officer → dept', () => {
+    97→    expect(resolveDataScope(['procurement_officer'])).toBe(DataScope.DEPT)
+    98→  })
+    99→
+   100→  test('unknown role → own (most restrictive)', () => {
+   101→    expect(resolveDataScope(['unknown_role'])).toBe(DataScope.OWN)
+   102→  })
+   103→
+   104→  test('no roles → own', () => {
+   105→    expect(resolveDataScope([])).toBe(DataScope.OWN)
+   106→  })
+   107→
+   108→  test('multiple roles → broadest wins (warehouse_operator + warehouse_supervisor → plant)', () => {
+   109→    expect(resolveDataScope(['warehouse_operator', 'warehouse_supervisor'])).toBe(DataScope.PLANT)
+   110→  })
+   111→
+   112→  test('multiple roles → broadest wins (sales_officer + sales_manager → company)', () => {
+   113→    expect(resolveDataScope(['sales_officer', 'sales_manager'])).toBe(DataScope.COMPANY)
+   114→  })
+   115→
+   116→  test('multiple roles → admin wins (warehouse_operator + tenant_admin → global)', () => {
+   117→    expect(resolveDataScope(['warehouse_operator', 'tenant_admin'])).toBe(DataScope.GLOBAL)
+   118→  })
+   119→
+   120→  test('SCOPE_RANK ordering: global > region > bu > company > plant > wh > dept > own', () => {
+   121→    expect(SCOPE_RANK.global).toBeGreaterThan(SCOPE_RANK.region)
+   122→    expect(SCOPE_RANK.region).toBeGreaterThan(SCOPE_RANK.bu)
+   123→    expect(SCOPE_RANK.bu).toBeGreaterThan(SCOPE_RANK.company)
+   124→    expect(SCOPE_RANK.company).toBeGreaterThan(SCOPE_RANK.plant)
+   125→    expect(SCOPE_RANK.plant).toBeGreaterThan(SCOPE_RANK.wh)
+   126→    expect(SCOPE_RANK.wh).toBeGreaterThan(SCOPE_RANK.dept)
+   127→    expect(SCOPE_RANK.dept).toBeGreaterThan(SCOPE_RANK.own)
+   128→  })
+   129→})
+   130→
+   131→// ─── Scope Filter Builder ───────────────────────────────────────────────────
+   132→
+   133→describe('buildScopeFilter', () => {
+   134→  test('global scope returns null (no filtering)', () => {
+   135→    expect(buildScopeFilter(DataScope.GLOBAL, 'inventory', 1)).toBeNull()
+   136→  })
+   137→
+   138→  test('warehouse scope generates warehouse_id filter', async () => {
+   139→    await withContext({
+   140→      userId: 'user-1',
+   141→      roles: ['warehouse_operator'],
+   142→      warehouseIds: ['wh-1', 'wh-2'],
+   143→    }, async () => {
+   144→      const filter = buildScopeFilter(DataScope.WAREHOUSE, 'i', 1)
+   145→      expect(filter).not.toBeNull()
+   146→      expect(filter!.clause).toContain('i.warehouse_id = ANY($1)')
+   147→      expect(filter!.params).toEqual([['wh-1', 'wh-2']])
+   148→    })
+   149→  })
+   150→
+   151→  test('plant scope generates plant_id filter', async () => {
+   152→    await withContext({
+   153→      userId: 'user-1',
+   154→      roles: ['warehouse_supervisor'],
+   155→      plantIds: ['plant-1'],
+   156→    }, async () => {
+   157→      const filter = buildScopeFilter(DataScope.PLANT, 'p', 1)
+   158→      expect(filter).not.toBeNull()
+   159→      expect(filter!.clause).toContain('p.plant_id = ANY($1)')
+   160→      expect(filter!.params).toEqual([['plant-1']])
+   161→    })
+   162→  })
+   163→
+   164→  test('company scope generates company_id filter', async () => {
+   165→    await withContext({
+   166→      userId: 'user-1',
+   167→      roles: ['sales_manager'],
+   168→      companyIds: ['co-1'],
+   169→    }, async () => {
+   170→      const filter = buildScopeFilter(DataScope.COMPANY, 'c', 1)
+   171→      expect(filter).not.toBeNull()
+   172→      expect(filter!.clause).toContain('c.company_id = ANY($1)')
+   173→    })
+   174→  })
+   175→
+   176→  test('dept scope generates department_id filter', async () => {
+   177→    await withContext({
+   178→      userId: 'user-1',
+   179→      roles: ['sales_officer'],
+   180→      departmentIds: ['dept-1'],
+   181→    }, async () => {
+   182→      const filter = buildScopeFilter(DataScope.DEPT, 'd', 1)
+   183→      expect(filter).not.toBeNull()
+   184→      expect(filter!.clause).toContain('d.department_id = ANY($1)')
+   185→    })
+   186→  })
+   187→
+   188→  test('own scope generates created_by OR assigned_to filter', async () => {
+   189→    await withContext({
+   190→      userId: 'user-1',
+   191→      roles: ['unknown'],
+   192→    }, async () => {
+   193→      const filter = buildScopeFilter(DataScope.OWN, 't', 1)
+   194→      expect(filter).not.toBeNull()
+   195→      expect(filter!.clause).toContain('t.created_by = $1 OR t.assigned_to = $1')
+   196→      expect(filter!.params).toEqual(['user-1'])
+   197→    })
+   198→  })
+   199→
+   200→  test('warehouse scope with no warehouse IDs → fail closed (AND 1=0)', async () => {
+   201→    await withContext({
+   202→      userId: 'user-1',
+   203→      roles: ['warehouse_operator'],
+   204→      warehouseIds: [],
+   205→    }, async () => {
+   206→      const filter = buildScopeFilter(DataScope.WAREHOUSE, 'i', 1)
+   207→      expect(filter).not.toBeNull()
+   208→      expect(filter!.clause).toBe(' AND 1=0')
+   209→    })
+   210→  })
+   211→
+   212→  test('custom column map overrides default column names', async () => {
+   213→    await withContext({
+   214→      userId: 'user-1',
+   215→      roles: ['warehouse_operator'],
+   216→      warehouseIds: ['wh-1'],
+   217→    }, async () => {
+   218→      const filter = buildScopeFilter(DataScope.WAREHOUSE, 'i', 1, { warehouseId: 'wh_id' })
+   219→      expect(filter!.clause).toContain('i.wh_id = ANY($1)')
+   220→    })
+   221→  })
+   222→
+   223→  test('paramStart determines the bind parameter index', async () => {
+   224→    await withContext({
+   225→      userId: 'user-1',
+   226→      roles: ['warehouse_operator'],
+   227→      warehouseIds: ['wh-1'],
+   228→    }, async () => {
+   229→      const filter = buildScopeFilter(DataScope.WAREHOUSE, 'i', 5)
+   230→      expect(filter!.clause).toContain('$5')
+   231→    })
+   232→  })
+   233→})
+   234→
+   235→// ─── ScopedQueryBuilder ────────────────────────────────────────────────────
+   236→
+   237→describe('ScopedQueryBuilder', () => {
+   238→  test('builds SQL with no scope (global)', async () => {
+   239→    await withContext({
+   240→      userId: 'admin',
+   241→      roles: ['tenant_admin'],
+   242→    }, async () => {
+   243→      const builder = new ScopedQueryBuilder('inventory', 'i')
+   244→        .where('i.tenant_id = $1', ['t-1'])
+   245→        .whereScope()
+   246→        .orderBy('created_at', 'DESC')
+   247→        .limit(25)
+   248→
+   249→      const { sql, params } = builder.build()
+   250→      expect(sql).toContain('FROM inventory i')
+   251→      expect(sql).toContain('WHERE i.tenant_id = $1')
+   252→      expect(sql).not.toContain('warehouse_id') // no scope filter for global
+   253→      expect(params).toEqual(['t-1', 25])
+   254→    })
+   255→  })
+   256→
+   257→  test('builds SQL with warehouse scope', async () => {
+   258→    await withContext({
+   259→      userId: 'wh-op',
+   260→      roles: ['warehouse_operator'],
+   261→      warehouseIds: ['wh-1'],
+   262→    }, async () => {
+   263→      const builder = new ScopedQueryBuilder('inventory', 'i')
+   264→        .where('i.tenant_id = $1', ['t-1'])
+   265→        .whereScope()
+   266→        .limit(25)
+   267→
+   268→      const { sql, params } = builder.build()
+   269→      expect(sql).toContain('i.warehouse_id = ANY')
+   270→      expect(params).toEqual(['t-1', ['wh-1'], 25])
+   271→    })
+   272→  })
+   273→
+   274→  test('count query does not include ORDER BY / LIMIT / OFFSET', async () => {
+   275→    await withContext({
+   276→      userId: 'admin',
+   277→      roles: ['tenant_admin'],
+   278→    }, async () => {
+   279→      const builder = new ScopedQueryBuilder('inventory', 'i')
+   280→        .where('i.tenant_id = $1', ['t-1'])
+   281→        .whereScope()
+   282→        .orderBy('created_at')
+   283→        .limit(25)
+   284→        .offset(50)
+   285→
+   286→      const { sql } = builder.buildCount()
+   287→      expect(sql).not.toContain('ORDER BY')
+   288→      expect(sql).not.toContain('LIMIT')
+   289→      expect(sql).not.toContain('OFFSET')
+   290→      expect(sql).toContain('COUNT(*)')
+   291→    })
+   292→  })
+   293→
+   294→  test('multiple where() calls are AND-ed together', async () => {
+   295→    await withContext({
+   296→      userId: 'admin',
+   297→      roles: ['tenant_admin'],
+   298→    }, async () => {
+   299→      const builder = new ScopedQueryBuilder('inventory', 'i')
+   300→        .where('i.tenant_id = $1', ['t-1'])
+   301→        .where('i.product_id = $1', ['p-1'])
+   302→        .whereScope()
+   303→
+   304→      const { sql } = builder.build()
+   305→      expect(sql).toContain('WHERE')
+   306→      expect(sql).toContain('AND')
+   307→    })
+   308→  })
+   309→})
+   310→
+   311→// ─── enforceScope (Service Layer) ──────────────────────────────────────────
+   312→
+   313→describe('enforceScope', () => {
+   314→  test('global scope → no enforcement', async () => {
+   315→    await withContext({
+   316→      userId: 'admin',
+   317→      roles: ['tenant_admin'],
+   318→    }, async () => {
+   319→      const record = { warehouse_id: 'wh-other' }
+   320→      expect(() => enforceScope(record, 'Inventory')).not.toThrow()
+   321→    })
+   322→  })
+   323→
+   324→  test('warehouse scope → in-scope record passes', async () => {
+   325→    await withContext({
+   326→      userId: 'wh-op',
+   327→      roles: ['warehouse_operator'],
+   328→      warehouseIds: ['wh-1'],
+   329→    }, async () => {
+   330→      const record = { warehouse_id: 'wh-1' }
+   331→      expect(() => enforceScope(record, 'Inventory')).not.toThrow()
+   332→    })
+   333→  })
+   334→
+   335→  test('warehouse scope → out-of-scope record throws', async () => {
+   336→    await withContext({
+   337→      userId: 'wh-op',
+   338→      roles: ['warehouse_operator'],
+   339→      warehouseIds: ['wh-1'],
+   340→    }, async () => {
+   341→      const record = { warehouse_id: 'wh-other' }
+   342→      expect(() => enforceScope(record, 'Inventory')).toThrow(/out of scope/)
+   343→    })
+   344→  })
+   345→
+   346→  test('null record → no enforcement', async () => {
+   347→    await withContext({
+   348→      userId: 'wh-op',
+   349→      roles: ['warehouse_operator'],
+   350→      warehouseIds: ['wh-1'],
+   351→    }, async () => {
+   352→      expect(() => enforceScope(null, 'Inventory')).not.toThrow()
+   353→    })
+   354→  })
+   355→
+   356→  test('own scope → record created by user passes', async () => {
+   357→    await withContext({
+   358→      userId: 'user-1',
+   359→      roles: [],
+   360→    }, async () => {
+   361→      const record = { created_by: 'user-1' }
+   362→      expect(() => enforceScope(record, 'SalesOrder')).not.toThrow()
+   363→    })
+   364→  })
+   365→
+   366→  test('own scope → record created by other throws', async () => {
+   367→    await withContext({
+   368→      userId: 'user-1',
+   369→      roles: [],
+   370→    }, async () => {
+   371→      const record = { created_by: 'user-2' }
+   372→      expect(() => enforceScope(record, 'SalesOrder')).toThrow(/out of scope/)
+   373→    })
+   374→  })
+   375→
+   376→  test('own scope → record assigned to user passes', async () => {
+   377→    await withContext({
+   378→      userId: 'user-1',
+   379→      roles: [],
+   380→    }, async () => {
+   381→      const record = { created_by: 'user-2', assigned_to: 'user-1' }
+   382→      expect(() => enforceScope(record, 'Task')).not.toThrow()
+   383→    })
+   384→  })
+   385→})
+   386→
+   387→// ─── enforceScopeOnWrite ───────────────────────────────────────────────────
+   388→
+   389→describe('enforceScopeOnWrite', () => {
+   390→  test('out-of-scope write throws', async () => {
+   391→    await withContext({
+   392→      userId: 'wh-op',
+   393→      roles: ['warehouse_operator'],
+   394→      warehouseIds: ['wh-1'],
+   395→    }, async () => {
+   396→      const record = { warehouse_id: 'wh-other' }
+   397→      expect(() => enforceScopeOnWrite(record, 'Inventory', 'update')).toThrow(/out of scope/)
+   398→    })
+   399→  })
+   400→
+   401→  test('in-scope write passes', async () => {
+   402→    await withContext({
+   403→      userId: 'wh-op',
+   404→      roles: ['warehouse_operator'],
+   405→      warehouseIds: ['wh-1'],
+   406→    }, async () => {
+   407→      const record = { warehouse_id: 'wh-1' }
+   408→      expect(() => enforceScopeOnWrite(record, 'Inventory', 'update')).not.toThrow()
+   409→    })
+   410→  })
+   411→})
+   412→
+   413→// ─── filterResultSetByScope (Export / Print) ────────────────────────────────
+   414→
+   415→describe('filterResultSetByScope', () => {
+   416→  test('global scope → returns all records', async () => {
+   417→    await withContext({
+   418→      userId: 'admin',
+   419→      roles: ['tenant_admin'],
+   420→    }, async () => {
+   421→      const records = [
+   422→        { id: 1, warehouse_id: 'wh-1' },
+   423→        { id: 2, warehouse_id: 'wh-2' },
+   424→        { id: 3, warehouse_id: 'wh-3' },
+   425→      ]
+   426→      const filtered = filterResultSetByScope(records)
+   427→      expect(filtered.length).toBe(3)
+   428→    })
+   429→  })
+   430→
+   431→  test('warehouse scope → filters out-of-scope records', async () => {
+   432→    await withContext({
+   433→      userId: 'wh-op',
+   434→      roles: ['warehouse_operator'],
+   435→      warehouseIds: ['wh-1', 'wh-2'],
+   436→    }, async () => {
+   437→      const records = [
+   438→        { id: 1, warehouse_id: 'wh-1' },
+   439→        { id: 2, warehouse_id: 'wh-2' },
+   440→        { id: 3, warehouse_id: 'wh-3' },  // out of scope
+   441→        { id: 4, warehouse_id: null },     // no warehouse — included
+   442→      ]
+   443→      const filtered = filterResultSetByScope(records)
+   444→      expect(filtered.length).toBe(3)
+   445→      expect(filtered.find(r => r.id === 3)).toBeUndefined()
+   446→    })
+   447→  })
+   448→
+   449→  test('own scope → only own records', async () => {
+   450→    await withContext({
+   451→      userId: 'user-1',
+   452→      roles: [],
+   453→    }, async () => {
+   454→      const records = [
+   455→        { id: 1, created_by: 'user-1' },
+   456→        { id: 2, created_by: 'user-2' },
+   457→        { id: 3, created_by: 'user-1' },
+   458→      ]
+   459→      const filtered = filterResultSetByScope(records)
+   460→      expect(filtered.length).toBe(2)
+   461→      expect(filtered.every(r => r.created_by === 'user-1')).toBe(true)
+   462→    })
+   463→  })
+   464→})
+   465→
+   466→// ─── Multi-Table Scope Filter (Dashboards / Reports) ────────────────────────
+   467→
+   468→describe('buildMultiTableScopeFilter', () => {
+   469→  test('global scope → no filter (null)', async () => {
+   470→    await withContext({
+   471→      userId: 'admin',
+   472→      roles: ['tenant_admin'],
+   473→    }, async () => {
+   474→      const filter = buildMultiTableScopeFilter([
+   475→        { table: 'inventory', alias: 'i' },
+   476→        { table: 'warehouses', alias: 'w' },
+   477→      ], 1)
+   478→      expect(filter).toBeNull()
+   479→    })
+   480→  })
+   481→
+   482→  test('warehouse scope → filters both tables', async () => {
+   483→    await withContext({
+   484→      userId: 'wh-op',
+   485→      roles: ['warehouse_operator'],
+   486→      warehouseIds: ['wh-1'],
+   487→    }, async () => {
+   488→      const filter = buildMultiTableScopeFilter([
+   489→        { table: 'inventory', alias: 'i' },
+   490→        { table: 'warehouses', alias: 'w' },
+   491→      ], 1)
+   492→      expect(filter).not.toBeNull()
+   493→      expect(filter!.clause).toContain('i.warehouse_id')
+   494→      expect(filter!.clause).toContain('w.warehouse_id')
+   495→    })
+   496→  })
+   497→})
+   498→
+   499→// ─── Audit / Notification / Workflow Scope Filters ─────────────────────────
+   500→
+   501→describe('Audit Scope Filter', () => {
+   502→  test('warehouse scope → audit logs filtered by warehouse', async () => {
+   503→    await withContext({
+   504→      userId: 'wh-op',
+   505→      roles: ['warehouse_operator'],
+   506→      warehouseIds: ['wh-1'],
+   507→    }, async () => {
+   508→      const filter = buildAuditScopeFilter('a', 1)
+   509→      expect(filter).not.toBeNull()
+   510→      expect(filter!.clause).toContain('a.warehouse_id')
+   511→    })
+   512→  })
+   513→})
+   514→
+   515→describe('Notification Scope Filter', () => {
+   516→  test('global scope → no filter (admin sees all tenant notifications)', async () => {
+   517→    await withContext({
+   518→      userId: 'admin',
+   519→      roles: ['tenant_admin'],
+   520→    }, async () => {
+   521→      const filter = buildNotificationScopeFilter('n', 1)
+   522→      expect(filter).toBeNull()
+   523→    })
+   524→  })
+   525→
+   526→  test('warehouse scope → notifications filtered to own (user_id)', async () => {
+   527→    await withContext({
+   528→      userId: 'wh-op',
+   529→      roles: ['warehouse_operator'],
+   530→      warehouseIds: ['wh-1'],
+   531→    }, async () => {
+   532→      const filter = buildNotificationScopeFilter('n', 1)
+   533→      expect(filter).not.toBeNull()
+   534→      expect(filter!.clause).toContain('n.user_id = $1')
+   535→      expect(filter!.params).toEqual(['wh-op'])
+   536→    })
+   537→  })
+   538→})
+   539→
+   540→describe('Workflow Scope Filter', () => {
+   541→  test('warehouse scope → workflows filtered by warehouse', async () => {
+   542→    await withContext({
+   543→      userId: 'wh-op',
+   544→      roles: ['warehouse_operator'],
+   545→      warehouseIds: ['wh-1'],
+   546→    }, async () => {
+   547→      const filter = buildWorkflowScopeFilter('w', 1)
+   548→      expect(filter).not.toBeNull()
+   549→      expect(filter!.clause).toContain('w.warehouse_id')
+   550→    })
+   551→  })
+   552→
+   553→  test('own scope → workflows filtered by initiated_by', async () => {
+   554→    await withContext({
+   555→      userId: 'user-1',
+   556→      roles: [],
+   557→    }, async () => {
+   558→      const filter = buildWorkflowScopeFilter('w', 1)
+   559→      expect(filter).not.toBeNull()
+   560→      // custom column map for workflow uses initiated_by instead of created_by
+   561→      expect(filter!.clause).toMatch(/w\.(initiated_by|assigned_to)/)
+   562→    })
+   563→  })
+   564→})
+   565→
+   566→// ─── populateScopeContext ──────────────────────────────────────────────────
+   567→
+   568→describe('populateScopeContext', () => {
+   569→  test('populates warehouse IDs on context', async () => {
+   570→    await withContext({
+   571→      userId: 'user-1',
+   572→      roles: ['warehouse_operator'],
+   573→    }, async () => {
+   574→      populateScopeContext({ warehouseIds: ['wh-1', 'wh-2'] })
+   575→      const ctx = getRequestContext()
+   576→      expect(ctx?.warehouseIds).toEqual(['wh-1', 'wh-2'])
+   577→      expect(ctx?.dataScope).toBe(DataScope.WAREHOUSE)
+   578→    })
+   579→  })
+   580→
+   581→  test('populates multiple scope dimensions', async () => {
+   582→    await withContext({
+   583→      userId: 'user-1',
+   584→      roles: ['warehouse_supervisor'],
+   585→    }, async () => {
+   586→      populateScopeContext({
+   587→        warehouseIds: ['wh-1'],
+   588→        plantIds: ['plant-1'],
+   589→        companyIds: ['co-1'],
+   590→      })
+   591→      const ctx = getRequestContext()
+   592→      expect(ctx?.warehouseIds).toEqual(['wh-1'])
+   593→      expect(ctx?.plantIds).toEqual(['plant-1'])
+   594→      expect(ctx?.companyIds).toEqual(['co-1'])
+   595→      expect(ctx?.dataScope).toBe(DataScope.PLANT)
+   596→    })
+   597→  })
+   598→
+   599→  test('dataScope is cached after population', async () => {
+   600→    await withContext({
+   601→      userId: 'admin',
+   602→      roles: ['tenant_admin'],
+   603→    }, async () => {
+   604→      populateScopeContext({})
+   605→      const ctx = getRequestContext()
+   606→      expect(ctx?.dataScope).toBe(DataScope.GLOBAL)
+   607→    })
+   608→  })
+   609→})
+   610→
+   611→// ─── requireScopeContext ───────────────────────────────────────────────────
+   612→
+   613→describe('requireScopeContext', () => {
+   614→  test('global scope → no requirement', async () => {
+   615→    await withContext({
+   616→      userId: 'admin',
+   617→      roles: ['tenant_admin'],
+   618→    }, async () => {
+   619→      expect(() => requireScopeContext()).not.toThrow()
+   620→    })
+   621→  })
+   622→
+   623→  test('warehouse scope without warehouseIds → throws', async () => {
+   624→    await withContext({
+   625→      userId: 'wh-op',
+   626→      roles: ['warehouse_operator'],
+   627→      // warehouseIds not set
+   628→    }, async () => {
+   629→      expect(() => requireScopeContext()).toThrow(/Warehouse scope context not populated/)
+   630→    })
+   631→  })
+   632→
+   633→  test('warehouse scope with warehouseIds → passes', async () => {
+   634→    await withContext({
+   635→      userId: 'wh-op',
+   636→      roles: ['warehouse_operator'],
+   637→      warehouseIds: ['wh-1'],
+   638→    }, async () => {
+   639→      expect(() => requireScopeContext()).not.toThrow()
+   640→    })
+   641→  })
+   642→
+   643→  test('plant scope without plantIds → throws', async () => {
+   644→    await withContext({
+   645→      userId: 'sup',
+   646→      roles: ['warehouse_supervisor'],
+   647→    }, async () => {
+   648→      expect(() => requireScopeContext()).toThrow(/Plant scope context not populated/)
+   649→    })
+   650→  })
+   651→
+   652→  test('company scope without companyIds → throws', async () => {
+   653→    await withContext({
+   654→      userId: 'mgr',
+   655→      roles: ['sales_manager'],
+   656→    }, async () => {
+   657→      expect(() => requireScopeContext()).toThrow(/Company scope context not populated/)
+   658→    })
+   659→  })
+   660→})
+   661→
+   662→// ─── getCurrentDataScope ───────────────────────────────────────────────────
+   663→
+   664→describe('getCurrentDataScope', () => {
+   665→  test('returns global when no context (system-level)', () => {
+   666→    // Note: outside a context, returns GLOBAL (system-level access)
+   667→    const scope = getCurrentDataScope()
+   668→    expect([DataScope.GLOBAL, DataScope.OWN]).toContain(scope)
+   669→  })
+   670→
+   671→  test('returns the populated dataScope when set', async () => {
+   672→    await withContext({
+   673→      userId: 'user-1',
+   674→      roles: ['warehouse_operator'],
+   675→      warehouseIds: ['wh-1'],
+   676→      dataScope: DataScope.WAREHOUSE,
+   677→    }, async () => {
+   678→      expect(getCurrentDataScope()).toBe(DataScope.WAREHOUSE)
+   679→    })
+   680→  })
+   681→
+   682→  test('computes from roles when dataScope not set', async () => {
+   683→    await withContext({
+   684→      userId: 'admin',
+   685→      roles: ['tenant_admin'],
+   686→    }, async () => {
+   687→      expect(getCurrentDataScope()).toBe(DataScope.GLOBAL)
+   688→    })
+   689→  })
+   690→})
+   691→
+   692→// ─── Cross-Tenant Isolation ────────────────────────────────────────────────
+   693→
+   694→describe('Cross-Tenant Isolation', () => {
+   695→  test('data scope filter does NOT replace tenant_id filter', async () => {
+   696→    // The scope filter is AND-ed to the existing WHERE clause, which
+   697→    // always includes tenant_id = $1. This guarantees cross-tenant isolation
+   698→    // is enforced even when scope is GLOBAL.
+   699→    await withContext({
+   700→      userId: 'admin',
+   701→      roles: ['tenant_admin'],
+   702→      tenantId: 'tenant-A',
+   703→    }, async () => {
+   704→      // GLOBAL scope returns null filter, but the repository's SQL
+   705→      // still has `WHERE tenant_id = $1` which provides isolation.
+   706→      const filter = buildScopeFilter(DataScope.GLOBAL, 'i', 1)
+   707→      expect(filter).toBeNull()
+   708→      // Tenant isolation is enforced separately at the repository layer
+   709→      // via the mandatory tenant_id = $1 clause in every query.
+   710→    })
+   711→  })
+   712→})
+   713→
+   714→// ─── Plant Scope ───────────────────────────────────────────────────────────
+   715→
+   716→describe('Plant Scope', () => {
+   717→  test('plant scope generates plant_id filter', async () => {
+   718→    await withContext({
+   719→      userId: 'sup',
+   720→      roles: ['manufacturing_supervisor'],
+   721→      plantIds: ['plant-1', 'plant-2'],
+   722→    }, async () => {
+   723→      const filter = buildScopeFilter(DataScope.PLANT, 'i', 1)
+   724→      expect(filter!.clause).toContain('i.plant_id = ANY($1)')
+   725→      expect(filter!.params).toEqual([['plant-1', 'plant-2']])
+   726→    })
+   727→  })
+   728→
+   729→  test('plant scope with no plantIds → fail closed', async () => {
+   730→    await withContext({
+   731→      userId: 'sup',
+   732→      roles: ['manufacturing_supervisor'],
+   733→    }, async () => {
+   734→      const filter = buildScopeFilter(DataScope.PLANT, 'i', 1)
+   735→      expect(filter!.clause).toBe(' AND 1=0')
+   736→    })
+   737→  })
+   738→
+   739→  test('enforceScope for plant scope: in-scope passes', async () => {
+   740→    await withContext({
+   741→      userId: 'sup',
+   742→      roles: ['manufacturing_supervisor'],
+   743→      plantIds: ['plant-1'],
+   744→    }, async () => {
+   745→      expect(() => enforceScope({ plant_id: 'plant-1' }, 'Batch')).not.toThrow()
+   746→    })
+   747→  })
+   748→
+   749→  test('enforceScope for plant scope: out-of-scope throws', async () => {
+   750→    await withContext({
+   751→      userId: 'sup',
+   752→      roles: ['manufacturing_supervisor'],
+   753→      plantIds: ['plant-1'],
+   754→    }, async () => {
+   755→      expect(() => enforceScope({ plant_id: 'plant-2' }, 'Batch')).toThrow(/out of scope/)
+   756→    })
+   757→  })
+   758→})
+   759→
+   760→// ─── Warehouse Scope ───────────────────────────────────────────────────────
+   761→
+   762→describe('Warehouse Scope', () => {
+   763→  test('enforceScope for warehouse scope: in-scope passes', async () => {
+   764→    await withContext({
+   765→      userId: 'wh-op',
+   766→      roles: ['warehouse_operator'],
+   767→      warehouseIds: ['wh-1'],
+   768→    }, async () => {
+   769→      expect(() => enforceScope({ warehouse_id: 'wh-1' }, 'Inventory')).not.toThrow()
+   770→    })
+   771→  })
+   772→
+   773→  test('enforceScope for warehouse scope: out-of-scope throws', async () => {
+   774→    await withContext({
+   775→      userId: 'wh-op',
+   776→      roles: ['warehouse_operator'],
+   777→      warehouseIds: ['wh-1'],
+   778→    }, async () => {
+   779→      expect(() => enforceScope({ warehouse_id: 'wh-2' }, 'Inventory')).toThrow(/out of scope/)
+   780→    })
+   781→  })
+   782→
+   783→  test('enforceScope ignores null warehouse_id (record may not have warehouse)', async () => {
+   784→    await withContext({
+   785→      userId: 'wh-op',
+   786→      roles: ['warehouse_operator'],
+   787→      warehouseIds: ['wh-1'],
+   788→    }, async () => {
+   789→      expect(() => enforceScope({ warehouse_id: null }, 'Inventory')).not.toThrow()
+   790→    })
+   791→  })
+   792→})
+   793→
+   794→// ─── Company Scope ─────────────────────────────────────────────────────────
+   795→
+   796→describe('Company Scope', () => {
+   797→  test('enforceScope for company scope: in-scope passes', async () => {
+   798→    await withContext({
+   799→      userId: 'mgr',
+   800→      roles: ['sales_manager'],
+   801→      companyIds: ['co-1'],
+   802→    }, async () => {
+   803→      expect(() => enforceScope({ company_id: 'co-1' }, 'SalesOrder')).not.toThrow()
+   804→    })
+   805→  })
+   806→
+   807→  test('enforceScope for company scope: out-of-scope throws', async () => {
+   808→    await withContext({
+   809→      userId: 'mgr',
+   810→      roles: ['sales_manager'],
+   811→      companyIds: ['co-1'],
+   812→    }, async () => {
+   813→      expect(() => enforceScope({ company_id: 'co-2' }, 'SalesOrder')).toThrow(/out of scope/)
+   814→    })
+   815→  })
+   816→})
+   817→
+   818→// ─── Department Scope ──────────────────────────────────────────────────────
+   819→
+   820→describe('Department Scope', () => {
+   821→  test('dept scope generates department_id filter', async () => {
+   822→    await withContext({
+   823→      userId: 'off',
+   824→      roles: ['sales_officer'],
+   825→      departmentIds: ['dept-1'],
+   826→    }, async () => {
+   827→      const filter = buildScopeFilter(DataScope.DEPT, 's', 1)
+   828→      expect(filter!.clause).toContain('s.department_id = ANY($1)')
+   829→    })
+   830→  })
+   831→
+   832→  test('enforceScope for dept scope: out-of-scope throws', async () => {
+   833→    await withContext({
+   834→      userId: 'off',
+   835→      roles: ['sales_officer'],
+   836→      departmentIds: ['dept-1'],
+   837→    }, async () => {
+   838→      expect(() => enforceScope({ department_id: 'dept-2' }, 'SalesOrder')).toThrow(/out of scope/)
+   839→    })
+   840→  })
+   841→})
+   842→
