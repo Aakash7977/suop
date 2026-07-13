@@ -59,4 +59,26 @@ export const inventoryApi = {
   reserve: (data: Record<string, unknown>) => apiFetch(`/api/v1/inventory/reservations`, { method: 'POST', body: JSON.stringify(data) }),
   block: (data: Record<string, unknown>) => apiFetch(`/api/v1/inventory/blocks`, { method: 'POST', body: JSON.stringify(data) }),
   getExpiring: (days?: number) => apiFetch<{ success: true; data: Inventory[] }>(`/api/v1/inventory/expiry?days=${days ?? 30}`),
+  listBatches: (params?: { page?: number; productId?: string; search?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.page) qs.set('page', String(params.page))
+    if (params?.productId) qs.set('productId', params.productId)
+    if (params?.search) qs.set('search', params.search)
+    return apiFetch<{ success: true; data: unknown[]; meta: { total: number } }>(`/api/v1/inventory/batches?${qs}`)
+  },
+  releaseReservation: (id: string, reason?: string) => apiFetch(`/api/v1/inventory/reservations/${id}/release`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  markExpired: () => apiFetch(`/api/v1/inventory/expiry/mark-expired`, { method: 'POST' }),
+  listReservations: (params?: { page?: number; status?: string; productId?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.page) qs.set('page', String(params.page))
+    if (params?.status) qs.set('status', params.status)
+    if (params?.productId) qs.set('productId', params.productId)
+    return apiFetch<{ success: true; data: unknown[]; meta: { total: number } }>(`/api/v1/inventory/reservations?${qs}`)
+  },
+  listBlocks: (params?: { page?: number; status?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.page) qs.set('page', String(params.page))
+    if (params?.status) qs.set('status', params.status)
+    return apiFetch<{ success: true; data: unknown[]; meta: { total: number } }>(`/api/v1/inventory/blocks?${qs}`)
+  },
 }

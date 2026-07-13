@@ -56,7 +56,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus } from '../utils/helpers'
-import { pushToast, useAuthStore as useSectionAuth } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 
 type CommercialTab = 'overview' | 'priceLists' | 'tax' | 'discounts' | 'promotions' | 'futurePrices' | 'approvals' | 'cost' | 'rules' | 'resolution'
 
@@ -188,7 +188,7 @@ function PriceListsTab() {
           <h3 className="font-semibold">Price Lists</h3>
           <p className="text-xs text-muted-foreground mt-1">10 supported types: Retail, Wholesale, Distributor, Export, Restaurant, Online, Corporate, Employee, Festival, Special Contract</p>
         </div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Price List — POST /api/v1/sales/pricing/price-lists')}><Plus className="mr-1 h-4 w-4" /> New Price List</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Price List — POST /api/v1/sales/pricing/price-lists' })}><Plus className="mr-1 h-4 w-4" /> New Price List</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -233,7 +233,7 @@ function TaxTab() {
         <div className="flex items-center justify-between mb-4">
           <div><h3 className="font-semibold">GST & Tax Engine</h3>
           <p className="text-xs text-muted-foreground mt-1">Supports GST (CGST/SGST/IGST), CESS, TCS, TDS (future). HSN/SAC mapped per product. Tax rules engine for state/type/category-based overrides.</p></div>
-          <Button size="sm" onClick={() => pushToast('info', 'Create Tax Config — POST /api/v1/sales/pricing/tax-configs')}><Plus className="mr-1 h-4 w-4" /> New Tax Group</Button>
+          <Button size="sm" onClick={() => toast({ title: 'Create Tax Config — POST /api/v1/sales/pricing/tax-configs' })}><Plus className="mr-1 h-4 w-4" /> New Tax Group</Button>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           {groups.map(g => (
@@ -282,7 +282,7 @@ function DiscountsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Discount Rules</h3>
         <p className="text-xs text-muted-foreground mt-1">9 supported types: Flat, Percentage, Buy X Get Y, Volume, Combo, Category, Brand, Customer, Coupon</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Discount — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Discount</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Discount — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Discount</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -322,7 +322,7 @@ function PromotionsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Promotions</h3>
         <p className="text-xs text-muted-foreground mt-1">4 supported types: Automatic, Manual, Coupon, Loyalty. Channel-scoped. Priority sorted. Conflict detection rules.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Promotion — POST /api/v1/sales/pricing/promotions')}><Plus className="mr-1 h-4 w-4" /> New Promotion</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Promotion — POST /api/v1/sales/pricing/promotions' })}><Plus className="mr-1 h-4 w-4" /> New Promotion</Button>
       </div>
       <div className="space-y-3">
         {promos.map(p => (
@@ -363,7 +363,7 @@ function FuturePricesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Future Pricing</h3>
         <p className="text-xs text-muted-foreground mt-1">Scheduled price changes with automatic activation, expiry, rollback, and approval workflow.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Schedule Price Change — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> Schedule Price Change</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Schedule Price Change — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> Schedule Price Change</Button>
       </div>
       <div className="space-y-3">
         {prices.map(p => (
@@ -426,7 +426,7 @@ function ApprovalsTab() {
               <span>SLA Due: {a.sla}</span>
               {a.breached && <Badge variant="destructive" className="text-xs">SLA BREACHED</Badge>}
               {a.status !== 'APPROVED' && a.status !== 'PUBLISHED' && (
-                <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" onClick={() => pushToast('info', 'Advance Stage — approval workflow backend pending')}>
+                <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" onClick={() => toast({ title: 'Advance Stage — approval workflow backend pending' })}>
                   <ArrowRightCircle className="mr-1 h-3 w-3" /> Advance Stage
                 </Button>
               )}
@@ -498,7 +498,7 @@ function RulesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Commercial Rules Engine</h3>
         <p className="text-xs text-muted-foreground mt-1">Enforcement rules: Minimum Selling Price, Maximum Discount, Minimum Margin, Customer Pricing, Location Pricing, Holiday Pricing, Contract Pricing. Future: AI Dynamic Pricing, Demand Pricing.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Rule — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Rule — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
       </div>
       <div className="space-y-3">
         {rules.map(r => (

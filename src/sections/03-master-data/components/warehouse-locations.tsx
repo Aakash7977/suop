@@ -56,7 +56,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus } from '../utils/helpers'
-import { pushToast, useAuthStore as useSectionAuth } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 
 type WhLocTab = 'overview' | 'bins' | 'aisles' | 'racks' | 'capacity'
 

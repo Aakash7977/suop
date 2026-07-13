@@ -23,7 +23,8 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { productApi, pushToast, type Category, type Product } from '../api/clients'
+import { productApi, type Category, type Product  } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 
 export function PIMModule() {
   const [families, setFamilies] = useState<Category[]>([])

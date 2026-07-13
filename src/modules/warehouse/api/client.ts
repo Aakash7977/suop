@@ -47,4 +47,19 @@ export const warehouseApi = {
   createBarcode: (data: Record<string, unknown>) => apiFetch(`/api/v1/warehouse/barcodes`, { method: 'POST', body: JSON.stringify(data) }),
   printBarcode: (id: string) => apiFetch(`/api/v1/warehouse/barcodes/${id}/print`, { method: 'POST' }),
   scan: (barcode: string, scanType: string) => apiFetch(`/api/v1/warehouse/scan`, { method: 'POST', body: JSON.stringify({ barcode, scanType }) }),
+  createZone: (data: Record<string, unknown>) => apiFetch(`/api/v1/warehouse/zones`, { method: 'POST', body: JSON.stringify(data) }),
+  createAisle: (data: Record<string, unknown>) => apiFetch(`/api/v1/warehouse/aisles`, { method: 'POST', body: JSON.stringify(data) }),
+  createRack: (data: Record<string, unknown>) => apiFetch(`/api/v1/warehouse/racks`, { method: 'POST', body: JSON.stringify(data) }),
+  listScanLogs: (params?: { page?: number; warehouseId?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.page) qs.set('page', String(params.page))
+    if (params?.warehouseId) qs.set('warehouseId', params.warehouseId)
+    return apiFetch<{ success: true; data: unknown[] }>(`/api/v1/warehouse/scan-logs?${qs}`)
+  },
+  listBarcodes: (params?: { labelType?: string; productId?: string }) => {
+    const qs = new URLSearchParams()
+    if (params?.labelType) qs.set('labelType', params.labelType)
+    if (params?.productId) qs.set('productId', params.productId)
+    return apiFetch<{ success: true; data: unknown[] }>(`/api/v1/warehouse/barcodes?${qs}`)
+  },
 }

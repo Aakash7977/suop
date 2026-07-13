@@ -27,4 +27,8 @@ export const customerApi = {
   transition: (id: string, targetStatus: string, version: number) => apiFetch(`/api/v1/sales/customers/${id}/transition`, { method: 'POST', body: JSON.stringify({ targetStatus, version }) }),
   getCredit: (id: string) => apiFetch<{ success: true; data: Record<string, unknown> }>(`/api/v1/sales/customers/${id}/credit`),
   listGroups: () => apiFetch<{ success: true; data: CustomerGroup[] }>(`/api/v1/sales/customer-groups`),
+  createGroup: (data: Record<string, unknown>) => apiFetch(`/api/v1/sales/customer-groups`, { method: 'POST', body: JSON.stringify(data) }),
+  lookupByGstin: (gstin: string) => apiFetch<{ success: true; data: Customer }>(`/api/v1/sales/customers/gst/${gstin}`),
+  addContact: (id: string, data: { name: string; designation?: string; email?: string; phone?: string; mobile?: string; isPrimary?: boolean }) => apiFetch(`/api/v1/sales/customers/${id}/contacts`, { method: 'POST', body: JSON.stringify(data) }),
+  addAddress: (id: string, data: { addressType?: string; addressLine1: string; city: string; state?: string; country?: string; postalCode?: string; isPrimary?: boolean }) => apiFetch(`/api/v1/sales/customers/${id}/addresses`, { method: 'POST', body: JSON.stringify(data) }),
 }

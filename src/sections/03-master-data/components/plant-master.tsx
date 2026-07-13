@@ -23,7 +23,8 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/stores/auth-store'
-import { plantApi, pushToast, type Plant } from '../api/clients'
+import { plantApi, type Plant  } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 import { useList } from '../hooks/use-master-data'
 import { s28BadgeForStatus } from '../utils/helpers'
 
@@ -128,11 +129,11 @@ export function PlantMasterModule() {
     setSubmitting(true)
     try {
       await plantApi.create(data)
-      pushToast('success', 'Plant created successfully')
+      toast({ title: 'Plant created successfully' })
       setShowCreate(false)
       refresh()
     } catch (err: unknown) {
-      pushToast('error', err instanceof Error ? err.message : 'Failed to create plant')
+      toast({ title: err instanceof Error ? err.message : 'Failed to create plant', variant: 'destructive' })
     } finally {
       setSubmitting(false)
     }

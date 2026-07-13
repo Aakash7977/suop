@@ -18,6 +18,7 @@
  */
 
 import { db, transaction } from '@/core/db'
+import "@/modules/product-costing/workflow"
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'

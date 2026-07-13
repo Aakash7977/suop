@@ -218,25 +218,4 @@ export const financeApi = {
     pricingFetch(`/api/v1/finance/foundation/exchange-rates`, { method: 'POST', body: JSON.stringify(data) }),
 }
 
-// ─── Toast helper (lightweight, no provider needed) ─────────────────────────
-
-export type ToastKind = 'success' | 'error' | 'info'
-export interface ToastEntry { id: number; kind: ToastKind; msg: string }
-
-let toastSeq = 1
-const toastListeners = new Set<(t: ToastEntry) => void>()
-
-export function subscribeToasts(fn: (t: ToastEntry) => void): () => void {
-  toastListeners.add(fn)
-  return () => toastListeners.delete(fn)
-}
-
-export function pushToast(kind: ToastKind, msg: string): void {
-  if (typeof window === 'undefined') return
-  const entry = { id: toastSeq++, kind, msg }
-  toastListeners.forEach(fn => fn(entry))
-}
-
-// ─── Permission helpers (re-exported from auth store) ────────────────────────
-
 export { useAuthStore } from '@/stores/auth-store'

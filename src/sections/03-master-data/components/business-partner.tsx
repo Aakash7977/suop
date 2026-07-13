@@ -56,7 +56,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus } from '../utils/helpers'
-import { pushToast, useAuthStore as useSectionAuth } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 
 type BPTab = 'overview' | 'partners' | 'addresses' | 'contacts' | 'financial' | 'compliance' | 'groups' | 'banking' | 'relationships' | 'scorecards'
 
@@ -267,7 +267,7 @@ function BPPartnersTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Business Partners</h3>
         <p className="text-xs text-muted-foreground mt-1">{loading ? 'Loading...' : `${partners.length} partners (${partners.filter(p => p.roles.includes('CUSTOMER')).length} customers, ${partners.filter(p => p.roles.includes('SUPPLIER')).length} suppliers). Filter by role or type. Duplicate GST/PAN auto-detected on create.`}</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Partner dialog — use Customer Master or Supplier Master for now')}><Plus className="mr-1 h-4 w-4" /> New Partner</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Partner dialog — use Customer Master or Supplier Master for now' })}><Plus className="mr-1 h-4 w-4" /> New Partner</Button>
       </div>
       <div className="mb-3 relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -328,7 +328,7 @@ function BPAddressesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Address Management</h3>
         <p className="text-xs text-muted-foreground mt-1">9 address types: Registered Office, Billing, Shipping, Factory, Warehouse, Branch, Restaurant, Pickup, Return. Reusable across modules.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Address — POST /api/v1/sales/customers/:id/addresses')}><Plus className="mr-1 h-4 w-4" /> New Address</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Address — POST /api/v1/sales/customers/:id/addresses' })}><Plus className="mr-1 h-4 w-4" /> New Address</Button>
       </div>
       <div className="space-y-3">
         {addresses.map((a, i) => (
@@ -364,7 +364,7 @@ function BPContactsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Contact Management</h3>
         <p className="text-xs text-muted-foreground mt-1">Per-partner contacts with designation, department, email, mobile, office phone, WhatsApp, and preferred contact channel.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Contact — POST /api/v1/sales/customers/:id/contacts')}><Plus className="mr-1 h-4 w-4" /> New Contact</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Contact — POST /api/v1/sales/customers/:id/contacts' })}><Plus className="mr-1 h-4 w-4" /> New Contact</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -455,7 +455,7 @@ function BPComplianceTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Compliance Management</h3>
         <p className="text-xs text-muted-foreground mt-1">8 compliance types: GST, PAN, MSME, FSSAI, IEC, ISO, Agreements, Insurance. Document uploads + verification workflow. Expiry alerts.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Add Compliance — POST /api/v1/procurement/suppliers/:id/compliances')}><Plus className="mr-1 h-4 w-4" /> Add Compliance</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Add Compliance — POST /api/v1/procurement/suppliers/:id/compliances' })}><Plus className="mr-1 h-4 w-4" /> Add Compliance</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -501,7 +501,7 @@ function BPGroupsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Customer & Supplier Groups</h3>
         <p className="text-xs text-muted-foreground mt-1">Classification for pricing tiers, payment terms defaults, and reporting. Plus flexible partner tags for ad-hoc labeling.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Group — POST /api/v1/sales/customer-groups')}><Plus className="mr-1 h-4 w-4" /> New Group</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Group — POST /api/v1/sales/customer-groups' })}><Plus className="mr-1 h-4 w-4" /> New Group</Button>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {groups.map(g => (
@@ -542,7 +542,7 @@ function BPBankingTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Bank Accounts</h3>
         <p className="text-xs text-muted-foreground mt-1">Per-partner bank accounts with IFSC, SWIFT (for export), UPI ID. Account numbers masked in UI (encrypted at rest). Verification workflow for each account.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Add Bank Account — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> Add Bank Account</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Add Bank Account — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> Add Bank Account</Button>
       </div>
       <div className="space-y-3">
         {accounts.map((a, i) => (
@@ -583,7 +583,7 @@ function BPRelationshipsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Business Partner Relationships</h3>
         <p className="text-xs text-muted-foreground mt-1">Track parent/subsidiary, distributor/dealer, franchise, preferred supplier, strategic partner, sister concern, JV partner relationships between partners.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Relationship — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Relationship</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Relationship — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Relationship</Button>
       </div>
       <div className="space-y-3">
         {relationships.map((r, i) => (
@@ -623,7 +623,7 @@ function BPScorecardsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Partner Scorecards</h3>
         <p className="text-xs text-muted-foreground mt-1">Quarterly evaluations: on-time delivery, order accuracy, quality, complaints, payment history, response time. Composite overall score + letter grade. Future: AI risk prediction, customer lifetime value.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Scorecard — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Scorecard</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Scorecard — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Scorecard</Button>
       </div>
       <div className="space-y-3">
         {scorecards.map(s => (

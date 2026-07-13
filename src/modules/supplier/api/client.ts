@@ -27,4 +27,11 @@ export const supplierApi = {
   transition: (id: string, targetStatus: string, version: number) => apiFetch(`/api/v1/procurement/suppliers/${id}/transition`, { method: 'POST', body: JSON.stringify({ targetStatus, version }) }),
   blacklist: (id: string, reason: string) => apiFetch(`/api/v1/procurement/suppliers/${id}/blacklist`, { method: 'POST', body: JSON.stringify({ reason }) }),
   listCategories: () => apiFetch<{ success: true; data: SupplierCategory[] }>(`/api/v1/procurement/supplier-categories`),
+  createCategory: (data: Record<string, unknown>) => apiFetch(`/api/v1/procurement/supplier-categories`, { method: 'POST', body: JSON.stringify(data) }),
+  lookupByGstin: (gstin: string) => apiFetch<{ success: true; data: Supplier }>(`/api/v1/procurement/suppliers/gst/${gstin}`),
+  listContacts: (id: string) => apiFetch<{ success: true; data: Array<Record<string, unknown>> }>(`/api/v1/procurement/suppliers/${id}/contacts`),
+  addContact: (id: string, data: { name: string; designation?: string; email?: string; phone?: string; mobile?: string; isPrimary?: boolean }) => apiFetch(`/api/v1/procurement/suppliers/${id}/contacts`, { method: 'POST', body: JSON.stringify(data) }),
+  addAddress: (id: string, data: { addressType?: string; addressLine1: string; city: string; state?: string; country?: string; postalCode?: string; isPrimary?: boolean }) => apiFetch(`/api/v1/procurement/suppliers/${id}/addresses`, { method: 'POST', body: JSON.stringify(data) }),
+  addCompliance: (id: string, data: { complianceType: string; licenseNumber?: string; issuingAuthority?: string; issuedDate?: string; expiryDate?: string; documentUrl?: string; notes?: string }) => apiFetch(`/api/v1/procurement/suppliers/${id}/compliances`, { method: 'POST', body: JSON.stringify(data) }),
+  assignProduct: (id: string, data: { productId: string; supplierSku?: string; unitPrice?: number; moq?: number; leadTimeDays?: number; isPreferred?: boolean }) => apiFetch(`/api/v1/procurement/suppliers/${id}/products`, { method: 'POST', body: JSON.stringify(data) }),
 }

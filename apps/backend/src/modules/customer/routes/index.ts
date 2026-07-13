@@ -46,12 +46,11 @@ const contactSchema = z.object({ name: z.string().min(1).max(200), designation: 
 const addressSchema = z.object({ addressType: z.enum(['BILLING', 'SHIPPING', 'REGISTERED_OFFICE']).default('BILLING'), addressLine1: z.string().min(1), city: z.string().min(1), state: z.string().optional(), country: z.string().default('India'), postalCode: z.string().optional(), isPrimary: z.boolean().default(false) })
 const groupSchema = z.object({ code: z.string().min(1).max(50), name: z.string().min(1).max(200), description: z.string().optional() })
 
-// ─── Use ORG_READ/CREATE/UPDATE/DELETE as proxy permissions for Customer (until customer-specific permissions are added) ───
-// In a real production system, we would add CUSTOMER_READ, CUSTOMER_CREATE, etc. to the Permission enum
-const CUSTOMER_READ = Permission.ORG_READ
-const CUSTOMER_CREATE = Permission.ORG_CREATE
-const CUSTOMER_UPDATE = Permission.ORG_UPDATE
-const CUSTOMER_DELETE = Permission.ORG_DELETE
+// ─── Use dedicated CUSTOMER_* permissions (defined in registry) ───
+const CUSTOMER_READ = Permission.CUSTOMER_READ
+const CUSTOMER_CREATE = Permission.CUSTOMER_CREATE
+const CUSTOMER_UPDATE = Permission.CUSTOMER_UPDATE
+const CUSTOMER_DELETE = Permission.CUSTOMER_DELETE
 
 // Customers
 customerRoutes.get('/customers', requirePermission(CUSTOMER_READ), async (c) => {

@@ -56,7 +56,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus } from '../utils/helpers'
-import { pushToast, useAuthStore as useSectionAuth } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 
 type IDTab = 'overview' | 'barcodes' | 'qrcodes' | 'batches' | 'lots' | 'serials' | 'gs1' | 'labels' | 'print' | 'traceability'
 
@@ -200,7 +200,7 @@ function IDBarcodesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Barcode Management</h3>
         <p className="text-xs text-muted-foreground mt-1">9 supported types: EAN-13, EAN-8, UPC-A, UPC-E, Code128, Code39, GS1-128, ITF-14, Internal. One primary barcode per variant. Unique enforcement.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Generate Barcode — POST /api/v1/catalog/products/:id/barcodes')}><Plus className="mr-1 h-4 w-4" /> Generate Barcode</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Generate Barcode — POST /api/v1/catalog/products/:id/barcodes' })}><Plus className="mr-1 h-4 w-4" /> Generate Barcode</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -244,7 +244,7 @@ function IDQRCodesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">QR Code Platform</h3>
         <p className="text-xs text-muted-foreground mt-1">7 purposes: Product, Batch, Warehouse, Location, Asset, Order, Invoice. AES-256 encryption for sensitive codes. Scan tracking with last-scanned timestamp.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Generate QR — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> Generate QR</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Generate QR — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> Generate QR</Button>
       </div>
       <div className="space-y-3">
         {qrcodes.map(q => (
@@ -292,7 +292,7 @@ function IDBatchesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Batch Management</h3>
         <p className="text-xs text-muted-foreground mt-1">7 batch statuses: Planned, Produced, Released, Quarantined, Blocked, Consumed, Expired. Quality grade A/B/C/REJECT. Mandatory for all manufactured products (per Chief Architect recommendation).</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Batch — use manufacturing module')}><Plus className="mr-1 h-4 w-4" /> New Batch</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Batch — use manufacturing module' })}><Plus className="mr-1 h-4 w-4" /> New Batch</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -354,7 +354,7 @@ function IDLotsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Lot Management</h3>
         <p className="text-xs text-muted-foreground mt-1">5 lot types: Supplier, Production, Warehouse, Return, Inspection. Hierarchy: Batch → Multiple Lots. Tracks supplier invoice + quality status for raw material traceability.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Lot — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Lot</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Lot — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Lot</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -399,7 +399,7 @@ function IDSerialsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Serial Number Management</h3>
         <p className="text-xs text-muted-foreground mt-1">For machines, equipment, electronics, high-value items. Globally unique serials. Tracks warranty, service history, current location. Per Chief Architect: mandatory for machines & equipment, not for food products.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Assign Serial — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> Assign Serial</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Assign Serial — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> Assign Serial</Button>
       </div>
       <div className="space-y-3">
         {serials.map(s => {
@@ -455,7 +455,7 @@ function IDGS1Tab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">GS1 Standards</h3>
         <p className="text-xs text-muted-foreground mt-1">4 GS1 identifier types: GTIN (products), GLN (locations), SSCC (logistic units), GS1-128 (with application identifiers). Company prefix: 8901234. Enables global supply chain integration.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create GS1 ID — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New GS1 ID</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create GS1 ID — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New GS1 ID</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -505,7 +505,7 @@ function IDLabelsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Label Templates</h3>
         <p className="text-xs text-muted-foreground mt-1">8 label types: Product, Shelf, Pallet, Batch, Location, Shipping, QR, Barcode. 5 print formats: A4, Thermal, Zebra, Brother, PDF. Approval workflow before publishing.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Label Template — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Template</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Label Template — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Template</Button>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {templates.map(t => (
@@ -548,7 +548,7 @@ function IDPrintTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Print Queue</h3>
         <p className="text-xs text-muted-foreground mt-1">5 print modes: Single, Bulk, Auto, Scheduled, Reprint. 5 printer types: Thermal, Laser, Inkjet, Bluetooth, Network. Real-time progress tracking.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Print Job — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Print Job</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Print Job — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Print Job</Button>
       </div>
       <div className="space-y-3">
         {jobs.map(j => {

@@ -56,7 +56,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
 import { s28BadgeForStatus } from '../utils/helpers'
-import { pushToast, useAuthStore as useSectionAuth } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 
 type GovTab = 'overview' | 'lifecycle' | 'approvals' | 'import' | 'export' | 'validation' | 'duplicates' | 'audit' | 'quality' | 'history'
 
@@ -259,7 +259,7 @@ function GovApprovalsTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Product Approval Workflow</h3>
         <p className="text-xs text-muted-foreground mt-1">6-stage workflow: Creator → Reviewer → QA → Compliance → Finance (optional) → Publisher. Supports STANDARD, PARALLEL, and CONDITIONAL workflows with SLA tracking.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Workflow — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Workflow</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Workflow — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Workflow</Button>
       </div>
       <div className="mb-4 flex items-center gap-1 text-xs overflow-x-auto pb-2">
         {stages.map((s, i) => (
@@ -313,7 +313,7 @@ function GovImportTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Import Jobs</h3>
         <p className="text-xs text-muted-foreground mt-1">Excel/CSV import with validation, preview, duplicate detection, error reporting, and rollback. All jobs support rollback for safety.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Start Import — backend endpoint pending')}><UploadCloud className="mr-1 h-4 w-4" /> New Import</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Start Import — backend endpoint pending' })}><UploadCloud className="mr-1 h-4 w-4" /> New Import</Button>
       </div>
       <div className="space-y-3">
         {jobs.map(j => (
@@ -359,7 +359,7 @@ function GovExportTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Export Jobs</h3>
         <p className="text-xs text-muted-foreground mt-1">Export to Excel, CSV, PDF, or JSON. Filtered exports with custom field selection.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Start Export — backend endpoint pending')}><DownloadCloud className="mr-1 h-4 w-4" /> New Export</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Start Export — backend endpoint pending' })}><DownloadCloud className="mr-1 h-4 w-4" /> New Export</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -409,7 +409,7 @@ function GovValidationTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Validation Rules</h3>
         <p className="text-xs text-muted-foreground mt-1">6 validation types: Required, Unique, Range, Regex, Business Rule, Cross-Reference. Enforcement modes: BLOCK, WARN, LOG.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Create Validation Rule — backend endpoint pending')}><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Create Validation Rule — backend endpoint pending' })}><Plus className="mr-1 h-4 w-4" /> New Rule</Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -454,7 +454,7 @@ function GovDuplicatesTab() {
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Duplicate Detection & Merge</h3>
         <p className="text-xs text-muted-foreground mt-1">6 detection rules: Name, SKU, Barcode, HSN, Brand, Similar Names. Merge options: Keep Primary, Merge References, Archive Duplicate. Side-by-side comparison supported.</p></div>
-        <Button size="sm" onClick={() => pushToast('info', 'Scanning duplicates — backend endpoint pending')}><GitMerge className="mr-1 h-4 w-4" /> Scan Duplicates</Button>
+        <Button size="sm" onClick={() => toast({ title: 'Scanning duplicates — backend endpoint pending' })}><GitMerge className="mr-1 h-4 w-4" /> Scan Duplicates</Button>
       </div>
       <div className="space-y-3">
         {duplicates.map(d => (
@@ -482,8 +482,8 @@ function GovDuplicatesTab() {
             {d.notes && <p className="text-xs text-muted-foreground mt-1 pt-1 border-t">{d.notes}</p>}
             {d.status === 'PENDING' && (
               <div className="flex gap-2 mt-2">
-                <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => pushToast('info', 'Merge — backend endpoint pending')}><GitMerge className="mr-1 h-3 w-3" />Merge</Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => pushToast('info', 'Mark False Positive — backend endpoint pending')}>Mark False Positive</Button>
+                <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => toast({ title: 'Merge — backend endpoint pending' })}><GitMerge className="mr-1 h-3 w-3" />Merge</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toast({ title: 'Mark False Positive — backend endpoint pending' })}>Mark False Positive</Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs">Ignore</Button>
               </div>
             )}
@@ -618,7 +618,7 @@ function GovHistoryTab() {
               {h.reason && <p className="text-xs text-muted-foreground mt-0.5">Reason: {h.reason}</p>}
             </div>
             {h.rollback && (
-              <Button size="sm" variant="outline" className="h-7 text-xs flex-shrink-0" onClick={() => pushToast('info', 'Rollback — backend endpoint pending')}>Rollback</Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs flex-shrink-0" onClick={() => toast({ title: 'Rollback — backend endpoint pending' })}>Rollback</Button>
             )}
           </div>
         ))}

@@ -32,7 +32,8 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
-import { productApi, pushToast, type Product } from '../api/clients'
+import { productApi, type Product  } from '../api/clients'
+import { toast } from '@/hooks/use-toast'
 import { useList, useDebouncedSearch, useDropdown, useMutation } from '../hooks/use-master-data'
 import {
   PRODUCT_TYPES, PRODUCT_LIFECYCLE_STATES, FIFO_STRATEGIES, COSTING_METHODS,
@@ -92,7 +93,7 @@ function CreateProductDialog({ open, onClose, onCreated }: {
         storageCondition: fd.get('storageCondition') || undefined,
       }
       await productApi.create(data)
-      pushToast('success', 'Product created successfully')
+      toast({ title: 'Product created successfully' })
       onCreated()
       onClose()
     } catch (err: unknown) {
@@ -250,7 +251,7 @@ export function ProductMasterModule() {
   }), [products])
 
   function handleExport() {
-    if (products.length === 0) { pushToast('info', 'No products to export'); return }
+    if (products.length === 0) { toast({ title: 'No products to export' }); return }
     const headers = ['UPI', 'Code', 'SKU', 'Name', 'Type', 'Brand', 'MRP', 'Status']
     const rows = products.map(p => [p.id, p.item_code || '', p.sku, p.name, p.product_type, p.brand_id || '', p.mrp || '', p.status])
     const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
@@ -259,7 +260,7 @@ export function ProductMasterModule() {
     const a = document.createElement('a')
     a.href = url; a.download = `products-${new Date().toISOString().slice(0, 10)}.csv`; a.click()
     URL.revokeObjectURL(url)
-    pushToast('success', `Exported ${products.length} products to CSV`)
+    toast({ title: `Exported ${products.length} products to CSV` })
   }
 
   return (
@@ -287,7 +288,7 @@ export function ProductMasterModule() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search by name, SKU, code, or UPI..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
           </div>
-          <Button variant="outline" size="sm" onClick={() => pushToast('info', 'Import wizard — POST /api/v1/catalog/products (batch)')}><Upload className="mr-1 h-3 w-3" />Import</Button>
+          <Button variant="outline" size="sm" onClick={() => toast({ title: 'Import wizard — use POST /api/v1/catalog/products (batch)' })}><Upload className="mr-1 h-3 w-3" />Import</Button>
           <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-1 h-3 w-3" />Export</Button>
           {hasPermission('product:create') && <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="mr-1 h-3 w-3" />New Product</Button>}
         </div>
