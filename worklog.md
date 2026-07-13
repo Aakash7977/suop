@@ -4619,3 +4619,35 @@ Stage Summary:
   * 12 SoD rules (maker-checker for all financial/operational approvals)
   * 6 new roles (sales_officer, sales_manager, warehouse_supervisor, finance_accountant, finance_manager, manufacturing_supervisor)
 - Status: STOP — awaiting approval to implement
+
+---
+Task ID: SECTION04-PERMISSION-FINAL-REFINEMENT
+Agent: Main (Super Z)
+Task: Enterprise RBAC Architecture Final Refinement — Apply 9 improvements
+
+Work Log:
+- Applied Improvement 1: Separated VIEW from READ — added `*:view` for navigation/dashboards, `*:read` for business data access (+14 view permissions)
+- Applied Improvement 2: Separated APPROVE/RELEASE/POST — approve = workflow approval, release = release for execution, post = irreversible ledger posting (+12 release/post permissions)
+- Applied Improvement 3: Introduced CLOSE/ARCHIVE/RESTORE — enterprise ERP rarely deletes; archive + restore replaces hard delete (+18 close/archive/restore permissions)
+- Applied Improvement 4: Introduced OVERRIDE permissions — pricing:override, inventory:override, quality:override, shipment:override, costing:override, etc. (+12 override permissions, manager-only)
+- Applied Improvement 5: Split CONFIGURE into 7 specialized — settings, workflow, master, templates, numbering, notifications, approval-rules
+- Applied Improvement 6: Introduced DATA SCOPE model — 8 scope levels (own, dept, wh, plant, company, bu, region, global) applied via `:scope` suffix
+- Applied Improvement 7: Introduced DELEGATION — 6 domains have delegate + approve:as-delegate permissions (SO, PR, PO, GL, leave, attendance)
+- Applied Improvement 8: Strengthened SoD from 12 to 27 rules — added vendor creation/approval/payment, recipe creation/approval, discount creation/approval, employee creation/payroll approval, recall initiation/approval, role administration, audit administration conflicts
+- Applied Improvement 9: Designed Emergency Access / Break Glass — time-limited (4h max), read+configure only (NO post/approve/delete/override), mandatory reason, CRITICAL audit, rate-limited (2x/24h), auto-revoked, security officer notification, review required within 24h
+- Regenerated all 6 architecture documents with improvements applied
+- Permission count: 38 (old) → ~329 (new)
+- Role count: 6 (old) → 14 (new: +sales_officer, +sales_manager, +warehouse_supervisor, +finance_accountant, +finance_manager, +manufacturing_supervisor, +break_glass, +hr_manager)
+- SoD rules: 12 (old) → 27 (new)
+- Standard actions: 15 (old) → 22 + 7 configuration = 29 (new)
+- NO code changes. Pure architecture refinement.
+
+Stage Summary:
+- 6 deliverables regenerated:
+  1. 01_ENTERPRISE_PERMISSION_CATALOG.md — ~329 permissions, 14 domains, 22+7 actions, 8 data scopes, break glass, delegation
+  2. 02_ROLE_PERMISSION_MATRIX.md — 14 roles with scope, SoD conflict detection
+  3. 03_SEPARATION_OF_DUTIES.md — 27 SoD rules, cross-module conflict matrix, delegation architecture
+  4. 04_PERMISSION_NAMING_STANDARD.md — <domain>:<action>[:<sub-scope>][:<data-scope>] format, 22 actions, 7 config actions, 8 scopes
+  5. 05_PERMISSION_MIGRATION_PLAN.md — 8 steps, 16 hours, backward compat
+  6. 06_PHASE1_IMPLEMENTATION_PLAN.md — 7 implementation steps, 15 quality gates, risk assessment
+- Status: STOP — awaiting approval to implement

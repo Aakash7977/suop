@@ -1,215 +1,138 @@
-# 02 — Role Permission Matrix
+# 02 — Role Permission Matrix (FINAL)
 
 **Date**: 2026-07-13
-**Status**: FINAL
+**Status**: FINAL — PERMANENT SECURITY FOUNDATION
 
 ---
 
-## Enterprise Roles (12 roles)
+## Enterprise Roles (14 roles)
 
-### Current Roles (6 — to be revised)
-1. `tenant_admin` — System administrator (all permissions)
-2. `quality_manager` — Quality assurance manager
-3. `procurement_officer` — Procurement requester/buyer
-4. `procurement_manager` — Procurement approver/manager
-5. `warehouse_operator` — Warehouse floor operator
-6. `auditor` — Read-only compliance auditor
+### Existing Roles (6 — revised)
+1. `tenant_admin` — System administrator (global scope)
+2. `quality_manager` — Quality assurance manager (plant scope)
+3. `procurement_officer` — Procurement requester (dept scope)
+4. `procurement_manager` — Procurement approver (company scope)
+5. `warehouse_operator` — Warehouse floor operator (wh scope)
+6. `auditor` — Read-only compliance auditor (global read-only)
 
-### New Roles (6 — to be added)
-7. `sales_officer` — Sales order creator
-8. `sales_manager` — Sales approver/manager
-9. `warehouse_supervisor` — Warehouse shift supervisor
-10. `finance_accountant` — GL accountant
-11. `finance_manager` — Finance approver
-12. `manufacturing_supervisor` — Production supervisor
+### New Roles (6)
+7. `sales_officer` — Sales order creator (dept scope)
+8. `sales_manager` — Sales approver (company scope)
+9. `warehouse_supervisor` — Warehouse shift supervisor (wh + plant scope)
+10. `finance_accountant` — GL accountant (company scope)
+11. `finance_manager` — Finance approver (company scope)
+12. `manufacturing_supervisor` — Production supervisor (plant scope)
+
+### Emergency Role (1)
+13. `break_glass` — Emergency access (global, time-limited, read + configure only, NO post/approve/delete/override)
+
+### Future Role (1)
+14. `hr_manager` — HR manager (company scope)
 
 ---
 
-## Permission Matrix
+## Data Scope Summary by Role
 
-Legend: ✅ Allow | ❌ Deny | 🔶 Conditional (requires approval workflow)
-
-### 1. Organization & Catalog
-
-| Permission | tenant_admin | sales_officer | sales_manager | procurement_officer | procurement_manager | warehouse_operator | warehouse_supervisor | quality_manager | finance_accountant | finance_manager | manufacturing_supervisor | auditor |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `org:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `org:create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `org:update` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `org:delete` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `dept:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `costcenter:read` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| `catalog:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `catalog:create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `catalog:update` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `catalog:approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-
-### 2. Partners (Customers & Suppliers)
-
-| Permission | tenant_admin | sales_officer | sales_manager | procurement_officer | procurement_manager | warehouse_operator | warehouse_supervisor | quality_manager | finance_accountant | finance_manager | manufacturing_supervisor | auditor |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `customer:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `customer:create` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `customer:update` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `customer:approve` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `customer:credit:read` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `customer:credit:update` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `supplier:read` | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| `supplier:create` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `supplier:update` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `supplier:blacklist` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `supplier:approve` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-
-### 3. Inventory & Warehouse
-
-| Permission | tenant_admin | sales_officer | sales_manager | procurement_officer | procurement_manager | warehouse_operator | warehouse_supervisor | quality_manager | finance_accountant | finance_manager | manufacturing_supervisor | auditor |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `inventory:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `inventory:stockin` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| `inventory:stockout` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| `inventory:transfer` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `inventory:adjust` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `inventory:adjust:approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `inventory:reserve` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| `inventory:block` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `inventory:reverse` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `warehouse:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| `warehouse:create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `putaway:read` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `putaway:complete` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `scan:execute` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `grn:read` | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| `grn:create` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `grn:post` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-
-### 4. Procurement
-
-| Permission | tenant_admin | procurement_officer | procurement_manager | warehouse_supervisor | auditor |
+| Role | Default Scope | Can View | Can Create | Can Approve | Can Post |
 |---|---|---|---|---|---|
-| `pr:read` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `pr:create` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `pr:approve` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `po:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `po:create` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `po:update` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `po:approve` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `po:issue` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `po:cancel` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `po:receive` | ✅ | ❌ | ❌ | ✅ | ❌ |
-| `quot:read` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `rfq:read` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `rfq:create` | ✅ | ✅ | ✅ | ❌ | ❌ |
-
-### 5. Sales
-
-| Permission | tenant_admin | sales_officer | sales_manager | warehouse_operator | warehouse_supervisor | finance_accountant | auditor |
-|---|---|---|---|---|---|---|---|
-| `so:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `so:create` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `so:update` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `so:approve` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `so:hold` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `allocation:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `wave:read` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `wave:create` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `wave:release` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `pick:read` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `pick:complete` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| `pack:read` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `pack:complete` | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| `shipment:read` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `shipment:create` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `delivery:read` | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| `delivery:pod` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `pricing:read` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| `pricing:create` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `pricing:calculate` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-
-### 6. Manufacturing & Quality
-
-| Permission | tenant_admin | manufacturing_supervisor | quality_manager | warehouse_supervisor | auditor |
-|---|---|---|---|---|---|
-| `batch:read` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `batch:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `batch:transition` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `batch:split` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `batch:merge` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `batch:trace` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `recipe:read` | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `recipe:create` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `recipe:approve` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `mes:read` | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `quality:read` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `quality:inspect` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `quality:approve` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `quality:hold` | ✅ | ❌ | ✅ | ✅ | ❌ |
-| `quality:hold:release` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `ncr:read` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `ncr:create` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `ncr:approve` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `capa:read` | ✅ | ✅ | ✅ | ❌ | ✅ |
-| `coa:sign` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `recall:initiate` | ✅ | ❌ | ✅ | ❌ | ❌ |
-
-### 7. Finance
-
-| Permission | tenant_admin | finance_accountant | finance_manager | procurement_manager | sales_manager | auditor |
-|---|---|---|---|---|---|---|
-| `gl:read` | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `gl:create` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `gl:post` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `gl:reverse` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `costing:read` | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `costing:create` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `costing:approve` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `gst:read` | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `gst:create` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `finance:read` | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| `finance:period:close` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `audit:read` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `audit:read:critical` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-
-### 8. HR & Administration
-
-| Permission | tenant_admin | hr_officer | hr_manager | auditor |
-|---|---|---|---|---|
-| `hr:read` | ✅ | ✅ | ✅ | ✅ |
-| `hr:create` | ✅ | ✅ | ✅ | ❌ |
-| `attendance:read` | ✅ | ✅ | ✅ | ✅ |
-| `attendance:create` | ✅ | ✅ | ✅ | ❌ |
-| `attendance:approve` | ✅ | ❌ | ✅ | ❌ |
-| `leave:approve` | ✅ | ❌ | ✅ | ❌ |
-| `user:read` | ✅ | ✅ | ✅ | ✅ |
-| `user:create` | ✅ | ❌ | ✅ | ❌ |
-| `user:update` | ✅ | ❌ | ✅ | ❌ |
-| `role:manage` | ✅ | ❌ | ❌ | ❌ |
-| `system:configure` | ✅ | ❌ | ❌ | ❌ |
+| tenant_admin | global | Everything | Everything | Everything | Everything |
+| sales_officer | dept | Dept SOs | Dept SOs | ❌ | ❌ |
+| sales_manager | company | Company SOs | Company SOs | Company SOs | ❌ |
+| procurement_officer | dept | Dept PRs | Dept PRs | ❌ | ❌ |
+| procurement_manager | company | Company POs | Company POs | Company POs | ❌ |
+| warehouse_operator | wh | Wh inventory | Wh transactions | ❌ | ❌ |
+| warehouse_supervisor | wh+plant | Plant warehouse | Plant operations | Wh adjustments | ❌ |
+| finance_accountant | company | Company GL | Company JE | ❌ | ❌ |
+| finance_manager | company | Company finance | Company finance | Company JE | Company GL |
+| manufacturing_supervisor | plant | Plant production | Plant batches | Plant batches | ❌ |
+| quality_manager | plant | Plant quality | Plant inspections | Plant quality | ❌ |
+| auditor | global (read-only) | Everything (read) | ❌ | ❌ | ❌ |
+| break_glass | global (time-limited) | Everything (read) | ❌ | ❌ | ❌ |
+| hr_manager | company | Company HR | Company HR | Company leave/attendance | ❌ |
 
 ---
 
-## Existing Role Revisions
+## Key Role Definitions (Most Critical)
 
-### Roles to Revise
+### tenant_admin (Global, All Permissions)
+- **Scope**: global
+- **SoD Note**: Has all permissions BUT should NOT perform day-to-day operations (maker role). Only configures system, manages users, and resolves escalations.
+- **Permissions**: ALL ~329 permissions
 
-| Role | Current Issue | Fix |
-|---|---|---|
-| `quality_manager` | Has `CUSTOMER_CREATE/UPDATE/DELETE` (shouldn't) | Remove customer write permissions |
-| `procurement_officer` | Has `CUSTOMER_CREATE/UPDATE/DELETE` (shouldn't) | Remove customer write permissions |
-| `procurement_manager` | Has `CUSTOMER_CREATE/UPDATE/DELETE` (shouldn't) | Remove customer write permissions |
-| `warehouse_operator` | Has `CUSTOMER_READ` (acceptable for shipping labels) | Keep |
-| `auditor` | Correct (read-only) | No change needed |
+### auditor (Global, Read-Only)
+- **Scope**: global (read-only)
+- **SoD Note**: ZERO write permissions. Cannot create, update, delete, approve, post, or override ANYTHING.
+- **Permissions**: All `*:view`, `*:read`, `audit:read`, `audit:read:critical`, `audit:export`, `ledger:read`
 
-### Roles to Add
+### break_glass (Global, Time-Limited, Restricted)
+- **Scope**: global (4-hour max, auto-revoked)
+- **SoD Note**: READ + CONFIGURE only. NO post, approve, delete, override, or payment.
+- **Permissions**: All `*:view`, `*:read`, `*:settings`, `system:break-glass:activate`
+- **Restrictions**: Mandatory reason, CRITICAL audit logging, rate-limited (2x/24h), reviewed within 24h
 
-| Role | Purpose | Key Permissions |
-|---|---|---|
-| `sales_officer` | Create/edit sales orders | so:read/create/update, customer:read/create/update, pricing:calculate |
-| `sales_manager` | Approve sales, manage pricing | All sales_officer + so:approve/hold, pricing:create |
-| `warehouse_supervisor` | Supervise warehouse operations | All warehouse_operator + inventory:transfer/adjust, wave:create/release, putaway:reassign |
-| `finance_accountant` | Create GL entries, costing | gl:read/create, costing:read/create, gst:read/create, finance:read |
-| `finance_manager` | Post GL, approve costing, close periods | All finance_accountant + gl:post/reverse, costing:approve, finance:period:close |
-| `manufacturing_supervisor` | Manage production, batches | batch:*, recipe:*, production:*, mes:read, inventory:stockin/stockout |
+### sales_officer (Dept Scope)
+- **Permissions**: so:view/read/create/update, customer:view/read/create/update, pricing:read/calculate, allocation:read, inventory:read:dept
+- **SoD Note**: Cannot approve SOs (so:approve belongs to sales_manager)
+
+### sales_manager (Company Scope)
+- **All sales_officer permissions PLUS**: so:approve/reject/hold/release/cancel/close/reopen, so:delegate, so:approve:as-delegate, so:override, pricing:create, pricing:override, pricing:approval-rules
+- **SoD Note**: Cannot post to GL (gl:post belongs to finance_manager)
+
+### warehouse_operator (Wh Scope)
+- **Permissions**: warehouse:view/read, putaway:view/read/create/complete, scan:execute, barcode:read/print, grn:view/read, inventory:view/read/stockin/stockout:wh, inventory:block, inventory:expiry:mark, catalog:view/read
+- **SoD Note**: Cannot adjust inventory (inventory:adjust belongs to warehouse_supervisor)
+
+### warehouse_supervisor (Wh + Plant Scope)
+- **All warehouse_operator permissions PLUS**: warehouse:create/update/archive/restore, putaway:reassign/override, inventory:transfer, inventory:adjust, inventory:reserve, inventory:reserve:release, inventory:block:release, inventory:reverse, inventory:export, wave:read/create/release/cancel, pick:read/create/complete/override, grn:create/post/close, scan:read, warehouse:settings, warehouse:numbering
+- **SoD Note**: Cannot approve inventory adjustments (inventory:adjust:approve requires warehouse_manager or tenant_admin)
+
+### finance_accountant (Company Scope)
+- **Permissions**: gl:view/read/create/update, costing:read/create/update, gst:read/create/update, finance:read/create/update, ap:read, ar:read, audit:read
+- **SoD Note**: Cannot post GL entries (gl:post belongs to finance_manager). Cannot approve cost revaluations (costing:approve belongs to finance_manager).
+
+### finance_manager (Company Scope)
+- **All finance_accountant permissions PLUS**: gl:approve/post/reverse/archive, gl:delegate, gl:approve:as-delegate, costing:approve, costing:override, finance:period:close/reopen, finance:approval-rules, finance:override, payment:create/approve, audit:read:critical
+- **SoD Note**: Cannot create GL entries (gl:create belongs to finance_accountant). Maker-checker enforced.
+
+### manufacturing_supervisor (Plant Scope)
+- **Permissions**: batch:view/read/create/update/approve/release/transition/split/merge/trace/archive, recipe:read/create/update/approve/archive, production:read/create/approve/release/start/complete/close, mes:read, inventory:read:plant, inventory:stockin/stockout:plant, quality:read, batch:trace
+- **SoD Note**: Cannot approve supplier invoices or payments. Cannot modify GL.
+
+### quality_manager (Plant Scope)
+- **Permissions**: quality:view/read/inspect/approve/reject/hold/hold:release/override, ncr:read/create/approve/reject, capa:read/create/approve, coa:read/sign, recall:read/initiate/approve/close, quality:approval-rules, batch:read/trace, supplier:compliance:read, inventory:read:plant
+- **SoD Note**: Cannot dispatch goods (no shipment:*). Cannot modify inventory quantities (no inventory:adjust). Can only CREATE quality holds, not release them without manager approval for critical holds.
+
+### procurement_officer (Dept Scope)
+- **Permissions**: pr:view/read/create/update/delete, po:view/read/create/update, quot:read/create, rfq:read/create, supplier:view/read/create/update, catalog:view/read, inventory:read:dept
+- **SoD Note**: Cannot approve PRs or POs (pr:approve/po:approve belong to procurement_manager). Cannot receive goods (po:receive belongs to warehouse).
+
+### procurement_manager (Company Scope)
+- **All procurement_officer permissions PLUS**: pr:approve/reject/delegate/approve:as-delegate, po:approve/reject/release/issue/cancel/close/reopen/export/delegate/approve:as-delegate/override, supplier:blacklist/approve, quot:approve
+- **SoD Note**: Cannot receive goods (po:receive belongs to warehouse). Cannot approve payments (payment:approve belongs to finance_manager).
 
 ---
 
-**END OF ROLE PERMISSION MATRIX**
+## Role Assignment Rules
+
+1. **One primary role**: Each user has ONE primary role that defines their main job function
+2. **Secondary roles**: Users may have secondary roles for delegation coverage (e.g., sales_manager as secondary for sales_officer)
+3. **Conflict check**: System must prevent assignment of conflicting roles (e.g., finance_accountant + finance_manager violates maker-checker for GL)
+4. **Break glass**: Cannot be a permanent role — activated on-demand with time limit
+
+---
+
+## Conflict Detection Matrix
+
+| Role A | Role B | Conflict? | Reason |
+|---|---|---|---|
+| finance_accountant | finance_manager | ✅ YES | Maker-checker: JE creator cannot post |
+| procurement_officer | procurement_manager | ✅ YES | Maker-checker: PR creator cannot approve |
+| sales_officer | sales_manager | ✅ YES | Maker-checker: SO creator cannot approve |
+| warehouse_operator | warehouse_supervisor | ❌ NO | Supervisor can override but maker-checker enforced for adjustments |
+| quality_manager | manufacturing_supervisor | ⚠️ CONDITIONAL | Quality should be independent from production |
+| auditor | Any write role | ✅ YES | Auditor must be read-only |
+| break_glass | Any role (simultaneous) | ✅ YES | Break glass is exclusive during activation |
+
+---
+
+**END OF ROLE PERMISSION MATRIX (FINAL)**

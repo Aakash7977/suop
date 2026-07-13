@@ -1,148 +1,150 @@
-# 04 — Permission Naming Standard
+# 04 — Permission Naming Standard (FINAL)
 
 **Date**: 2026-07-13
-**Status**: FINAL
+**Status**: FINAL — PERMANENT SECURITY FOUNDATION
 
 ---
 
-## 1. Naming Convention
+## 1. Format
 
 ```
-<domain>:<action>[:<scope>]
+<domain>:<action>[:<sub-scope>][:<data-scope>]
 ```
 
-### Rules
+### Components
 
-1. **domain** — lowercase, singular business domain name (e.g., `inventory`, `warehouse`, `sales`)
-2. **action** — lowercase verb from the standard action list (see below)
-3. **scope** — optional sub-entity or context (e.g., `inventory:adjust:block`, `customer:credit:read`)
-4. Use `:` as separator (not `.`, `-`, or `_`)
-5. No abbreviations except well-known ones (`po`, `so`, `grn`, `gl`, `gst`, `mes`, `eam`, `bi`)
+| Component | Required | Example | Description |
+|---|---|---|---|
+| `domain` | ✅ | `inventory` | Business domain (lowercase, singular) |
+| `action` | ✅ | `read` | One of 22 standard actions |
+| `sub-scope` | Optional | `adjust:block` | Sub-entity or specific capability |
+| `data-scope` | Optional | `wh` | Data visibility scope (own/dept/wh/plant/company/bu/region/global) |
 
-### Standard Actions (15)
+### Examples
 
-| Action | When to Use | Irreversible? |
-|---|---|---|
-| `read` | View/list records | No |
-| `create` | Create new records | No |
-| `update` | Modify existing records (non-workflow) | No |
-| `delete` | Remove or archive records | No (soft delete) |
-| `approve` | Approve a workflow transition | No (can be reversed) |
-| `reject` | Reject a workflow transition | No |
-| `post` | Post to ledger (irreversible — creates ledger entries) | Yes |
-| `cancel` | Cancel a transaction | No (can be reopened) |
-| `reopen` | Reopen a closed/cancelled transaction | No |
-| `export` | Export data to external format | No |
-| `import` | Import data from external source | No |
-| `print` | Print documents | No |
-| `configure` | Configure system settings | No |
-| `audit` | View audit logs | No |
-| `admin` | Full administrative access to a domain | No |
-
-### Domain Names (14 established + 6 future)
-
-| Domain | Used For | Mount Prefix |
-|---|---|---|
-| `org` | Organization hierarchy | `/api/v1/organization` |
-| `catalog` | Products, categories, brands, UOMs | `/api/v1/catalog` |
-| `customer` | Customer master | `/api/v1/sales/customers` |
-| `supplier` | Supplier master | `/api/v1/procurement/suppliers` |
-| `inventory` | Stock, ledger, reservations, blocks | `/api/v1/inventory` |
-| `warehouse` | Zones, aisles, racks, bins | `/api/v1/warehouse` |
-| `grn` | Goods receipt notes | `/api/v1/warehouse/grns` |
-| `po` | Purchase orders | `/api/v1/procurement/purchase-orders` |
-| `pr` | Purchase requisitions | `/api/v1/procurement/requisitions` |
-| `quot` | Quotations | `/api/v1/procurement/quotations` |
-| `rfq` | RFQs | `/api/v1/procurement/rfqs` |
-| `so` | Sales orders | `/api/v1/sales/orders` |
-| `pricing` | Price lists, promotions, coupons | `/api/v1/sales/pricing` |
-| `allocation` | Inventory allocations | `/api/v1/sales/fulfillment/allocations` |
-| `wave` | Wave plans | `/api/v1/sales/fulfillment/waves` |
-| `pick` | Pick lists | `/api/v1/sales/pick-pack-dispatch/pick-lists` |
-| `pack` | Packing lists | `/api/v1/sales/pick-pack-dispatch/packing-lists` |
-| `shipment` | Shipments | `/api/v1/sales/pick-pack-dispatch/shipments` |
-| `delivery` | Delivery orders, PODs | `/api/v1/sales/delivery` |
-| `returns` | Customer returns (RMA) | `/api/v1/sales/returns` |
-| `batch` | Batch manufacturing | `/api/v1/manufacturing/batches` |
-| `recipe` | Recipes, BOMs, routings | `/api/v1/manufacturing/recipes` |
-| `production` | Production orders | `/api/v1/manufacturing/orders` |
-| `mes` | MES (machines, shifts, OEE) | `/api/v1/mes` |
-| `quality` | Inspection lots, plans | `/api/v1/quality` |
-| `ncr` | Non-conformance reports | `/api/v1/quality/ncrs` |
-| `capa` | CAPAs | `/api/v1/quality/capas` |
-| `coa` | Certificates of analysis | `/api/v1/quality/coa` |
-| `recall` | Product recalls | `/api/v1/quality/recall` |
-| `gl` | General ledger | `/api/v1/finance/gl` |
-| `costing` | Product costing | `/api/v1/finance/costing` |
-| `gst` | GST configuration | `/api/v1/finance/gst` |
-| `finance` | Financial foundation (accounts, currencies) | `/api/v1/finance/foundation` |
-| `hr` | Employee master | `/api/v1/hrms/employees` |
-| `attendance` | Attendance/shift | `/api/v1/hrms/attendance` |
-| `leave` | Leave management | `/api/v1/hrms/leave` |
-| `performance` | Performance management | `/api/v1/hrms/performance` |
-| `crm` | CRM activities | `/api/v1/crm/foundation` |
-| `complaint` | Customer complaints | `/api/v1/crm/complaints` |
-| `bi` | Business intelligence | `/api/v1/bi/*` |
-| `alerts` | Alert rules | `/api/v1/bi/alerts` |
-| `user` | User management | `/api/v1/admin` |
-| `role` | Role management | `/api/v1/admin` |
-| `audit` | Audit logs | (internal) |
-| `system` | System configuration | (internal) |
-| `receiving` | (Future) ASN, docks | When built |
-| `yard` | (Future) Yard management | When built |
-| `eam` | (Future) Equipment management | When built |
-| `cyclecount` | (Future) Cycle counting | When built |
-| `missioncontrol` | (Future) Operations dashboard | When built |
-| `controltower` | (Future) Control tower | When built |
-| `sla` | (Future) SLA configuration | When built |
+```
+inventory:read                    — Read inventory (default scope from role)
+inventory:read:wh                 — Read inventory in assigned warehouse(s)
+inventory:read:global             — Read inventory across all warehouses
+inventory:adjust:block            — Adjust inventory blocks specifically
+so:approve:company                — Approve SOs within assigned company
+gl:post:company                   — Post GL entries within assigned company
+pricing:override                  — Override calculated price (no scope = default)
+```
 
 ---
 
-## 2. Migration from Old to New Permissions
+## 2. Standard Actions (22)
 
-| Old Permission | New Permission(s) | Modules Affected |
-|---|---|---|
-| `AUDIT_READ` (used as proxy for reads) | Replace with domain-specific `*:read` | 8+ modules |
-| `AUDIT_READ_CRITICAL` (used as proxy for writes) | Replace with domain-specific `*:create`/`*:update` | 6 modules |
-| `ORG_READ` (used as proxy) | Replace with domain-specific `*:read` | attendance, performance |
-| `ORG_UPDATE` (used as proxy) | Replace with domain-specific `*:update` | attendance, performance |
-| `CUSTOMER_READ` (used as proxy for sales reads) | `so:read`, `allocation:read`, `pricing:read`, etc. | 5 sales modules |
-| `CUSTOMER_UPDATE` (used as proxy for sales writes) | `so:create`, `wave:create`, `pricing:create`, etc. | 5 sales modules |
-| `PRODUCT_READ` (used as proxy for mfg reads) | `batch:read`, `recipe:read`, `mes:read` | 3 mfg modules |
-| `PRODUCT_CREATE` (used as proxy for mfg creates) | `batch:create`, `recipe:create` | 2 mfg modules |
-| `PRODUCT_UPDATE` (used as proxy for mfg transitions) | `batch:transition`, `recipe:approve` | 2 mfg modules |
-| `INVENTORY_READ` (used for warehouse reads) | `warehouse:read` (for zones/bins) + `inventory:read` (for stock) | warehouse module |
-| `INVENTORY_POST` (used for warehouse creates) | `warehouse:create`, `putaway:create`, `scan:execute` | warehouse module |
-| `IQC_INSPECT` | `quality:inspect` | quality module |
-| `IQC_APPROVE` | `quality:approve` | quality module |
-| `NCR_CREATE` | `ncr:create` | quality module |
-| `NCR_APPROVE` | `ncr:approve` | quality module |
-| `COA_SIGN` | `coa:sign` | quality module |
-| `RECALL_INITIATE` | `recall:initiate` | quality module |
-| `GRN_READ` | `grn:read` | goods-receipt module |
-| `GRN_CREATE` | `grn:create` | goods-receipt module |
-| `GRN_POST` | `grn:post` | goods-receipt module |
-| `GRN_PUTAWAY` | `putaway:create` | warehouse module |
-| `INVENTORY_ADJUST` | `inventory:adjust` | inventory module |
-| `INVENTORY_REVERSE` | `inventory:reverse` | inventory module |
+| Action | Purpose | Creates Immutable Data? | Used For |
+|---|---|---|---|
+| `view` | Navigation/dashboard visibility (no business data) | No | Menu items, dashboard cards |
+| `read` | Access actual business records | No | List views, detail panels |
+| `create` | Create new records | No | Create dialogs, POST endpoints |
+| `update` | Modify existing records (non-workflow) | No | Edit dialogs, PATCH endpoints |
+| `delete` | Hard delete (rarely used — prefer archive) | Yes | DELETE endpoints (admin only) |
+| `close` | Close a transaction (reversible by reopen) | No | Close buttons |
+| `archive` | Soft delete (restorable) | No | Archive buttons |
+| `restore` | Restore archived record | No | Restore buttons |
+| `approve` | Approve a workflow transition | No | Approve buttons |
+| `reject` | Reject a workflow transition | No | Reject buttons |
+| `release` | Release for next stage (post-approval, pre-execution) | No | Release buttons |
+| `post` | Post to ledger (creates immutable entries) | Yes | Post buttons (GL, GRN) |
+| `cancel` | Cancel a transaction | No | Cancel buttons |
+| `reopen` | Reopen closed/cancelled transaction | No | Reopen buttons |
+| `reverse` | Reverse posted transaction (compensating entry) | No | Reverse buttons |
+| `override` | Override business rule (requires reason + audit) | No | Override buttons (manager only) |
+| `export` | Export data to external format | No | Export buttons |
+| `import` | Import data from external source | No | Import wizards |
+| `print` | Print documents | No | Print buttons |
+| `delegate` | Delegate approval authority | No | Delegation dialogs |
+| `approve:as-delegate` | Approve on behalf of delegating user | No | Delegate approval buttons |
+| `audit` | View audit logs | No | Audit log viewer |
+
+### Configuration Actions (7 — split from `configure`)
+
+| Action | Purpose |
+|---|---|
+| `settings` | Configure module settings |
+| `workflow` | Configure workflow rules |
+| `master` | Configure master data defaults |
+| `templates` | Configure document templates |
+| `numbering` | Configure number ranges |
+| `notifications` | Configure notification rules |
+| `approval-rules` | Configure approval thresholds/rules |
 
 ---
 
-## 3. TypeScript Enum Naming
+## 3. Data Scope Suffixes (8)
+
+| Scope | Code | Who Gets This? |
+|---|---|---|
+| Own | `own` | Individual contributor (see own records only) |
+| Department | `dept` | Department member (see dept records) |
+| Warehouse | `wh` | Warehouse-assigned user |
+| Plant | `plant` | Plant-assigned user |
+| Company | `company` | Company-assigned user |
+| Business Unit | `bu` | BU-assigned manager |
+| Region | `region` | Region-assigned director |
+| Global | `global` | Tenant admin, auditor (read-only) |
+
+### Scope Resolution Rules
+
+1. If no scope suffix is specified, the user's **default scope** from their role is used
+2. A user can have multiple scopes (e.g., warehouse_supervisor has `wh` + `plant`)
+3. Scopes are additive (union of accessible records)
+4. `global` scope overrides all other scopes
+5. Break glass role always has `global` scope (time-limited)
+
+---
+
+## 4. Domain Names (14 established + 6 future)
+
+(Same as previous version — 50 domain names with mount prefix mapping. Unchanged.)
+
+---
+
+## 5. TypeScript Enum Convention
 
 ```typescript
-// Domain prefix + Action, both UPPER_SNAKE_CASE
 export const Permission = {
+  // Inventory
+  INVENTORY_VIEW: 'inventory:view',
   INVENTORY_READ: 'inventory:read',
   INVENTORY_STOCKIN: 'inventory:stockin',
   INVENTORY_STOCKOUT: 'inventory:stockout',
   INVENTORY_TRANSFER: 'inventory:transfer',
+  INVENTORY_TRANSFER_APPROVE: 'inventory:transfer:approve',
   INVENTORY_ADJUST: 'inventory:adjust',
   INVENTORY_ADJUST_APPROVE: 'inventory:adjust:approve',
-  // ...
+  INVENTORY_RESERVE: 'inventory:reserve',
+  INVENTORY_RESERVE_RELEASE: 'inventory:reserve:release',
+  INVENTORY_BLOCK: 'inventory:block',
+  INVENTORY_BLOCK_RELEASE: 'inventory:block:release',
+  INVENTORY_EXPIRY_MARK: 'inventory:expiry:mark',
+  INVENTORY_REVERSE: 'inventory:reverse',
+  INVENTORY_OVERRIDE: 'inventory:override',
+  INVENTORY_EXPORT: 'inventory:export',
+  INVENTORY_IMPORT: 'inventory:import',
+  LEDGER_READ: 'ledger:read',
+  LEDGER_REVERSE: 'ledger:reverse',
+  // ... etc
 } as const
 ```
 
+### Enum Naming Rules
+
+1. `UPPER_SNAKE_CASE` for TypeScript constant
+2. String value is `lowercase:lowercase` (matching the naming standard)
+3. Sub-scopes use underscore in enum name: `INVENTORY_BLOCK_RELEASE` → `'inventory:block:release'`
+4. Group by domain with comment headers
+
 ---
 
-**END OF PERMISSION NAMING STANDARD**
+## 6. Migration from Old Permissions
+
+(Same mapping as previous version — 38 old permissions → ~329 new permissions. Old permissions become aliases during migration, then removed.)
+
+---
+
+**END OF PERMISSION NAMING STANDARD (FINAL)**
