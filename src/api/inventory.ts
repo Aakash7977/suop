@@ -11,6 +11,8 @@ export const inventoryApi = {
   get: (id: string) => apiFetch<{ success: true; data: Inventory }>(`/api/v1/inventory/inventory/${id}`),
   stockIn: (data: Record<string, unknown>) => apiFetch(`/api/v1/inventory/inventory/stock-in`, { method: 'POST', body: JSON.stringify(data) }),
   stockOut: (data: Record<string, unknown>) => apiFetch(`/api/v1/inventory/inventory/stock-out`, { method: 'POST', body: JSON.stringify(data) }),
+  adjust: (data: { inventoryId: string; adjustmentType: 'INCREASE' | 'DECREASE' | 'REVALUATION'; adjustmentQty: number; newUnitCost?: number; reason: string; remarks?: string }) =>
+    apiFetch(`/api/v1/inventory/inventory/adjust`, { method: 'POST', body: JSON.stringify(data) }),
   listLedger: (params?: { page?: number; productId?: string; warehouseId?: string }) =>
     apiFetch<PaginatedResponse<unknown>>(`/api/v1/inventory/ledger?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   listTransactions: (params?: { page?: number; movementType?: string }) =>
@@ -26,4 +28,15 @@ export const inventoryApi = {
   listBlocks: (params?: { page?: number; status?: string }) =>
     apiFetch<PaginatedResponse<unknown>>(`/api/v1/inventory/blocks?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   releaseReservation: (id: string, reason?: string) => apiFetch(`/api/v1/inventory/reservations/${id}/release`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  // Phase 1.6: Export / Import / Bulk / Search
+  exportInventory: (params?: { warehouseId?: string; productId?: string; expired?: boolean }) =>
+    apiFetch<{ success: true; data: Inventory[] }>(`/api/v1/inventory/inventory/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
+  exportTransactions: (params?: { warehouseId?: string; productId?: string; movementType?: string }) =>
+    apiFetch<{ success: true; data: unknown[] }>(`/api/v1/inventory/transactions/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
+  bulkStockIn: (items: Record<string, unknown>[]) =>
+    apiFetch<{ success: true; data: { totalItems: number; successCount: number; failureCount: number; results: Array<{ success: boolean; index: number; error?: string; inventoryId?: string }> } }>(`/api/v1/inventory/inventory/import`, { method: 'POST', body: JSON.stringify(items) }),
+  bulkReleaseBlocks: (blockIds: string[]) =>
+    apiFetch<{ success: true; data: { totalBlocks: number; releasedCount: number; errors: Array<{ blockId: string; error: string }> } }>(`/api/v1/inventory/blocks/bulk-release`, { method: 'POST', body: JSON.stringify({ blockIds }) }),
+  search: (params: { q: string; warehouseId?: string; page?: number; pageSize?: number }) =>
+    apiFetch<PaginatedResponse<Inventory>>(`/api/v1/inventory/inventory/search?${buildQueryString(params as Record<string, string | number | undefined>)}`),
 }

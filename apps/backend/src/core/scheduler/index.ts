@@ -104,6 +104,56 @@ async function verifyAuditChain(): Promise<void> {
   }
 }
 
+/**
+ * Mark expired inventory items.
+ * Runs every hour. Scans all tenants for inventory past expiry_date and marks is_expired = true.
+ */
+async function markExpiredInventory(): Promise<void> {
+  try {
+    const { query } = await import('@/core/db/pglite')
+    const result = await query(
+      `UPDATE inventory SET is_expired = true, updated_at = NOW(), version = version + 1
+       WHERE deleted_at IS NULL AND quantity > 0 AND expiry_date IS NOT NULL AND expiry_date < NOW() AND is_expired = false
+       RETURNING id, tenant_id, product_sku, batch_number, expiry_date`
+    )
+    if (result.rows.length > 0) {
+      logger.info('Inventory items marked expired', { count: result.rows.length })
+      // Group by tenant for audit
+      const byTenant = new Map<string, number>()
+      for (const row of result.rows) {
+        const tid = String(row['tenant_id'])
+        byTenant.set(tid, (byTenant.get(tid) ?? 0) + 1)
+      }
+      // Write audit log for each tenant
+      const { _runInTestContext } = await import('@/core/context')
+      for (const [tenantId, count] of byTenant) {
+        await _runInTestContext(
+          {
+            userId: null, userEmail: 'system', tenantId,
+            roles: [], permissions: [],
+            correlationId: 'inventory-expiry-cron',
+            ip: null, userAgent: 'system-scheduler',
+            method: 'CRON', path: '/internal/inventory-expiry',
+            startedAt: Date.now(),
+          },
+          async () => {
+            const { auditService } = await import('@/core/audit')
+            await auditService.log({
+              tenantId, correlationId: 'inventory-expiry-cron',
+              actorType: 'SYSTEM', actorId: 'system', actorName: 'System',
+              action: 'STOCK_EXPIRED', entityType: 'Inventory', entityId: 'batch',
+              severity: 'WARN',
+              after: { expiredCount: count, items: result.rows.filter(r => String(r['tenant_id']) === tenantId) },
+            })
+          }
+        )
+      }
+    }
+  } catch (err) {
+    logger.error('Mark expired inventory failed', { error: (err as Error).message })
+  }
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function startScheduler(): void {
@@ -114,10 +164,11 @@ export function startScheduler(): void {
   intervals.push(setInterval(drainNotificationOutbox, 10_000))
   intervals.push(setInterval(revokeExpiredBreakGlassSessions, 5 * 60_000))
   intervals.push(setInterval(verifyAuditChain, 60 * 60_000))
+  intervals.push(setInterval(markExpiredInventory, 60 * 60_000)) // every hour
 
   logger.info('Background scheduler started', {
     jobs: intervals.length,
-    intervals: ['event-outbox:5s', 'notification-outbox:10s', 'break-glass-revoke:5m', 'audit-verify:1h'],
+    intervals: ['event-outbox:5s', 'notification-outbox:10s', 'break-glass-revoke:5m', 'audit-verify:1h', 'inventory-expiry:1h'],
   })
 }
 
@@ -136,5 +187,6 @@ export async function runAllJobsNow(): Promise<void> {
     drainNotificationOutbox(),
     revokeExpiredBreakGlassSessions(),
     verifyAuditChain(),
+    markExpiredInventory(),
   ])
 }

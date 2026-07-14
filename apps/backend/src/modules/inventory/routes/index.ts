@@ -150,3 +150,78 @@ inventoryRoutes.get('/batches', requirePermission(Permission.INVENTORY_READ), as
   })
   return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
 })
+
+// Stock Adjustment (requires INVENTORY_ADJUST permission)
+const adjustSchema = z.object({
+  inventoryId: z.string().uuid(),
+  adjustmentType: z.enum(['INCREASE', 'DECREASE', 'REVALUATION']),
+  adjustmentQty: z.number().positive(),
+  newUnitCost: z.number().nonnegative().optional(),
+  reason: z.string().min(5),
+  remarks: z.string().optional(),
+})
+
+inventoryRoutes.post('/inventory/adjust', requirePermission(Permission.INVENTORY_ADJUST), zValidator('json', adjustSchema), async (c) => {
+  const body = c.req.valid('json' as never) as z.infer<typeof adjustSchema>
+  const result = await inventoryService.adjustStock(body)
+  return c.json(success(result, { message: 'Stock adjusted' }))
+})
+
+// Export (CSV-friendly JSON — frontend converts to CSV)
+inventoryRoutes.get('/inventory/export', requirePermission(Permission.INVENTORY_EXPORT), async (c) => {
+  const rows = await inventoryService.exportInventory({
+    warehouseId: c.req.query('warehouseId') ?? undefined,
+    productId: c.req.query('productId') ?? undefined,
+    expired: c.req.query('expired') === 'true',
+  })
+  return c.json(success(rows, { message: `${rows.length} inventory records exported` }))
+})
+
+inventoryRoutes.get('/transactions/export', requirePermission(Permission.INVENTORY_EXPORT), async (c) => {
+  const rows = await inventoryService.exportTransactions({
+    warehouseId: c.req.query('warehouseId') ?? undefined,
+    productId: c.req.query('productId') ?? undefined,
+    movementType: c.req.query('movementType') ?? undefined,
+  })
+  return c.json(success(rows, { message: `${rows.length} transaction records exported` }))
+})
+
+// Import (bulk stock-in)
+const bulkStockInSchema = z.array(z.object({
+  grnId: z.string().uuid(), grnNumber: z.string().min(1),
+  inspectionLotId: z.string().uuid(),
+  productId: z.string().uuid(), productSku: z.string().min(1), productName: z.string().min(1),
+  warehouseId: z.string().uuid(), warehouseName: z.string().min(1),
+  binId: z.string().uuid().optional(), binCode: z.string().optional(),
+  batchNumber: z.string().optional(), lotNumber: z.string().optional(),
+  manufactureDate: z.string().datetime().optional(), expiryDate: z.string().datetime().optional(),
+  quantity: z.number().positive(), unitCost: z.number().nonnegative(),
+  uomId: z.string().uuid(), uomCode: z.string().min(1), currency: z.string().optional(),
+}))
+
+inventoryRoutes.post('/inventory/import', requirePermission(Permission.INVENTORY_IMPORT), zValidator('json', bulkStockInSchema), async (c) => {
+  const body = c.req.valid('json' as never) as z.infer<typeof bulkStockInSchema>
+  const result = await inventoryService.bulkStockIn(body)
+  return c.json(success(result, { message: `Imported ${result.successCount} of ${result.totalItems} items` }))
+})
+
+// Bulk Block Release
+inventoryRoutes.post('/blocks/bulk-release', requirePermission(Permission.INVENTORY_BLOCK_RELEASE), zValidator('json', z.object({ blockIds: z.array(z.string().uuid()) })), async (c) => {
+  const body = c.req.valid('json' as never) as { blockIds: string[] }
+  const result = await inventoryService.bulkReleaseBlocks(body.blockIds)
+  return c.json(success(result, { message: `Released ${result.releasedCount} of ${result.totalBlocks} blocks` }))
+})
+
+// Search
+inventoryRoutes.get('/inventory/search', requirePermission(Permission.INVENTORY_READ), async (c) => {
+  const q = c.req.query('q') ?? ''
+  if (!q || q.trim().length < 2) {
+    return c.json({ success: false, error: { code: 'INV.SEARCH_TOO_SHORT', message: 'Search query must be at least 2 characters' } }, 400)
+  }
+  const result = await inventoryService.search({
+    q,
+    warehouseId: c.req.query('warehouseId') ?? undefined,
+    page: Number(c.req.query('page') ?? 1), pageSize: Number(c.req.query('pageSize') ?? 25),
+  })
+  return c.json(paginated(result.rows, { correlationId: c.req.header('X-Request-Id') ?? '', page: result.page, pageSize: result.pageSize, total: result.total }))
+})

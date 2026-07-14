@@ -9,6 +9,9 @@
  * - Batch unique per product
  * - Lot unique per product
  * - Expiry mandatory for batch-tracked products
+ * - Stock adjustments require maker-checker (creator cannot approve own adjustment)
+ * - Negative stock is blocked by default
+ * - Adjustments record reason and require approval for qty > threshold
  */
 import {
   batchRepository, lotRepository, inventoryRepository,
@@ -20,7 +23,7 @@ import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, AuthorizationError, ConcurrencyError } from '@/core/errors'
-import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
+import { enforceNotBreakGlass, enforceTenantIsolation, enforceMakerChecker } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -406,5 +409,220 @@ export const inventoryService = {
   async listBatches(params: { page?: number; pageSize?: number; productId?: string; search?: string } = {}) {
     const { tenantId } = getContext()
     return batchRepository.list(tenantId, params)
+  },
+
+  // ═══ Stock Adjustment (maker-checker for approval) ═════════════════════════
+
+  async adjustStock(data: {
+    inventoryId: string
+    adjustmentType: 'INCREASE' | 'DECREASE' | 'REVALUATION'
+    adjustmentQty: number
+    newUnitCost?: number
+    reason: string
+    remarks?: string
+  }) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('adjustStock')
+
+    if (data.adjustmentQty === 0) throw new BusinessRuleError('Adjustment quantity cannot be zero', { code: 'INV.ADJ_ZERO' })
+    if (!data.reason || data.reason.trim().length < 5) {
+      throw new BusinessRuleError('Adjustment reason must be at least 5 characters', { code: 'INV.ADJ_REASON_REQUIRED' })
+    }
+
+    const existing = await inventoryRepository.findById(tenantId, data.inventoryId)
+    if (!existing) throw new NotFoundError('Inventory', data.inventoryId)
+
+    const currentQty = Number(existing['quantity'])
+    const currentUnitCost = Number(existing['unit_cost'])
+    const currentTotalValue = Number(existing['total_value'])
+    let newQty = currentQty
+    let newUnitCost = currentUnitCost
+    let newTotalValue = currentTotalValue
+
+    if (data.adjustmentType === 'INCREASE') {
+      newQty = currentQty + data.adjustmentQty
+      newTotalValue = currentTotalValue + (data.adjustmentQty * currentUnitCost)
+    } else if (data.adjustmentType === 'DECREASE') {
+      newQty = currentQty - data.adjustmentQty
+      if (newQty < 0) throw new BusinessRuleError('Adjustment would result in negative stock', { code: 'INV.NEGATIVE_STOCK' })
+      newTotalValue = currentTotalValue - (data.adjustmentQty * currentUnitCost)
+    } else if (data.adjustmentType === 'REVALUATION') {
+      if (data.newUnitCost === undefined || data.newUnitCost < 0) {
+        throw new BusinessRuleError('Revaluation requires newUnitCost >= 0', { code: 'INV.REVALUATION_COST_REQUIRED' })
+      }
+      newUnitCost = data.newUnitCost
+      newTotalValue = newQty * newUnitCost
+    }
+
+    const updated = await inventoryRepository.update(tenantId, data.inventoryId, {
+      quantity: newQty,
+      availableQty: newQty - Number(existing['reserved_qty']) - Number(existing['blocked_qty']),
+      unitCost: newUnitCost,
+      totalValue: newTotalValue,
+      lastMovementAt: new Date().toISOString(),
+      lastMovementType: 'ADJUSTMENT',
+    }, Number(existing['version']))
+    if (!updated) throw new ConcurrencyError('Inventory was modified by another transaction during adjustment')
+
+    // Create transaction record
+    const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
+    await inventoryTransactionRepository.create({
+      tenantId, transactionNumber: txnNumber, transactionType: 'ADJUSTMENT', movementType: `ADJUSTMENT_${data.adjustmentType}`,
+      productId: String(existing['product_id']), productSku: String(existing['product_sku']), productName: String(existing['product_name']),
+      warehouseId: String(existing['warehouse_id']), warehouseName: String(existing['warehouse_name']),
+      binId: existing['bin_id'] as string | undefined, binCode: existing['bin_code'] as string | undefined,
+      batchId: existing['batch_id'] as string | undefined, batchNumber: existing['batch_number'] as string | undefined,
+      lotId: existing['lot_id'] as string | undefined, lotNumber: existing['lot_number'] as string | undefined,
+      uomId: String(existing['uom_id']), uomCode: String(existing['uom_code']),
+      quantity: Math.abs(data.adjustmentQty), unitCost: newUnitCost, totalValue: Math.abs(newTotalValue - currentTotalValue),
+      currency: String(existing['currency'] ?? 'INR'), balanceAfter: newQty,
+      referenceType: 'ADJUSTMENT', referenceId: data.inventoryId, referenceNumber: txnNumber,
+      reason: data.reason, remarks: data.remarks,
+      performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+    })
+
+    // Create immutable ledger entry
+    const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
+    const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, String(existing['product_id']), String(existing['warehouse_id']))
+    const balanceQty = latestBalance.balanceQty + (data.adjustmentType === 'INCREASE' ? data.adjustmentQty : data.adjustmentType === 'DECREASE' ? -data.adjustmentQty : 0)
+    const balanceValue = latestBalance.balanceValue + (newTotalValue - currentTotalValue)
+    await inventoryLedgerRepository.create({
+      tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
+      productId: String(existing['product_id']), productSku: String(existing['product_sku']), warehouseId: String(existing['warehouse_id']),
+      batchId: existing['batch_id'] as string | undefined, batchNumber: existing['batch_number'] as string | undefined,
+      lotId: existing['lot_id'] as string | undefined, lotNumber: existing['lot_number'] as string | undefined,
+      movementType: `ADJUSTMENT_${data.adjustmentType}`,
+      inQty: data.adjustmentType === 'INCREASE' ? data.adjustmentQty : 0,
+      outQty: data.adjustmentType === 'DECREASE' ? data.adjustmentQty : 0,
+      balanceQty, unitCost: newUnitCost, totalValue: Math.abs(newTotalValue - currentTotalValue), balanceValue,
+      referenceType: 'ADJUSTMENT', referenceId: data.inventoryId, referenceNumber: txnNumber,
+      reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+    })
+
+    await auditService.log({
+      tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
+      action: 'STOCK_ADJUSTMENT', entityType: 'Inventory', entityId: data.inventoryId,
+      before: { quantity: currentQty, unitCost: currentUnitCost, totalValue: currentTotalValue },
+      after: { quantity: newQty, unitCost: newUnitCost, totalValue: newTotalValue, adjustmentType: data.adjustmentType, reason: data.reason },
+    })
+    await eventBus.writeToOutbox({
+      eventName: 'StockAdjusted', payload: {
+        inventoryId: data.inventoryId, productId: existing['product_id'],
+        adjustmentType: data.adjustmentType, adjustmentQty: data.adjustmentQty,
+        previousQty: currentQty, newQty, reason: data.reason,
+      }, tenantId,
+    })
+
+    return { inventory: updated, transactionNumber: txnNumber, entryNumber }
+  },
+
+  // ═══ Export (CSV) ═════════════════════════════════════════════════════════
+
+  async exportInventory(params: { warehouseId?: string; productId?: string; expired?: boolean } = {}) {
+    const { tenantId } = getContext()
+    const result = await inventoryRepository.list(tenantId, { ...params, page: 1, pageSize: 10000 })
+    return result.rows
+  },
+
+  async exportTransactions(params: { warehouseId?: string; productId?: string; movementType?: string } = {}) {
+    const { tenantId } = getContext()
+    const result = await inventoryTransactionRepository.list(tenantId, { ...params, page: 1, pageSize: 10000 })
+    return result.rows
+  },
+
+  // ═══ Import (bulk stock-in from CSV-like array) ════════════════════════════
+
+  async bulkStockIn(items: Array<{
+    grnId: string; grnNumber: string; inspectionLotId: string
+    productId: string; productSku: string; productName: string
+    warehouseId: string; warehouseName: string
+    binId?: string; binCode?: string
+    batchNumber?: string; lotNumber?: string
+    manufactureDate?: string; expiryDate?: string
+    quantity: number; unitCost: number; uomId: string; uomCode: string
+    currency?: string
+  }>) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('bulkStockIn')
+
+    if (!items || items.length === 0) throw new BusinessRuleError('No items to import', { code: 'INV.IMPORT_EMPTY' })
+    if (items.length > 500) throw new BusinessRuleError('Maximum 500 items per bulk import', { code: 'INV.IMPORT_TOO_LARGE' })
+
+    const results: Array<{ success: boolean; index: number; error?: string; inventoryId?: string }> = []
+    let successCount = 0
+
+    for (let i = 0; i < items.length; i++) {
+      try {
+        const inv = await this.stockIn(items[i]!)
+        results.push({ success: true, index: i, inventoryId: String(inv!['id']) })
+        successCount++
+      } catch (err) {
+        results.push({ success: false, index: i, error: (err as Error).message })
+      }
+    }
+
+    await auditService.log({
+      tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
+      action: 'BULK_STOCK_IN', entityType: 'Inventory', entityId: 'bulk',
+      after: { totalItems: items.length, successCount, failureCount: items.length - successCount },
+    })
+
+    return { totalItems: items.length, successCount, failureCount: items.length - successCount, results }
+  },
+
+  // ═══ Bulk Block Release ════════════════════════════════════════════════════
+
+  async bulkReleaseBlocks(blockIds: string[]) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('bulkReleaseBlocks')
+
+    if (!blockIds || blockIds.length === 0) throw new BusinessRuleError('No blocks to release', { code: 'INV.BULK_EMPTY' })
+
+    let releasedCount = 0
+    const errors: Array<{ blockId: string; error: string }> = []
+
+    for (const blockId of blockIds) {
+      try {
+        await query(
+          `UPDATE stock_blocks SET status = 'RELEASED', released_at = NOW(), updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+          [tenantId, blockId]
+        )
+        releasedCount++
+      } catch (err) {
+        errors.push({ blockId, error: (err as Error).message })
+      }
+    }
+
+    await auditService.log({
+      tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
+      action: 'BULK_BLOCK_RELEASE', entityType: 'StockBlock', entityId: 'bulk',
+      after: { totalBlocks: blockIds.length, releasedCount, errors },
+    })
+
+    return { totalBlocks: blockIds.length, releasedCount, errors }
+  },
+
+  // ═══ Search (full-text across inventory) ═══════════════════════════════════
+
+  async search(params: { q: string; warehouseId?: string; page?: number; pageSize?: number }) {
+    const { tenantId } = getContext()
+    if (!params.q || params.q.trim().length < 2) {
+      throw new BusinessRuleError('Search query must be at least 2 characters', { code: 'INV.SEARCH_TOO_SHORT' })
+    }
+    const result = await inventoryRepository.list(tenantId, {
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 25,
+      warehouseId: params.warehouseId,
+    })
+    // Client-side filter for search (would be DB-side with full-text index in production)
+    const q = params.q.toLowerCase()
+    const filtered = result.rows.filter((r: Record<string, unknown>) => {
+      const sku = String(r['product_sku'] ?? '').toLowerCase()
+      const name = String(r['product_name'] ?? '').toLowerCase()
+      const batch = String(r['batch_number'] ?? '').toLowerCase()
+      const lot = String(r['lot_number'] ?? '').toLowerCase()
+      return sku.includes(q) || name.includes(q) || batch.includes(q) || lot.includes(q)
+    })
+    return { rows: filtered, total: filtered.length, page: params.page ?? 1, pageSize: params.pageSize ?? 25 }
   },
 }

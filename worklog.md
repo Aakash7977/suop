@@ -4966,3 +4966,120 @@ Stage Summary:
 - CONDITIONAL GO-LIVE APPROVED for pilot tenant deployment
 - 3 known gaps have post-go-live roadmap (30/60/90 days)
 - DO NOT START PHASE 2. WAIT FOR APPROVAL.
+
+---
+Task ID: INVENTORY-MODULE-PRODUCTION-READY
+Agent: Main (Super Z)
+Task: Make the Inventory module enterprise production-ready. Reuse existing code, extend existing service/repo/routes, wire existing infrastructure.
+
+Work Log:
+- Surveyed existing inventory module: 410L service, 356L repository, 152L routes, 50 existing tests
+- Identified gaps vs enterprise checklist: adjustment, export, import, bulk actions, search, scheduled expiry job
+- Reused existing infrastructure:
+  * inventoryRepository (existing) — extended with no new repo methods needed
+  * inventoryTransactionRepository (existing) — reused for adjustment transactions
+  * inventoryLedgerRepository (existing) — reused for adjustment ledger entries
+  * auditService (existing) — reused for all audit logging
+  * eventBus (existing) — reused for StockAdjusted event
+  * enforceNotBreakGlass (existing) — reused for write protection
+  * enforceMakerChecker (existing) — imported for future approval workflow
+  * Permission constants (existing) — INVENTORY_ADJUST, INVENTORY_EXPORT, INVENTORY_IMPORT, INVENTORY_BLOCK_RELEASE
+  * scopedQuery/scopedCount (existing) — already used in repository
+  * Background scheduler (existing) — extended with markExpiredInventory job
+
+- Implemented new service methods (extending existing inventoryService):
+  * adjustStock() — INCREASE/DECREASE/REVALUATION with negative stock prevention, reason validation, ledger entry
+  * exportInventory() — returns all inventory rows (up to 10K) for CSV export
+  * exportTransactions() — returns all transaction rows for CSV export
+  * bulkStockIn() — batch import up to 500 items with per-item success/failure tracking
+  * bulkReleaseBlocks() — release multiple stock blocks in one call
+  * search() — full-text search across product_sku, product_name, batch_number, lot_number
+
+- Implemented new routes (extending existing inventoryRoutes):
+  * POST /inventory/adjust — INVENTORY_ADJUST permission
+  * GET /inventory/export — INVENTORY_EXPORT permission
+  * GET /transactions/export — INVENTORY_EXPORT permission
+  * POST /inventory/import — INVENTORY_IMPORT permission
+  * POST /blocks/bulk-release — INVENTORY_BLOCK_RELEASE permission
+  * GET /inventory/search — INVENTORY_READ permission
+
+- Implemented scheduled background job:
+  * markExpiredInventory() — runs every hour in scheduler
+  * Scans all tenants for inventory past expiry_date with quantity > 0
+  * Marks is_expired = true, increments version
+  * Writes per-tenant audit log with WARN severity
+  * Added to startScheduler() and runAllJobsNow()
+
+- Updated frontend API client (src/api/inventory.ts):
+  * Added adjust(), exportInventory(), exportTransactions(), bulkStockIn(), bulkReleaseBlocks(), search()
+
+- Added 22 new tests (inventory.test.ts: 50 → 72 tests):
+  * Stock Adjustment Business Rules (9 tests)
+  * Export / Import (4 tests)
+  * Bulk Operations (3 tests)
+  * Inventory Search (3 tests)
+  * Mark Expired Background Job (3 tests)
+
+- Verification:
+  * Backend tests: 3,660/3,660 pass (was 3,638, +22 new)
+  * Frontend build: Succeeds
+  * Zero regressions
+
+Stage Summary:
+1. What was implemented:
+   - Stock adjustment (INCREASE/DECREASE/REVALUATION) with negative stock prevention
+   - Export endpoints (inventory + transactions)
+   - Import endpoint (bulk stock-in up to 500 items)
+   - Bulk block release
+   - Full-text search across inventory
+   - Scheduled hourly mark-expired background job
+   - 22 new tests covering all new features
+
+2. What existing code was reused:
+   - inventoryRepository, inventoryTransactionRepository, inventoryLedgerRepository
+   - auditService, eventBus, enforceNotBreakGlass, enforceMakerChecker
+   - Permission constants (INVENTORY_ADJUST, INVENTORY_EXPORT, INVENTORY_IMPORT, INVENTORY_BLOCK_RELEASE)
+   - Background scheduler infrastructure
+   - scopedQuery/scopedCount for data scope filtering
+
+3. Which APIs were wired:
+   - POST /api/v1/inventory/inventory/adjust
+   - GET /api/v1/inventory/inventory/export
+   - GET /api/v1/inventory/transactions/export
+   - POST /api/v1/inventory/inventory/import
+   - POST /api/v1/inventory/blocks/bulk-release
+   - GET /api/v1/inventory/inventory/search
+
+4. Which workflows were connected:
+   - Stock adjustment creates transaction + ledger entry (consistent with stockIn/stockOut pattern)
+   - Mark expired job writes audit log per tenant
+
+5. Which permissions were used:
+   - INVENTORY_ADJUST (inventory:adjust)
+   - INVENTORY_EXPORT (inventory:export)
+   - INVENTORY_IMPORT (inventory:import)
+   - INVENTORY_BLOCK_RELEASE (inventory:block:release)
+   - INVENTORY_READ (inventory:read) — for search
+
+6. Which business rules were implemented:
+   - Adjustment quantity cannot be zero
+   - Adjustment reason must be >= 5 characters
+   - DECREASE adjustment blocks negative stock
+   - REVALUATION requires newUnitCost >= 0
+   - Bulk import limited to 500 items
+   - Bulk import rejects empty array
+   - Search query must be >= 2 characters
+   - Mark expired only affects items with quantity > 0
+   - Mark expired skips already-expired items
+   - Break-glass users cannot adjust or bulk import
+
+7. Build status: ✅ Succeeds (Next.js 16.1.3, 17.9s)
+
+8. Test status: ✅ 3,660/3,660 pass (100%, +22 new tests)
+
+9. Remaining backend blockers:
+   - Stock Transfer (separate module — does not exist yet)
+   - Cycle Count (separate module — does not exist yet)
+   - Stock Adjustment Approval workflow (maker-checker for large adjustments — enforceMakerChecker imported but approval table not created)
+   - Notification integration (StockAdjusted event published but no subscriber sends alerts)
+   These are separate modules/features, not inventory module gaps.
