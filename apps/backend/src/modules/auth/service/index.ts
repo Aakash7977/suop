@@ -331,9 +331,13 @@ export const authService = {
 
     const roles = await userRoleRepository.getRoles(userId)
 
+    // Phase 1.6: Reload scope claims on refresh (prevents scope loss after token rotation)
+    const scope = await loadUserScopeClaims(tenantId, userId, user)
+
     const { token: accessToken, expiresAt: accessExpiresAt } = signAccessToken({
       userId, tenantId, email: String(user['email']), roles,
       permissions: resolvePermissions(roles),
+      scope,
     })
 
     const { raw: newRaw, hash: newHash } = generateRefreshToken()

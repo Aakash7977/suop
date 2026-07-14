@@ -28,12 +28,15 @@ vi.mock('@/core/db', () => {
         }),
         findFirst: vi.fn(async () => {
           // Pop the next pending job
-          for (const [id, job] of jobs.entries()) {
+          for (const [_id, job] of jobs.entries()) {
             if (job.status === 'PENDING') {
               return job
             }
           }
           return null
+        }),
+        findUnique: vi.fn(async ({ where }: any) => {
+          return jobs.get(where.id) ?? null
         }),
         update: vi.fn(async ({ where, data }: any) => {
           const job = jobs.get(where.id)
@@ -41,6 +44,14 @@ vi.mock('@/core/db', () => {
             Object.assign(job, data)
           }
           return job
+        }),
+        updateMany: vi.fn(async ({ where, data }: any) => {
+          const job = jobs.get(where.id)
+          if (job && job.status === where.status) {
+            Object.assign(job, data)
+            return { count: 1 }
+          }
+          return { count: 0 }
         }),
       },
     },

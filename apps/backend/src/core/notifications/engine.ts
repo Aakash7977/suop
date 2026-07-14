@@ -145,16 +145,35 @@ class NotificationEngine {
 
   /**
    * Drain the notification outbox — send pending notifications.
+   *
+   * Phase 1.6: Atomic claim pattern — prevents duplicate delivery in multi-instance
+   * deployments. Also enforces max retry limit (10) with DLQ promotion.
    */
   async drainOutbox(batchSize: number = 50): Promise<number> {
+    const MAX_RETRIES = 10
+
+    // Move exceeded entries to FAILED (dead-letter)
+    await db.notificationOutbox.updateMany({
+      where: { status: 'PENDING', retryCount: { gte: MAX_RETRIES } },
+      data: { status: 'FAILED' },
+    }).catch(() => {})
+
     const pending = await db.notificationOutbox.findMany({
-      where: { status: 'PENDING' },
+      where: { status: 'PENDING', retryCount: { lt: MAX_RETRIES } },
       take: batchSize,
       orderBy: { createdAt: 'asc' },
     })
 
     let sent = 0
     for (const notif of pending) {
+      // Atomic claim: only update if still PENDING
+      const claimed = await db.notificationOutbox.updateMany({
+        where: { id: notif.id, status: 'PENDING' },
+        data: { status: 'SENDING' },
+      }).catch(() => ({ count: 0 }))
+
+      if (claimed.count === 0) continue
+
       try {
         await this.deliver(notif)
         await db.notificationOutbox.update({
@@ -166,10 +185,11 @@ class NotificationEngine {
         await db.notificationOutbox.update({
           where: { id: notif.id },
           data: {
+            status: 'PENDING',
             retryCount: { increment: 1 },
             lastError: (err as Error).message,
           },
-        })
+        }).catch(() => {})
       }
     }
     return sent

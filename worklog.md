@@ -4854,3 +4854,74 @@ Decision: ❌ NOT READY for enterprise certification. Platform requires Phase 1.
 - DO NOT freeze the platform.
 - DO NOT declare "ENTERPRISE PLATFORM V1 READY".
 - WAIT FOR APPROVAL before proceeding to Phase 1.6.
+
+---
+Task ID: PHASE1.6-ENTERPRISE-HARDENING-SPRINT
+Agent: Main (Super Z)
+Task: Enterprise Platform Hardening Sprint — Fix every P0/P1 blocker from Phase 1.5 validation. Generate track completion reports. Re-validate. Generate final certification.
+
+Work Log:
+- P0 Authentication Track (COMPLETE):
+  * Verified JWT scope claims already implemented (JwtScopeClaims interface, signAccessToken with scope param)
+  * Verified JTI blocklist already wired into auth middleware (isTokenBlockedAsync)
+  * Verified JWT key rotation fixed (verifyAccessToken uses getVerificationKeys)
+  * Verified loginRateLimit applied to /auth/login route
+  * Verified passwordResetRateLimit applied to /forgot-password
+  * Verified JTI blocklist on logout (blockJti called)
+  * Verified loadUserScopeClaims loads user org assignments at login
+  * Verified break-glass auto-revoke cron registered in scheduler
+  * Fixed: Refresh path now includes scope claims (loadUserScopeClaims called in refresh())
+
+- P0 Organization Context Track (COMPLETE):
+  * Verified scopeContextMiddleware registered in app.ts:142
+  * Verified frontend apiFetch sends X-Company-Id, X-Plant-Id, X-Warehouse-Id, X-Department-Id headers
+  * Verified REGION/BU cases added to enforceScope, requireScopeContext, filterResultSetByScope (fail-closed)
+  * Verified scope override headers accepted for manager/admin users
+
+- P0 Infrastructure Track (COMPLETE):
+  * Created core/scheduler/index.ts with 4 background jobs:
+    - Event outbox drain (5s)
+    - Notification outbox drain (10s)
+    - Break-glass auto-revoke (5min)
+    - Audit chain verification (1h)
+  * Updated main.ts to start/stop scheduler
+  * Fixed event outbox drainOutbox: atomic claim (PENDING→PROCESSING), max retries (10), DLQ
+  * Fixed notification outbox drainOutbox: same atomic claim pattern + DLQ
+  * Fixed worker queue: atomic job claim via updateMany with conditional where, unique workerId per instance
+  * Fixed audit chain verification call: verifyAuditChain({}) instead of verifyAuditChain()
+
+- P0 Transactions Track (COMPLETE):
+  * Fixed purchase-order service update() ReferenceError (targetStatus dead code removed)
+  * Fixed customer service update() ReferenceError (targetStatus dead code removed)
+  * Fixed goods-receipt service update() ReferenceError (targetStatus dead code removed)
+  * Optimistic locking verified working via version field
+
+- P1 Security Track (COMPLETE):
+  * Created core/security/ssrf-protection.ts with validateOutboundUrl(), safeFetch(), isUrlSuspicious()
+  * 17 blocked IP ranges: loopback, private (10/172.16/192.168), link-local, cloud metadata, CGNAT, IPv6
+  * DNS rebinding defense (resolves DNS, checks each IP)
+  * safeFetch() re-validates on redirect
+  * Applied to webhook service: validateOutboundUrl + safeFetch
+  * Applied to connector service: safeFetch with redirect re-validation
+  * Verified helmet security headers already in place
+
+- Test suite verification: 3,638/3,638 tests pass (100%, zero regressions)
+- Frontend build verification: Next.js production build succeeds
+
+- Generated 5 deliverables:
+  1. TRACK_COMPLETION_REPORTS.md — All 5 tracks documented with before/after scores
+  2. ENTERPRISE_SYSTEM_VALIDATION_v2.md — Comprehensive re-validation (8.5/10, was 6.2)
+  3. SYSTEM_READINESS_SCORECARD_v2.md — 20-category scorecard (12 categories at 9.0+)
+  4. GO_LIVE_CERTIFICATION.md — Conditional go-live approved with pilot tenant
+  5. (Track reports integrated into TRACK_COMPLETION_REPORTS.md)
+
+Stage Summary:
+- Overall Score: 6.2/10 → 8.5/10 (+2.3 points)
+- All 10 P0 blockers resolved
+- All P1 security issues resolved
+- 12 of 20 categories now at 9.0+ (was 5)
+- 3,638 tests pass, zero regressions
+- Frontend build succeeds
+- CONDITIONAL GO-LIVE READY for pilot tenant deployment
+- 4 remaining gaps are Phase 2 feature items (audit hash chain, notification adapters, frontend chunking, cross-module nav UI)
+- DO NOT START PHASE 2. WAIT FOR APPROVAL.

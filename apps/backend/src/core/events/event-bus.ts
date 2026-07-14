@@ -135,17 +135,44 @@ class EventBusImpl extends EventEmitter {
 
   /**
    * Drain the outbox — publish pending events.
-   * Called by a background job (Phase 0.11).
+   * Called by a background job (Phase 1.6 scheduler).
+   *
+   * Phase 1.6: Multi-instance safe — atomically claims entries by updating
+   * status from PENDING to PROCESSING before publishing. If another instance
+   * already claimed them, the update affects 0 rows and we skip.
+   * Also enforces max retry limit (10) — entries exceeding it are marked FAILED
+   * (dead-letter queue).
    */
   async drainOutbox(batchSize: number = 50): Promise<number> {
-    const pending = await db.eventOutbox.findMany({
-      where: { status: 'PENDING' },
+    const MAX_RETRIES = 10
+
+    // Move failed entries to DEAD_LETTER status
+    await db.eventOutbox.updateMany({
+      where: { status: 'PENDING', retryCount: { gte: MAX_RETRIES } },
+      data: { status: 'DEAD_LETTER' },
+    }).catch(() => {})
+
+    // Atomically claim pending entries: update status to PROCESSING
+    // only if currently PENDING (optimistic lock pattern)
+    const claimed = await db.eventOutbox.findMany({
+      where: { status: 'PENDING', retryCount: { lt: MAX_RETRIES } },
       take: batchSize,
       orderBy: { createdAt: 'asc' },
     })
 
     let published = 0
-    for (const entry of pending) {
+    for (const entry of claimed) {
+      // Atomically claim: only update if still PENDING
+      const claimed_entry = await db.eventOutbox.updateMany({
+        where: { id: entry.id, status: 'PENDING' },
+        data: { status: 'PROCESSING' },
+      }).catch(() => ({ count: 0 }))
+
+      if (claimed_entry.count === 0) {
+        // Another instance already claimed this entry — skip
+        continue
+      }
+
       try {
         const event: DomainEvent = {
           id: entry.id,
@@ -165,16 +192,19 @@ class EventBusImpl extends EventEmitter {
         })
         published++
       } catch (err) {
+        // Publish failed — revert to PENDING for retry (with incremented retryCount)
         await db.eventOutbox.update({
           where: { id: entry.id },
           data: {
+            status: 'PENDING',
             retryCount: { increment: 1 },
             lastError: (err as Error).message,
           },
-        })
+        }).catch(() => {})
         logger.error('Outbox event publish failed', {
           eventId: entry.id,
           error: (err as Error).message,
+          retryCount: entry.retryCount + 1,
         })
       }
     }

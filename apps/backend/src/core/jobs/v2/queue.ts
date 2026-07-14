@@ -65,6 +65,9 @@ export interface QueueStats {
 
 // ─── Queue Implementation ───────────────────────────────────────────────────
 
+// Phase 1.6: Unique worker ID for this instance (for atomic job claiming)
+const workerId = `worker-${process.pid}-${Date.now()}`
+
 const handlers = new Map<string, JobHandler>()
 const queueStats = {
   pending: 0,
@@ -163,19 +166,36 @@ export async function enqueue<T>(params: {
  * would poll the Redis queue (BRPOPLPUSH for reliable delivery).
  */
 export async function processNextJob(): Promise<boolean> {
-  // Find the next pending job (priority: high > default > low)
+  // Phase 1.6: Atomic job claim — find a pending job, then atomically claim it
+  // by updating status from PENDING to RUNNING only if still PENDING.
+  // This prevents multiple workers from picking the same job.
   const job = await (db as any).backgroundJob.findFirst({
     where: {
       status: 'PENDING',
       scheduledAt: { lte: new Date() },
     },
     orderBy: [
-      { priority: 'asc' }, // 'default' < 'high' < 'low' alphabetically, so use raw
+      { priority: 'asc' },
       { createdAt: 'asc' },
     ],
   })
 
   if (!job) return false
+
+  // Phase 1.6: Atomic claim — only update if still PENDING (optimistic lock)
+  const claimed = await (db as any).backgroundJob.updateMany({
+    where: { id: job.id, status: 'PENDING' },
+    data: {
+      status: 'RUNNING',
+      startedAt: new Date(),
+      workerId: workerId,
+    },
+  }).catch(() => ({ count: 0 }))
+
+  if (claimed.count === 0) {
+    // Another worker already claimed this job — skip
+    return false
+  }
 
   const handler = handlers.get(job.jobType)
   if (!handler) {
@@ -184,15 +204,8 @@ export async function processNextJob(): Promise<boolean> {
     return true
   }
 
-  // Mark as RUNNING
-  await (db as any).backgroundJob.update({
-    where: { id: job.id },
-    data: {
-      status: 'RUNNING',
-      startedAt: new Date(),
-      attempts: { increment: 1 },
-    },
-  })
+  // Reload the job to get the updated state after atomic claim
+  const claimedJob = await (db as any).backgroundJob.findUnique({ where: { id: job.id } })
 
   queueStats.running++
   const startMs = Date.now()

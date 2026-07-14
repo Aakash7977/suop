@@ -27,6 +27,7 @@ import { getRequestContext } from '@/core/context'
 import { withRetry } from '../../event-bus/service'
 import { withCircuitBreaker } from '../../gateway/service'
 import { auditService } from '@/core/audit'
+import { validateOutboundUrl, safeFetch } from '@/core/security/ssrf-protection'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -185,7 +186,8 @@ export abstract class BaseConnector implements Connector {
   ): Promise<ConnectorResult> {
     const timeoutMs = options.timeoutMs ?? 30000
     try {
-      const response = await fetch(url, {
+      // Phase 1.6: SSRF protection — use safeFetch for redirect-safe validation
+      const response = await safeFetch(url, {
         ...options,
         signal: AbortSignal.timeout(timeoutMs),
       })

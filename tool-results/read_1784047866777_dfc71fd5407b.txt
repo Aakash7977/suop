@@ -1,0 +1,740 @@
+     1→     1→/**
+     2→     2→ * @suop/backend — Enterprise Data Scope Enforcement (Phase 1 — FINAL)
+     3→     3→ *
+     4→     4→ * Architecture: FROZEN — do not redesign.
+     5→     5→ *
+     6→     6→ * Provides universal, automatic scope enforcement across:
+     7→     7→ *   - Repositories (via scopedQuery / ScopeFilter builder)
+     8→     8→ *   - Services (via enforceScope / enforceScopeOnWrite)
+     9→     9→ *   - Controllers (via scopeContext middleware)
+    10→    10→ *   - Query Builders (via ScopeFilter)
+    11→    11→ *   - Dashboards / Reports / Exports / Print (via buildScopeClause)
+    12→    12→ *   - Workflow / Audit / Notification queries (via scopedQuery)
+    13→    13→ *
+    14→    14→ * 8 scope levels (broadest → narrowest):
+    15→    15→ *   global → region → bu → company → plant → wh → dept → own
+    16→    16→ *
+    17→    17→ * NO query may return data outside the user's resolved scope.
+    18→    18→ * The enforceScopeOnWrite function guarantees writes cannot cross scope either.
+    19→    19→ */
+    20→    20→
+    21→    21→import { getRequestContext } from '@/core/context'
+    22→    22→import { DataScope } from '@/core/permissions/registry'
+    23→    23→import { BusinessRuleError, AuthorizationError } from '@/core/errors'
+    24→    24→
+    25→    25→// ─── Scope Resolution ───────────────────────────────────────────────────────
+    26→    26→
+    27→    27→/**
+    28→    28→ * Role → Default Scope mapping. The broadest scope across all of a user's
+    29→    29→ * roles wins (so a user who is both warehouse_operator AND warehouse_supervisor
+    30→    30→ * gets PLANT, not WAREHOUSE).
+    31→    31→ *
+    32→    32→ * Note: tenant_admin / auditor / break_glass always get GLOBAL.
+    33→    33→ */
+    34→    34→const ROLE_SCOPE_PRECEDENCE: Array<{ roles: string[]; scope: string }> = [
+    35→    35→  { roles: ['tenant_admin', 'auditor', 'break_glass'], scope: DataScope.GLOBAL },
+    36→    36→  { roles: ['sales_manager', 'procurement_manager', 'finance_accountant', 'finance_manager', 'hr_manager'], scope: DataScope.COMPANY },
+    37→    37→  { roles: ['manufacturing_supervisor', 'quality_manager', 'warehouse_supervisor'], scope: DataScope.PLANT },
+    38→    38→  { roles: ['warehouse_operator'], scope: DataScope.WAREHOUSE },
+    39→    39→  { roles: ['sales_officer', 'procurement_officer'], scope: DataScope.DEPT },
+    40→    40→]
+    41→    41→
+    42→    42→/**
+    43→    43→ * Scope precedence rank — higher number = broader scope.
+    44→    44→ * Used to compute the broadest scope when a user has multiple roles.
+    45→    45→ */
+    46→    46→export const SCOPE_RANK: Record<string, number> = {
+    47→    47→  [DataScope.OWN]: 1,
+    48→    48→  [DataScope.DEPT]: 2,
+    49→    49→  [DataScope.WAREHOUSE]: 3,
+    50→    50→  [DataScope.PLANT]: 4,
+    51→    51→  [DataScope.COMPANY]: 5,
+    52→    52→  [DataScope.BU]: 6,
+    53→    53→  [DataScope.REGION]: 7,
+    54→    54→  [DataScope.GLOBAL]: 8,
+    55→    55→}
+    56→    56→
+    57→    57→/**
+    58→    58→ * Resolve the data scope for the current user based on their roles.
+    59→    59→ * Returns the broadest scope available across all roles.
+    60→    60→ */
+    61→    61→export function resolveDataScope(roles: string[]): string {
+    62→    62→  if (!roles || roles.length === 0) return DataScope.OWN
+    63→    63→
+    64→    64→  let broadest = DataScope.OWN
+    65→    65→  for (const entry of ROLE_SCOPE_PRECEDENCE) {
+    66→    66→    if (entry.roles.some((r) => roles.includes(r))) {
+    67→    67→      if (SCOPE_RANK[entry.scope] > SCOPE_RANK[broadest]) {
+    68→    68→        broadest = entry.scope
+    69→    69→      }
+    70→    70→    }
+    71→    71→  }
+    72→    72→  return broadest
+    73→    73→}
+    74→    74→
+    75→    75→// ─── Scope Context Accessors ────────────────────────────────────────────────
+    76→    76→
+    77→    77→/**
+    78→    78→ * Get the user's resolved data scope from the request context.
+    79→    79→ * Falls back to computing from roles if not pre-populated.
+    80→    80→ */
+    81→    81→export function getCurrentDataScope(): string {
+    82→    82→  const ctx = getRequestContext()
+    83→    83→  if (!ctx) return DataScope.GLOBAL // system-level — no restriction
+    84→    84→  if (ctx.dataScope) return ctx.dataScope
+    85→    85→  return resolveDataScope(ctx.roles)
+    86→    86→}
+    87→    87→
+    88→    88→/** Get assigned warehouse IDs from context (or null if not set). */
+    89→    89→export function getAssignedWarehouseIds(): string[] | null {
+    90→    90→  const ctx = getRequestContext()
+    91→    91→  if (!ctx) return null
+    92→    92→  return ctx.warehouseIds ?? null
+    93→    93→}
+    94→    94→
+    95→    95→/** Get assigned plant IDs from context (or null if not set). */
+    96→    96→export function getAssignedPlantIds(): string[] | null {
+    97→    97→  const ctx = getRequestContext()
+    98→    98→  if (!ctx) return null
+    99→    99→  return ctx.plantIds ?? null
+   100→   100→}
+   101→   101→
+   102→   102→/** Get assigned company IDs from context (or null if not set). */
+   103→   103→export function getAssignedCompanyIds(): string[] | null {
+   104→   104→  const ctx = getRequestContext()
+   105→   105→  if (!ctx) return null
+   106→   106→  return ctx.companyIds ?? null
+   107→   107→}
+   108→   108→
+   109→   109→/** Get assigned department IDs from context (or null if not set). */
+   110→   110→export function getAssignedDepartmentIds(): string[] | null {
+   111→   111→  const ctx = getRequestContext()
+   112→   112→  if (!ctx) return null
+   113→   113→  return ctx.departmentIds ?? null
+   114→   114→}
+   115→   115→
+   116→   116→/** Get assigned business unit IDs from context (or null if not set). */
+   117→   117→export function getAssignedBusinessUnitIds(): string[] | null {
+   118→   118→  const ctx = getRequestContext()
+   119→   119→  if (!ctx) return null
+   120→   120→  return ctx.businessUnitIds ?? null
+   121→   121→}
+   122→   122→
+   123→   123→/** Get assigned region IDs from context (or null if not set). */
+   124→   124→export function getAssignedRegionIds(): string[] | null {
+   125→   125→  const ctx = getRequestContext()
+   126→   126→  if (!ctx) return null
+   127→   127→  return ctx.regionIds ?? null
+   128→   128→}
+   129→   129→
+   130→   130→/**
+   131→   131→ * Get the current user ID (for OWN scope filtering).
+   132→   132→ */
+   133→   133→export function getCurrentUserId(): string | null {
+   134→   134→  const ctx = getRequestContext()
+   135→   135→  return ctx?.userId ?? null
+   136→   136→}
+   137→   137→
+   138→   138→// ─── Scope Filter Builder ───────────────────────────────────────────────────
+   139→   139→
+   140→   140→export interface ScopeFilterResult {
+   141→   141→  /** Additional SQL clause to AND into the WHERE clause (e.g., " AND t.warehouse_id = ANY($3)") */
+   142→   142→  clause: string
+   143→   143→  /** Bind parameters for the clause */
+   144→   144→  params: unknown[]
+   145→   145→  /** Number of bind parameters consumed (for next paramStart) */
+   146→   146→  paramCount: number
+   147→   147→}
+   148→   148→
+   149→   149→/**
+   150→   150→ * Scope column mapping — describes which column on a given table corresponds
+   151→   151→ * to each scope dimension. Different tables use different column names.
+   152→   152→ *
+   153→   153→ * Example:
+   154→   154→ *   ScopeFilter.build('inventory', { tableAlias: 'i', scope: 'wh' })
+   155→   155→ *   → resolves warehouse_ids from context → 'i.warehouse_id = ANY($N)'
+   156→   156→ */
+   157→   157→export interface ScopeColumnMap {
+   158→   158→  warehouseId?: string     // default: 'warehouse_id'
+   159→   159→  plantId?: string         // default: 'plant_id'
+   160→   160→  companyId?: string       // default: 'company_id'
+   161→   161→  departmentId?: string    // default: 'department_id'
+   162→   162→  businessUnitId?: string  // default: 'bu_id'
+   163→   163→  regionId?: string        // default: 'region_id'
+   164→   164→  createdBy?: string       // default: 'created_by'
+   165→   165→  assignedTo?: string      // default: 'assigned_to'
+   166→   166→}
+   167→   167→
+   168→   168→/**
+   169→   169→ * Build a scope filter clause for inclusion in a SQL WHERE clause.
+   170→   170→ *
+   171→   171→ * @param scope - The data scope to apply (from getCurrentDataScope())
+   172→   172→ * @param tableAlias - SQL table alias (e.g., 'i', 'inv', 'inventory')
+   173→   173→ * @param paramStart - The starting bind parameter index ($N)
+   174→   174→ * @param columnMap - Optional column name overrides
+   175→   175→ * @returns ScopeFilterResult with clause + params, OR null if no filtering needed (global scope)
+   176→   176→ */
+   177→   177→export function buildScopeFilter(
+   178→   178→  scope: string,
+   179→   179→  tableAlias: string,
+   180→   180→  paramStart: number,
+   181→   181→  columnMap: ScopeColumnMap = {}
+   182→   182→): ScopeFilterResult | null {
+   183→   183→  const cols = {
+   184→   184→    warehouseId: columnMap.warehouseId ?? 'warehouse_id',
+   185→   185→    plantId: columnMap.plantId ?? 'plant_id',
+   186→   186→    companyId: columnMap.companyId ?? 'company_id',
+   187→   187→    departmentId: columnMap.departmentId ?? 'department_id',
+   188→   188→    businessUnitId: columnMap.businessUnitId ?? 'bu_id',
+   189→   189→    regionId: columnMap.regionId ?? 'region_id',
+   190→   190→    createdBy: columnMap.createdBy ?? 'created_by',
+   191→   191→    assignedTo: columnMap.assignedTo ?? 'assigned_to',
+   192→   192→  }
+   193→   193→
+   194→   194→  let i = paramStart
+   195→   195→  const params: unknown[] = []
+   196→   196→
+   197→   197→  switch (scope) {
+   198→   198→    case DataScope.GLOBAL:
+   199→   199→      return null // No filtering — global scope sees everything (within tenant)
+   200→   200→
+   201→   201→    case DataScope.REGION: {
+   202→   202→      const regionIds = getAssignedRegionIds()
+   203→   203→      if (!regionIds || regionIds.length === 0) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   204→   204→      params.push(regionIds)
+   205→   205→      return { clause: ` AND ${tableAlias}.${cols.regionId} = ANY($${i++})`, params, paramCount: 1 }
+   206→   206→    }
+   207→   207→
+   208→   208→    case DataScope.BU: {
+   209→   209→      const buIds = getAssignedBusinessUnitIds()
+   210→   210→      if (!buIds || buIds.length === 0) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   211→   211→      params.push(buIds)
+   212→   212→      return { clause: ` AND ${tableAlias}.${cols.businessUnitId} = ANY($${i++})`, params, paramCount: 1 }
+   213→   213→    }
+   214→   214→
+   215→   215→    case DataScope.COMPANY: {
+   216→   216→      const companyIds = getAssignedCompanyIds()
+   217→   217→      if (!companyIds || companyIds.length === 0) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   218→   218→      params.push(companyIds)
+   219→   219→      return { clause: ` AND ${tableAlias}.${cols.companyId} = ANY($${i++})`, params, paramCount: 1 }
+   220→   220→    }
+   221→   221→
+   222→   222→    case DataScope.PLANT: {
+   223→   223→      const plantIds = getAssignedPlantIds()
+   224→   224→      if (!plantIds || plantIds.length === 0) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   225→   225→      params.push(plantIds)
+   226→   226→      return { clause: ` AND ${tableAlias}.${cols.plantId} = ANY($${i++})`, params, paramCount: 1 }
+   227→   227→    }
+   228→   228→
+   229→   229→    case DataScope.WAREHOUSE: {
+   230→   230→      const whIds = getAssignedWarehouseIds()
+   231→   231→      if (!whIds || whIds.length === 0) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   232→   232→      params.push(whIds)
+   233→   233→      return { clause: ` AND ${tableAlias}.${cols.warehouseId} = ANY($${i++})`, params, paramCount: 1 }
+   234→   234→    }
+   235→   235→
+   236→   236→    case DataScope.DEPT: {
+   237→   237→      const deptIds = getAssignedDepartmentIds()
+   238→   238→      if (!deptIds || deptIds.length === 0) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   239→   239→      params.push(deptIds)
+   240→   240→      return { clause: ` AND ${tableAlias}.${cols.departmentId} = ANY($${i++})`, params, paramCount: 1 }
+   241→   241→    }
+   242→   242→
+   243→   243→    case DataScope.OWN: {
+   244→   244→      const userId = getCurrentUserId()
+   245→   245→      if (!userId) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   246→   246→      params.push(userId)
+   247→   247→      // Filter by created_by OR assigned_to (whichever applies)
+   248→   248→      return {
+   249→   249→        clause: ` AND (${tableAlias}.${cols.createdBy} = $${i} OR ${tableAlias}.${cols.assignedTo} = $${i})`,
+   250→   250→        params,
+   251→   251→        paramCount: 1,
+   252→   252→      }
+   253→   253→    }
+   254→   254→
+   255→   255→    default:
+   256→   256→      // Unknown scope — fail closed (no access)
+   257→   257→      return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   258→   258→  }
+   259→   259→}
+   260→   260→
+   261→   261→/**
+   262→   262→ * Backward-compat alias for buildScopeFilter (older signature).
+   263→   263→ * @deprecated Use buildScopeFilter instead.
+   264→   264→ */
+   265→   265→export function applyScopeFilter(
+   266→   266→  scope: string,
+   267→   267→  tableAlias: string,
+   268→   268→  paramStart: number
+   269→   269→): { clause: string; params: unknown[] } | null {
+   270→   270→  const result = buildScopeFilter(scope, tableAlias, paramStart)
+   271→   271→  if (!result) return null
+   272→   272→  return { clause: result.clause, params: result.params }
+   273→   273→}
+   274→   274→
+   275→   275→// ─── Scoped Query Builder ───────────────────────────────────────────────────
+   276→   276→
+   277→   277→/**
+   278→   278→ * ScopedQueryBuilder — fluent builder for constructing scope-filtered SQL.
+   279→   279→ *
+   280→   280→ * Usage:
+   281→   281→ *   const result = await new ScopedQueryBuilder('inventory', 'i')
+   282→   282→ *     .where('product_id = $1', [productId])
+   283→   283→ *     .whereScope()                              // auto-injects scope filter
+   284→   284→ *     .orderBy('created_at', 'DESC')
+   285→   285→ *     .limit(25)
+   286→   286→ *     .offset(0)
+   287→   287→ *     .execute()
+   288→   288→ */
+   289→   289→export class ScopedQueryBuilder {
+   290→   290→  private tableName: string
+   291→   291→  private alias: string
+   292→   292→  private wheres: Array<{ clause: string; params: unknown[] }> = []
+   293→   293→  private orderBys: string[] = []
+   294→   294→  private limitValue?: number
+   295→   295→  private offsetValue?: number
+   296→   296→  private selectClause: string = '*'
+   297→   297→  private columnMap: ScopeColumnMap
+   298→   298→  private scopeApplied = false
+   299→   299→
+   300→   300→  constructor(tableName: string, alias: string, columnMap: ScopeColumnMap = {}) {
+   301→   301→    this.tableName = tableName
+   302→   302→    this.alias = alias
+   303→   303→    this.columnMap = columnMap
+   304→   304→  }
+   305→   305→
+   306→   306→  select(selectClause: string): this {
+   307→   307→    this.selectClause = selectClause
+   308→   308→    return this
+   309→   309→  }
+   310→   310→
+   311→   311→  where(clause: string, params: unknown[] = []): this {
+   312→   312→    this.wheres.push({ clause, params })
+   313→   313→    return this
+   314→   314→  }
+   315→   315→
+   316→   316→  /** Auto-inject the user's data scope filter. Call once per query. */
+   317→   317→  whereScope(): this {
+   318→   318→    if (this.scopeApplied) return this
+   319→   319→    const scope = getCurrentDataScope()
+   320→   320→    const filter = buildScopeFilter(scope, this.alias, 1, this.columnMap)
+   321→   321→    if (filter) {
+   322→   322→      this.wheres.push({ clause: filter.clause, params: filter.params })
+   323→   323→    }
+   324→   324→    this.scopeApplied = true
+   325→   325→    return this
+   326→   326→  }
+   327→   327→
+   328→   328→  orderBy(column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
+   329→   329→    this.orderBys.push(`${column} ${direction}`)
+   330→   330→    return this
+   331→   331→  }
+   332→   332→
+   333→   333→  limit(n: number): this {
+   334→   334→    this.limitValue = n
+   335→   335→    return this
+   336→   336→  }
+   337→   337→
+   338→   338→  offset(n: number): this {
+   339→   339→    this.offsetValue = n
+   340→   340→    return this
+   341→   341→  }
+   342→   342→
+   343→   343→  /** Build the SQL string and parameter list. */
+   344→   344→  build(): { sql: string; params: unknown[] } {
+   345→   345→    const params: unknown[] = []
+   346→   346→    let paramIdx = 1
+   347→   347→
+   348→   348→    // Re-number parameters (since they may be added in any order)
+   349→   349→    const renumberedWheres: string[] = []
+   350→   350→    for (const w of this.wheres) {
+   351→   351→      let clause = w.clause
+   352→   352→      for (const p of w.params) {
+   353→   353→        clause = clause.replace(/\$\d+/, () => `$${paramIdx++}`)
+   354→   354→        params.push(p)
+   355→   355→      }
+   356→   356→      renumberedWheres.push(clause)
+   357→   357→    }
+   358→   358→
+   359→   359→    const whereClause = renumberedWheres.length > 0
+   360→   360→      ? `WHERE ${renumberedWheres.join(' AND ')}`
+   361→   361→      : ''
+   362→   362→
+   363→   363→    const orderByClause = this.orderBys.length > 0
+   364→   364→      ? `ORDER BY ${this.orderBys.join(', ')}`
+   365→   365→      : ''
+   366→   366→
+   367→   367→    const limitClause = this.limitValue !== undefined ? `LIMIT $${paramIdx++}` : ''
+   368→   368→    if (this.limitValue !== undefined) params.push(this.limitValue)
+   369→   369→
+   370→   370→    const offsetClause = this.offsetValue !== undefined ? `OFFSET $${paramIdx++}` : ''
+   371→   371→    if (this.offsetValue !== undefined) params.push(this.offsetValue)
+   372→   372→
+   373→   373→    const sql = `SELECT ${this.selectClause} FROM ${this.tableName} ${this.alias} ${whereClause} ${orderByClause} ${limitClause} ${offsetClause}`.replace(/\s+/g, ' ').trim()
+   374→   374→
+   375→   375→    return { sql, params }
+   376→   376→  }
+   377→   377→
+   378→   378→  /** Build the count query (no limit/offset/order). */
+   379→   379→  buildCount(): { sql: string; params: unknown[] } {
+   380→   380→    const params: unknown[] = []
+   381→   381→    let paramIdx = 1
+   382→   382→    const renumberedWheres: string[] = []
+   383→   383→    for (const w of this.wheres) {
+   384→   384→      let clause = w.clause
+   385→   385→      for (const p of w.params) {
+   386→   386→        clause = clause.replace(/\$\d+/, () => `$${paramIdx++}`)
+   387→   387→        params.push(p)
+   388→   388→      }
+   389→   389→      renumberedWheres.push(clause)
+   390→   390→    }
+   391→   391→    const whereClause = renumberedWheres.length > 0 ? `WHERE ${renumberedWheres.join(' AND ')}` : ''
+   392→   392→    const sql = `SELECT COUNT(*) as cnt FROM ${this.tableName} ${this.alias} ${whereClause}`.replace(/\s+/g, ' ').trim()
+   393→   393→    return { sql, params }
+   394→   394→  }
+   395→   395→}
+   396→   396→
+   397→   397→// ─── Service-Layer Enforcement ──────────────────────────────────────────────
+   398→   398→
+   399→   399→/**
+   400→   400→ * Verify that a record is within the current user's data scope.
+   401→   401→ * Use this BEFORE returning a record to the user (e.g., in findById).
+   402→   402→ *
+   403→   403→ * @param record - The DB record (must have relevant scope columns populated)
+   404→   404→ * @param entityType - Type name for error message (e.g., 'Inventory', 'PurchaseOrder')
+   405→   405→ * @throws AuthorizationError if record is out of scope
+   406→   406→ */
+   407→   407→export function enforceScope(
+   408→   408→  record: Record<string, unknown> | null,
+   409→   409→  entityType: string
+   410→   410→): void {
+   411→   411→  if (!record) return
+   412→   412→  const ctx = getRequestContext()
+   413→   413→  if (!ctx) return // system-level — no scope enforcement
+   414→   414→  if (!ctx.userId) return // unauthenticated — handled by auth middleware
+   415→   415→
+   416→   416→  const scope = getCurrentDataScope()
+   417→   417→  if (scope === DataScope.GLOBAL) return
+   418→   418→
+   419→   419→  // For each scope level, check the corresponding column
+   420→   420→  switch (scope) {
+   421→   421→    case DataScope.REGION: {
+   422→   422→      // Phase 1.6: Added REGION case (was fail-open)
+   423→   423→      const regionIds = ctx.regionIds ?? []
+   424→   424→      if (regionIds.length === 0) {
+   425→   425→        throw new AuthorizationError(`${entityType} out of scope — no region assignment`)
+   426→   426→      }
+   427→   427→      const recordRegionId = record['region_id'] as string | null
+   428→   428→      if (recordRegionId && !regionIds.includes(recordRegionId)) {
+   429→   429→        throw new AuthorizationError(`${entityType} out of scope — region mismatch`)
+   430→   430→      }
+   431→   431→      break
+   432→   432→    }
+   433→   433→    case DataScope.BU: {
+   434→   434→      // Phase 1.6: Added BU case (was fail-open)
+   435→   435→      const buIds = ctx.businessUnitIds ?? []
+   436→   436→      if (buIds.length === 0) {
+   437→   437→        throw new AuthorizationError(`${entityType} out of scope — no BU assignment`)
+   438→   438→      }
+   439→   439→      const recordBuId = record['bu_id'] as string | null
+   440→   440→      if (recordBuId && !buIds.includes(recordBuId)) {
+   441→   441→        throw new AuthorizationError(`${entityType} out of scope — BU mismatch`)
+   442→   442→      }
+   443→   443→      break
+   444→   444→    }
+   445→   445→    case DataScope.COMPANY: {
+   446→   446→      const companyIds = ctx.companyIds ?? []
+   447→   447→      const recordCompanyId = record['company_id'] as string | null
+   448→   448→      if (recordCompanyId && !companyIds.includes(recordCompanyId)) {
+   449→   449→        throw new AuthorizationError(`${entityType} out of scope — company mismatch`)
+   450→   450→      }
+   451→   451→      break
+   452→   452→    }
+   453→   453→    case DataScope.PLANT: {
+   454→   454→      const plantIds = ctx.plantIds ?? []
+   455→   455→      const recordPlantId = record['plant_id'] as string | null
+   456→   456→      if (recordPlantId && !plantIds.includes(recordPlantId)) {
+   457→   457→        throw new AuthorizationError(`${entityType} out of scope — plant mismatch`)
+   458→   458→      }
+   459→   459→      break
+   460→   460→    }
+   461→   461→    case DataScope.WAREHOUSE: {
+   462→   462→      const whIds = ctx.warehouseIds ?? []
+   463→   463→      const recordWhId = record['warehouse_id'] as string | null
+   464→   464→      if (recordWhId && !whIds.includes(recordWhId)) {
+   465→   465→        throw new AuthorizationError(`${entityType} out of scope — warehouse mismatch`)
+   466→   466→      }
+   467→   467→      break
+   468→   468→    }
+   469→   469→    case DataScope.DEPT: {
+   470→   470→      const deptIds = ctx.departmentIds ?? []
+   471→   471→      const recordDeptId = record['department_id'] as string | null
+   472→   472→      if (recordDeptId && !deptIds.includes(recordDeptId)) {
+   473→   473→        throw new AuthorizationError(`${entityType} out of scope — department mismatch`)
+   474→   474→      }
+   475→   475→      break
+   476→   476→    }
+   477→   477→    case DataScope.OWN: {
+   478→   478→      const userId = ctx.userId
+   479→   479→      const createdBy = record['created_by'] as string | null
+   480→   480→      const assignedTo = record['assigned_to'] as string | null
+   481→   481→      if (createdBy !== userId && assignedTo !== userId) {
+   482→   482→        throw new AuthorizationError(`${entityType} out of scope — not created by or assigned to user`)
+   483→   483→      }
+   484→   484→      break
+   485→   485→    }
+   486→   486→    default: {
+   487→   487→      // Phase 1.6: Unknown scope — fail closed
+   488→   488→      throw new AuthorizationError(`${entityType} out of scope — unknown scope: ${scope}`)
+   489→   489→    }
+   490→   490→  }
+   491→   491→}
+   492→   492→
+   493→   493→/**
+   494→   494→ * Verify that a record the user is about to WRITE to (update/delete/transition)
+   495→   495→ * is within the current user's data scope.
+   496→   496→ *
+   497→   497→ * @param record - The existing DB record (must have scope columns populated)
+   498→   498→ * @param entityType - Type name for error message
+   499→   499→ * @param operation - The write operation (e.g., 'update', 'delete', 'transition')
+   500→   500→ * @throws AuthorizationError if record is out of scope
+   501→   501→ */
+   502→   502→export function enforceScopeOnWrite(
+   503→   503→  record: Record<string, unknown> | null,
+   504→   504→  entityType: string,
+   505→   505→  operation: string
+   506→   506→): void {
+   507→   507→  if (!record) return
+   508→   508→  enforceScope(record, entityType)
+   509→   509→  // Additional write-specific checks can go here
+   510→   510→  void operation
+   511→   511→}
+   512→   512→
+   513→   513→/**
+   514→   514→ * Verify that the scope context is properly populated for the current request.
+   515→   515→ * Use this in middleware to ensure scope info is loaded before any query runs.
+   516→   516→ *
+   517→   517→ * @throws BusinessRuleError if scope context is missing for a scoped user
+   518→   518→ */
+   519→   519→export function requireScopeContext(): void {
+   520→   520→  const ctx = getRequestContext()
+   521→   521→  if (!ctx) return
+   522→   522→  if (!ctx.userId) return
+   523→   523→
+   524→   524→  const scope = getCurrentDataScope()
+   525→   525→  if (scope === DataScope.GLOBAL) return
+   526→   526→
+   527→   527→  // For each scope level, verify the corresponding IDs are populated
+   528→   528→  switch (scope) {
+   529→   529→    case DataScope.REGION:
+   530→   530→      if (!ctx.regionIds || ctx.regionIds.length === 0) {
+   531→   531→        throw new BusinessRuleError('Region scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+   532→   532→      }
+   533→   533→      break
+   534→   534→    case DataScope.BU:
+   535→   535→      if (!ctx.businessUnitIds || ctx.businessUnitIds.length === 0) {
+   536→   536→        throw new BusinessRuleError('BU scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+   537→   537→      }
+   538→   538→      break
+   539→   539→    case DataScope.COMPANY:
+   540→   540→      if (!ctx.companyIds || ctx.companyIds.length === 0) {
+   541→   541→        throw new BusinessRuleError('Company scope context not populated — cannot enforce data scope', {
+   542→   542→          code: 'SCOPE.CONTEXT_MISSING',
+   543→   543→        })
+   544→   544→      }
+   545→   545→      break
+   546→   546→    case DataScope.PLANT:
+   547→   547→      if (!ctx.plantIds || ctx.plantIds.length === 0) {
+   548→   548→        throw new BusinessRuleError('Plant scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+   549→   549→      }
+   550→   550→      break
+   551→   551→    case DataScope.WAREHOUSE:
+   552→   552→      if (!ctx.warehouseIds || ctx.warehouseIds.length === 0) {
+   553→   553→        throw new BusinessRuleError('Warehouse scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+   554→   554→      }
+   555→   555→      break
+   556→   556→    case DataScope.DEPT:
+   557→   557→      if (!ctx.departmentIds || ctx.departmentIds.length === 0) {
+   558→   558→        throw new BusinessRuleError('Department scope context not populated', { code: 'SCOPE.CONTEXT_MISSING' })
+   559→   559→      }
+   560→   560→      break
+   561→   561→  }
+   562→   562→}
+   563→   563→
+   564→   564→// ─── Scope Context Population ───────────────────────────────────────────────
+   565→   565→
+   566→   566→/**
+   567→   567→ * Populate the scope context for the current request.
+   568→   568→ * Called by the auth/scope middleware after authentication.
+   569→   569→ *
+   570→   570→ * In production, this would load the user's warehouse/plant/company/dept
+   571→   571→ * assignments from the database. For Phase 1, we accept them from the JWT
+   572→   572→ * claims or user profile.
+   573→   573→ */
+   574→   574→export function populateScopeContext(params: {
+   575→   575→  warehouseIds?: string[]
+   576→   576→  plantIds?: string[]
+   577→   577→  companyIds?: string[]
+   578→   578→  departmentIds?: string[]
+   579→   579→  businessUnitIds?: string[]
+   580→   580→  regionIds?: string[]
+   581→   581→}): void {
+   582→   582→  const ctx = getRequestContext()
+   583→   583→  if (!ctx) return
+   584→   584→
+   585→   585→  if (params.warehouseIds) ctx.warehouseIds = params.warehouseIds
+   586→   586→  if (params.plantIds) ctx.plantIds = params.plantIds
+   587→   587→  if (params.companyIds) ctx.companyIds = params.companyIds
+   588→   588→  if (params.departmentIds) ctx.departmentIds = params.departmentIds
+   589→   589→  if (params.businessUnitIds) ctx.businessUnitIds = params.businessUnitIds
+   590→   590→  if (params.regionIds) ctx.regionIds = params.regionIds
+   591→   591→
+   592→   592→  // Resolve and cache the data scope
+   593→   593→  ctx.dataScope = resolveDataScope(ctx.roles)
+   594→   594→}
+   595→   595→
+   596→   596→// ─── Multi-Scope Aggregation (for dashboards/reports) ───────────────────────
+   597→   597→
+   598→   598→/**
+   599→   599→ * Build an aggregated scope clause for dashboard/report queries that JOIN
+   600→   600→ * multiple tables. Returns the WHERE clause additions for ALL joined tables.
+   601→   601→ *
+   602→   602→ * Example:
+   603→   603→ *   const filter = buildMultiTableScopeFilter([
+   604→   604→ *     { table: 'inventory', alias: 'i', columnMap: {} },
+   605→   605→ *     { table: 'warehouses', alias: 'w', columnMap: {} },
+   606→   606→ *   ], 1)
+   607→   607→ */
+   608→   608→export function buildMultiTableScopeFilter(
+   609→   609→  tables: Array<{ table: string; alias: string; columnMap?: ScopeColumnMap }>,
+   610→   610→  paramStart: number
+   611→   611→): ScopeFilterResult | null {
+   612→   612→  const scope = getCurrentDataScope()
+   613→   613→  if (scope === DataScope.GLOBAL) return null
+   614→   614→
+   615→   615→  let i = paramStart
+   616→   616→  const params: unknown[] = []
+   617→   617→  const clauses: string[] = []
+   618→   618→
+   619→   619→  for (const { alias, columnMap } of tables) {
+   620→   620→    const filter = buildScopeFilter(scope, alias, i, columnMap ?? {})
+   621→   621→    if (filter) {
+   622→   622→      clauses.push(filter.clause.replace(/\$\d+/, () => `$${i++}`))
+   623→   623→      params.push(...filter.params)
+   624→   624→    }
+   625→   625→  }
+   626→   626→
+   627→   627→  if (clauses.length === 0) return null
+   628→   628→  return {
+   629→   629→    clause: clauses.join(''),
+   630→   630→    params,
+   631→   631→    paramCount: i - paramStart,
+   632→   632→  }
+   633→   633→}
+   634→   634→
+   635→   635→// ─── Export / Print Scope Filtering ─────────────────────────────────────────
+   636→   636→
+   637→   637→/**
+   638→   638→ * Filter an in-memory result set by scope (for export/print workflows
+   639→   639→ * that fetch data, then transform it).
+   640→   640→ *
+   641→   641→ * This is the fallback when SQL-level filtering isn't possible (e.g.,
+   642→   642→ * data already loaded into memory). All export and print pipelines MUST
+   643→   643→ * call this on the final result set.
+   644→   644→ */
+   645→   645→export function filterResultSetByScope<T extends Record<string, unknown>>(
+   646→   646→  records: T[]
+   647→   647→): T[] {
+   648→   648→  const ctx = getRequestContext()
+   649→   649→  if (!ctx || !ctx.userId) return records
+   650→   650→  const scope = getCurrentDataScope()
+   651→   651→  if (scope === DataScope.GLOBAL) return records
+   652→   652→
+   653→   653→  return records.filter((record) => {
+   654→   654→    switch (scope) {
+   655→   655→      case DataScope.REGION:
+   656→   656→        // Phase 1.6: fail-closed (was returning true in default)
+   657→   657→        return !record['region_id'] || (ctx.regionIds ?? []).includes(record['region_id'] as string)
+   658→   658→      case DataScope.BU:
+   659→   659→        return !record['bu_id'] || (ctx.businessUnitIds ?? []).includes(record['bu_id'] as string)
+   660→   660→      case DataScope.COMPANY:
+   661→   661→        return !record['company_id'] || (ctx.companyIds ?? []).includes(record['company_id'] as string)
+   662→   662→      case DataScope.PLANT:
+   663→   663→        return !record['plant_id'] || (ctx.plantIds ?? []).includes(record['plant_id'] as string)
+   664→   664→      case DataScope.WAREHOUSE:
+   665→   665→        return !record['warehouse_id'] || (ctx.warehouseIds ?? []).includes(record['warehouse_id'] as string)
+   666→   666→      case DataScope.DEPT:
+   667→   667→        return !record['department_id'] || (ctx.departmentIds ?? []).includes(record['department_id'] as string)
+   668→   668→      case DataScope.OWN:
+   669→   669→        return record['created_by'] === ctx.userId || record['assigned_to'] === ctx.userId
+   670→   670→      default:
+   671→   671→        // Phase 1.6: Unknown scope — fail closed (was returning true)
+   672→   672→        return false
+   673→   673→    }
+   674→   674→  })
+   675→   675→}
+   676→   676→
+   677→   677→// ─── Audit / Notification Scope Helpers ─────────────────────────────────────
+   678→   678→
+   679→   679→/**
+   680→   680→ * Build a scope filter for audit log queries.
+   681→   681→ * Audit logs are scoped by the entity's scope columns (company_id, plant_id, etc.)
+   682→   682→ */
+   683→   683→export function buildAuditScopeFilter(
+   684→   684→  tableAlias: string,
+   685→   685→  paramStart: number
+   686→   686→): ScopeFilterResult | null {
+   687→   687→  // Audit logs have company_id, plant_id, warehouse_id, department_id columns
+   688→   688→  // Use the standard scope filter
+   689→   689→  return buildScopeFilter(getCurrentDataScope(), tableAlias, paramStart, {
+   690→   690→    companyId: 'company_id',
+   691→   691→    plantId: 'plant_id',
+   692→   692→    warehouseId: 'warehouse_id',
+   693→   693→    departmentId: 'department_id',
+   694→   694→  })
+   695→   695→}
+   696→   696→
+   697→   697→/**
+   698→   698→ * Build a scope filter for notification queries.
+   699→   699→ * Notifications are scoped by user_id (OWN) or by org context.
+   700→   700→ */
+   701→   701→export function buildNotificationScopeFilter(
+   702→   702→  tableAlias: string,
+   703→   703→  paramStart: number
+   704→   704→): ScopeFilterResult | null {
+   705→   705→  const ctx = getRequestContext()
+   706→   706→  if (!ctx?.userId) return { clause: ' AND 1=0', params: [], paramCount: 0 }
+   707→   707→  const scope = getCurrentDataScope()
+   708→   708→
+   709→   709→  // Notifications are always OWN scope — user only sees their notifications
+   710→   710→  if (scope === DataScope.GLOBAL) {
+   711→   711→    // Global scope users (admin/auditor) see all notifications in their tenant
+   712→   712→    return null
+   713→   713→  }
+   714→   714→  // All other scopes — only see own notifications
+   715→   715→  return {
+   716→   716→    clause: ` AND ${tableAlias}.user_id = $${paramStart}`,
+   717→   717→    params: [ctx.userId],
+   718→   718→    paramCount: 1,
+   719→   719→  }
+   720→   720→}
+   721→   721→
+   722→   722→// ─── Workflow Scope Filter ──────────────────────────────────────────────────
+   723→   723→
+   724→   724→/**
+   725→   725→ * Build a scope filter for workflow state queries.
+   726→   726→ * Workflow instances carry the scope of their originating entity.
+   727→   727→ */
+   728→   728→export function buildWorkflowScopeFilter(
+   729→   729→  tableAlias: string,
+   730→   730→  paramStart: number
+   731→   731→): ScopeFilterResult | null {
+   732→   732→  return buildScopeFilter(getCurrentDataScope(), tableAlias, paramStart, {
+   733→   733→    companyId: 'company_id',
+   734→   734→    plantId: 'plant_id',
+   735→   735→    warehouseId: 'warehouse_id',
+   736→   736→    departmentId: 'department_id',
+   737→   737→    createdBy: 'initiated_by',
+   738→   738→  })
+   739→   739→}
+   740→   740→

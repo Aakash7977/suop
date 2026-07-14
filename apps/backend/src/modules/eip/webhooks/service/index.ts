@@ -19,6 +19,7 @@ import { logger } from '@/core/logging'
 // getRequestContext import removed (not used)
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { withRetry } from '../../event-bus/service'
+import { validateOutboundUrl, safeFetch } from '@/core/security/ssrf-protection'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -122,8 +123,12 @@ export async function deliverWebhook(params: {
   const signature = signPayload(params.payload, params.secret)
 
   try {
+    // Phase 1.6: SSRF protection — validate URL before fetching
+    await validateOutboundUrl(params.url)
+
     const _result = await withRetry(async () => {
-      const response = await fetch(params.url, {
+      // Phase 1.6: Use safeFetch for redirect-safe SSRF protection
+      const response = await safeFetch(params.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -164,11 +164,8 @@ export const goodsReceiptService = {
     const { tenantId, userId, ctx } = getContext()
     const existing = await grnRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('GoodsReceipt', id)
-    // Maker-Checker: cannot transition own GRN (SoD-15)
-    if (targetStatus === 'ACCEPTED' || targetStatus === 'REJECTED' || targetStatus === 'CLOSED') {
-      const { enforceMakerChecker } = await import('@/core/security/sod-enforcement')
-      enforceMakerChecker(existing['created_by'] as string, 'transition', 'GoodsReceipt')
-    }
+    // Phase 1.6: Removed dead `targetStatus` reference — maker-checker is enforced
+    // in the transition() method where targetStatus is actually defined.
 
     if (String(existing['status']) !== 'DRAFT') {
       throw new BusinessRuleError('Can only modify draft GRNs', { code: 'GRN.NOT_DRAFT' })
