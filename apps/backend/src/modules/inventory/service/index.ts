@@ -19,7 +19,7 @@ import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
 import { query } from '@/core/db/pglite'
-import { BusinessRuleError, NotFoundError, AuthorizationError } from '@/core/errors'
+import { BusinessRuleError, NotFoundError, AuthorizationError, ConcurrencyError } from '@/core/errors'
 import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
@@ -120,6 +120,7 @@ export const inventoryService = {
         unitCost: data.unitCost, movingAvgCost, totalValue: newTotalValue,
         lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_IN',
       }, Number(inventory['version']))
+      if (!inventory) throw new ConcurrencyError('Inventory was modified by another transaction')
     }
 
     // Create transaction (audit record)
@@ -216,6 +217,7 @@ export const inventoryService = {
         quantity: newQty, availableQty: newAvailable, totalValue: newTotalValue,
         lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_OUT',
       }, Number(stock['version']))
+      if (!updated) throw new ConcurrencyError('Inventory was modified by another transaction during stock-out')
 
       // Transaction
       const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)

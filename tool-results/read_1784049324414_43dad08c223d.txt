@@ -1,0 +1,756 @@
+     1→/**
+     2→ * @suop/backend — Enterprise Permission Registry (FINAL)
+     3→ *
+     4→ * Architecture: FROZEN — do not redesign.
+     5→ *
+     6→ * Format: <domain>:<action>[:<sub-scope>]
+     7→ * Standard Actions: view, read, create, update, delete, close, archive, restore,
+     8→ *   approve, reject, release, post, cancel, reopen, reverse, override,
+     9→ *   export, import, print, delegate, approve:as-delegate, audit
+    10→ * Configuration Actions: settings, workflow, master, templates, numbering,
+    11→ *   notifications, approval-rules
+    12→ *
+    13→ * Data Scope: Applied via role assignment (own/dept/wh/plant/company/bu/region/global)
+    14→ *
+    15→ * SoD: 27 rules enforced through role design (see 03_SEPARATION_OF_DUTIES.md)
+    16→ *
+    17→ * Break Glass: Emergency access role (read + configure only, time-limited, audited)
+    18→ */
+    19→
+    20→export const Permission = {
+    21→  // ─── Organization ──────────────────────────────────────────────
+    22→  ORG_VIEW: 'org:view',
+    23→  ORG_READ: 'org:read',
+    24→  ORG_CREATE: 'org:create',
+    25→  ORG_UPDATE: 'org:update',
+    26→  ORG_ARCHIVE: 'org:archive',
+    27→  ORG_RESTORE: 'org:restore',
+    28→  ORG_SETTINGS: 'org:settings',
+    29→  DEPT_READ: 'dept:read',
+    30→  DEPT_CREATE: 'dept:create',
+    31→  DEPT_UPDATE: 'dept:update',
+    32→  DEPT_ARCHIVE: 'dept:archive',
+    33→  COSTCENTER_READ: 'costcenter:read',
+    34→  COSTCENTER_CREATE: 'costcenter:create',
+    35→  COSTCENTER_UPDATE: 'costcenter:update',
+    36→  FY_READ: 'fy:read',
+    37→  FY_CREATE: 'fy:create',
+    38→  FY_CLOSE: 'fy:close',
+    39→  FY_REOPEN: 'fy:reopen',
+    40→
+    41→  // ─── Catalog ───────────────────────────────────────────────────
+    42→  CATALOG_VIEW: 'catalog:view',
+    43→  CATALOG_READ: 'catalog:read',
+    44→  CATALOG_CREATE: 'catalog:create',
+    45→  CATALOG_UPDATE: 'catalog:update',
+    46→  CATALOG_ARCHIVE: 'catalog:archive',
+    47→  CATALOG_RESTORE: 'catalog:restore',
+    48→  CATALOG_APPROVE: 'catalog:approve',
+    49→  CATALOG_OVERRIDE: 'catalog:override',
+    50→  CATALOG_EXPORT: 'catalog:export',
+    51→  CATALOG_IMPORT: 'catalog:import',
+    52→  CATEGORY_READ: 'category:read',
+    53→  CATEGORY_CREATE: 'category:create',
+    54→  CATEGORY_UPDATE: 'category:update',
+    55→  BRAND_READ: 'brand:read',
+    56→  BRAND_CREATE: 'brand:create',
+    57→  UOM_READ: 'uom:read',
+    58→
+    59→  // ─── Partners (Customers + Suppliers) ──────────────────────────
+    60→  CUSTOMER_VIEW: 'customer:view',
+    61→  CUSTOMER_READ: 'customer:read',
+    62→  CUSTOMER_CREATE: 'customer:create',
+    63→  CUSTOMER_UPDATE: 'customer:update',
+    64→  CUSTOMER_ARCHIVE: 'customer:archive',
+    65→  CUSTOMER_RESTORE: 'customer:restore',
+    66→  CUSTOMER_APPROVE: 'customer:approve',
+    67→  CUSTOMER_CREDIT_READ: 'customer:credit:read',
+    68→  CUSTOMER_CREDIT_UPDATE: 'customer:credit:update',
+    69→  CUSTOMER_CREDIT_OVERRIDE: 'customer:credit:override',
+    70→  SUPPLIER_VIEW: 'supplier:view',
+    71→  SUPPLIER_READ: 'supplier:read',
+    72→  SUPPLIER_CREATE: 'supplier:create',
+    73→  SUPPLIER_UPDATE: 'supplier:update',
+    74→  SUPPLIER_ARCHIVE: 'supplier:archive',
+    75→  SUPPLIER_APPROVE: 'supplier:approve',
+    76→  SUPPLIER_BLACKLIST: 'supplier:blacklist',
+    77→  SUPPLIER_COMPLIANCE_READ: 'supplier:compliance:read',
+    78→  SUPPLIER_COMPLIANCE_CREATE: 'supplier:compliance:create',
+    79→  SUPPLIER_PRODUCT_ASSIGN: 'supplier:product:assign',
+    80→  SUPPLIER_CATEGORY_READ: 'supplier:category:read',
+    81→  SUPPLIER_CATEGORY_CREATE: 'supplier:category:create',
+    82→
+    83→  // ─── Inventory ─────────────────────────────────────────────────
+    84→  INVENTORY_VIEW: 'inventory:view',
+    85→  INVENTORY_READ: 'inventory:read',
+    86→  INVENTORY_STOCKIN: 'inventory:stockin',
+    87→  INVENTORY_STOCKOUT: 'inventory:stockout',
+    88→  INVENTORY_TRANSFER: 'inventory:transfer',
+    89→  INVENTORY_TRANSFER_APPROVE: 'inventory:transfer:approve',
+    90→  INVENTORY_ADJUST: 'inventory:adjust',
+    91→  INVENTORY_ADJUST_APPROVE: 'inventory:adjust:approve',
+    92→  INVENTORY_RESERVE: 'inventory:reserve',
+    93→  INVENTORY_RESERVE_RELEASE: 'inventory:reserve:release',
+    94→  INVENTORY_BLOCK: 'inventory:block',
+    95→  INVENTORY_BLOCK_RELEASE: 'inventory:block:release',
+    96→  INVENTORY_EXPIRY_MARK: 'inventory:expiry:mark',
+    97→  INVENTORY_REVERSE: 'inventory:reverse',
+    98→  INVENTORY_OVERRIDE: 'inventory:override',
+    99→  INVENTORY_EXPORT: 'inventory:export',
+   100→  INVENTORY_IMPORT: 'inventory:import',
+   101→  LEDGER_READ: 'ledger:read',
+   102→  LEDGER_REVERSE: 'ledger:reverse',
+   103→
+   104→  // ─── Warehouse ────────────────────────────────────────────────
+   105→  WAREHOUSE_VIEW: 'warehouse:view',
+   106→  WAREHOUSE_READ: 'warehouse:read',
+   107→  WAREHOUSE_CREATE: 'warehouse:create',
+   108→  WAREHOUSE_UPDATE: 'warehouse:update',
+   109→  WAREHOUSE_ARCHIVE: 'warehouse:archive',
+   110→  WAREHOUSE_RESTORE: 'warehouse:restore',
+   111→  WAREHOUSE_SETTINGS: 'warehouse:settings',
+   112→  WAREHOUSE_NUMBERING: 'warehouse:numbering',
+   113→  PUTAWAY_VIEW: 'putaway:view',
+   114→  PUTAWAY_READ: 'putaway:read',
+   115→  PUTAWAY_CREATE: 'putaway:create',
+   116→  PUTAWAY_COMPLETE: 'putaway:complete',
+   117→  PUTAWAY_REASSIGN: 'putaway:reassign',
+   118→  PUTAWAY_OVERRIDE: 'putaway:override',
+   119→  BARCODE_READ: 'barcode:read',
+   120→  BARCODE_CREATE: 'barcode:create',
+   121→  BARCODE_PRINT: 'barcode:print',
+   122→  SCAN_EXECUTE: 'scan:execute',
+   123→  SCAN_READ: 'scan:read',
+   124→  GRN_VIEW: 'grn:view',
+   125→  GRN_READ: 'grn:read',
+   126→  GRN_CREATE: 'grn:create',
+   127→  GRN_POST: 'grn:post',
+   128→  GRN_CLOSE: 'grn:close',
+   129→
+   130→  // ─── Procurement ──────────────────────────────────────────────
+   131→  PR_VIEW: 'pr:view',
+   132→  PR_READ: 'pr:read',
+   133→  PR_CREATE: 'pr:create',
+   134→  PR_UPDATE: 'pr:update',
+   135→  PR_DELETE: 'pr:delete',
+   136→  PR_APPROVE: 'pr:approve',
+   137→  PR_REJECT: 'pr:reject',
+   138→  PR_DELEGATE: 'pr:delegate',
+   139→  PR_APPROVE_AS_DELEGATE: 'pr:approve:as-delegate',
+   140→  PO_VIEW: 'po:view',
+   141→  PO_READ: 'po:read',
+   142→  PO_CREATE: 'po:create',
+   143→  PO_UPDATE: 'po:update',
+   144→  PO_ARCHIVE: 'po:archive',
+   145→  PO_APPROVE: 'po:approve',
+   146→  PO_REJECT: 'po:reject',
+   147→  PO_RELEASE: 'po:release',
+   148→  PO_ISSUE: 'po:issue',
+   149→  PO_CANCEL: 'po:cancel',
+   150→  PO_CLOSE: 'po:close',
+   151→  PO_REOPEN: 'po:reopen',
+   152→  PO_RECEIVE: 'po:receive',
+   153→  PO_EXPORT: 'po:export',
+   154→  PO_DELEGATE: 'po:delegate',
+   155→  PO_APPROVE_AS_DELEGATE: 'po:approve:as-delegate',
+   156→  PO_OVERRIDE: 'po:override',
+   157→  QUOT_READ: 'quot:read',
+   158→  QUOT_CREATE: 'quot:create',
+   159→  QUOT_APPROVE: 'quot:approve',
+   160→  RFQ_READ: 'rfq:read',
+   161→  RFQ_CREATE: 'rfq:create',
+   162→
+   163→  // ─── Sales ────────────────────────────────────────────────────
+   164→  SO_VIEW: 'so:view',
+   165→  SO_READ: 'so:read',
+   166→  SO_CREATE: 'so:create',
+   167→  SO_UPDATE: 'so:update',
+   168→  SO_ARCHIVE: 'so:archive',
+   169→  SO_APPROVE: 'so:approve',
+   170→  SO_REJECT: 'so:reject',
+   171→  SO_HOLD: 'so:hold',
+   172→  SO_RELEASE: 'so:release',
+   173→  SO_CANCEL: 'so:cancel',
+   174→  SO_CLOSE: 'so:close',
+   175→  SO_REOPEN: 'so:reopen',
+   176→  SO_DELEGATE: 'so:delegate',
+   177→  SO_APPROVE_AS_DELEGATE: 'so:approve:as-delegate',
+   178→  SO_OVERRIDE: 'so:override',
+   179→  ALLOCATION_VIEW: 'allocation:view',
+   180→  ALLOCATION_READ: 'allocation:read',
+   181→  ALLOCATION_CREATE: 'allocation:create',
+   182→  ALLOCATION_CANCEL: 'allocation:cancel',
+   183→  WAVE_VIEW: 'wave:view',
+   184→  WAVE_READ: 'wave:read',
+   185→  WAVE_CREATE: 'wave:create',
+   186→  WAVE_RELEASE: 'wave:release',
+   187→  WAVE_CANCEL: 'wave:cancel',
+   188→  PICK_VIEW: 'pick:view',
+   189→  PICK_READ: 'pick:read',
+   190→  PICK_CREATE: 'pick:create',
+   191→  PICK_COMPLETE: 'pick:complete',
+   192→  PICK_OVERRIDE: 'pick:override',
+   193→  PACK_READ: 'pack:read',
+   194→  PACK_CREATE: 'pack:create',
+   195→  PACK_COMPLETE: 'pack:complete',
+   196→  SHIPMENT_READ: 'shipment:read',
+   197→  SHIPMENT_CREATE: 'shipment:create',
+   198→  SHIPMENT_OVERRIDE: 'shipment:override',
+   199→  DELIVERY_READ: 'delivery:read',
+   200→  DELIVERY_CREATE: 'delivery:create',
+   201→  DELIVERY_POD: 'delivery:pod',
+   202→  DELIVERY_CANCEL: 'delivery:cancel',
+   203→  RETURNS_READ: 'returns:read',
+   204→  RETURNS_CREATE: 'returns:create',
+   205→  RETURNS_APPROVE: 'returns:approve',
+   206→  PRICING_READ: 'pricing:read',
+   207→  PRICING_CREATE: 'pricing:create',
+   208→  PRICING_OVERRIDE: 'pricing:override',
+   209→  PRICING_CALCULATE: 'pricing:calculate',
+   210→  PRICING_APPROVAL_RULES: 'pricing:approval-rules',
+   211→
+   212→  // ─── Manufacturing ────────────────────────────────────────────
+   213→  BATCH_VIEW: 'batch:view',
+   214→  BATCH_READ: 'batch:read',
+   215→  BATCH_CREATE: 'batch:create',
+   216→  BATCH_UPDATE: 'batch:update',
+   217→  BATCH_APPROVE: 'batch:approve',
+   218→  BATCH_RELEASE: 'batch:release',
+   219→  BATCH_TRANSITION: 'batch:transition',
+   220→  BATCH_SPLIT: 'batch:split',
+   221→  BATCH_MERGE: 'batch:merge',
+   222→  BATCH_TRACE: 'batch:trace',
+   223→  BATCH_ARCHIVE: 'batch:archive',
+   224→  RECIPE_READ: 'recipe:read',
+   225→  RECIPE_CREATE: 'recipe:create',
+   226→  RECIPE_UPDATE: 'recipe:update',
+   227→  RECIPE_APPROVE: 'recipe:approve',
+   228→  RECIPE_ARCHIVE: 'recipe:archive',
+   229→  PRODUCTION_READ: 'production:read',
+   230→  PRODUCTION_CREATE: 'production:create',
+   231→  PRODUCTION_APPROVE: 'production:approve',
+   232→  PRODUCTION_RELEASE: 'production:release',
+   233→  PRODUCTION_START: 'production:start',
+   234→  PRODUCTION_COMPLETE: 'production:complete',
+   235→  PRODUCTION_CLOSE: 'production:close',
+   236→  MES_READ: 'mes:read',
+   237→
+   238→  // ─── Quality ──────────────────────────────────────────────────
+   239→  QUALITY_VIEW: 'quality:view',
+   240→  QUALITY_READ: 'quality:read',
+   241→  QUALITY_INSPECT: 'quality:inspect',
+   242→  QUALITY_APPROVE: 'quality:approve',
+   243→  QUALITY_REJECT: 'quality:reject',
+   244→  QUALITY_HOLD: 'quality:hold',
+   245→  QUALITY_HOLD_RELEASE: 'quality:hold:release',
+   246→  QUALITY_OVERRIDE: 'quality:override',
+   247→  NCR_READ: 'ncr:read',
+   248→  NCR_CREATE: 'ncr:create',
+   249→  NCR_APPROVE: 'ncr:approve',
+   250→  NCR_REJECT: 'ncr:reject',
+   251→  CAPA_READ: 'capa:read',
+   252→  CAPA_CREATE: 'capa:create',
+   253→  CAPA_APPROVE: 'capa:approve',
+   254→  COA_READ: 'coa:read',
+   255→  COA_SIGN: 'coa:sign',
+   256→  RECALL_READ: 'recall:read',
+   257→  RECALL_INITIATE: 'recall:initiate',
+   258→  RECALL_APPROVE: 'recall:approve',
+   259→  RECALL_CLOSE: 'recall:close',
+   260→  QUALITY_APPROVAL_RULES: 'quality:approval-rules',
+   261→
+   262→  // ─── Finance ──────────────────────────────────────────────────
+   263→  GL_VIEW: 'gl:view',
+   264→  GL_READ: 'gl:read',
+   265→  GL_CREATE: 'gl:create',
+   266→  GL_UPDATE: 'gl:update',
+   267→  GL_APPROVE: 'gl:approve',
+   268→  GL_POST: 'gl:post',
+   269→  GL_REVERSE: 'gl:reverse',
+   270→  GL_ARCHIVE: 'gl:archive',
+   271→  GL_DELEGATE: 'gl:delegate',
+   272→  GL_APPROVE_AS_DELEGATE: 'gl:approve:as-delegate',
+   273→  COSTING_READ: 'costing:read',
+   274→  COSTING_CREATE: 'costing:create',
+   275→  COSTING_UPDATE: 'costing:update',
+   276→  COSTING_APPROVE: 'costing:approve',
+   277→  COSTING_OVERRIDE: 'costing:override',
+   278→  GST_READ: 'gst:read',
+   279→  GST_CREATE: 'gst:create',
+   280→  GST_UPDATE: 'gst:update',
+   281→  GST_EXPORT: 'gst:export',
+   282→  FINANCE_READ: 'finance:read',
+   283→  FINANCE_CREATE: 'finance:create',
+   284→  FINANCE_UPDATE: 'finance:update',
+   285→  FINANCE_PERIOD_CLOSE: 'finance:period:close',
+   286→  FINANCE_PERIOD_REOPEN: 'finance:period:reopen',
+   287→  FINANCE_APPROVAL_RULES: 'finance:approval-rules',
+   288→  FINANCE_OVERRIDE: 'finance:override',
+   289→  AP_READ: 'ap:read',
+   290→  AR_READ: 'ar:read',
+   291→  PAYMENT_CREATE: 'payment:create',
+   292→  PAYMENT_APPROVE: 'payment:approve',
+   293→
+   294→  // ─── HR ───────────────────────────────────────────────────────
+   295→  HR_VIEW: 'hr:view',
+   296→  HR_READ: 'hr:read',
+   297→  HR_CREATE: 'hr:create',
+   298→  HR_UPDATE: 'hr:update',
+   299→  HR_ARCHIVE: 'hr:archive',
+   300→  ATTENDANCE_READ: 'attendance:read',
+   301→  ATTENDANCE_CREATE: 'attendance:create',
+   302→  ATTENDANCE_UPDATE: 'attendance:update',
+   303→  ATTENDANCE_APPROVE: 'attendance:approve',
+   304→  ATTENDANCE_DELEGATE: 'attendance:delegate',
+   305→  ATTENDANCE_APPROVE_AS_DELEGATE: 'attendance:approve:as-delegate',
+   306→  LEAVE_READ: 'leave:read',
+   307→  LEAVE_CREATE: 'leave:create',
+   308→  LEAVE_APPROVE: 'leave:approve',
+   309→  LEAVE_DELEGATE: 'leave:delegate',
+   310→  LEAVE_APPROVE_AS_DELEGATE: 'leave:approve:as-delegate',
+   311→  LEAVE_CANCEL: 'leave:cancel',
+   312→  PERFORMANCE_READ: 'performance:read',
+   313→  PERFORMANCE_CONFIGURE: 'performance:configure',
+   314→  PERFORMANCE_APPRAISE: 'performance:appraise',
+   315→  PERFORMANCE_APPROVE: 'performance:approve',
+   316→  PAYROLL_READ: 'payroll:read',
+   317→  PAYROLL_APPROVE: 'payroll:approve',
+   318→
+   319→  // ─── CRM ──────────────────────────────────────────────────────
+   320→  CRM_VIEW: 'crm:view',
+   321→  CRM_READ: 'crm:read',
+   322→  CRM_CREATE: 'crm:create',
+   323→  CRM_UPDATE: 'crm:update',
+   324→  COMPLAINT_READ: 'complaint:read',
+   325→  COMPLAINT_CREATE: 'complaint:create',
+   326→  COMPLAINT_APPROVE: 'complaint:approve',
+   327→  COMPLAINT_RESOLVE: 'complaint:resolve',
+   328→  SERVICE_READ: 'service:read',
+   329→  SERVICE_CREATE: 'service:create',
+   330→  SERVICE_CLOSE: 'service:close',
+   331→  LEAD_READ: 'lead:read',
+   332→
+   333→  // ─── BI & Administration ──────────────────────────────────────
+   334→  BI_VIEW: 'bi:view',
+   335→  BI_READ: 'bi:read',
+   336→  BI_SETTINGS: 'bi:settings',
+   337→  BI_TEMPLATES: 'bi:templates',
+   338→  ALERTS_READ: 'alerts:read',
+   339→  ALERTS_SETTINGS: 'alerts:settings',
+   340→  ALERTS_ADMIN: 'alerts:admin',
+   341→  ALERTS_OVERRIDE: 'alerts:override',
+   342→  USER_VIEW: 'user:view',
+   343→  USER_READ: 'user:read',
+   344→  USER_CREATE: 'user:create',
+   345→  USER_UPDATE: 'user:update',
+   346→  USER_ARCHIVE: 'user:archive',
+   347→  ROLE_MANAGE: 'role:manage',
+   348→  AUDIT_READ: 'audit:read',
+   349→  AUDIT_READ_CRITICAL: 'audit:read:critical',
+   350→  AUDIT_EXPORT: 'audit:export',
+   351→  SYSTEM_SETTINGS: 'system:settings',
+   352→  SYSTEM_TENANT_CROSS: 'system:tenant:cross',
+   353→  SYSTEM_BREAK_GLASS_ACTIVATE: 'system:break-glass:activate',
+   354→
+   355→  // ─── Auth ─────────────────────────────────────────────────────
+   356→  AUTH_MANAGE_USERS: 'auth:manage_users',
+   357→  AUTH_MANAGE_ROLES: 'auth:manage_roles',
+   358→  AUTH_RESET_PASSWORD: 'auth:reset_password',
+   359→
+   360→  // ─── Future Modules (placeholders — activated when built) ─────
+   361→  RECEIVING_VIEW: 'receiving:view',
+   362→  RECEIVING_READ: 'receiving:read',
+   363→  RECEIVING_CREATE: 'receiving:create',
+   364→  RECEIVING_APPROVE: 'receiving:approve',
+   365→  YARD_VIEW: 'yard:view',
+   366→  YARD_READ: 'yard:read',
+   367→  YARD_CHECKIN: 'yard:checkin',
+   368→  YARD_CHECKOUT: 'yard:checkout',
+   369→  EAM_VIEW: 'eam:view',
+   370→  EAM_READ: 'eam:read',
+   371→  EAM_CREATE: 'eam:create',
+   372→  EAM_UPDATE: 'eam:update',
+   373→  EAM_MAINTENANCE: 'eam:maintenance',
+   374→  CYCLECOUNT_READ: 'cyclecount:read',
+   375→  CYCLECOUNT_EXECUTE: 'cyclecount:execute',
+   376→  CYCLECOUNT_APPROVE: 'cyclecount:approve',
+   377→  MISSIONCONTROL_READ: 'missioncontrol:read',
+   378→  CONTROLTOWER_READ: 'controltower:read',
+   379→
+   380→  // ─── Backward Compatibility Aliases (to be removed after all routes updated) ───
+   381→  // NOTE: NCR_CREATE, NCR_APPROVE, RECALL_INITIATE are defined above; do not duplicate.
+   382→  INVENTORY_POST: 'inventory:stockin',
+   383→  INVENTORY_ADJUST_OLD: 'inventory:adjust',
+   384→  IQC_INSPECT: 'quality:inspect',
+   385→  IQC_APPROVE: 'quality:approve',
+   386→  COA_SIGN_ALIAS: 'coa:sign',
+   387→  GRN_PUTAWAY: 'putaway:create',
+   388→  SYSTEM_REFERENCE_UPDATE: 'system:settings',
+   389→
+   390→  // ─── Backward-Compat Aliases (RC1 → Phase 1 renames) ──────────────────
+   391→  // These exist so that older routes/tests referencing the RC1 names continue
+   392→  // to work. New code MUST use the canonical Phase 1 names above.
+   393→  PRODUCT_READ: 'catalog:read',
+   394→  PRODUCT_CREATE: 'catalog:create',
+   395→  PRODUCT_UPDATE: 'catalog:update',
+   396→  PRODUCT_DELETE: 'catalog:archive',
+   397→  ORG_DELETE: 'org:archive',
+   398→  CUSTOMER_DELETE: 'customer:archive',
+   399→  SUPPLIER_DELETE: 'supplier:archive',
+   400→  PO_DELETE: 'po:archive',
+   401→  QUOT_AWARD: 'quot:approve',
+   402→  QUOT_REJECT: 'quot:reject',
+   403→} as const
+   404→
+   405→export type Permission = (typeof Permission)[keyof typeof Permission]
+   406→
+   407→// ─── Data Scope ─────────────────────────────────────────────────
+   408→export const DataScope = {
+   409→  OWN: 'own',
+   410→  DEPT: 'dept',
+   411→  WAREHOUSE: 'wh',
+   412→  PLANT: 'plant',
+   413→  COMPANY: 'company',
+   414→  BU: 'bu',
+   415→  REGION: 'region',
+   416→  GLOBAL: 'global',
+   417→} as const
+   418→
+   419→export type DataScope = (typeof DataScope)[keyof typeof DataScope]
+   420→
+   421→// ─── Default Roles ──────────────────────────────────────────────
+   422→
+   423→export const DEFAULT_ROLES: Record<string, Permission[]> = {
+   424→  // System Administrator — Global scope, all permissions
+   425→  // SoD Note: Should NOT perform day-to-day operations. Only configures system, manages users, resolves escalations.
+   426→  tenant_admin: Object.values(Permission).filter(
+   427→    (p) => !p.includes('break-glass') // Cannot self-activate break glass
+   428→  ) as Permission[],
+   429→
+   430→  // Sales Officer — Dept scope
+   431→  // SoD: Cannot approve SOs (so:approve belongs to sales_manager)
+   432→  sales_officer: [
+   433→    Permission.SO_VIEW, Permission.SO_READ, Permission.SO_CREATE, Permission.SO_UPDATE,
+   434→    Permission.CUSTOMER_VIEW, Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE,
+   435→    Permission.PRICING_READ, Permission.PRICING_CALCULATE,
+   436→    Permission.ALLOCATION_READ,
+   437→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   438→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   439→    Permission.ORG_VIEW, Permission.ORG_READ,
+   440→    Permission.DELIVERY_READ,
+   441→  ],
+   442→
+   443→  // Sales Manager — Company scope
+   444→  // SoD: Cannot post to GL (gl:post belongs to finance_manager)
+   445→  sales_manager: [
+   446→    Permission.SO_VIEW, Permission.SO_READ, Permission.SO_CREATE, Permission.SO_UPDATE, Permission.SO_ARCHIVE,
+   447→    Permission.SO_APPROVE, Permission.SO_REJECT, Permission.SO_HOLD, Permission.SO_RELEASE, Permission.SO_CANCEL,
+   448→    Permission.SO_CLOSE, Permission.SO_REOPEN, Permission.SO_DELEGATE, Permission.SO_APPROVE_AS_DELEGATE, Permission.SO_OVERRIDE,
+   449→    Permission.CUSTOMER_VIEW, Permission.CUSTOMER_READ, Permission.CUSTOMER_CREATE, Permission.CUSTOMER_UPDATE, Permission.CUSTOMER_ARCHIVE, Permission.CUSTOMER_APPROVE,
+   450→    Permission.CUSTOMER_CREDIT_READ, Permission.CUSTOMER_CREDIT_OVERRIDE,
+   451→    Permission.PRICING_READ, Permission.PRICING_CREATE, Permission.PRICING_OVERRIDE, Permission.PRICING_CALCULATE, Permission.PRICING_APPROVAL_RULES,
+   452→    Permission.ALLOCATION_VIEW, Permission.ALLOCATION_READ, Permission.ALLOCATION_CREATE, Permission.ALLOCATION_CANCEL,
+   453→    Permission.WAVE_VIEW, Permission.WAVE_READ,
+   454→    Permission.SHIPMENT_READ, Permission.DELIVERY_READ, Permission.RETURNS_READ, Permission.RETURNS_CREATE, Permission.RETURNS_APPROVE,
+   455→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   456→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   457→    Permission.ORG_VIEW, Permission.ORG_READ,
+   458→    Permission.BI_VIEW, Permission.BI_READ,
+   459→  ],
+   460→
+   461→  // Procurement Officer — Dept scope
+   462→  // SoD: Cannot approve PRs or POs; cannot receive goods
+   463→  procurement_officer: [
+   464→    Permission.PR_VIEW, Permission.PR_READ, Permission.PR_CREATE, Permission.PR_UPDATE, Permission.PR_DELETE,
+   465→    Permission.PO_VIEW, Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE,
+   466→    Permission.QUOT_READ, Permission.QUOT_CREATE,
+   467→    Permission.RFQ_READ, Permission.RFQ_CREATE,
+   468→    Permission.SUPPLIER_VIEW, Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE,
+   469→    Permission.SUPPLIER_COMPLIANCE_READ,
+   470→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   471→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   472→    Permission.ORG_VIEW, Permission.ORG_READ,
+   473→  ],
+   474→
+   475→  // Procurement Manager — Company scope
+   476→  // SoD: Cannot receive goods (po:receive belongs to warehouse); cannot approve payments
+   477→  procurement_manager: [
+   478→    Permission.PR_VIEW, Permission.PR_READ, Permission.PR_CREATE, Permission.PR_UPDATE,
+   479→    Permission.PR_APPROVE, Permission.PR_REJECT, Permission.PR_DELEGATE, Permission.PR_APPROVE_AS_DELEGATE,
+   480→    Permission.PO_VIEW, Permission.PO_READ, Permission.PO_CREATE, Permission.PO_UPDATE, Permission.PO_ARCHIVE,
+   481→    Permission.PO_APPROVE, Permission.PO_REJECT, Permission.PO_RELEASE, Permission.PO_ISSUE, Permission.PO_CANCEL,
+   482→    Permission.PO_CLOSE, Permission.PO_REOPEN, Permission.PO_EXPORT, Permission.PO_DELEGATE, Permission.PO_APPROVE_AS_DELEGATE,
+   483→    Permission.PO_OVERRIDE,
+   484→    Permission.QUOT_READ, Permission.QUOT_CREATE, Permission.QUOT_APPROVE, Permission.QUOT_REJECT,
+   485→    Permission.RFQ_READ, Permission.RFQ_CREATE,
+   486→    Permission.SUPPLIER_VIEW, Permission.SUPPLIER_READ, Permission.SUPPLIER_CREATE, Permission.SUPPLIER_UPDATE,
+   487→    Permission.SUPPLIER_ARCHIVE, Permission.SUPPLIER_APPROVE, Permission.SUPPLIER_BLACKLIST,
+   488→    Permission.SUPPLIER_COMPLIANCE_READ, Permission.SUPPLIER_COMPLIANCE_CREATE, Permission.SUPPLIER_PRODUCT_ASSIGN,
+   489→    Permission.SUPPLIER_CATEGORY_READ, Permission.SUPPLIER_CATEGORY_CREATE,
+   490→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   491→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   492→    Permission.GRN_VIEW, Permission.GRN_READ,
+   493→    Permission.ORG_VIEW, Permission.ORG_READ,
+   494→    Permission.BI_VIEW, Permission.BI_READ,
+   495→  ],
+   496→
+   497→  // Warehouse Operator — Wh scope
+   498→  // SoD: Cannot adjust inventory (inventory:adjust belongs to warehouse_supervisor)
+   499→  warehouse_operator: [
+   500→    Permission.WAREHOUSE_VIEW, Permission.WAREHOUSE_READ,
+   501→    Permission.PUTAWAY_VIEW, Permission.PUTAWAY_READ, Permission.PUTAWAY_CREATE, Permission.PUTAWAY_COMPLETE,
+   502→    Permission.SCAN_EXECUTE,
+   503→    Permission.BARCODE_READ, Permission.BARCODE_PRINT,
+   504→    Permission.GRN_VIEW, Permission.GRN_READ,
+   505→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   506→    Permission.INVENTORY_STOCKIN, Permission.INVENTORY_STOCKOUT,
+   507→    Permission.INVENTORY_BLOCK, Permission.INVENTORY_EXPIRY_MARK,
+   508→    Permission.INVENTORY_RESERVE, Permission.INVENTORY_RESERVE_RELEASE,
+   509→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   510→    Permission.CUSTOMER_VIEW, Permission.CUSTOMER_READ,
+   511→    Permission.ORG_VIEW, Permission.ORG_READ,
+   512→  ],
+   513→
+   514→  // Warehouse Supervisor — Wh + Plant scope
+   515→  // SoD: Cannot approve inventory adjustments (requires tenant_admin)
+   516→  warehouse_supervisor: [
+   517→    Permission.WAREHOUSE_VIEW, Permission.WAREHOUSE_READ, Permission.WAREHOUSE_CREATE, Permission.WAREHOUSE_UPDATE,
+   518→    Permission.WAREHOUSE_ARCHIVE, Permission.WAREHOUSE_RESTORE, Permission.WAREHOUSE_SETTINGS, Permission.WAREHOUSE_NUMBERING,
+   519→    Permission.PUTAWAY_VIEW, Permission.PUTAWAY_READ, Permission.PUTAWAY_CREATE, Permission.PUTAWAY_COMPLETE,
+   520→    Permission.PUTAWAY_REASSIGN, Permission.PUTAWAY_OVERRIDE,
+   521→    Permission.BARCODE_READ, Permission.BARCODE_CREATE, Permission.BARCODE_PRINT,
+   522→    Permission.SCAN_EXECUTE, Permission.SCAN_READ,
+   523→    Permission.GRN_VIEW, Permission.GRN_READ, Permission.GRN_CREATE, Permission.GRN_POST, Permission.GRN_CLOSE,
+   524→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   525→    Permission.INVENTORY_STOCKIN, Permission.INVENTORY_STOCKOUT, Permission.INVENTORY_TRANSFER, Permission.INVENTORY_ADJUST,
+   526→    Permission.INVENTORY_RESERVE, Permission.INVENTORY_RESERVE_RELEASE,
+   527→    Permission.INVENTORY_BLOCK, Permission.INVENTORY_BLOCK_RELEASE, Permission.INVENTORY_EXPIRY_MARK,
+   528→    Permission.INVENTORY_REVERSE, Permission.INVENTORY_EXPORT,
+   529→    Permission.LEDGER_READ,
+   530→    Permission.WAVE_VIEW, Permission.WAVE_READ, Permission.WAVE_CREATE, Permission.WAVE_RELEASE, Permission.WAVE_CANCEL,
+   531→    Permission.PICK_VIEW, Permission.PICK_READ, Permission.PICK_CREATE, Permission.PICK_COMPLETE, Permission.PICK_OVERRIDE,
+   532→    Permission.PACK_READ, Permission.PACK_CREATE, Permission.PACK_COMPLETE,
+   533→    Permission.SHIPMENT_READ, Permission.SHIPMENT_CREATE,
+   534→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   535→    Permission.ORG_VIEW, Permission.ORG_READ,
+   536→    Permission.BI_VIEW, Permission.BI_READ,
+   537→  ],
+   538→
+   539→  // Finance Accountant — Company scope
+   540→  // SoD: Cannot post GL (gl:post belongs to finance_manager); cannot approve cost revaluations
+   541→  finance_accountant: [
+   542→    Permission.GL_VIEW, Permission.GL_READ, Permission.GL_CREATE, Permission.GL_UPDATE,
+   543→    Permission.COSTING_READ, Permission.COSTING_CREATE, Permission.COSTING_UPDATE,
+   544→    Permission.GST_READ, Permission.GST_CREATE, Permission.GST_UPDATE, Permission.GST_EXPORT,
+   545→    Permission.FINANCE_READ, Permission.FINANCE_CREATE, Permission.FINANCE_UPDATE,
+   546→    Permission.AP_READ, Permission.AR_READ,
+   547→    Permission.PAYMENT_CREATE,
+   548→    Permission.AUDIT_READ,
+   549→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   550→    Permission.ORG_VIEW, Permission.ORG_READ,
+   551→    Permission.BI_VIEW, Permission.BI_READ,
+   552→  ],
+   553→
+   554→  // Finance Manager — Company scope
+   555→  // SoD: Cannot create GL entries (gl:create belongs to finance_accountant) — maker-checker
+   556→  finance_manager: [
+   557→    Permission.GL_VIEW, Permission.GL_READ, Permission.GL_APPROVE, Permission.GL_POST, Permission.GL_REVERSE,
+   558→    Permission.GL_ARCHIVE, Permission.GL_DELEGATE, Permission.GL_APPROVE_AS_DELEGATE,
+   559→    Permission.COSTING_READ, Permission.COSTING_APPROVE, Permission.COSTING_OVERRIDE,
+   560→    Permission.GST_READ, Permission.GST_EXPORT,
+   561→    Permission.FINANCE_READ, Permission.FINANCE_PERIOD_CLOSE, Permission.FINANCE_PERIOD_REOPEN,
+   562→    Permission.FINANCE_APPROVAL_RULES, Permission.FINANCE_OVERRIDE,
+   563→    Permission.AP_READ, Permission.AR_READ,
+   564→    Permission.PAYMENT_CREATE, Permission.PAYMENT_APPROVE,
+   565→    Permission.AUDIT_READ, Permission.AUDIT_READ_CRITICAL,
+   566→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   567→    Permission.ORG_VIEW, Permission.ORG_READ,
+   568→    Permission.BI_VIEW, Permission.BI_READ,
+   569→  ],
+   570→
+   571→  // Manufacturing Supervisor — Plant scope
+   572→  // SoD: Cannot approve supplier invoices or payments; cannot modify GL
+   573→  manufacturing_supervisor: [
+   574→    Permission.BATCH_VIEW, Permission.BATCH_READ, Permission.BATCH_CREATE, Permission.BATCH_UPDATE,
+   575→    Permission.BATCH_APPROVE, Permission.BATCH_RELEASE, Permission.BATCH_TRANSITION, Permission.BATCH_SPLIT,
+   576→    Permission.BATCH_MERGE, Permission.BATCH_TRACE, Permission.BATCH_ARCHIVE,
+   577→    Permission.RECIPE_READ, Permission.RECIPE_CREATE, Permission.RECIPE_UPDATE, Permission.RECIPE_APPROVE, Permission.RECIPE_ARCHIVE,
+   578→    Permission.PRODUCTION_READ, Permission.PRODUCTION_CREATE, Permission.PRODUCTION_APPROVE, Permission.PRODUCTION_RELEASE,
+   579→    Permission.PRODUCTION_START, Permission.PRODUCTION_COMPLETE, Permission.PRODUCTION_CLOSE,
+   580→    Permission.MES_READ,
+   581→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ, Permission.INVENTORY_STOCKIN, Permission.INVENTORY_STOCKOUT,
+   582→    Permission.QUALITY_VIEW, Permission.QUALITY_READ, Permission.BATCH_TRACE,
+   583→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   584→    Permission.ORG_VIEW, Permission.ORG_READ,
+   585→    Permission.BI_VIEW, Permission.BI_READ,
+   586→  ],
+   587→
+   588→  // Quality Manager — Plant scope
+   589→  // SoD: Cannot dispatch goods; cannot modify inventory quantities; can only CREATE holds not release critical ones without manager approval
+   590→  quality_manager: [
+   591→    Permission.QUALITY_VIEW, Permission.QUALITY_READ, Permission.QUALITY_INSPECT, Permission.QUALITY_APPROVE,
+   592→    Permission.QUALITY_REJECT, Permission.QUALITY_HOLD, Permission.QUALITY_HOLD_RELEASE, Permission.QUALITY_OVERRIDE,
+   593→    Permission.NCR_READ, Permission.NCR_CREATE, Permission.NCR_APPROVE, Permission.NCR_REJECT,
+   594→    Permission.CAPA_READ, Permission.CAPA_CREATE, Permission.CAPA_APPROVE,
+   595→    Permission.COA_READ, Permission.COA_SIGN,
+   596→    Permission.RECALL_READ, Permission.RECALL_INITIATE, Permission.RECALL_APPROVE, Permission.RECALL_CLOSE,
+   597→    Permission.QUALITY_APPROVAL_RULES,
+   598→    Permission.BATCH_READ, Permission.BATCH_TRACE,
+   599→    Permission.SUPPLIER_COMPLIANCE_READ,
+   600→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   601→    Permission.GRN_VIEW, Permission.GRN_READ,
+   602→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   603→    Permission.ORG_VIEW, Permission.ORG_READ,
+   604→    Permission.AUDIT_READ,
+   605→    Permission.BI_VIEW, Permission.BI_READ,
+   606→  ],
+   607→
+   608→  // HR Manager — Company scope
+   609→  hr_manager: [
+   610→    Permission.HR_VIEW, Permission.HR_READ, Permission.HR_CREATE, Permission.HR_UPDATE, Permission.HR_ARCHIVE,
+   611→    Permission.ATTENDANCE_READ, Permission.ATTENDANCE_APPROVE, Permission.ATTENDANCE_DELEGATE, Permission.ATTENDANCE_APPROVE_AS_DELEGATE,
+   612→    Permission.LEAVE_READ, Permission.LEAVE_APPROVE, Permission.LEAVE_DELEGATE, Permission.LEAVE_APPROVE_AS_DELEGATE, Permission.LEAVE_CANCEL,
+   613→    Permission.PERFORMANCE_READ, Permission.PERFORMANCE_CONFIGURE, Permission.PERFORMANCE_APPRAISE, Permission.PERFORMANCE_APPROVE,
+   614→    Permission.PAYROLL_READ, Permission.PAYROLL_APPROVE,
+   615→    Permission.ORG_VIEW, Permission.ORG_READ,
+   616→    Permission.BI_VIEW, Permission.BI_READ,
+   617→  ],
+   618→
+   619→  // Auditor — Global scope, READ-ONLY
+   620→  // SoD: ZERO write permissions. Cannot create, update, delete, approve, post, or override ANYTHING.
+   621→  auditor: [
+   622→    Permission.ORG_VIEW, Permission.ORG_READ,
+   623→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   624→    Permission.CUSTOMER_VIEW, Permission.CUSTOMER_READ,
+   625→    Permission.SUPPLIER_VIEW, Permission.SUPPLIER_READ,
+   626→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   627→    Permission.LEDGER_READ,
+   628→    Permission.WAREHOUSE_VIEW, Permission.WAREHOUSE_READ,
+   629→    Permission.PUTAWAY_VIEW, Permission.PUTAWAY_READ,
+   630→    Permission.GRN_VIEW, Permission.GRN_READ,
+   631→    Permission.PR_VIEW, Permission.PR_READ,
+   632→    Permission.PO_VIEW, Permission.PO_READ,
+   633→    Permission.QUOT_READ, Permission.RFQ_READ,
+   634→    Permission.SO_VIEW, Permission.SO_READ,
+   635→    Permission.ALLOCATION_VIEW, Permission.ALLOCATION_READ,
+   636→    Permission.WAVE_VIEW, Permission.WAVE_READ,
+   637→    Permission.PICK_VIEW, Permission.PICK_READ,
+   638→    Permission.PACK_READ,
+   639→    Permission.SHIPMENT_READ,
+   640→    Permission.DELIVERY_READ,
+   641→    Permission.RETURNS_READ,
+   642→    Permission.PRICING_READ,
+   643→    Permission.BATCH_VIEW, Permission.BATCH_READ, Permission.BATCH_TRACE,
+   644→    Permission.RECIPE_READ,
+   645→    Permission.PRODUCTION_READ,
+   646→    Permission.MES_READ,
+   647→    Permission.QUALITY_VIEW, Permission.QUALITY_READ,
+   648→    Permission.NCR_READ, Permission.CAPA_READ, Permission.COA_READ, Permission.RECALL_READ,
+   649→    Permission.GL_VIEW, Permission.GL_READ,
+   650→    Permission.COSTING_READ,
+   651→    Permission.GST_READ,
+   652→    Permission.FINANCE_READ,
+   653→    Permission.AP_READ, Permission.AR_READ,
+   654→    Permission.HR_VIEW, Permission.HR_READ,
+   655→    Permission.ATTENDANCE_READ,
+   656→    Permission.LEAVE_READ,
+   657→    Permission.PERFORMANCE_READ,
+   658→    Permission.PAYROLL_READ,
+   659→    Permission.CRM_VIEW, Permission.CRM_READ,
+   660→    Permission.COMPLAINT_READ, Permission.SERVICE_READ,
+   661→    Permission.BI_VIEW, Permission.BI_READ,
+   662→    Permission.ALERTS_READ,
+   663→    Permission.USER_VIEW, Permission.USER_READ,
+   664→    Permission.AUDIT_READ, Permission.AUDIT_READ_CRITICAL, Permission.AUDIT_EXPORT,
+   665→    Permission.SCAN_READ,
+   666→    Permission.BARCODE_READ,
+   667→  ],
+   668→
+   669→  // Break Glass — Global scope, TIME-LIMITED, READ + CONFIGURE ONLY
+   670→  // SoD: NO post, approve, delete, override, or payment. Auto-revoked after 4 hours.
+   671→  break_glass: [
+   672→    // VIEW + READ only across all domains
+   673→    Permission.ORG_VIEW, Permission.ORG_READ,
+   674→    Permission.CATALOG_VIEW, Permission.CATALOG_READ,
+   675→    Permission.CUSTOMER_VIEW, Permission.CUSTOMER_READ,
+   676→    Permission.SUPPLIER_VIEW, Permission.SUPPLIER_READ,
+   677→    Permission.INVENTORY_VIEW, Permission.INVENTORY_READ,
+   678→    Permission.LEDGER_READ,
+   679→    Permission.WAREHOUSE_VIEW, Permission.WAREHOUSE_READ,
+   680→    Permission.PUTAWAY_VIEW, Permission.PUTAWAY_READ,
+   681→    Permission.GRN_VIEW, Permission.GRN_READ,
+   682→    Permission.PR_VIEW, Permission.PR_READ,
+   683→    Permission.PO_VIEW, Permission.PO_READ,
+   684→    Permission.SO_VIEW, Permission.SO_READ,
+   685→    Permission.BATCH_VIEW, Permission.BATCH_READ, Permission.BATCH_TRACE,
+   686→    Permission.QUALITY_VIEW, Permission.QUALITY_READ,
+   687→    Permission.NCR_READ, Permission.CAPA_READ,
+   688→    Permission.GL_VIEW, Permission.GL_READ,
+   689→    Permission.COSTING_READ, Permission.GST_READ, Permission.FINANCE_READ,
+   690→    Permission.HR_VIEW, Permission.HR_READ,
+   691→    Permission.BI_VIEW, Permission.BI_READ,
+   692→    Permission.AUDIT_READ, Permission.AUDIT_READ_CRITICAL,
+   693→    // CONFIGURE only (no create/update/delete)
+   694→    Permission.SYSTEM_SETTINGS,
+   695→    Permission.SYSTEM_BREAK_GLASS_ACTIVATE,
+   696→  ],
+   697→}
+   698→
+   699→// ─── Permission Checker ─────────────────────────────────────────
+   700→
+   701→export class PermissionChecker {
+   702→  /**
+   703→   * Check if a set of roles grants a specific permission.
+   704→   */
+   705→  static hasPermission(roles: string[], permission: Permission): boolean {
+   706→    for (const role of roles) {
+   707→      const rolePermissions = DEFAULT_ROLES[role]
+   708→      if (rolePermissions?.includes(permission)) return true
+   709→    }
+   710→    return false
+   711→  }
+   712→
+   713→  /**
+   714→   * Check if user has ANY of the given permissions.
+   715→   */
+   716→  static hasAnyPermission(roles: string[], permissions: Permission[]): boolean {
+   717→    return permissions.some((p) => this.hasPermission(roles, p))
+   718→  }
+   719→
+   720→  /**
+   721→   * Check if user has ALL of the given permissions.
+   722→   */
+   723→  static hasAllPermissions(roles: string[], permissions: Permission[]): boolean {
+   724→    return permissions.every((p) => this.hasPermission(roles, p))
+   725→  }
+   726→
+   727→  /**
+   728→   * Resolve all permissions for a set of roles (union).
+   729→   */
+   730→  static resolvePermissions(roles: string[]): string[] {
+   731→    const result = new Set<string>()
+   732→    for (const role of roles) {
+   733→      const perms = DEFAULT_ROLES[role]
+   734→      if (perms) perms.forEach((p) => result.add(p))
+   735→    }
+   736→    return Array.from(result)
+   737→  }
+   738→
+   739→  /**
+   740→   * Check if two roles conflict (SoD violation).
+   741→   * Returns true if assigning both roles to the same user would violate SoD.
+   742→   */
+   743→  static isRoleConflict(roleA: string, roleB: string): boolean {
+   744→    const CONFLICTING_PAIRS: Array<[string, string]> = [
+   745→      ['finance_accountant', 'finance_manager'],     // SoD-06: JE creator cannot post
+   746→      ['procurement_officer', 'procurement_manager'], // SoD-01: PR creator cannot approve
+   747→      ['sales_officer', 'sales_manager'],             // SoD-11: SO creator cannot approve
+   748→      ['auditor', 'tenant_admin'],                    // Auditor must be read-only
+   749→    ]
+   750→    for (const [a, b] of CONFLICTING_PAIRS) {
+   751→      if ((roleA === a && roleB === b) || (roleA === b && roleB === a)) return true
+   752→    }
+   753→    return false
+   754→  }
+   755→}
+   756→

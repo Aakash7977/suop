@@ -1,0 +1,870 @@
+     1→/**
+     2→ * Auth Service — Complete authentication business logic.
+     3→ *
+     4→ * Uses Phase 0 foundation:
+     5→ *   - Argon2id password hashing (core/auth/password.ts)
+     6→ *   - JWT access tokens (core/auth/jwt.ts)
+     7→ *   - Refresh token rotation (core/auth/session.ts)
+     8→ *   - Workflow Engine for user lifecycle
+     9→ *   - Audit Service for every auth event
+    10→ *   - Event Bus for domain events
+    11→ *   - Notification Engine for emails
+    12→ */
+    13→
+    14→import { randomUUID } from 'node:crypto'
+    15→import {
+    16→  userRepository, userRoleRepository, loginHistoryRepository,
+    17→  passwordHistoryRepository, deviceRepository,
+    18→  invitationRepository, passwordResetRepository,
+    19→  refreshTokenRepository, hashToken,
+    20→} from '../repository'
+    21→import '@/modules/auth/workflow'
+    22→import { workflowRegistry } from '@/core/workflow'
+    23→import { auditService } from '@/core/audit'
+    24→import { eventBus } from '@/core/events'
+    25→import { hashPassword, verifyPassword, checkPasswordStrength } from '@/core/auth/password'
+    26→import { signAccessToken, generateRefreshToken, hashRefreshToken, type JwtScopeClaims } from '@/core/auth/jwt'
+    27→import { PermissionChecker } from '@/core/permissions'
+    28→import { getRequestContext } from '@/core/context'
+    29→import { env } from '@/config/env'
+    30→import {
+    31→  AuthenticationError, BusinessRuleError, NotFoundError,
+    32→  ConflictError, AuthorizationError, ValidationError,
+    33→} from '@/core/errors'
+    34→import { logger } from '@/core/logging'
+    35→
+    36→// ─── Config ─────────────────────────────────────────────────────────────────
+    37→
+    38→const MAX_FAILED_LOGINS = 5
+    39→const LOCK_DURATION_MIN = 30
+    40→const PASSWORD_HISTORY_COUNT = 10
+    41→
+    42→// ─── Types ──────────────────────────────────────────────────────────────────
+    43→
+    44→export interface LoginResult {
+    45→  accessToken: string
+    46→  refreshToken: string
+    47→  accessExpiresAt: number
+    48→  refreshExpiresAt: number
+    49→  user: {
+    50→    id: string
+    51→    email: string
+    52→    username: string
+    53→    firstName: string
+    54→    lastName: string
+    55→    roles: string[]
+    56→    permissions: string[]
+    57→    tenantId: string
+    58→    defaultCompanyId: string | null
+    59→    defaultPlantId: string | null
+    60→  }
+    61→}
+    62→
+    63→// ─── Helper ─────────────────────────────────────────────────────────────────
+    64→
+    65→function getContext() {
+    66→  const ctx = getRequestContext()
+    67→  return {
+    68→    tenantId: ctx?.tenantId ?? null,
+    69→    userId: ctx?.userId ?? null,
+    70→    correlationId: ctx?.correlationId ?? 'no-correlation',
+    71→    ip: ctx?.ip ?? null,
+    72→    userAgent: ctx?.userAgent ?? null,
+    73→    ctx,
+    74→  }
+    75→}
+    76→
+    77→function resolvePermissions(roles: string[]): string[] {
+    78→  return PermissionChecker.resolvePermissions(roles)
+    79→}
+    80→
+    81→function buildUserResponse(user: Record<string, unknown>, roles: string[]) {
+    82→  return {
+    83→    id: String(user['id']),
+    84→    email: String(user['email']),
+    85→    username: String(user['username']),
+    86→    firstName: String(user['first_name']),
+    87→    lastName: String(user['last_name']),
+    88→    roles,
+    89→    permissions: resolvePermissions(roles),
+    90→    tenantId: String(user['tenant_id']),
+    91→    defaultCompanyId: user['default_company_id'] as string | null,
+    92→    defaultPlantId: user['default_plant_id'] as string | null,
+    93→  }
+    94→}
+    95→
+    96→// ─── Auth Service ───────────────────────────────────────────────────────────
+    97→
+    98→export const authService = {
+    99→  // ═══ LOGIN ═══════════════════════════════════════════════════════════════
+   100→
+   101→  async login(params: {
+   102→    email: string
+   103→    password: string
+   104→    tenantId?: string
+   105→    deviceFingerprint?: string
+   106→    deviceName?: string
+   107→  }): Promise<LoginResult> {
+   108→    const { correlationId, ip, userAgent } = getContext()
+   109→    const email = params.email.toLowerCase().trim()
+   110→
+   111→    // ─── Find user ──────────────────────────────────────────────────────────
+   112→    let user: Record<string, unknown> | null = null
+   113→    let tenantId = params.tenantId
+   114→
+   115→    if (tenantId) {
+   116→      user = await userRepository.findByEmail(tenantId, email)
+   117→    } else {
+   118→      // If no tenant specified, try to find user across tenants (for login)
+   119→      // In production, tenant would come from subdomain or login form
+   120→      const result = await query(`SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL LIMIT 1`, [email])
+   121→      user = result.rows[0] ?? null
+   122→      if (user) tenantId = String(user['tenant_id'])
+   123→    }
+   124→
+   125→    // ─── Record login attempt (even if user not found) ──────────────────────
+   126→    const recordLogin = (success: boolean, failureReason?: string) =>
+   127→      loginHistoryRepository.record({
+   128→        tenantId: tenantId ?? '00000000-0000-0000-0000-000000000000',
+   129→        userId: user ? String(user['id']) : null,
+   130→        email,
+   131→        success,
+   132→        failureReason,
+   133→        ipAddress: ip,
+   134→        userAgent,
+   135→        deviceFingerprint: params.deviceFingerprint ?? null,
+   136→        correlationId,
+   137→      })
+   138→
+   139→    if (!user) {
+   140→      await recordLogin(false, 'USER_NOT_FOUND')
+   141→      throw new AuthenticationError('Invalid email or password', 'AUTH.INVALID_CREDENTIALS')
+   142→    }
+   143→
+   144→    tenantId = String(user['tenant_id'])
+   145→    const userId = String(user['id'])
+   146→    const status = String(user['status'])
+   147→
+   148→    // ─── Check account status ───────────────────────────────────────────────
+   149→    if (status === 'LOCKED') {
+   150→      const lockedUntil = user['locked_until'] as string | null
+   151→      if (lockedUntil && new Date(lockedUntil) > new Date()) {
+   152→        await recordLogin(false, 'ACCOUNT_LOCKED')
+   153→        throw new AuthenticationError('Account is locked. Try again later or contact admin.', 'AUTH.ACCOUNT_LOCKED')
+   154→      }
+   155→      // Lock expired — auto-unlock
+   156→      await userRepository.unlockUser(userId!)
+   157→      user = await userRepository.findById(tenantId!, userId!)
+   158→    }
+   159→
+   160→    if (status === 'DISABLED' || status === 'ARCHIVED') {
+   161→      await recordLogin(false, 'ACCOUNT_DISABLED')
+   162→      throw new AuthenticationError('Account is disabled. Contact admin.', 'AUTH.ACCOUNT_DISABLED')
+   163→    }
+   164→
+   165→    if (status === 'INVITED') {
+   166→      await recordLogin(false, 'ACCOUNT_NOT_ACTIVATED')
+   167→      throw new AuthenticationError('Account not yet activated. Check your email for invitation.', 'AUTH.ACCOUNT_LOCKED')
+   168→    }
+   169→
+   170→    // ─── Verify password ────────────────────────────────────────────────────
+   171→    const passwordHash = String(user!['password_hash'])
+   172→    const valid = await verifyPassword(params.password, passwordHash)
+   173→
+   174→    if (!valid) {
+   175→      const failedAttempts = await userRepository.incrementFailedLogin(userId)
+   176→
+   177→      if (failedAttempts >= MAX_FAILED_LOGINS) {
+   178→        await userRepository.lockUser(userId, LOCK_DURATION_MIN)
+   179→        await userRepository.updateStatus(userId, 'LOCKED')
+   180→        await recordLogin(false, 'ACCOUNT_LOCKED')
+   181→
+   182→        await auditService.log({
+   183→          tenantId, correlationId,
+   184→          actorType: 'SYSTEM',
+   185→          action: 'TRANSITION',
+   186→          entityType: 'User',
+   187→          entityId: userId,
+   188→          severity: 'WARN',
+   189→          reason: `Auto-locked after ${failedAttempts} failed login attempts`,
+   190→        })
+   191→
+   192→        // Publish event for notification
+   193→        await eventBus.writeToOutbox({
+   194→          eventName: 'UserLocked',
+   195→          payload: { userId, email, reason: 'MAX_FAILED_LOGINS' },
+   196→          tenantId,
+   197→        })
+   198→
+   199→        throw new AuthenticationError('Account locked due to too many failed attempts.', 'AUTH.ACCOUNT_LOCKED')
+   200→      }
+   201→
+   202→      await recordLogin(false, 'INVALID_CREDENTIALS')
+   203→      throw new AuthenticationError('Invalid email or password', 'AUTH.INVALID_CREDENTIALS')
+   204→    }
+   205→
+   206→    // ─── Login successful ───────────────────────────────────────────────────
+   207→    await userRepository.updateLastLogin(userId, ip, userAgent)
+   208→
+   209→    // Record device
+   210→    if (params.deviceFingerprint) {
+   211→      await deviceRepository.findOrCreate(tenantId, userId, params.deviceFingerprint, {
+   212→        deviceName: params.deviceName,
+   213→        ipAddress: ip ?? undefined,
+   214→        userAgent: userAgent ?? undefined,
+   215→      })
+   216→    }
+   217→
+   218→    // Get roles
+   219→    const roles = await userRoleRepository.getRoles(userId)
+   220→
+   221→    // Phase 1.6: Load data-scope claims for this user
+   222→    const scope = await loadUserScopeClaims(tenantId!, userId!, user!)
+   223→
+   224→    // Generate tokens — include scope claims in access token
+   225→    const { token: accessToken, expiresAt: accessExpiresAt, jti } = signAccessToken({
+   226→      userId,
+   227→      tenantId,
+   228→      email: String(user!['email']),
+   229→      roles,
+   230→      permissions: resolvePermissions(roles),
+   231→      scope,
+   232→    })
+   233→
+   234→    const { raw: rawRefresh, hash: refreshHash } = generateRefreshToken()
+   235→    const refreshExpiresAt = new Date(Date.now() + env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000)
+   236→
+   237→    await refreshTokenRepository.create({
+   238→      tenantId, userId, tokenHash: refreshHash,
+   239→      deviceFingerprint: params.deviceFingerprint,
+   240→      deviceName: params.deviceName,
+   241→      ipAddress: ip ?? undefined,
+   242→      userAgent: userAgent ?? undefined,
+   243→      expiresAt: refreshExpiresAt,
+   244→    })
+   245→
+   246→    await recordLogin(true)
+   247→
+   248→    await auditService.log({
+   249→      tenantId, correlationId,
+   250→      actorType: 'USER', actorId: userId, actorName: email,
+   251→      action: 'LOGIN', entityType: 'User', entityId: userId,
+   252→      ipAddress: ip, userAgent,
+   253→    })
+   254→
+   255→    await eventBus.writeToOutbox({
+   256→      eventName: 'UserLoggedIn',
+   257→      payload: { userId, email, tenantId },
+   258→      tenantId,
+   259→    })
+   260→
+   261→    return {
+   262→      accessToken,
+   263→      refreshToken: rawRefresh,
+   264→      accessExpiresAt,
+   265→      refreshExpiresAt: Math.floor(refreshExpiresAt.getTime() / 1000),
+   266→      user: buildUserResponse(user!, roles),
+   267→    }
+   268→  },
+   269→
+   270→  // ═══ LOGOUT ══════════════════════════════════════════════════════════════
+   271→
+   272→  async logout(refreshToken: string): Promise<void> {
+   273→    const { correlationId } = getContext()
+   274→    const tokenHash = hashRefreshToken(refreshToken)
+   275→    await refreshTokenRepository.revoke(tokenHash, 'User logout')
+   276→
+   277→    const ctx = getRequestContext()
+   278→    if (ctx?.userId) {
+   279→      // Phase 1.6: Block the current access token's JTI so it can't be reused
+   280→      // The JTI is extracted from the request's JWT by the auth middleware and
+   281→      // is not directly available here, but we can block via the context if set.
+   282→      // For now, the access token will expire naturally (15 min).
+   283→      // A full implementation would extract the JTI from the request and call blockJti().
+   284→
+   285→      await auditService.log({
+   286→        tenantId: ctx.tenantId!,
+   287→        correlationId,
+   288→        actorType: 'USER', actorId: ctx.userId, actorName: ctx.userEmail,
+   289→        action: 'LOGOUT', entityType: 'User', entityId: ctx.userId,
+   290→      })
+   291→    }
+   292→  },
+   293→
+   294→  // ═══ REFRESH ═════════════════════════════════════════════════════════════
+   295→
+   296→  async refresh(rawRefreshToken: string, params: { ipAddress?: string; userAgent?: string }): Promise<LoginResult> {
+   297→    const { correlationId } = getContext()
+   298→    const tokenHash = hashRefreshToken(rawRefreshToken)
+   299→
+   300→    const existing = await refreshTokenRepository.findByTokenHash(tokenHash)
+   301→    if (!existing) {
+   302→      throw new AuthenticationError('Invalid refresh token', 'AUTH.REFRESH_TOKEN_INVALID')
+   303→    }
+   304→
+   305→    // ─── Replay detection ───────────────────────────────────────────────────
+   306→    if (existing['revoked_at']) {
+   307→      // REPLAY ATTACK — revoke all sessions
+   308→      await refreshTokenRepository.revokeAllForUser(String(existing['user_id']), 'Refresh token replay detected')
+   309→      await auditService.log({
+   310→        tenantId: String(existing['tenant_id']), correlationId,
+   311→        actorType: 'SYSTEM',
+   312→        action: 'LOGOUT', entityType: 'User', entityId: String(existing['user_id']),
+   313→        severity: 'CRITICAL',
+   314→        reason: 'Refresh token replay — all sessions revoked',
+   315→      })
+   316→      throw new AuthenticationError('Refresh token replay detected. All sessions revoked.', 'AUTH.REFRESH_TOKEN_REPLAY')
+   317→    }
+   318→
+   319→    if (new Date(String(existing['expires_at'])) < new Date()) {
+   320→      throw new AuthenticationError('Refresh token expired', 'AUTH.REFRESH_TOKEN_EXPIRED')
+   321→    }
+   322→
+   323→    // ─── Rotate token ───────────────────────────────────────────────────────
+   324→    const userId = String(existing['user_id'])
+   325→    const tenantId = String(existing['tenant_id'])
+   326→
+   327→    await refreshTokenRepository.revoke(tokenHash, 'Rotated')
+   328→
+   329→    const user = await userRepository.findByIdGlobal(userId)
+   330→    if (!user) throw new AuthenticationError('User not found', 'AUTH.INVALID_CREDENTIALS')
+   331→
+   332→    const roles = await userRoleRepository.getRoles(userId)
+   333→
+   334→    // Phase 1.6: Reload scope claims on refresh (prevents scope loss after token rotation)
+   335→    const scope = await loadUserScopeClaims(tenantId, userId, user)
+   336→
+   337→    const { token: accessToken, expiresAt: accessExpiresAt } = signAccessToken({
+   338→      userId, tenantId, email: String(user['email']), roles,
+   339→      permissions: resolvePermissions(roles),
+   340→      scope,
+   341→    })
+   342→
+   343→    const { raw: newRaw, hash: newHash } = generateRefreshToken()
+   344→    const refreshExpiresAt = new Date(Date.now() + env.JWT_REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000)
+   345→
+   346→    await refreshTokenRepository.create({
+   347→      tenantId, userId, tokenHash: newHash,
+   348→      deviceFingerprint: existing['device_fingerprint'] as string | undefined,
+   349→      deviceName: existing['device_name'] as string | undefined,
+   350→      ipAddress: params.ipAddress,
+   351→      userAgent: params.userAgent,
+   352→      expiresAt: refreshExpiresAt,
+   353→    })
+   354→
+   355→    return {
+   356→      accessToken,
+   357→      refreshToken: newRaw,
+   358→      accessExpiresAt,
+   359→      refreshExpiresAt: Math.floor(refreshExpiresAt.getTime() / 1000),
+   360→      user: buildUserResponse(user, roles),
+   361→    }
+   362→  },
+   363→
+   364→  // ═══ CHANGE PASSWORD ══════════════════════════════════════════════════════
+   365→
+   366→  async changePassword(params: {
+   367→    userId: string
+   368→    currentPassword: string
+   369→    newPassword: string
+   370→  }): Promise<void> {
+   371→    const { correlationId, ctx } = getContext()
+   372→
+   373→    const user = await userRepository.findByIdGlobal(params.userId)
+   374→    if (!user) throw new NotFoundError('User', params.userId)
+   375→
+   376→    // Verify current password
+   377→    const valid = await verifyPassword(params.currentPassword, String(user['password_hash']))
+   378→    if (!valid) {
+   379→      throw new AuthenticationError('Current password is incorrect', 'AUTH.INVALID_CREDENTIALS')
+   380→    }
+   381→
+   382→    // Check password strength
+   383→    const strength = checkPasswordStrength(params.newPassword)
+   384→    if (!strength.valid) {
+   385→      throw new ValidationError('Password does not meet requirements', strength.issues.map((issue) => ({
+   386→        field: 'newPassword',
+   387→        code: 'WEAK_PASSWORD',
+   388→        message: issue,
+   389→      })))
+   390→    }
+   391→
+   392→    // Check password history (reuse prevention)
+   393→    const history = await passwordHistoryRepository.getRecent(params.userId, PASSWORD_HISTORY_COUNT)
+   394→    for (const oldHash of history) {
+   395→      if (await verifyPassword(params.newPassword, oldHash)) {
+   396→        throw new BusinessRuleError('Cannot reuse a recent password', { code: 'AUTH.PASSWORD_REUSE' })
+   397→      }
+   398→    }
+   399→
+   400→    // Hash new password
+   401→    const newHash = await hashPassword(params.newPassword)
+   402→
+   403→    // Save old hash to history
+   404→    await passwordHistoryRepository.add(params.userId, String(user['password_hash']), ctx?.userId ?? undefined)
+   405→
+   406→    // Update password
+   407→    await userRepository.updatePassword(params.userId, newHash, ctx?.userId ?? undefined)
+   408→
+   409→    // Revoke all sessions (force re-login)
+   410→    await refreshTokenRepository.revokeAllForUser(params.userId, 'Password changed')
+   411→
+   412→    await auditService.log({
+   413→      tenantId: String(user['tenant_id']), correlationId,
+   414→      actorType: 'USER', actorId: ctx?.userId, actorName: ctx?.userEmail,
+   415→      action: 'UPDATE', entityType: 'User', entityId: params.userId,
+   416→      reason: 'Password changed',
+   417→    })
+   418→
+   419→    await eventBus.writeToOutbox({
+   420→      eventName: 'PasswordChanged',
+   421→      payload: { userId: params.userId, email: user['email'] },
+   422→      tenantId: String(user['tenant_id']),
+   423→    })
+   424→  },
+   425→
+   426→  // ═══ FORGOT PASSWORD ══════════════════════════════════════════════════════
+   427→
+   428→  async forgotPassword(email: string): Promise<{ tokenSent: boolean }> {
+   429→    const { correlationId, ip } = getContext()
+   430→    const normalizedEmail = email.toLowerCase().trim()
+   431→
+   432→    // Find user (don't reveal whether user exists)
+   433→    const result = await query(`SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL LIMIT 1`, [normalizedEmail])
+   434→    const user = result.rows[0]
+   435→
+   436→    if (!user) {
+   437→      // Don't reveal that user doesn't exist
+   438→      return { tokenSent: false }
+   439→    }
+   440→
+   441→    const userId = String(user['id'])
+   442→    const tenantId = String(user['tenant_id'])
+   443→    const status = String(user['status'])
+   444→
+   445→    if (status === 'LOCKED' || status === 'DISABLED' || status === 'ARCHIVED') {
+   446→      return { tokenSent: false }
+   447→    }
+   448→
+   449→    // Generate reset token
+   450→    const { rawToken, tokenHash: _tokenHash } = await passwordResetRepository.create(userId, tenantId, undefined, ip ?? undefined)
+   451→
+   452→    await auditService.log({
+   453→      tenantId, correlationId,
+   454→      actorType: 'SYSTEM',
+   455→      action: 'UPDATE', entityType: 'User', entityId: userId,
+   456→      reason: 'Password reset requested',
+   457→    })
+   458→
+   459→    // In production, send email with reset link
+   460→    logger.info('Password reset token generated', {
+   461→      userId,
+   462→      email: normalizedEmail,
+   463→      resetToken: rawToken, // In production, this would be an email link
+   464→    })
+   465→
+   466→    return { tokenSent: true }
+   467→  },
+   468→
+   469→  // ═══ RESET PASSWORD ═══════════════════════════════════════════════════════
+   470→
+   471→  async resetPassword(params: {
+   472→    token: string
+   473→    newPassword: string
+   474→  }): Promise<void> {
+   475→    const { correlationId } = getContext()
+   476→    const tokenHash = hashToken(params.token)
+   477→
+   478→    const resetToken = await passwordResetRepository.findByTokenHash(tokenHash)
+   479→    if (!resetToken) {
+   480→      throw new AuthenticationError('Invalid or expired reset token', 'AUTH.TOKEN_INVALID')
+   481→    }
+   482→
+   483→    // Check password strength
+   484→    const strength = checkPasswordStrength(params.newPassword)
+   485→    if (!strength.valid) {
+   486→      throw new ValidationError('Password does not meet requirements', strength.issues.map(issue => ({
+   487→        field: 'newPassword',
+   488→        code: 'WEAK_PASSWORD',
+   489→        message: issue,
+   490→      })))
+   491→    }
+   492→
+   493→    const userId = String(resetToken['user_id'])
+   494→    const tenantId = String(resetToken['tenant_id'])
+   495→
+   496→    // Check password history
+   497→    const history = await passwordHistoryRepository.getRecent(userId, PASSWORD_HISTORY_COUNT)
+   498→    for (const oldHash of history) {
+   499→      if (await verifyPassword(params.newPassword, oldHash)) {
+   500→        throw new BusinessRuleError('Cannot reuse a recent password', { code: 'AUTH.PASSWORD_REUSE' })
+   501→      }
+   502→    }
+   503→
+   504→    // Hash and update
+   505→    const newHash = await hashPassword(params.newPassword)
+   506→    await passwordHistoryRepository.add(userId, newHash, undefined)
+   507→    await userRepository.updatePassword(userId, newHash)
+   508→
+   509→    // Mark token as used
+   510→    await passwordResetRepository.markUsed(String(resetToken['id']))
+   511→
+   512→    // Revoke all sessions
+   513→    await refreshTokenRepository.revokeAllForUser(userId, 'Password reset')
+   514→
+   515→    await auditService.log({
+   516→      tenantId, correlationId,
+   517→      actorType: 'USER', actorId: userId,
+   518→      action: 'UPDATE', entityType: 'User', entityId: userId,
+   519→      reason: 'Password reset via token',
+   520→    })
+   521→  },
+   522→
+   523→  // ═══ INVITE USER ══════════════════════════════════════════════════════════
+   524→
+   525→  async inviteUser(params: {
+   526→    email: string
+   527→    firstName?: string
+   528→    lastName?: string
+   529→    designation?: string
+   530→    roles: string[]
+   531→    defaultCompanyId?: string
+   532→    defaultPlantId?: string
+   533→    message?: string
+   534→  }): Promise<{ invitationId: string; token: string }> {
+   535→    const { tenantId, userId, correlationId, ctx } = getContext()
+   536→    if (!tenantId || !userId) throw new AuthorizationError('Authentication required')
+   537→
+   538→    const email = params.email.toLowerCase().trim()
+   539→
+   540→    // Check if user already exists
+   541→    const existing = await userRepository.findByEmail(tenantId, email)
+   542→    if (existing) {
+   543→      throw new ConflictError(`User with email '${email}' already exists`)
+   544→    }
+   545→
+   546→    // Generate invitation token
+   547→    const rawToken = randomUUID() + randomUUID()
+   548→    const tokenHash = hashToken(rawToken)
+   549→
+   550→    const invitationId = await invitationRepository.create({
+   551→      tenantId,
+   552→      email,
+   553→      invitedBy: userId,
+   554→      tokenHash,
+   555→      roles: params.roles,
+   556→      firstName: params.firstName,
+   557→      lastName: params.lastName,
+   558→      designation: params.designation,
+   559→      defaultCompanyId: params.defaultCompanyId,
+   560→      defaultPlantId: params.defaultPlantId,
+   561→      message: params.message,
+   562→    })
+   563→
+   564→    await auditService.log({
+   565→      tenantId, correlationId,
+   566→      actorType: 'USER', actorId: userId, actorName: ctx?.userEmail,
+   567→      action: 'CREATE', entityType: 'UserInvitation', entityId: invitationId,
+   568→      entityCode: email,
+   569→      metadata: { roles: params.roles, email },
+   570→    })
+   571→
+   572→    logger.info('User invitation created', { invitationId, email, token: rawToken })
+   573→
+   574→    return { invitationId, token: rawToken }
+   575→  },
+   576→
+   577→  // ═══ ACCEPT INVITATION ═════════════════════════════════════════════════════
+   578→
+   579→  async acceptInvitation(params: {
+   580→    token: string
+   581→    username: string
+   582→    password: string
+   583→    firstName?: string
+   584→    lastName?: string
+   585→  }): Promise<LoginResult> {
+   586→    const { correlationId } = getContext()
+   587→    const tokenHash = hashToken(params.token)
+   588→
+   589→    const invitation = await invitationRepository.findByTokenHash(tokenHash)
+   590→    if (!invitation) {
+   591→      throw new AuthenticationError('Invalid or expired invitation', 'AUTH.TOKEN_INVALID')
+   592→    }
+   593→
+   594→    const tenantId = String(invitation['tenant_id'])
+   595→    const email = String(invitation['email'])
+   596→
+   597→    // Check password strength
+   598→    const strength = checkPasswordStrength(params.password)
+   599→    if (!strength.valid) {
+   600→      throw new ValidationError('Password does not meet requirements', strength.issues.map(issue => ({
+   601→        field: 'password',
+   602→        code: 'WEAK_PASSWORD',
+   603→        message: issue,
+   604→      })))
+   605→    }
+   606→
+   607→    // Create user
+   608→    const passwordHash = await hashPassword(params.password)
+   609→    const firstName = params.firstName || (invitation['first_name'] as string) || 'New'
+   610→    const lastName = params.lastName || (invitation['last_name'] as string) || 'User'
+   611→
+   612→    const user = await userRepository.create({
+   613→      tenantId,
+   614→      username: params.username,
+   615→      email,
+   616→      passwordHash,
+   617→      firstName,
+   618→      lastName,
+   619→      designation: invitation['designation'] as string | undefined,
+   620→      status: 'ACTIVATED',
+   621→      invitedBy: invitation['invited_by'] as string,
+   622→      defaultCompanyId: invitation['default_company_id'] as string | undefined,
+   623→      defaultPlantId: invitation['default_plant_id'] as string | undefined,
+   624→    })
+   625→
+   626→    if (!user) throw new Error('Failed to create user')
+   627→
+   628→    const userId = String(user['id'])
+   629→
+   630→    // Assign roles
+   631→    const roles = invitation['roles'] as string[]
+   632→    for (const role of roles) {
+   633→      await userRoleRepository.assignRole(tenantId, userId, role, invitation['invited_by'] as string)
+   634→    }
+   635→
+   636→    // Mark invitation as accepted
+   637→    await invitationRepository.markAccepted(String(invitation['id']), userId)
+   638→
+   639→    // Transition user to ACTIVE
+   640→    await userRepository.updateStatus(userId, 'ACTIVE')
+   641→
+   642→    // Record password in history
+   643→    await passwordHistoryRepository.add(userId, passwordHash)
+   644→
+   645→    await auditService.log({
+   646→      tenantId, correlationId,
+   647→      actorType: 'USER', actorId: userId, actorName: email,
+   648→      action: 'CREATE', entityType: 'User', entityId: userId,
+   649→      entityCode: email,
+   650→      reason: 'User accepted invitation',
+   651→    })
+   652→
+   653→    await eventBus.writeToOutbox({
+   654→      eventName: 'UserRegistered',
+   655→      payload: { userId, email, tenantId },
+   656→      tenantId,
+   657→    })
+   658→
+   659→    // Auto-login
+   660→    return this.login({
+   661→      email,
+   662→      password: params.password,
+   663→      tenantId,
+   664→    })
+   665→  },
+   666→
+   667→  // ═══ GET CURRENT USER ═════════════════════════════════════════════════════
+   668→
+   669→  async getCurrentUser(): Promise<{
+   670→    id: string
+   671→    email: string
+   672→    username: string
+   673→    firstName: string
+   674→    lastName: string
+   675→    roles: string[]
+   676→    permissions: string[]
+   677→    tenantId: string
+   678→    defaultCompanyId: string | null
+   679→    defaultPlantId: string | null
+   680→    designation: string | null
+   681→    timezone: string
+   682→    locale: string
+   683→    lastLoginAt: string | null
+   684→    emailVerified: boolean
+   685→    mfaEnabled: boolean
+   686→  }> {
+   687→    const ctx = getRequestContext()
+   688→    if (!ctx?.userId) throw new AuthorizationError('Authentication required')
+   689→
+   690→    const user = await userRepository.findByIdGlobal(ctx.userId)
+   691→    if (!user) throw new NotFoundError('User', ctx.userId)
+   692→
+   693→    const roles = await userRoleRepository.getRoles(ctx.userId)
+   694→
+   695→    return {
+   696→      id: String(user['id']),
+   697→      email: String(user['email']),
+   698→      username: String(user['username']),
+   699→      firstName: String(user['first_name']),
+   700→      lastName: String(user['last_name']),
+   701→      roles,
+   702→      permissions: resolvePermissions(roles),
+   703→      tenantId: String(user['tenant_id']),
+   704→      defaultCompanyId: user['default_company_id'] as string | null,
+   705→      defaultPlantId: user['default_plant_id'] as string | null,
+   706→      designation: user['designation'] as string | null,
+   707→      timezone: String(user['timezone']),
+   708→      locale: String(user['locale']),
+   709→      lastLoginAt: user['last_login_at'] as string | null,
+   710→      emailVerified: user['email_verified'] as boolean,
+   711→      mfaEnabled: user['mfa_enabled'] as boolean,
+   712→    }
+   713→  },
+   714→
+   715→  // ═══ LIST SESSIONS ════════════════════════════════════════════════════════
+   716→
+   717→  async listSessions(): Promise<unknown[]> {
+   718→    const ctx = getRequestContext()
+   719→    if (!ctx?.userId) throw new AuthorizationError('Authentication required')
+   720→    return refreshTokenRepository.listActiveForUser(ctx.userId)
+   721→  },
+   722→
+   723→  // ═══ REVOKE SESSION ═══════════════════════════════════════════════════════
+   724→
+   725→  async revokeSession(tokenHash: string): Promise<void> {
+   726→    const ctx = getRequestContext()
+   727→    if (!ctx?.userId) throw new AuthorizationError('Authentication required')
+   728→    await refreshTokenRepository.revoke(tokenHash, 'Revoked by user')
+   729→
+   730→    await auditService.log({
+   731→      tenantId: ctx.tenantId!,
+   732→      correlationId: ctx.correlationId,
+   733→      actorType: 'USER', actorId: ctx.userId, actorName: ctx.userEmail,
+   734→      action: 'LOGOUT', entityType: 'Session', entityId: tokenHash,
+   735→      reason: 'Session revoked by user',
+   736→    })
+   737→  },
+   738→
+   739→  // ═══ LIST DEVICES ═════════════════════════════════════════════════════════
+   740→
+   741→  async listDevices(): Promise<unknown[]> {
+   742→    const ctx = getRequestContext()
+   743→    if (!ctx?.userId) throw new AuthorizationError('Authentication required')
+   744→    return deviceRepository.listForUser(ctx.userId)
+   745→  },
+   746→
+   747→  // ═══ LOCK / UNLOCK (admin) ════════════════════════════════════════════════
+   748→
+   749→  async lockUser(targetUserId: string): Promise<void> {
+   750→    const { tenantId, userId, correlationId, ctx } = getContext()
+   751→    if (!userId) throw new AuthorizationError('Authentication required')
+   752→
+   753→    const machine = workflowRegistry.get<string, { id: string; status: string; version: number }>('UserLifecycle')
+   754→    const user = await userRepository.findByIdGlobal(targetUserId)
+   755→    if (!user) throw new NotFoundError('User', targetUserId)
+   756→
+   757→    const check = await machine.canTransition({ id: targetUserId, status: String(user['status']), version: Number(user['version']) }, 'LOCKED', {
+   758→      userId, tenantId: tenantId!, correlationId,
+   759→    })
+   760→    if (!check.allowed) {
+   761→      throw new BusinessRuleError(`Cannot lock user: ${check.reason}`, { code: 'AUTH.TRANSITION_DENIED' })
+   762→    }
+   763→
+   764→    await userRepository.lockUser(targetUserId, LOCK_DURATION_MIN)
+   765→    await userRepository.updateStatus(targetUserId, 'LOCKED', userId)
+   766→    await refreshTokenRepository.revokeAllForUser(targetUserId, 'Account locked by admin')
+   767→
+   768→    await auditService.log({
+   769→      tenantId: tenantId!, correlationId,
+   770→      actorType: 'USER', actorId: userId, actorName: ctx?.userEmail,
+   771→      action: 'TRANSITION', entityType: 'User', entityId: targetUserId,
+   772→      severity: 'WARN', reason: 'Account locked by admin',
+   773→    })
+   774→  },
+   775→
+   776→  async unlockUser(targetUserId: string): Promise<void> {
+   777→    const { tenantId, userId, correlationId, ctx } = getContext()
+   778→    if (!userId) throw new AuthorizationError('Authentication required')
+   779→
+   780→    await userRepository.unlockUser(targetUserId)
+   781→
+   782→    await auditService.log({
+   783→      tenantId: tenantId!, correlationId,
+   784→      actorType: 'USER', actorId: userId, actorName: ctx?.userEmail,
+   785→      action: 'TRANSITION', entityType: 'User', entityId: targetUserId,
+   786→      reason: 'Account unlocked by admin',
+   787→    })
+   788→  },
+   789→}
+   790→
+   791→// ─── Import query for cross-tenant lookup ───────────────────────────────────
+   792→
+   793→import { query } from '@/core/db/pglite'
+   794→
+   795→// ─── Phase 1.6: User Scope Loader ───────────────────────────────────────────
+   796→
+   797→/**
+   798→ * Load a user's data-scope assignments from the database.
+   799→ *
+   800→ * This reads the user's default company/plant/department from the Users table
+   801→ * and looks up any user_assignments table (if present) for additional warehouse/plant
+   802→ * assignments. If the user_assignments table doesn't exist, falls back to using
+   803→ * just the default company/plant from the user profile.
+   804→ */
+   805→async function loadUserScopeClaims(
+   806→  tenantId: string,
+   807→  userId: string,
+   808→  user: Record<string, unknown>
+   809→): Promise<JwtScopeClaims> {
+   810→  const scope: JwtScopeClaims = {}
+   811→
+   812→  // Company scope — from user's default_company_id
+   813→  const defaultCompanyId = user['default_company_id'] as string | null
+   814→  if (defaultCompanyId) {
+   815→    scope.companyIds = [defaultCompanyId]
+   816→  }
+   817→
+   818→  // Plant scope — from user's default_plant_id
+   819→  const defaultPlantId = user['default_plant_id'] as string | null
+   820→  if (defaultPlantId) {
+   821→    scope.plantIds = [defaultPlantId]
+   822→  }
+   823→
+   824→  // Department scope — from user's department_id
+   825→  const departmentId = user['department_id'] as string | null
+   826→  if (departmentId) {
+   827→    scope.departmentIds = [departmentId]
+   828→  }
+   829→
+   830→  // Try to load additional warehouse/plant assignments from user_assignments table
+   831→  // (if it exists). This allows a user to be assigned to multiple warehouses.
+   832→  try {
+   833→    const assignments = await query<{
+   834→      warehouse_id: string | null
+   835→      plant_id: string | null
+   836→      company_id: string | null
+   837→      department_id: string | null
+   838→    }>(
+   839→      `SELECT warehouse_id, plant_id, company_id, department_id
+   840→       FROM user_assignments
+   841→       WHERE tenant_id = $1 AND user_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL`,
+   842→      [tenantId, userId]
+   843→    )
+   844→
+   845→    if (assignments.rows.length > 0) {
+   846→      const warehouseIds = new Set<string>(scope.warehouseIds ?? [])
+   847→      const plantIds = new Set<string>(scope.plantIds ?? [])
+   848→      const companyIds = new Set<string>(scope.companyIds ?? [])
+   849→      const departmentIds = new Set<string>(scope.departmentIds ?? [])
+   850→
+   851→      for (const row of assignments.rows) {
+   852→        if (row.warehouse_id) warehouseIds.add(row.warehouse_id)
+   853→        if (row.plant_id) plantIds.add(row.plant_id)
+   854→        if (row.company_id) companyIds.add(row.company_id)
+   855→        if (row.department_id) departmentIds.add(row.department_id)
+   856→      }
+   857→
+   858→      if (warehouseIds.size > 0) scope.warehouseIds = Array.from(warehouseIds)
+   859→      if (plantIds.size > 0) scope.plantIds = Array.from(plantIds)
+   860→      if (companyIds.size > 0) scope.companyIds = Array.from(companyIds)
+   861→      if (departmentIds.size > 0) scope.departmentIds = Array.from(departmentIds)
+   862→    }
+   863→  } catch {
+   864→    // user_assignments table may not exist yet — fall back to defaults only
+   865→    // (already set above from user profile)
+   866→  }
+   867→
+   868→  return scope
+   869→}
+   870→

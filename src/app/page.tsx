@@ -8083,9 +8083,9 @@ function RecipeApprovalModule() {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <Button size="sm" className="h-8"><CheckCircle2 className="mr-1 h-4 w-4" />Approve</Button>
-                <Button size="sm" variant="destructive" className="h-8"><X className="mr-1 h-4 w-4" />Reject</Button>
-                <Button size="sm" variant="outline" className="h-8">Request Changes</Button>
+                {hasPermission('recipe:approve') && <Button size="sm" className="h-8"><CheckCircle2 className="mr-1 h-4 w-4" />Approve</Button>}
+                {hasPermission('recipe:approve') && <Button size="sm" variant="destructive" className="h-8"><X className="mr-1 h-4 w-4" />Reject</Button>}
+                {hasPermission('recipe:update') && <Button size="sm" variant="outline" className="h-8">Request Changes</Button>}
               </div>
             </div>
           </Card>
@@ -17362,8 +17362,8 @@ function AIRecommendationsModule() {
           <p className="text-sm text-muted-foreground mt-1">Sprint 48 · 47 AI-generated recommendations across 7 models · Human-in-loop approval workflow</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline"><Download className="mr-1 h-4 w-4" />Export</Button>
-          <Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Bulk Approve</Button>
+          {hasPermission('quality:read') && <Button size="sm" variant="outline"><Download className="mr-1 h-4 w-4" />Export</Button>}
+          {hasPermission('quality:approve') && <Button size="sm"><CheckCircle2 className="mr-1 h-4 w-4" />Bulk Approve</Button>}
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
