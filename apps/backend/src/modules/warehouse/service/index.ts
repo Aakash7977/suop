@@ -14,7 +14,7 @@ import {
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
-import { BusinessRuleError, NotFoundError, AuthorizationError } from '@/core/errors'
+import { BusinessRuleError, NotFoundError, AuthorizationError, ConcurrencyError } from '@/core/errors'
 import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
 function getContext() {
@@ -36,9 +36,26 @@ export const warehouseService = {
     return zone
   },
 
-  async listZones(warehouseId: string) {
+  async listZones(warehouseId: string, params: { page?: number; pageSize?: number; search?: string; zoneType?: string } = {}) {
     const { tenantId } = getContext()
-    return zoneRepository.list(tenantId, warehouseId)
+    return zoneRepository.list(tenantId, warehouseId, params)
+  },
+
+  async updateZone(id: string, data: { zoneName?: string; zoneType?: string; capacity?: number; isActive?: boolean; sortOrder?: number; description?: string }) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await zoneRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseZone', id)
+    const updated = await zoneRepository.update(tenantId, id, data)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'UPDATE', entityType: 'WarehouseZone', entityId: id, before: existing, after: data })
+    return updated
+  },
+
+  async deleteZone(id: string) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await zoneRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseZone', id)
+    await zoneRepository.softDelete(tenantId, id, userId)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'DELETE', entityType: 'WarehouseZone', entityId: id })
   },
 
   // ═══ Aisles ═══════════════════════════════════════════════════════════════
@@ -53,9 +70,26 @@ export const warehouseService = {
     return aisle
   },
 
-  async listAisles(warehouseId: string) {
+  async listAisles(warehouseId: string, params: { page?: number; pageSize?: number; search?: string; zoneId?: string } = {}) {
     const { tenantId } = getContext()
-    return aisleRepository.list(tenantId, warehouseId)
+    return aisleRepository.list(tenantId, warehouseId, params)
+  },
+
+  async updateAisle(id: string, data: { aisleName?: string; capacity?: number; isActive?: boolean; sortOrder?: number; description?: string }) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await aisleRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseAisle', id)
+    const updated = await aisleRepository.update(tenantId, id, data)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'UPDATE', entityType: 'WarehouseAisle', entityId: id, before: existing, after: data })
+    return updated
+  },
+
+  async deleteAisle(id: string) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await aisleRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseAisle', id)
+    await aisleRepository.softDelete(tenantId, id, userId)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'DELETE', entityType: 'WarehouseAisle', entityId: id })
   },
 
   // ═══ Racks ════════════════════════════════════════════════════════════════
@@ -74,9 +108,26 @@ export const warehouseService = {
     return rack
   },
 
-  async listRacks(warehouseId: string) {
+  async listRacks(warehouseId: string, params: { page?: number; pageSize?: number; search?: string; zoneId?: string; aisleId?: string } = {}) {
     const { tenantId } = getContext()
-    return rackRepository.list(tenantId, warehouseId)
+    return rackRepository.list(tenantId, warehouseId, params)
+  },
+
+  async updateRack(id: string, data: { rackName?: string; rackType?: string; levels?: number; capacityPerLevel?: number; capacity?: number; isActive?: boolean; sortOrder?: number; description?: string }) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await rackRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseRack', id)
+    const updated = await rackRepository.update(tenantId, id, data)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'UPDATE', entityType: 'WarehouseRack', entityId: id, before: existing, after: data })
+    return updated
+  },
+
+  async deleteRack(id: string) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await rackRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseRack', id)
+    await rackRepository.softDelete(tenantId, id, userId)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'DELETE', entityType: 'WarehouseRack', entityId: id })
   },
 
   // ═══ Bins ═════════════════════════════════════════════════════════════════
@@ -93,9 +144,127 @@ export const warehouseService = {
     return bin
   },
 
-  async listBins(warehouseId: string, params: { zoneId?: string; aisleId?: string; rackId?: string } = {}) {
+  async listBins(warehouseId: string, params: { page?: number; pageSize?: number; zoneId?: string; aisleId?: string; rackId?: string; search?: string; isBlocked?: boolean; isActive?: boolean; emptyOnly?: boolean } = {}) {
     const { tenantId } = getContext()
     return binRepository.list(tenantId, warehouseId, params)
+  },
+
+  async updateBin(id: string, data: { binName?: string; binType?: string; capacity?: number; isActive?: boolean; sortOrder?: number; description?: string }) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await binRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseBin', id)
+    const updated = await binRepository.update(tenantId, id, data)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'UPDATE', entityType: 'WarehouseBin', entityId: id, before: existing, after: data })
+    return updated
+  },
+
+  async deleteBin(id: string) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await binRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseBin', id)
+    // Business rule: cannot delete bin with stock
+    if (Number(existing['used_capacity']) > 0) {
+      throw new BusinessRuleError('Cannot delete bin with used capacity > 0', { code: 'WH.BIN_NOT_EMPTY' })
+    }
+    await binRepository.softDelete(tenantId, id, userId)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'DELETE', entityType: 'WarehouseBin', entityId: id })
+  },
+
+  async blockBin(id: string, blockReason: string) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('blockBin')
+    if (!blockReason || blockReason.trim().length < 3) {
+      throw new BusinessRuleError('Block reason must be at least 3 characters', { code: 'WH.BLOCK_REASON_REQUIRED' })
+    }
+    const existing = await binRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseBin', id)
+    if (existing['is_blocked']) throw new BusinessRuleError('Bin is already blocked', { code: 'WH.BIN_ALREADY_BLOCKED' })
+    const updated = await binRepository.block(tenantId, id, blockReason, userId)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'BIN_BLOCKED', entityType: 'WarehouseBin', entityId: id, after: { blockReason, blockedBy: userId } })
+    await eventBus.writeToOutbox({ eventName: 'BinBlocked', payload: { binId: id, blockReason }, tenantId })
+    return updated
+  },
+
+  async unblockBin(id: string) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('unblockBin')
+    const existing = await binRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('WarehouseBin', id)
+    if (!existing['is_blocked']) throw new BusinessRuleError('Bin is not blocked', { code: 'WH.BIN_NOT_BLOCKED' })
+    const updated = await binRepository.unblock(tenantId, id)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'BIN_UNBLOCKED', entityType: 'WarehouseBin', entityId: id })
+    await eventBus.writeToOutbox({ eventName: 'BinUnblocked', payload: { binId: id }, tenantId })
+    return updated
+  },
+
+  async findEmptyBins(warehouseId: string) {
+    const { tenantId } = getContext()
+    return binRepository.findEmptyBins(tenantId, warehouseId)
+  },
+
+  async getBinOccupancyStats(warehouseId: string) {
+    const { tenantId } = getContext()
+    return binRepository.getBinOccupancyStats(tenantId, warehouseId)
+  },
+
+  async exportBins(warehouseId: string, params: { zoneId?: string; isBlocked?: boolean; emptyOnly?: boolean } = {}) {
+    const { tenantId } = getContext()
+    const result = await binRepository.list(tenantId, warehouseId, { ...params, page: 1, pageSize: 10000 })
+    return result.rows
+  },
+
+  async bulkBlockBins(binIds: string[], blockReason: string) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('bulkBlockBins')
+    if (!binIds || binIds.length === 0) throw new BusinessRuleError('No bins to block', { code: 'WH.BULK_EMPTY' })
+    if (!blockReason || blockReason.trim().length < 3) throw new BusinessRuleError('Block reason required', { code: 'WH.BLOCK_REASON_REQUIRED' })
+    let blockedCount = 0
+    const errors: Array<{ binId: string; error: string }> = []
+    for (const binId of binIds) {
+      try {
+        const existing = await binRepository.findById(tenantId, binId)
+        if (!existing || existing['is_blocked']) continue
+        await binRepository.block(tenantId, binId, blockReason, userId)
+        blockedCount++
+      } catch (err) {
+        errors.push({ binId, error: (err as Error).message })
+      }
+    }
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'BULK_BIN_BLOCK', entityType: 'WarehouseBin', entityId: 'bulk', after: { totalBins: binIds.length, blockedCount, errors } })
+    return { totalBins: binIds.length, blockedCount, errors }
+  },
+
+  async bulkUnblockBins(binIds: string[]) {
+    const { tenantId, userId, ctx } = getContext()
+    enforceNotBreakGlass('bulkUnblockBins')
+    if (!binIds || binIds.length === 0) throw new BusinessRuleError('No bins to unblock', { code: 'WH.BULK_EMPTY' })
+    let unblockedCount = 0
+    const errors: Array<{ binId: string; error: string }> = []
+    for (const binId of binIds) {
+      try {
+        const existing = await binRepository.findById(tenantId, binId)
+        if (!existing || !existing['is_blocked']) continue
+        await binRepository.unblock(tenantId, binId)
+        unblockedCount++
+      } catch (err) {
+        errors.push({ binId, error: (err as Error).message })
+      }
+    }
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'BULK_BIN_UNBLOCK', entityType: 'WarehouseBin', entityId: 'bulk', after: { totalBins: binIds.length, unblockedCount, errors } })
+    return { totalBins: binIds.length, unblockedCount, errors }
+  },
+
+  async getWarehouseDashboard(warehouseId: string) {
+    const { tenantId } = getContext()
+    const binStats = await binRepository.getBinOccupancyStats(tenantId, warehouseId)
+    const zones = await zoneRepository.list(tenantId, warehouseId)
+    const putawayTasks = await putawayTaskRepository.list(tenantId, { warehouseId, page: 1, pageSize: 1 })
+    return {
+      binStats,
+      totalZones: zones.length,
+      totalPutawayTasks: putawayTasks.total,
+      pendingPutawayTasks: 0, // Would be filtered query in production
+    }
   },
 
   // ═══ Put-away Engine ══════════════════════════════════════════════════════

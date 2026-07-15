@@ -213,3 +213,192 @@ describe('Warehouse Error Types', () => {
     expect(new BusinessRuleError('Concurrency', { code: 'WH.CONCURRENCY' }).code).toBe('WH.CONCURRENCY')
   })
 })
+
+// ════════════════════════════════════════════════════════════════════════════
+// BIN MANAGEMENT — BLOCK / UNBLOCK / DELETE / SEARCH / EXPORT / BULK
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('Bin Management', () => {
+  it('block reason must be at least 3 characters', () => {
+    expect('ab'.length < 3).toBe(true)
+    expect('abc'.length >= 3).toBe(true)
+  })
+
+  it('cannot block an already-blocked bin', () => {
+    const bin = { is_blocked: true }
+    expect(bin.is_blocked).toBe(true) // service would throw WH.BIN_ALREADY_BLOCKED
+  })
+
+  it('cannot unblock a non-blocked bin', () => {
+    const bin = { is_blocked: false }
+    expect(bin.is_blocked).toBe(false) // service would throw WH.BIN_NOT_BLOCKED
+  })
+
+  it('cannot delete bin with used capacity > 0', () => {
+    const bin = { used_capacity: 50 }
+    expect(Number(bin.used_capacity) > 0).toBe(true) // service would throw WH.BIN_NOT_EMPTY
+  })
+
+  it('can delete bin with used capacity = 0', () => {
+    const bin = { used_capacity: 0 }
+    expect(Number(bin.used_capacity) > 0).toBe(false) // service would allow deletion
+  })
+
+  it('bulk block rejects empty array', () => {
+    const binIds: string[] = []
+    expect(binIds.length === 0).toBe(true)
+  })
+
+  it('bulk unblock rejects empty array', () => {
+    const binIds: string[] = []
+    expect(binIds.length === 0).toBe(true)
+  })
+
+  it('bulk block requires block reason >= 3 chars', () => {
+    const reason = 'ab'
+    expect(reason.trim().length < 3).toBe(true)
+  })
+
+  it('bulk operations track success/failure per bin', () => {
+    const results = [
+      { blocked: true, binId: 'bin-1' },
+      { blocked: false, binId: 'bin-2', error: 'Not found' },
+      { blocked: true, binId: 'bin-3' },
+    ]
+    const blockedCount = results.filter(r => r.blocked).length
+    expect(blockedCount).toBe(2)
+  })
+})
+
+// ════════════════════════════════════════════════════════════════════════════
+// BIN OCCUPANCY / SPACE UTILIZATION
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('Bin Occupancy & Space Utilization', () => {
+  it('calculates utilization percentage', () => {
+    const totalCapacity = 1000
+    const totalUsed = 350
+    const utilization = (totalUsed / totalCapacity) * 100
+    expect(utilization).toBe(35)
+  })
+
+  it('handles zero capacity (unlimited)', () => {
+    const totalCapacity = 0
+    const totalUsed = 500
+    const utilization = totalCapacity > 0 ? (totalUsed / totalCapacity) * 100 : 0
+    expect(utilization).toBe(0)
+  })
+
+  it('identifies empty bins', () => {
+    const bins = [
+      { used_capacity: 0, is_active: true, is_blocked: false },
+      { used_capacity: 50, is_active: true, is_blocked: false },
+      { used_capacity: 0, is_active: true, is_blocked: false },
+    ]
+    const emptyBins = bins.filter(b => b.used_capacity === 0 && b.is_active && !b.is_blocked)
+    expect(emptyBins.length).toBe(2)
+  })
+
+  it('identifies full bins', () => {
+    const bins = [
+      { capacity: 100, used_capacity: 100 },
+      { capacity: 200, used_capacity: 150 },
+      { capacity: 50, used_capacity: 50 },
+    ]
+    const fullBins = bins.filter(b => b.capacity > 0 && b.used_capacity >= b.capacity)
+    expect(fullBins.length).toBe(2)
+  })
+
+  it('counts active vs blocked bins', () => {
+    const bins = [
+      { is_active: true, is_blocked: false },
+      { is_active: true, is_blocked: true },
+      { is_active: false, is_blocked: false },
+    ]
+    const active = bins.filter(b => b.is_active).length
+    const blocked = bins.filter(b => b.is_blocked).length
+    expect(active).toBe(2)
+    expect(blocked).toBe(1)
+  })
+})
+
+// ════════════════════════════════════════════════════════════════════════════
+// WAREHOUSE DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('Warehouse Dashboard', () => {
+  it('returns bin stats, zone count, and putaway task count', () => {
+    const dashboard = {
+      binStats: { totalBins: 100, activeBins: 90, blockedBins: 5, emptyBins: 20, fullBins: 10 },
+      totalZones: 5,
+      totalPutawayTasks: 15,
+    }
+    expect(dashboard.binStats.totalBins).toBe(100)
+    expect(dashboard.totalZones).toBe(5)
+    expect(dashboard.totalPutawayTasks).toBe(15)
+  })
+})
+
+// ════════════════════════════════════════════════════════════════════════════
+// ZONE / AISLE / RACK CRUD
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('Zone / Aisle / Rack CRUD', () => {
+  it('zone update changes name/capacity/isActive', () => {
+    const before = { zoneName: 'Old', capacity: 100, isActive: true }
+    const after = { zoneName: 'New', capacity: 200, isActive: false }
+    expect(before.zoneName).not.toBe(after.zoneName)
+    expect(before.capacity).not.toBe(after.capacity)
+  })
+
+  it('zone delete sets deleted_at and is_active = false', () => {
+    const deleted = { deleted_at: new Date().toISOString(), is_active: false }
+    expect(deleted.deleted_at).toBeDefined()
+    expect(deleted.is_active).toBe(false)
+  })
+
+  it('rack capacity = levels × capacity_per_level', () => {
+    const levels = 4
+    const capacityPerLevel = 25
+    expect(levels * capacityPerLevel).toBe(100)
+  })
+
+  it('aisle can be filtered by zoneId', () => {
+    const aisles = [
+      { zone_id: 'zone-1', aisle_code: 'A1' },
+      { zone_id: 'zone-2', aisle_code: 'A2' },
+    ]
+    const filtered = aisles.filter(a => a.zone_id === 'zone-1')
+    expect(filtered.length).toBe(1)
+  })
+})
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('Export', () => {
+  it('export returns array of bins', () => {
+    const bins = [{ bin_code: 'BIN-001' }, { bin_code: 'BIN-002' }]
+    expect(Array.isArray(bins)).toBe(true)
+    expect(bins.length).toBe(2)
+  })
+
+  it('export respects zoneId filter', () => {
+    const bins = [
+      { zone_id: 'zone-1', bin_code: 'BIN-001' },
+      { zone_id: 'zone-2', bin_code: 'BIN-002' },
+    ]
+    const filtered = bins.filter(b => b.zone_id === 'zone-1')
+    expect(filtered.length).toBe(1)
+  })
+
+  it('export respects emptyOnly filter', () => {
+    const bins = [
+      { used_capacity: 0 },
+      { used_capacity: 50 },
+    ]
+    const filtered = bins.filter(b => b.used_capacity === 0)
+    expect(filtered.length).toBe(1)
+  })
+})

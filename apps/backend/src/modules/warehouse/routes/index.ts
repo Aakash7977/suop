@@ -27,6 +27,17 @@ warehouseRoutes.post('/zones', requirePermission(Permission.WAREHOUSE_CREATE), z
   return c.json(success(zone, { message: 'Zone created' }), 201)
 })
 
+warehouseRoutes.patch('/zones/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const zone = await warehouseService.updateZone(c.req.param('id')!, body)
+  return c.json(success(zone, { message: 'Zone updated' }))
+})
+
+warehouseRoutes.delete('/zones/:id', requirePermission(Permission.WAREHOUSE_ARCHIVE), async (c) => {
+  await warehouseService.deleteZone(c.req.param('id')!)
+  return c.json(success({ deleted: true }, { message: 'Zone deleted' }))
+})
+
 // ─── Aisles ─────────────────────────────────────────────────────────────────
 
 const aisleSchema = z.object({
@@ -44,6 +55,17 @@ warehouseRoutes.post('/aisles', requirePermission(Permission.WAREHOUSE_CREATE), 
   const body = c.req.valid('json' as never) as z.infer<typeof aisleSchema>
   const aisle = await warehouseService.createAisle(body)
   return c.json(success(aisle, { message: 'Aisle created' }), 201)
+})
+
+warehouseRoutes.patch('/aisles/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const aisle = await warehouseService.updateAisle(c.req.param('id')!, body)
+  return c.json(success(aisle, { message: 'Aisle updated' }))
+})
+
+warehouseRoutes.delete('/aisles/:id', requirePermission(Permission.WAREHOUSE_ARCHIVE), async (c) => {
+  await warehouseService.deleteAisle(c.req.param('id')!)
+  return c.json(success({ deleted: true }, { message: 'Aisle deleted' }))
 })
 
 // ─── Racks ──────────────────────────────────────────────────────────────────
@@ -64,6 +86,17 @@ warehouseRoutes.post('/racks', requirePermission(Permission.WAREHOUSE_CREATE), z
   const body = c.req.valid('json' as never) as z.infer<typeof rackSchema>
   const rack = await warehouseService.createRack(body)
   return c.json(success(rack, { message: 'Rack created' }), 201)
+})
+
+warehouseRoutes.patch('/racks/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const rack = await warehouseService.updateRack(c.req.param('id')!, body)
+  return c.json(success(rack, { message: 'Rack updated' }))
+})
+
+warehouseRoutes.delete('/racks/:id', requirePermission(Permission.WAREHOUSE_ARCHIVE), async (c) => {
+  await warehouseService.deleteRack(c.req.param('id')!)
+  return c.json(success({ deleted: true }, { message: 'Rack deleted' }))
 })
 
 // ─── Bins ───────────────────────────────────────────────────────────────────
@@ -89,6 +122,64 @@ warehouseRoutes.post('/bins', requirePermission(Permission.WAREHOUSE_CREATE), zV
   const body = c.req.valid('json' as never) as z.infer<typeof binSchema>
   const bin = await warehouseService.createBin(body)
   return c.json(success(bin, { message: 'Bin created' }), 201)
+})
+
+warehouseRoutes.patch('/bins/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const bin = await warehouseService.updateBin(c.req.param('id')!, body)
+  return c.json(success(bin, { message: 'Bin updated' }))
+})
+
+warehouseRoutes.delete('/bins/:id', requirePermission(Permission.WAREHOUSE_ARCHIVE), async (c) => {
+  await warehouseService.deleteBin(c.req.param('id')!)
+  return c.json(success({ deleted: true }, { message: 'Bin deleted' }))
+})
+
+warehouseRoutes.post('/bins/:id/block', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', z.object({ blockReason: z.string().min(3) })), async (c) => {
+  const body = c.req.valid('json' as never) as { blockReason: string }
+  const bin = await warehouseService.blockBin(c.req.param('id')!, body.blockReason)
+  return c.json(success(bin, { message: 'Bin blocked' }))
+})
+
+warehouseRoutes.post('/bins/:id/unblock', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
+  const bin = await warehouseService.unblockBin(c.req.param('id')!)
+  return c.json(success(bin, { message: 'Bin unblocked' }))
+})
+
+warehouseRoutes.get('/bins/empty', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
+  const bins = await warehouseService.findEmptyBins(c.req.query('warehouseId')!)
+  return c.json(success(bins))
+})
+
+warehouseRoutes.get('/bins/export', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
+  const rows = await warehouseService.exportBins(c.req.query('warehouseId')!, {
+    zoneId: c.req.query('zoneId') ?? undefined,
+    isBlocked: c.req.query('isBlocked') === 'true' ? true : c.req.query('isBlocked') === 'false' ? false : undefined,
+    emptyOnly: c.req.query('emptyOnly') === 'true',
+  })
+  return c.json(success(rows, { message: `${rows.length} bins exported` }))
+})
+
+warehouseRoutes.post('/bins/bulk-block', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', z.object({ binIds: z.array(z.string().uuid()), blockReason: z.string().min(3) })), async (c) => {
+  const body = c.req.valid('json' as never) as { binIds: string[]; blockReason: string }
+  const result = await warehouseService.bulkBlockBins(body.binIds, body.blockReason)
+  return c.json(success(result, { message: `Blocked ${result.blockedCount} of ${result.totalBins} bins` }))
+})
+
+warehouseRoutes.post('/bins/bulk-unblock', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', z.object({ binIds: z.array(z.string().uuid()) })), async (c) => {
+  const body = c.req.valid('json' as never) as { binIds: string[] }
+  const result = await warehouseService.bulkUnblockBins(body.binIds)
+  return c.json(success(result, { message: `Unblocked ${result.unblockedCount} of ${result.totalBins} bins` }))
+})
+
+warehouseRoutes.get('/dashboard', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
+  const dashboard = await warehouseService.getWarehouseDashboard(c.req.query('warehouseId')!)
+  return c.json(success(dashboard))
+})
+
+warehouseRoutes.get('/occupancy', requirePermission(Permission.WAREHOUSE_READ), async (c) => {
+  const stats = await warehouseService.getBinOccupancyStats(c.req.query('warehouseId')!)
+  return c.json(success(stats))
 })
 
 // ─── Putaway Tasks ──────────────────────────────────────────────────────────

@@ -1,4 +1,7 @@
-/** Warehouse Repository — Zones, Aisles, Racks, Bins, Putaway Tasks, Barcodes */
+/** Warehouse Repository — Zones, Aisles, Racks, Bins, Putaway Tasks, Barcodes
+ *
+ * Phase 1.6: Extended with update/delete/block/unblock/search/export/bulk operations.
+ */
 import { query } from '@/core/db/pglite'
 import { scopedQuery, scopedCount } from '@/core/security/scoped-query'
 import { enforceScopeOnWrite } from '@/core/security/data-scope'
@@ -26,9 +29,28 @@ export const zoneRepository = {
     const result = await scopedQuery(`SELECT * FROM warehouse_zones WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_zones' })
     return result.rows[0] ?? null
   },
-  async list(tenantId: string, warehouseId: string) {
-    const result = await scopedQuery(`SELECT * FROM warehouse_zones WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, zone_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_zones' })
-    return result.rows
+  async list(tenantId: string, warehouseId: string, params: { page?: number; pageSize?: number; search?: string; zoneType?: string } = {}) {
+    const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
+    let where = 'warehouse_zones.tenant_id = $1 AND warehouse_zones.warehouse_id = $2 AND warehouse_zones.deleted_at IS NULL'
+    const sqlParams: unknown[] = [tenantId, warehouseId]; let idx = 3
+    if (params.search) { where += ` AND (warehouse_zones.zone_code ILIKE $${idx} OR warehouse_zones.zone_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
+    if (params.zoneType) { where += ` AND warehouse_zones.zone_type = $${idx++}`; sqlParams.push(params.zoneType) }
+    const total = await scopedCount('warehouse_zones', 'warehouse_zones', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM warehouse_zones WHERE ${where} ORDER BY sort_order, zone_code LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'warehouse_zones' })
+    return { rows: result.rows, total, page, pageSize }
+  },
+  async update(tenantId: string, id: string, data: Record<string, unknown>) {
+    const setParts: string[] = ['updated_at = NOW()']
+    const vals: unknown[] = [tenantId, id]; let idx = 3
+    const fieldMap: Record<string, string> = { zoneName: 'zone_name', zoneType: 'zone_type', capacity: 'capacity', isActive: 'is_active', sortOrder: 'sort_order', description: 'description' }
+    for (const [key, col] of Object.entries(fieldMap)) {
+      if (data[key] !== undefined) { setParts.push(`${col} = $${idx++}`); vals.push(data[key]) }
+    }
+    const result = await query(`UPDATE warehouse_zones SET ${setParts.join(', ')} WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING *`, vals)
+    return result.rows[0] ?? null
+  },
+  async softDelete(tenantId: string, id: string, deletedBy: string) {
+    await query(`UPDATE warehouse_zones SET deleted_at = NOW(), deleted_by = $3, is_active = false, updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id, deletedBy])
   },
 }
 
@@ -53,9 +75,26 @@ export const aisleRepository = {
     const result = await scopedQuery(`SELECT * FROM warehouse_aisles WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_aisles' })
     return result.rows[0] ?? null
   },
-  async list(tenantId: string, warehouseId: string) {
-    const result = await scopedQuery(`SELECT * FROM warehouse_aisles WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, aisle_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_aisles' })
-    return result.rows
+  async list(tenantId: string, warehouseId: string, params: { page?: number; pageSize?: number; search?: string; zoneId?: string } = {}) {
+    const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
+    let where = 'warehouse_aisles.tenant_id = $1 AND warehouse_aisles.warehouse_id = $2 AND warehouse_aisles.deleted_at IS NULL'
+    const sqlParams: unknown[] = [tenantId, warehouseId]; let idx = 3
+    if (params.search) { where += ` AND (warehouse_aisles.aisle_code ILIKE $${idx} OR warehouse_aisles.aisle_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
+    if (params.zoneId) { where += ` AND warehouse_aisles.zone_id = $${idx++}`; sqlParams.push(params.zoneId) }
+    const total = await scopedCount('warehouse_aisles', 'warehouse_aisles', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM warehouse_aisles WHERE ${where} ORDER BY sort_order, aisle_code LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'warehouse_aisles' })
+    return { rows: result.rows, total, page, pageSize }
+  },
+  async update(tenantId: string, id: string, data: Record<string, unknown>) {
+    const setParts: string[] = ['updated_at = NOW()']
+    const vals: unknown[] = [tenantId, id]; let idx = 3
+    const fieldMap: Record<string, string> = { aisleName: 'aisle_name', capacity: 'capacity', isActive: 'is_active', sortOrder: 'sort_order', description: 'description' }
+    for (const [key, col] of Object.entries(fieldMap)) { if (data[key] !== undefined) { setParts.push(`${col} = $${idx++}`); vals.push(data[key]) } }
+    const result = await query(`UPDATE warehouse_aisles SET ${setParts.join(', ')} WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING *`, vals)
+    return result.rows[0] ?? null
+  },
+  async softDelete(tenantId: string, id: string, deletedBy: string) {
+    await query(`UPDATE warehouse_aisles SET deleted_at = NOW(), deleted_by = $3, is_active = false, updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id, deletedBy])
   },
 }
 
@@ -82,9 +121,27 @@ export const rackRepository = {
     const result = await scopedQuery(`SELECT * FROM warehouse_racks WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id], { tableAlias: 'warehouse_racks' })
     return result.rows[0] ?? null
   },
-  async list(tenantId: string, warehouseId: string) {
-    const result = await scopedQuery(`SELECT * FROM warehouse_racks WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL ORDER BY sort_order, rack_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_racks' })
-    return result.rows
+  async list(tenantId: string, warehouseId: string, params: { page?: number; pageSize?: number; search?: string; zoneId?: string; aisleId?: string } = {}) {
+    const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
+    let where = 'warehouse_racks.tenant_id = $1 AND warehouse_racks.warehouse_id = $2 AND warehouse_racks.deleted_at IS NULL'
+    const sqlParams: unknown[] = [tenantId, warehouseId]; let idx = 3
+    if (params.search) { where += ` AND (warehouse_racks.rack_code ILIKE $${idx} OR warehouse_racks.rack_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
+    if (params.zoneId) { where += ` AND warehouse_racks.zone_id = $${idx++}`; sqlParams.push(params.zoneId) }
+    if (params.aisleId) { where += ` AND warehouse_racks.aisle_id = $${idx++}`; sqlParams.push(params.aisleId) }
+    const total = await scopedCount('warehouse_racks', 'warehouse_racks', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM warehouse_racks WHERE ${where} ORDER BY sort_order, rack_code LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'warehouse_racks' })
+    return { rows: result.rows, total, page, pageSize }
+  },
+  async update(tenantId: string, id: string, data: Record<string, unknown>) {
+    const setParts: string[] = ['updated_at = NOW()']
+    const vals: unknown[] = [tenantId, id]; let idx = 3
+    const fieldMap: Record<string, string> = { rackName: 'rack_name', rackType: 'rack_type', levels: 'levels', capacityPerLevel: 'capacity_per_level', capacity: 'capacity', isActive: 'is_active', sortOrder: 'sort_order', description: 'description' }
+    for (const [key, col] of Object.entries(fieldMap)) { if (data[key] !== undefined) { setParts.push(`${col} = $${idx++}`); vals.push(data[key]) } }
+    const result = await query(`UPDATE warehouse_racks SET ${setParts.join(', ')} WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING *`, vals)
+    return result.rows[0] ?? null
+  },
+  async softDelete(tenantId: string, id: string, deletedBy: string) {
+    await query(`UPDATE warehouse_racks SET deleted_at = NOW(), deleted_by = $3, is_active = false, updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id, deletedBy])
   },
 }
 
@@ -115,14 +172,39 @@ export const binRepository = {
     const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND bin_code = $3 AND deleted_at IS NULL`, [tenantId, warehouseId, binCode], { tableAlias: 'warehouse_bins' })
     return result.rows[0] ?? null
   },
-  async list(tenantId: string, warehouseId: string, params: { zoneId?: string; aisleId?: string; rackId?: string } = {}) {
-    let where = 'tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL'
+  async list(tenantId: string, warehouseId: string, params: { page?: number; pageSize?: number; zoneId?: string; aisleId?: string; rackId?: string; search?: string; isBlocked?: boolean; isActive?: boolean; emptyOnly?: boolean } = {}) {
+    const page = params.page ?? 1; const pageSize = params.pageSize ?? 25; const offset = (page - 1) * pageSize
+    let where = 'warehouse_bins.tenant_id = $1 AND warehouse_bins.warehouse_id = $2 AND warehouse_bins.deleted_at IS NULL'
     const sqlParams: unknown[] = [tenantId, warehouseId]; let idx = 3
-    if (params.zoneId) { where += ` AND zone_id = $${idx++}`; sqlParams.push(params.zoneId) }
-    if (params.aisleId) { where += ` AND aisle_id = $${idx++}`; sqlParams.push(params.aisleId) }
-    if (params.rackId) { where += ` AND rack_id = $${idx++}`; sqlParams.push(params.rackId) }
-    const result = await query(`SELECT * FROM warehouse_bins WHERE ${where} ORDER BY sort_order, bin_code`, sqlParams)
-    return result.rows
+    if (params.zoneId) { where += ` AND warehouse_bins.zone_id = $${idx++}`; sqlParams.push(params.zoneId) }
+    if (params.aisleId) { where += ` AND warehouse_bins.aisle_id = $${idx++}`; sqlParams.push(params.aisleId) }
+    if (params.rackId) { where += ` AND warehouse_bins.rack_id = $${idx++}`; sqlParams.push(params.rackId) }
+    if (params.search) { where += ` AND (warehouse_bins.bin_code ILIKE $${idx} OR warehouse_bins.bin_name ILIKE $${idx})`; sqlParams.push(`%${params.search}%`); idx++ }
+    if (params.isBlocked !== undefined) { where += ` AND warehouse_bins.is_blocked = $${idx++}`; sqlParams.push(params.isBlocked) }
+    if (params.isActive !== undefined) { where += ` AND warehouse_bins.is_active = $${idx++}`; sqlParams.push(params.isActive) }
+    if (params.emptyOnly) { where += ` AND warehouse_bins.used_capacity = 0` }
+    const total = await scopedCount('warehouse_bins', 'warehouse_bins', where, sqlParams)
+    const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE ${where} ORDER BY sort_order, bin_code LIMIT $${idx} OFFSET $${idx + 1}`, [...sqlParams, pageSize, offset], { tableAlias: 'warehouse_bins' })
+    return { rows: result.rows, total, page, pageSize }
+  },
+  async update(tenantId: string, id: string, data: Record<string, unknown>) {
+    const setParts: string[] = ['updated_at = NOW()']
+    const vals: unknown[] = [tenantId, id]; let idx = 3
+    const fieldMap: Record<string, string> = { binName: 'bin_name', binType: 'bin_type', capacity: 'capacity', isActive: 'is_active', sortOrder: 'sort_order', description: 'description' }
+    for (const [key, col] of Object.entries(fieldMap)) { if (data[key] !== undefined) { setParts.push(`${col} = $${idx++}`); vals.push(data[key]) } }
+    const result = await query(`UPDATE warehouse_bins SET ${setParts.join(', ')} WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING *`, vals)
+    return result.rows[0] ?? null
+  },
+  async softDelete(tenantId: string, id: string, deletedBy: string) {
+    await query(`UPDATE warehouse_bins SET deleted_at = NOW(), deleted_by = $3, is_active = false, updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id, deletedBy])
+  },
+  async block(tenantId: string, id: string, blockReason: string, blockedBy: string) {
+    const result = await query(`UPDATE warehouse_bins SET is_blocked = true, block_reason = $3, blocked_by = $4, blocked_at = NOW(), updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING *`, [tenantId, id, blockReason, blockedBy])
+    return result.rows[0] ?? null
+  },
+  async unblock(tenantId: string, id: string) {
+    const result = await query(`UPDATE warehouse_bins SET is_blocked = false, block_reason = NULL, blocked_by = NULL, blocked_at = NULL, updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING *`, [tenantId, id])
+    return result.rows[0] ?? null
   },
   async updateUsedCapacity(tenantId: string, id: string, usedCapacity: number) {
     await query(`UPDATE warehouse_bins SET used_capacity = $3, updated_at = NOW() WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL`, [tenantId, id, usedCapacity])
@@ -131,6 +213,37 @@ export const binRepository = {
   async findAvailableBin(tenantId: string, warehouseId: string, requiredCapacity: number) {
     const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL AND is_active = true AND is_blocked = false AND (capacity = 0 OR (capacity - used_capacity) >= $3) ORDER BY used_capacity ASC, bin_code ASC LIMIT 1`, [tenantId, warehouseId, requiredCapacity], { tableAlias: 'warehouse_bins' })
     return result.rows[0] ?? null
+  },
+  /** Find empty bins (used_capacity = 0) */
+  async findEmptyBins(tenantId: string, warehouseId: string) {
+    const result = await scopedQuery(`SELECT * FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL AND is_active = true AND is_blocked = false AND used_capacity = 0 ORDER BY bin_code`, [tenantId, warehouseId], { tableAlias: 'warehouse_bins' })
+    return result.rows
+  },
+  /** Get bin occupancy stats for a warehouse */
+  async getBinOccupancyStats(tenantId: string, warehouseId: string) {
+    const result = await query<{
+      total_bins: string; active_bins: string; blocked_bins: string; empty_bins: string
+      full_bins: string; total_capacity: string; total_used: string
+    }>(`SELECT
+      COUNT(*) as total_bins,
+      COUNT(CASE WHEN is_active = true THEN 1 END) as active_bins,
+      COUNT(CASE WHEN is_blocked = true THEN 1 END) as blocked_bins,
+      COUNT(CASE WHEN used_capacity = 0 AND is_active = true AND is_blocked = false THEN 1 END) as empty_bins,
+      COUNT(CASE WHEN capacity > 0 AND used_capacity >= capacity THEN 1 END) as full_bins,
+      COALESCE(SUM(capacity), 0) as total_capacity,
+      COALESCE(SUM(used_capacity), 0) as total_used
+    FROM warehouse_bins WHERE tenant_id = $1 AND warehouse_id = $2 AND deleted_at IS NULL`, [tenantId, warehouseId])
+    const r = result.rows[0]!
+    return {
+      totalBins: Number(r.total_bins),
+      activeBins: Number(r.active_bins),
+      blockedBins: Number(r.blocked_bins),
+      emptyBins: Number(r.empty_bins),
+      fullBins: Number(r.full_bins),
+      totalCapacity: Number(r.total_capacity),
+      totalUsed: Number(r.total_used),
+      utilizationPercent: Number(r.total_capacity) > 0 ? (Number(r.total_used) / Number(r.total_capacity)) * 100 : 0,
+    }
   },
 }
 
