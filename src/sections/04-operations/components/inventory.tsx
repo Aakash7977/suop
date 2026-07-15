@@ -342,18 +342,7 @@ function InvBalancesTab() {
     String(b.warehouse_name || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const _balances = [
-    { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', available: 142, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 142, unitCost: 350, totalValue: 49700, expiry: '2026-07-31' },
-    { product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', available: 186, reserved: 24, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 210, unitCost: 350, totalValue: 73500, expiry: '2026-07-31' },
-    { product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2606-05', available: 0, reserved: 0, allocated: 0, damaged: 0, expired: 56, inTransit: 0, total: 56, unitCost: 345, totalValue: 19320, expiry: '2026-07-25' },
-    { product: 'Soan Cake 1kg', warehouse: 'Mumbai Plant Warehouse', batch: 'SC-2606-04', available: 89, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 89, unitCost: 625, totalValue: 55625, expiry: '2026-09-15' },
-    { product: 'Mixed Namkeen 200g', warehouse: 'Mumbai Plant Warehouse', batch: 'MN-2607-03', available: 1180, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 1180, unitCost: 53, totalValue: 62540, expiry: '2026-08-22' },
-    { product: 'Gulab Jamun 1kg', warehouse: 'Mumbai DC', batch: 'GJ-2607-01', available: 412, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 412, unitCost: 304, totalValue: 125248, expiry: '2026-08-05' },
-    { product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 35, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 35, unitCost: 850, totalValue: 29750, expiry: null },
-    { product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 28, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 28, unitCost: 45, totalValue: 1260, expiry: null },
-    { product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 12, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 12, unitCost: 520, totalValue: 6240, expiry: null },
-    { product: 'Packaging Boxes', warehouse: 'Mumbai Plant Warehouse', batch: null, available: 2840, reserved: 0, allocated: 0, damaged: 0, expired: 0, inTransit: 0, total: 2840, unitCost: 12, totalValue: 34080, expiry: null },
-  ]
+  // No mock data — uses real API data from inventoryApi.list()
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
@@ -371,19 +360,19 @@ function InvBalancesTab() {
             <th className="font-medium">Expiry</th>
           </tr></thead>
           <tbody>
-            {balances.map((b, i) => (
-              <tr key={i} className="border-b hover:bg-muted/40">
-                <td className="py-2.5 font-medium">{b.product}</td>
-                <td className="text-xs">{b.warehouse}</td>
-                <td className="font-mono text-xs">{b.batch || <span className="text-muted-foreground">—</span>}</td>
-                <td className="text-right font-mono font-semibold text-emerald-600">{b.available}</td>
-                <td className="text-right font-mono text-blue-600">{b.reserved}</td>
-                <td className="text-right font-mono text-purple-600">{b.allocated}</td>
-                <td className="text-right font-mono text-orange-600">{b.damaged}</td>
-                <td className="text-right font-mono text-red-600">{b.expired}</td>
-                <td className="text-right font-mono font-semibold">{b.total}</td>
-                <td className="text-right font-mono">₹{b.totalValue.toLocaleString('en-IN')}</td>
-                <td className="text-xs text-muted-foreground">{b.expiry || '—'}</td>
+            {filtered.map((b: any, i: number) => (
+              <tr key={b.id || i} className="border-b hover:bg-muted/40">
+                <td className="py-2.5 font-medium">{b.product_name}</td>
+                <td className="text-xs">{b.warehouse_name}</td>
+                <td className="font-mono text-xs">{b.batch_number || <span className="text-muted-foreground">—</span>}</td>
+                <td className="text-right font-mono font-semibold text-emerald-600">{Number(b.available_qty).toLocaleString('en-IN')}</td>
+                <td className="text-right font-mono text-blue-600">{Number(b.reserved_qty).toLocaleString('en-IN')}</td>
+                <td className="text-right font-mono text-purple-600">0</td>
+                <td className="text-right font-mono text-orange-600">0</td>
+                <td className="text-right font-mono text-red-600">{b.is_expired ? Number(b.quantity).toLocaleString('en-IN') : 0}</td>
+                <td className="text-right font-mono font-semibold">{Number(b.quantity).toLocaleString('en-IN')}</td>
+                <td className="text-right font-mono">₹{Number(b.total_value || 0).toLocaleString('en-IN')}</td>
+                <td className="text-xs text-muted-foreground">{b.expiry_date ? new Date(b.expiry_date).toLocaleDateString('en-IN') : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -415,18 +404,7 @@ function InvLedgerTab() {
     return () => { cancelled = true }
   }, [])
 
-  const _entries = [
-    { id: 'sl-001', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 200, availDelta: 200, postingDate: '2026-07-08 10:15', isReversal: false },
-    { id: 'sl-002', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 150, availDelta: 150, postingDate: '2026-07-08 10:15', isReversal: false },
-    { id: 'sl-003', txnNumber: 'INV-2026-00142', txnType: 'GOODS_RECEIPT', product: 'Ghee (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 30, availDelta: 30, postingDate: '2026-07-08 10:15', isReversal: false },
-    { id: 'sl-004', txnNumber: 'INV-2026-00143', txnType: 'GOODS_RECEIPT', product: 'Sugar (Raw)', warehouse: 'Mumbai Plant Warehouse', qtyDelta: 500, availDelta: 500, postingDate: '2026-07-08 10:20', isReversal: false },
-    { id: 'sl-005', txnNumber: 'INV-2026-00144', txnType: 'PRODUCTION_RECEIPT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', qtyDelta: 500, availDelta: 500, postingDate: '2026-07-01 16:00', isReversal: false },
-    { id: 'sl-006', txnNumber: 'INV-2026-00145', txnType: 'TRANSFER', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', batch: 'KK-2607-01', qtyDelta: -358, availDelta: -358, postingDate: '2026-07-03 10:00', isReversal: false },
-    { id: 'sl-007', txnNumber: 'INV-2026-00145', txnType: 'TRANSFER', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: 358, availDelta: 358, postingDate: '2026-07-03 10:00', isReversal: false },
-    { id: 'sl-008', txnNumber: 'INV-2026-00146', txnType: 'SALES', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -100, availDelta: -100, postingDate: '2026-07-05 14:00', isReversal: false },
-    { id: 'sl-009', txnNumber: 'INV-2026-00147', txnType: 'SALES', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -48, availDelta: -48, postingDate: '2026-07-06 11:30', isReversal: false },
-    { id: 'sl-010', txnNumber: 'INV-2026-00148', txnType: 'RESERVATION', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', batch: 'KK-2607-01', qtyDelta: -24, availDelta: -24, postingDate: '2026-07-08 09:00', isReversal: false },
-  ]
+  // No mock data — uses real API data from inventoryApi.listLedger()
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
@@ -443,17 +421,17 @@ function InvLedgerTab() {
             <th className="font-medium">Reversal?</th>
           </tr></thead>
           <tbody>
-            {entries.map(e => (
+            {entries.map((e: any) => (
               <tr key={e.id} className="border-b hover:bg-muted/40 font-mono text-xs">
-                <td className="py-2.5">{e.txnNumber}</td>
-                <td><Badge variant="outline" className="text-xs">{e.txnType.replace(/_/g, ' ')}</Badge></td>
-                <td className="font-sans font-medium">{e.product}</td>
-                <td className="font-sans">{e.warehouse}</td>
-                <td>{e.batch || <span className="text-muted-foreground">—</span>}</td>
-                <td className={cn('text-right font-bold', e.qtyDelta > 0 ? 'text-emerald-600' : 'text-red-600')}>{e.qtyDelta > 0 ? '+' : ''}{e.qtyDelta}</td>
-                <td className={cn('text-right font-bold', e.availDelta > 0 ? 'text-emerald-600' : 'text-red-600')}>{e.availDelta > 0 ? '+' : ''}{e.availDelta}</td>
-                <td className="text-muted-foreground">{e.postingDate}</td>
-                <td>{e.isReversal ? <Badge variant="destructive" className="text-xs">Yes</Badge> : <span className="text-muted-foreground">No</span>}</td>
+                <td className="py-2.5">{e.transaction_number}</td>
+                <td><Badge variant="outline" className="text-xs">{String(e.movement_type || '').replace(/_/g, ' ')}</Badge></td>
+                <td className="font-sans font-medium">{e.product_sku}</td>
+                <td className="font-sans">{e.warehouse_id}</td>
+                <td>{e.batch_number || <span className="text-muted-foreground">—</span>}</td>
+                <td className={cn('text-right font-bold', Number(e.in_qty) > 0 ? 'text-emerald-600' : 'text-red-600')}>{Number(e.in_qty) > 0 ? '+' : ''}{Number(e.in_qty || e.out_qty || 0)}</td>
+                <td className={cn('text-right font-bold', Number(e.in_qty) > 0 ? 'text-emerald-600' : 'text-red-600')}>{Number(e.balance_qty).toLocaleString('en-IN')}</td>
+                <td className="text-muted-foreground">{e.entry_date ? new Date(e.entry_date).toLocaleString('en-IN') : '—'}</td>
+                <td>{e.is_immutable ? <Badge variant="outline" className="text-xs">Immutable</Badge> : <span className="text-muted-foreground">—</span>}</td>
               </tr>
             ))}
           </tbody>
@@ -464,163 +442,181 @@ function InvLedgerTab() {
 }
 
 function InvMovementsTab() {
-  const movements = [
-    { id: 'sm-001', product: 'Cashew Nuts (Raw)', type: 'IN', qty: 200, from: 'Konkan Cashew Processors', to: 'Mumbai Plant Warehouse', ref: 'PO-2026-0142', partner: 'Konkan Cashew', performedBy: 'Suresh Patil', reason: 'Purchase receipt', date: '2026-07-08 10:15' },
-    { id: 'sm-002', product: 'Sugar (Raw)', type: 'IN', qty: 500, from: 'Sri Balaji Sugar', to: 'Mumbai Plant Warehouse', ref: 'PO-2026-0156', partner: 'Sri Balaji Sugar', performedBy: 'Suresh Patil', reason: 'Purchase receipt', date: '2026-07-08 10:20' },
-    { id: 'sm-003', product: 'Kaju Katli 500g', type: 'IN', qty: 500, from: 'Production Line 1', to: 'Mumbai Plant Warehouse', ref: 'MO-2026-0089', partner: null, performedBy: 'Anita Desai', reason: 'Production output', date: '2026-07-01 16:00' },
-    { id: 'sm-004', product: 'Kaju Katli 500g', type: 'TRANSFER', qty: 358, from: 'Mumbai Plant Warehouse', to: 'Mumbai DC', ref: 'TO-2026-0042', partner: null, performedBy: 'Anita Desai', reason: 'Inter-warehouse transfer', date: '2026-07-03 10:00' },
-    { id: 'sm-005', product: 'Kaju Katli 500g', type: 'OUT', qty: 100, from: 'Mumbai DC', to: 'Tata Consumer Products', ref: 'INV-2026-00892', partner: 'Tata Consumer', performedBy: 'Vikram Iyer', reason: 'Sales dispatch', date: '2026-07-05 14:00' },
-    { id: 'sm-006', product: 'Kaju Katli 500g', type: 'OUT', qty: 48, from: 'Mumbai DC', to: 'Reliance Retail', ref: 'INV-2026-00915', partner: 'Reliance Retail', performedBy: 'Vikram Iyer', reason: 'Sales dispatch', date: '2026-07-06 11:30' },
-    { id: 'sm-007', product: 'Kaju Katli 500g', type: 'RESERVATION', qty: 24, from: 'Mumbai DC', to: 'Mumbai DC (Reserved)', ref: 'SO-2026-0234', partner: 'Infosys', performedBy: 'Vikram Iyer', reason: 'Customer order reservation', date: '2026-07-08 09:00' },
-  ]
-  const typeColor: Record<string, string> = { IN: 'bg-emerald-100 text-emerald-800', OUT: 'bg-red-100 text-red-800', TRANSFER: 'bg-blue-100 text-blue-800', ADJUSTMENT: 'bg-amber-100 text-amber-800', RESERVATION: 'bg-indigo-100 text-indigo-800', ALLOCATION: 'bg-violet-100 text-violet-800', RELEASE: 'bg-pink-100 text-pink-800' }
+  const [movements, setMovements] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await inventoryApi.listTransactions({ page: 1 })
+        if (!cancelled) setMovements(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load movements')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const typeColor: Record<string, string> = {
+    STOCK_IN: 'bg-emerald-100 text-emerald-800', STOCK_OUT: 'bg-red-100 text-red-800',
+    ADJUSTMENT_INCREASE: 'bg-amber-100 text-amber-800', ADJUSTMENT_DECREASE: 'bg-orange-100 text-orange-800',
+  }
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Stock Movement History</h3>
-        <p className="text-xs text-muted-foreground mt-1">Tracks every movement: who, when, from, to, reason, reference. Supports forward and backward traceability.</p></div>
+        <p className="text-xs text-muted-foreground mt-1">Tracks every movement: who, when, from, to, reason, reference.</p></div>
       </div>
-      <div className="space-y-2">
-        {movements.map(m => (
-          <div key={m.id} className="border rounded-lg p-3 flex items-start gap-3">
-            <span className={cn('inline-block px-2 py-1 rounded text-xs font-bold flex-shrink-0', typeColor[m.type])}>{m.type}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <p className="font-medium text-sm">{m.product}</p>
-                <Badge variant="outline" className="text-xs font-mono">{m.qty} units</Badge>
+      {error && <div className="text-sm text-rose-500 mb-3">{error}</div>}
+      {loading ? (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted/50 rounded animate-pulse" />)}</div>
+      ) : movements.length === 0 ? (
+        <EmptyState icon={PackageOpen} title="No movements found" description="Stock movements will appear here once inventory is updated." />
+      ) : (
+        <div className="space-y-2">
+          {movements.map((m: any) => (
+            <div key={m.id} className="border rounded-lg p-3 flex items-start gap-3">
+              <span className={cn('inline-block px-2 py-1 rounded text-xs font-bold flex-shrink-0', typeColor[m.movement_type] ?? 'bg-slate-100 text-slate-800')}>{String(m.movement_type || '').replace(/_/g, ' ')}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <p className="font-medium text-sm">{m.product_name}</p>
+                  <Badge variant="outline" className="text-xs font-mono">{Number(m.quantity).toLocaleString('en-IN')} units</Badge>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                  <span className="font-medium text-foreground">{m.warehouse_name}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ref: <span className="font-mono">{m.reference_number || '—'}</span> · By: {m.performed_by_name || '—'} · {m.transaction_date ? new Date(m.transaction_date).toLocaleString('en-IN') : '—'}
+                </p>
+                <p className="text-xs text-muted-foreground">Reason: {m.reason || '—'}</p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <span className="font-medium text-foreground">{m.from}</span>
-                <ArrowRight className="h-3 w-3" />
-                <span className="font-medium text-foreground">{m.to}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Ref: <span className="font-mono">{m.ref}</span> · {m.partner && `Partner: ${m.partner} · `}By: {m.performedBy} · {m.date}
-              </p>
-              <p className="text-xs text-muted-foreground">Reason: {m.reason}</p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </Card>
   )
 }
 
 function InvJournalTab() {
-  const entries = [
-    { id: 'ij-001', entryNumber: 'IJ-2026-00284', txnNumber: 'INV-2026-00142', entryType: 'DEBIT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qty: 200, unitCost: 850, totalValue: 170000, account: 'RAW_MATERIAL', offsetAccount: 'GRNI', ref: 'PO-2026-0142', postingDate: '2026-07-08 10:15' },
-    { id: 'ij-002', entryNumber: 'IJ-2026-00285', txnNumber: 'INV-2026-00142', entryType: 'CREDIT', product: 'Cashew Nuts (Raw)', warehouse: 'Mumbai Plant Warehouse', qty: 200, unitCost: 850, totalValue: 170000, account: 'GRNI', offsetAccount: 'RAW_MATERIAL', ref: 'PO-2026-0142', postingDate: '2026-07-08 10:15' },
-    { id: 'ij-003', entryNumber: 'IJ-2026-00286', txnNumber: 'INV-2026-00144', entryType: 'DEBIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', qty: 500, unitCost: 350, totalValue: 175000, account: 'FINISHED_GOODS', offsetAccount: 'WIP', ref: 'MO-2026-0089', postingDate: '2026-07-01 16:00' },
-    { id: 'ij-004', entryNumber: 'IJ-2026-00287', txnNumber: 'INV-2026-00144', entryType: 'CREDIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai Plant Warehouse', qty: 500, unitCost: 350, totalValue: 175000, account: 'WIP', offsetAccount: 'FINISHED_GOODS', ref: 'MO-2026-0089', postingDate: '2026-07-01 16:00' },
-    { id: 'ij-005', entryNumber: 'IJ-2026-00288', txnNumber: 'INV-2026-00146', entryType: 'CREDIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', qty: 100, unitCost: 540, totalValue: 54000, account: 'FINISHED_GOODS', offsetAccount: 'COGS', ref: 'INV-2026-00892', postingDate: '2026-07-05 14:00' },
-    { id: 'ij-006', entryNumber: 'IJ-2026-00289', txnNumber: 'INV-2026-00146', entryType: 'DEBIT', product: 'Kaju Katli 500g', warehouse: 'Mumbai DC', qty: 100, unitCost: 540, totalValue: 54000, account: 'COGS', offsetAccount: 'FINISHED_GOODS', ref: 'INV-2026-00892', postingDate: '2026-07-05 14:00' },
-  ]
-  const typeColor: Record<string, string> = { DEBIT: 'bg-emerald-100 text-emerald-800', CREDIT: 'bg-red-100 text-red-800' }
+  const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await inventoryApi.listLedger({ page: 1 })
+        if (!cancelled) setEntries(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load journal')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold flex items-center gap-2"><Layers3 className="h-5 w-5" /> Inventory Journal (Immutable, Double-Entry)</h3>
-        <p className="text-xs text-muted-foreground mt-1">Accounting-style immutable journal. Never edited. Never deleted. Only reversal entries. Every transaction creates paired DEBIT/CREDIT entries for inventory valuation.</p></div>
+        <p className="text-xs text-muted-foreground mt-1">Accounting-style immutable journal. Never edited. Never deleted. Every transaction creates paired entries for inventory valuation.</p></div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b text-left text-xs text-muted-foreground">
-            <th className="py-2 font-medium">Entry #</th><th className="font-medium">Type</th>
-            <th className="font-medium">Product</th><th className="font-medium text-right">Qty</th>
-            <th className="font-medium text-right">Unit Cost</th><th className="font-medium text-right">Total Value</th>
-            <th className="font-medium">Account</th><th className="font-medium">Offset Account</th>
-            <th className="font-medium">Reference</th><th className="font-medium">Posted</th>
-          </tr></thead>
-          <tbody>
-            {entries.map(e => (
-              <tr key={e.id} className="border-b hover:bg-muted/40 font-mono text-xs">
-                <td className="py-2.5">{e.entryNumber}</td>
-                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-bold', typeColor[e.entryType])}>{e.entryType}</span></td>
-                <td className="font-sans font-medium">{e.product}</td>
-                <td className="text-right">{e.qty}</td>
-                <td className="text-right">₹{e.unitCost}</td>
-                <td className="text-right font-semibold">₹{e.totalValue.toLocaleString('en-IN')}</td>
-                <td><Badge variant="outline" className="text-xs">{e.account}</Badge></td>
-                <td><Badge variant="outline" className="text-xs">{e.offsetAccount}</Badge></td>
-                <td>{e.ref}</td>
-                <td className="text-muted-foreground">{e.postingDate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {error && <div className="text-sm text-rose-500 mb-3">{error}</div>}
+      {loading ? (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-muted/50 rounded animate-pulse" />)}</div>
+      ) : entries.length === 0 ? (
+        <EmptyState icon={Layers3} title="No journal entries found" description="Ledger entries will appear here once inventory movements occur." />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b text-left text-xs text-muted-foreground">
+              <th className="py-2 font-medium">Entry #</th><th className="font-medium">Movement</th>
+              <th className="font-medium">Product</th><th className="font-medium text-right">In Qty</th>
+              <th className="font-medium text-right">Out Qty</th><th className="font-medium text-right">Balance</th>
+              <th className="font-medium text-right">Value</th><th className="font-medium">Date</th>
+            </tr></thead>
+            <tbody>
+              {entries.map((e: any) => (
+                <tr key={e.id} className="border-b hover:bg-muted/40 font-mono text-xs">
+                  <td className="py-2.5">{e.entry_number}</td>
+                  <td><Badge variant="outline" className="text-xs">{String(e.movement_type || '').replace(/_/g, ' ')}</Badge></td>
+                  <td className="font-sans font-medium">{e.product_sku}</td>
+                  <td className="text-right text-emerald-600">{Number(e.in_qty || 0).toLocaleString('en-IN')}</td>
+                  <td className="text-right text-red-600">{Number(e.out_qty || 0).toLocaleString('en-IN')}</td>
+                  <td className="text-right font-semibold">{Number(e.balance_qty || 0).toLocaleString('en-IN')}</td>
+                  <td className="text-right">₹{Number(e.total_value || 0).toLocaleString('en-IN')}</td>
+                  <td className="text-muted-foreground">{e.entry_date ? new Date(e.entry_date).toLocaleDateString('en-IN') : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Card>
   )
 }
 
 function InvAvailabilityTab() {
-  const summary = {
-    totalAvailable: 4904,
-    totalReserved: 24,
-    totalAllocated: 0,
-    totalDamaged: 0,
-    totalExpired: 56,
-    totalInTransit: 0,
-    totalUnits: 4984,
-    totalValue: 516258,
-  }
-  const byProduct = [
-    { product: 'Kaju Katli 500g', available: 328, reserved: 24, expired: 56, value: 142520 },
-    { product: 'Soan Cake 1kg', available: 89, reserved: 0, expired: 0, value: 55625 },
-    { product: 'Mixed Namkeen 200g', available: 1180, reserved: 0, expired: 0, value: 62540 },
-    { product: 'Gulab Jamun 1kg', available: 412, reserved: 0, expired: 0, value: 125248 },
-    { product: 'Cashew Nuts (Raw)', available: 35, reserved: 0, expired: 0, value: 29750 },
-    { product: 'Sugar (Raw)', available: 28, reserved: 0, expired: 0, value: 1260 },
-    { product: 'Ghee (Raw)', available: 12, reserved: 0, expired: 0, value: 6240 },
-    { product: 'Packaging Boxes', available: 2840, reserved: 0, expired: 0, value: 34080 },
-  ]
+  const [inventory, setInventory] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true); setError('')
+      try {
+        const res = await inventoryApi.list({ page: 1, pageSize: 1000 })
+        if (!cancelled) setInventory(res.data || [])
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || 'Failed to load availability')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const totalAvailable = inventory.reduce((s: number, i: any) => s + Number(i.available_qty || 0), 0)
+  const totalReserved = inventory.reduce((s: number, i: any) => s + Number(i.reserved_qty || 0), 0)
+  const totalBlocked = inventory.reduce((s: number, i: any) => s + Number(i.blocked_qty || 0), 0)
+  const totalExpired = inventory.filter((i: any) => i.is_expired).reduce((s: number, i: any) => s + Number(i.quantity || 0), 0)
+  const totalUnits = inventory.reduce((s: number, i: any) => s + Number(i.quantity || 0), 0)
+  const totalValue = inventory.reduce((s: number, i: any) => s + Number(i.total_value || 0), 0)
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <div><h3 className="font-semibold flex items-center gap-2"><ActivityIcon className="h-5 w-5" /> Stock Availability Service</h3>
-        <p className="text-xs text-muted-foreground mt-1">Shared service that every module calls instead of reading stock directly. Returns available, reserved, allocated, in-transit, and projected quantities.</p></div>
+        <div><h3 className="font-semibold flex items-center gap-2"><ActivityIcon className="h-5 w-5" /> Stock Availability Dashboard</h3>
+        <p className="text-xs text-muted-foreground mt-1">Real-time availability computed from live inventory data.</p></div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-4 mb-6">
-        <div className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900">
-          <p className="text-xs text-muted-foreground">Available</p>
-          <p className="text-2xl font-bold text-emerald-600">{summary.totalAvailable.toLocaleString('en-IN')}</p>
+      {error && <div className="text-sm text-rose-500 mb-3">{error}</div>}
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-muted/50 rounded animate-pulse" />)}</div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">Total Available</p><PackageCheck className="h-5 w-5 text-emerald-600" /></div><p className="text-2xl font-bold text-emerald-600">{totalAvailable.toLocaleString('en-IN')}</p></Card>
+            <Card className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">Total Reserved</p><ShieldCheck className="h-5 w-5 text-blue-600" /></div><p className="text-2xl font-bold text-blue-600">{totalReserved.toLocaleString('en-IN')}</p></Card>
+            <Card className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">Total Blocked</p><ShieldAlert className="h-5 w-5 text-orange-600" /></div><p className="text-2xl font-bold text-orange-600">{totalBlocked.toLocaleString('en-IN')}</p></Card>
+            <Card className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">Total Expired</p><AlertOctagon className="h-5 w-5 text-red-600" /></div><p className="text-2xl font-bold text-red-600">{totalExpired.toLocaleString('en-IN')}</p></Card>
+            <Card className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">Total Units</p><Boxes className="h-5 w-5 text-purple-600" /></div><p className="text-2xl font-bold">{totalUnits.toLocaleString('en-IN')}</p></Card>
+            <Card className="p-4"><div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">Total Value</p><IndianRupee className="h-5 w-5 text-amber-600" /></div><p className="text-2xl font-bold">₹{totalValue.toLocaleString('en-IN')}</p></Card>
+          </div>
         </div>
-        <div className="p-3 rounded-lg border bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900">
-          <p className="text-xs text-muted-foreground">Reserved</p>
-          <p className="text-2xl font-bold text-blue-600">{summary.totalReserved}</p>
-        </div>
-        <div className="p-3 rounded-lg border bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900">
-          <p className="text-xs text-muted-foreground">Expired</p>
-          <p className="text-2xl font-bold text-red-600">{summary.totalExpired}</p>
-        </div>
-        <div className="p-3 rounded-lg border bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900">
-          <p className="text-xs text-muted-foreground">Total Value</p>
-          <p className="text-2xl font-bold text-amber-600">₹{summary.totalValue.toLocaleString('en-IN')}</p>
-        </div>
-      </div>
-      <h4 className="font-semibold text-sm mb-3">Availability by Product</h4>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b text-left text-xs text-muted-foreground">
-            <th className="py-2 font-medium">Product</th>
-            <th className="font-medium text-right">Available</th>
-            <th className="font-medium text-right">Reserved</th>
-            <th className="font-medium text-right">Expired</th>
-            <th className="font-medium text-right">Value</th>
-          </tr></thead>
-          <tbody>
-            {byProduct.map(p => (
-              <tr key={p.product} className="border-b hover:bg-muted/40">
-                <td className="py-2.5 font-medium">{p.product}</td>
-                <td className="text-right font-mono font-semibold text-emerald-600">{p.available}</td>
-                <td className="text-right font-mono text-blue-600">{p.reserved}</td>
-                <td className="text-right font-mono text-red-600">{p.expired}</td>
-                <td className="text-right font-mono">₹{p.value.toLocaleString('en-IN')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )}
     </Card>
   )
 }
