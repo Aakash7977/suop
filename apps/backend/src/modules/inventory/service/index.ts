@@ -21,7 +21,7 @@ import {
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
-import { query } from '@/core/db/pglite'
+import { query, pgliteTransaction } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, AuthorizationError, ConcurrencyError } from '@/core/errors'
 import { enforceNotBreakGlass, enforceTenantIsolation, enforceMakerChecker } from '@/core/security/sod-enforcement'
 
@@ -104,54 +104,60 @@ export const inventoryService = {
     const newTotalValue = previousValue + addedValue
     const movingAvgCost = newQty > 0 ? newTotalValue / newQty : data.unitCost
 
-    if (!inventory) {
-      inventory = await inventoryRepository.create({
-        tenantId, productId: data.productId, productSku: data.productSku, productName: data.productName,
-        warehouseId: data.warehouseId, warehouseName: data.warehouseName,
-        binId: data.binId, binCode: data.binCode,
+    // Phase 1.6: Wrap multi-step mutation in DB transaction for atomicity
+    inventory = await pgliteTransaction(async () => {
+      let inv: Record<string, unknown> | null
+      if (!inventory) {
+        inv = await inventoryRepository.create({
+          tenantId, productId: data.productId, productSku: data.productSku, productName: data.productName,
+          warehouseId: data.warehouseId, warehouseName: data.warehouseName,
+          binId: data.binId, binCode: data.binCode,
+          batchId, batchNumber: data.batchNumber, lotId, lotNumber: data.lotNumber,
+          uomId: data.uomId, uomCode: data.uomCode,
+          quantity: newQty, reservedQty: 0, blockedQty: 0, availableQty: newQty,
+          unitCost: data.unitCost, movingAvgCost, totalValue: newTotalValue,
+          currency: data.currency ?? 'INR',
+          manufactureDate: data.manufactureDate, expiryDate: data.expiryDate,
+          lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_IN',
+        })
+      } else {
+        inv = await inventoryRepository.update(tenantId, String(inventory['id']), {
+          quantity: newQty, availableQty: newQty - Number(inventory['reserved_qty']) - Number(inventory['blocked_qty']),
+          unitCost: data.unitCost, movingAvgCost, totalValue: newTotalValue,
+          lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_IN',
+        }, Number(inventory['version']))
+        if (!inv) throw new ConcurrencyError('Inventory was modified by another transaction')
+      }
+
+      // Create transaction (audit record)
+      const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
+      await inventoryTransactionRepository.create({
+        tenantId, transactionNumber: txnNumber, transactionType: 'STOCK_IN', movementType: 'STOCK_IN',
+        productId: data.productId, productSku: data.productSku, productName: data.productName,
+        warehouseId: data.warehouseId, warehouseName: data.warehouseName, binId: data.binId, binCode: data.binCode,
         batchId, batchNumber: data.batchNumber, lotId, lotNumber: data.lotNumber,
-        uomId: data.uomId, uomCode: data.uomCode,
-        quantity: newQty, reservedQty: 0, blockedQty: 0, availableQty: newQty,
-        unitCost: data.unitCost, movingAvgCost, totalValue: newTotalValue,
-        currency: data.currency ?? 'INR',
-        manufactureDate: data.manufactureDate, expiryDate: data.expiryDate,
-        lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_IN',
+        uomId: data.uomId, uomCode: data.uomCode, quantity: data.quantity, unitCost: data.unitCost, totalValue: addedValue,
+        currency: data.currency ?? 'INR', balanceAfter: newQty,
+        referenceType: 'GRN', referenceId: data.grnId, referenceNumber: data.grnNumber,
+        reason: 'Goods received and passed IQC', performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
       })
-    } else {
-      inventory = await inventoryRepository.update(tenantId, String(inventory['id']), {
-        quantity: newQty, availableQty: newQty - Number(inventory['reserved_qty']) - Number(inventory['blocked_qty']),
-        unitCost: data.unitCost, movingAvgCost, totalValue: newTotalValue,
-        lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_IN',
-      }, Number(inventory['version']))
-      if (!inventory) throw new ConcurrencyError('Inventory was modified by another transaction')
-    }
 
-    // Create transaction (audit record)
-    const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
-    await inventoryTransactionRepository.create({
-      tenantId, transactionNumber: txnNumber, transactionType: 'STOCK_IN', movementType: 'STOCK_IN',
-      productId: data.productId, productSku: data.productSku, productName: data.productName,
-      warehouseId: data.warehouseId, warehouseName: data.warehouseName, binId: data.binId, binCode: data.binCode,
-      batchId, batchNumber: data.batchNumber, lotId, lotNumber: data.lotNumber,
-      uomId: data.uomId, uomCode: data.uomCode, quantity: data.quantity, unitCost: data.unitCost, totalValue: addedValue,
-      currency: data.currency ?? 'INR', balanceAfter: newQty,
-      referenceType: 'GRN', referenceId: data.grnId, referenceNumber: data.grnNumber,
-      reason: 'Goods received and passed IQC', performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
-    })
+      // Create IMMUTABLE ledger entry
+      const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
+      const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, data.productId, data.warehouseId)
+      const balanceQty = latestBalance.balanceQty + data.quantity
+      const balanceValue = latestBalance.balanceValue + addedValue
+      await inventoryLedgerRepository.create({
+        tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
+        productId: data.productId, productSku: data.productSku, warehouseId: data.warehouseId,
+        batchId, batchNumber: data.batchNumber, lotId, lotNumber: data.lotNumber,
+        movementType: 'STOCK_IN', inQty: data.quantity, outQty: 0, balanceQty,
+        unitCost: data.unitCost, totalValue: addedValue, balanceValue,
+        referenceType: 'GRN', referenceId: data.grnId, referenceNumber: data.grnNumber,
+        reason: 'Goods received and passed IQC', performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+      })
 
-    // Create IMMUTABLE ledger entry
-    const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
-    const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, data.productId, data.warehouseId)
-    const balanceQty = latestBalance.balanceQty + data.quantity
-    const balanceValue = latestBalance.balanceValue + addedValue
-    await inventoryLedgerRepository.create({
-      tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
-      productId: data.productId, productSku: data.productSku, warehouseId: data.warehouseId,
-      batchId, batchNumber: data.batchNumber, lotId, lotNumber: data.lotNumber,
-      movementType: 'STOCK_IN', inQty: data.quantity, outQty: 0, balanceQty,
-      unitCost: data.unitCost, totalValue: addedValue, balanceValue,
-      referenceType: 'GRN', referenceId: data.grnId, referenceNumber: data.grnNumber,
-      reason: 'Goods received and passed IQC', performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+      return inv!
     })
 
     await auditService.log({
@@ -206,54 +212,57 @@ export const inventoryService = {
     let remainingQty = data.quantity
     const issuedStocks: Array<Record<string, unknown>> = []
 
-    for (const stock of stockList) {
-      if (remainingQty <= 0) break
-      const available = Number(stock['available_qty'])
-      const issueQty = Math.min(available, remainingQty)
-      const newQty = Number(stock['quantity']) - issueQty
-      const newAvailable = newQty - Number(stock['reserved_qty']) - Number(stock['blocked_qty'])
-      const unitCost = Number(stock['unit_cost'])
-      const issueValue = issueQty * unitCost
-      const newTotalValue = Number(stock['total_value']) - issueValue
+    // Phase 1.6: Wrap entire stock-out loop in DB transaction for atomicity
+    await pgliteTransaction(async () => {
+      for (const stock of stockList) {
+        if (remainingQty <= 0) break
+        const available = Number(stock['available_qty'])
+        const issueQty = Math.min(available, remainingQty)
+        const newQty = Number(stock['quantity']) - issueQty
+        const newAvailable = newQty - Number(stock['reserved_qty']) - Number(stock['blocked_qty'])
+        const unitCost = Number(stock['unit_cost'])
+        const issueValue = issueQty * unitCost
+        const newTotalValue = Number(stock['total_value']) - issueValue
 
-      const updated = await inventoryRepository.update(tenantId, String(stock['id']), {
-        quantity: newQty, availableQty: newAvailable, totalValue: newTotalValue,
-        lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_OUT',
-      }, Number(stock['version']))
-      if (!updated) throw new ConcurrencyError('Inventory was modified by another transaction during stock-out')
+        const updated = await inventoryRepository.update(tenantId, String(stock['id']), {
+          quantity: newQty, availableQty: newAvailable, totalValue: newTotalValue,
+          lastMovementAt: new Date().toISOString(), lastMovementType: 'STOCK_OUT',
+        }, Number(stock['version']))
+        if (!updated) throw new ConcurrencyError('Inventory was modified by another transaction during stock-out')
 
-      // Transaction
-      const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
-      await inventoryTransactionRepository.create({
-        tenantId, transactionNumber: txnNumber, transactionType: 'STOCK_OUT', movementType: 'STOCK_OUT',
-        productId: data.productId, productSku: data.productSku, productName: data.productName,
-        warehouseId: data.warehouseId, warehouseName: data.warehouseName,
-        binId: stock['bin_id'], binCode: stock['bin_code'],
-        batchId: stock['batch_id'], batchNumber: stock['batch_number'], lotId: stock['lot_id'], lotNumber: stock['lot_number'],
-        uomId: data.uomId, uomCode: data.uomCode, quantity: issueQty, unitCost, totalValue: issueValue,
-        currency: String(stock['currency']), balanceAfter: newQty,
-        referenceType: data.referenceType, referenceId: data.referenceId, referenceNumber: data.referenceNumber,
-        reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
-      })
+        // Transaction
+        const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
+        await inventoryTransactionRepository.create({
+          tenantId, transactionNumber: txnNumber, transactionType: 'STOCK_OUT', movementType: 'STOCK_OUT',
+          productId: data.productId, productSku: data.productSku, productName: data.productName,
+          warehouseId: data.warehouseId, warehouseName: data.warehouseName,
+          binId: stock['bin_id'], binCode: stock['bin_code'],
+          batchId: stock['batch_id'], batchNumber: stock['batch_number'], lotId: stock['lot_id'], lotNumber: stock['lot_number'],
+          uomId: data.uomId, uomCode: data.uomCode, quantity: issueQty, unitCost, totalValue: issueValue,
+          currency: String(stock['currency']), balanceAfter: newQty,
+          referenceType: data.referenceType, referenceId: data.referenceId, referenceNumber: data.referenceNumber,
+          reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+        })
 
-      // Ledger (IMMUTABLE)
-      const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
-      const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, data.productId, data.warehouseId)
-      const balanceQty = latestBalance.balanceQty - issueQty
-      const balanceValue = latestBalance.balanceValue - issueValue
-      await inventoryLedgerRepository.create({
-        tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
-        productId: data.productId, productSku: data.productSku, warehouseId: data.warehouseId,
-        batchId: stock['batch_id'], batchNumber: stock['batch_number'], lotId: stock['lot_id'], lotNumber: stock['lot_number'],
-        movementType: 'STOCK_OUT', inQty: 0, outQty: issueQty, balanceQty,
-        unitCost, totalValue: issueValue, balanceValue,
-        referenceType: data.referenceType, referenceId: data.referenceId, referenceNumber: data.referenceNumber,
-        reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
-      })
+        // Ledger (IMMUTABLE)
+        const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
+        const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, data.productId, data.warehouseId)
+        const balanceQty = latestBalance.balanceQty - issueQty
+        const balanceValue = latestBalance.balanceValue - issueValue
+        await inventoryLedgerRepository.create({
+          tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
+          productId: data.productId, productSku: data.productSku, warehouseId: data.warehouseId,
+          batchId: stock['batch_id'], batchNumber: stock['batch_number'], lotId: stock['lot_id'], lotNumber: stock['lot_number'],
+          movementType: 'STOCK_OUT', inQty: 0, outQty: issueQty, balanceQty,
+          unitCost, totalValue: issueValue, balanceValue,
+          referenceType: data.referenceType, referenceId: data.referenceId, referenceNumber: data.referenceNumber,
+          reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+        })
 
-      issuedStocks.push({ inventory: updated, issueQty, unitCost, batchNumber: stock['batch_number'] })
-      remainingQty -= issueQty
-    }
+        issuedStocks.push({ inventory: updated, issueQty, unitCost, batchNumber: stock['batch_number'] })
+        remainingQty -= issueQty
+      }
+    })
 
     await auditService.log({
       tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
@@ -454,49 +463,54 @@ export const inventoryService = {
       newTotalValue = newQty * newUnitCost
     }
 
-    const updated = await inventoryRepository.update(tenantId, data.inventoryId, {
-      quantity: newQty,
-      availableQty: newQty - Number(existing['reserved_qty']) - Number(existing['blocked_qty']),
-      unitCost: newUnitCost,
-      totalValue: newTotalValue,
-      lastMovementAt: new Date().toISOString(),
-      lastMovementType: 'ADJUSTMENT',
-    }, Number(existing['version']))
-    if (!updated) throw new ConcurrencyError('Inventory was modified by another transaction during adjustment')
+    // Phase 1.6: Wrap multi-step mutation in DB transaction for atomicity
+    const { updated, txnNumber, entryNumber } = await pgliteTransaction(async () => {
+      const updated = await inventoryRepository.update(tenantId, data.inventoryId, {
+        quantity: newQty,
+        availableQty: newQty - Number(existing['reserved_qty']) - Number(existing['blocked_qty']),
+        unitCost: newUnitCost,
+        totalValue: newTotalValue,
+        lastMovementAt: new Date().toISOString(),
+        lastMovementType: 'ADJUSTMENT',
+      }, Number(existing['version']))
+      if (!updated) throw new ConcurrencyError('Inventory was modified by another transaction during adjustment')
 
-    // Create transaction record
-    const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
-    await inventoryTransactionRepository.create({
-      tenantId, transactionNumber: txnNumber, transactionType: 'ADJUSTMENT', movementType: `ADJUSTMENT_${data.adjustmentType}`,
-      productId: String(existing['product_id']), productSku: String(existing['product_sku']), productName: String(existing['product_name']),
-      warehouseId: String(existing['warehouse_id']), warehouseName: String(existing['warehouse_name']),
-      binId: existing['bin_id'] as string | undefined, binCode: existing['bin_code'] as string | undefined,
-      batchId: existing['batch_id'] as string | undefined, batchNumber: existing['batch_number'] as string | undefined,
-      lotId: existing['lot_id'] as string | undefined, lotNumber: existing['lot_number'] as string | undefined,
-      uomId: String(existing['uom_id']), uomCode: String(existing['uom_code']),
-      quantity: Math.abs(data.adjustmentQty), unitCost: newUnitCost, totalValue: Math.abs(newTotalValue - currentTotalValue),
-      currency: String(existing['currency'] ?? 'INR'), balanceAfter: newQty,
-      referenceType: 'ADJUSTMENT', referenceId: data.inventoryId, referenceNumber: txnNumber,
-      reason: data.reason, remarks: data.remarks,
-      performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
-    })
+      // Create transaction record
+      const txnNumber = await inventoryTransactionRepository.generateTransactionNumber(tenantId)
+      await inventoryTransactionRepository.create({
+        tenantId, transactionNumber: txnNumber, transactionType: 'ADJUSTMENT', movementType: `ADJUSTMENT_${data.adjustmentType}`,
+        productId: String(existing['product_id']), productSku: String(existing['product_sku']), productName: String(existing['product_name']),
+        warehouseId: String(existing['warehouse_id']), warehouseName: String(existing['warehouse_name']),
+        binId: existing['bin_id'] as string | undefined, binCode: existing['bin_code'] as string | undefined,
+        batchId: existing['batch_id'] as string | undefined, batchNumber: existing['batch_number'] as string | undefined,
+        lotId: existing['lot_id'] as string | undefined, lotNumber: existing['lot_number'] as string | undefined,
+        uomId: String(existing['uom_id']), uomCode: String(existing['uom_code']),
+        quantity: Math.abs(data.adjustmentQty), unitCost: newUnitCost, totalValue: Math.abs(newTotalValue - currentTotalValue),
+        currency: String(existing['currency'] ?? 'INR'), balanceAfter: newQty,
+        referenceType: 'ADJUSTMENT', referenceId: data.inventoryId, referenceNumber: txnNumber,
+        reason: data.reason, remarks: data.remarks,
+        performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+      })
 
-    // Create immutable ledger entry
-    const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
-    const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, String(existing['product_id']), String(existing['warehouse_id']))
-    const balanceQty = latestBalance.balanceQty + (data.adjustmentType === 'INCREASE' ? data.adjustmentQty : data.adjustmentType === 'DECREASE' ? -data.adjustmentQty : 0)
-    const balanceValue = latestBalance.balanceValue + (newTotalValue - currentTotalValue)
-    await inventoryLedgerRepository.create({
-      tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
-      productId: String(existing['product_id']), productSku: String(existing['product_sku']), warehouseId: String(existing['warehouse_id']),
-      batchId: existing['batch_id'] as string | undefined, batchNumber: existing['batch_number'] as string | undefined,
-      lotId: existing['lot_id'] as string | undefined, lotNumber: existing['lot_number'] as string | undefined,
-      movementType: `ADJUSTMENT_${data.adjustmentType}`,
-      inQty: data.adjustmentType === 'INCREASE' ? data.adjustmentQty : 0,
-      outQty: data.adjustmentType === 'DECREASE' ? data.adjustmentQty : 0,
-      balanceQty, unitCost: newUnitCost, totalValue: Math.abs(newTotalValue - currentTotalValue), balanceValue,
-      referenceType: 'ADJUSTMENT', referenceId: data.inventoryId, referenceNumber: txnNumber,
-      reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+      // Create immutable ledger entry
+      const entryNumber = await inventoryLedgerRepository.generateEntryNumber(tenantId)
+      const latestBalance = await inventoryLedgerRepository.getLatestBalance(tenantId, String(existing['product_id']), String(existing['warehouse_id']))
+      const balanceQty = latestBalance.balanceQty + (data.adjustmentType === 'INCREASE' ? data.adjustmentQty : data.adjustmentType === 'DECREASE' ? -data.adjustmentQty : 0)
+      const balanceValue = latestBalance.balanceValue + (newTotalValue - currentTotalValue)
+      await inventoryLedgerRepository.create({
+        tenantId, entryNumber, transactionId: txnNumber, transactionNumber: txnNumber,
+        productId: String(existing['product_id']), productSku: String(existing['product_sku']), warehouseId: String(existing['warehouse_id']),
+        batchId: existing['batch_id'] as string | undefined, batchNumber: existing['batch_number'] as string | undefined,
+        lotId: existing['lot_id'] as string | undefined, lotNumber: existing['lot_number'] as string | undefined,
+        movementType: `ADJUSTMENT_${data.adjustmentType}`,
+        inQty: data.adjustmentType === 'INCREASE' ? data.adjustmentQty : 0,
+        outQty: data.adjustmentType === 'DECREASE' ? data.adjustmentQty : 0,
+        balanceQty, unitCost: newUnitCost, totalValue: Math.abs(newTotalValue - currentTotalValue), balanceValue,
+        referenceType: 'ADJUSTMENT', referenceId: data.inventoryId, referenceNumber: txnNumber,
+        reason: data.reason, performedBy: userId, performedByName: ctx.userEmail, correlationId: ctx.correlationId,
+      })
+
+      return { updated, txnNumber, entryNumber }
     })
 
     await auditService.log({

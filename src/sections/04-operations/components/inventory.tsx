@@ -196,90 +196,120 @@ function InvOverviewTab() {
 }
 
 function InvTransactionsTab() {
+  const { hasPermission } = useAuthStore()
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [exporting, setExporting] = useState(false)
+  const pageSize = 25
 
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      setLoading(true); setError('')
-      try {
-        const res = await inventoryApi.listTransactions({ page: 1 })
-        if (!cancelled) setTransactions(res.data || [])
-      } catch (err: any) {
-        if (!cancelled) setError(err?.message || 'Failed to load transactions')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+  const load = useCallback(async () => {
+    setLoading(true); setError('')
+    try {
+      const res = await inventoryApi.listTransactions({ page, movementType: search || undefined })
+      setTransactions(res.data || [])
+      setTotal(res.meta?.total ?? 0)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load transactions')
+      setTransactions([])
+    } finally {
+      setLoading(false)
     }
-    load()
-    return () => { cancelled = true }
-  }, [])
+  }, [page, search])
+
+  useEffect(() => { load() }, [load])
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await inventoryApi.exportTransactions({ movementType: search || undefined })
+      const rows = res.data || []
+      if (rows.length === 0) { toast({ title: 'No transactions to export' }); return }
+      exportToCSV(rows, `inventory-transactions-${new Date().toISOString().split('T')[0]}.csv`)
+      toast({ title: `Exported ${rows.length} transactions` })
+    } catch (err: any) {
+      toast({ title: 'Export failed', description: err?.message })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const totalPages = Math.ceil(total / pageSize)
 
   const filtered = transactions.filter((t: any) =>
-    !search || String(t.transaction_number || t.number || '').toLowerCase().includes(search.toLowerCase()) ||
-    String(t.movement_type || t.type || '').toLowerCase().includes(search.toLowerCase())
+    !search || String(t.transaction_number || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(t.movement_type || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(t.product_sku || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const _transactions = [
-    { id: 'it-001', number: 'INV-2026-00142', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0142', warehouse: 'Mumbai Plant Warehouse', partner: 'Konkan Cashew Processors', status: 'POSTED', lines: 3, totalQty: 380, totalValue: 114000, createdBy: 'Suresh Patil' },
-    { id: 'it-002', number: 'INV-2026-00143', type: 'GOODS_RECEIPT', date: '2026-07-08', refType: 'PURCHASE_ORDER', refNumber: 'PO-2026-0156', warehouse: 'Mumbai Plant Warehouse', partner: 'Sri Balaji Sugar', status: 'POSTED', lines: 1, totalQty: 500, totalValue: 25000, createdBy: 'Suresh Patil' },
-    { id: 'it-003', number: 'INV-2026-00144', type: 'PRODUCTION_RECEIPT', date: '2026-07-01', refType: 'PRODUCTION_ORDER', refNumber: 'MO-2026-0089', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 1, totalQty: 500, totalValue: 175000, createdBy: 'Anita Desai' },
-    { id: 'it-004', number: 'INV-2026-00145', type: 'TRANSFER', date: '2026-07-03', refType: 'TRANSFER_ORDER', refNumber: 'TO-2026-0042', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 1, totalQty: 358, totalValue: 125300, createdBy: 'Anita Desai' },
-    { id: 'it-005', number: 'INV-2026-00146', type: 'SALES', date: '2026-07-05', refType: 'INVOICE', refNumber: 'INV-2026-00892', warehouse: 'Mumbai DC', partner: 'Tata Consumer Products', status: 'POSTED', lines: 1, totalQty: 100, totalValue: 54000, createdBy: 'Vikram Iyer' },
-    { id: 'it-006', number: 'INV-2026-00147', type: 'SALES', date: '2026-07-06', refType: 'INVOICE', refNumber: 'INV-2026-00915', warehouse: 'Mumbai DC', partner: 'Reliance Retail', status: 'POSTED', lines: 1, totalQty: 48, totalValue: 25920, createdBy: 'Vikram Iyer' },
-    { id: 'it-007', number: 'INV-2026-00148', type: 'RESERVATION', date: '2026-07-08', refType: 'SALES_ORDER', refNumber: 'SO-2026-0234', warehouse: 'Mumbai DC', partner: 'Infosys', status: 'POSTED', lines: 1, totalQty: 24, totalValue: 12960, createdBy: 'Vikram Iyer' },
-    { id: 'it-008', number: 'INV-2026-00149', type: 'DAMAGE', date: '2026-07-07', refType: 'DAMAGE_REPORT', refNumber: 'DMG-2026-0012', warehouse: 'Mumbai DC', partner: null, status: 'PENDING_APPROVAL', lines: 1, totalQty: 8, totalValue: 4320, createdBy: 'Anita Desai' },
-    { id: 'it-009', number: 'INV-2026-00150', type: 'ADJUSTMENT', date: '2026-07-09', refType: 'ADJUSTMENT_REQUEST', refNumber: 'ADJ-2026-0034', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'PENDING_APPROVAL', lines: 2, totalQty: 12, totalValue: 6480, createdBy: 'Suresh Patil' },
-    { id: 'it-010', number: 'INV-2026-00151', type: 'OPENING_STOCK', date: '2026-01-01', refType: 'OPENING_STOCK', refNumber: 'OS-2026-001', warehouse: 'Mumbai Plant Warehouse', partner: null, status: 'POSTED', lines: 12, totalQty: 2400, totalValue: 840000, createdBy: 'System' },
-  ]
   const typeColor: Record<string, string> = {
-    GOODS_RECEIPT: 'bg-emerald-100 text-emerald-800', GOODS_ISSUE: 'bg-red-100 text-red-800',
-    TRANSFER: 'bg-blue-100 text-blue-800', ADJUSTMENT: 'bg-amber-100 text-amber-800',
-    PRODUCTION_RECEIPT: 'bg-emerald-100 text-emerald-800', PRODUCTION_CONSUMPTION: 'bg-orange-100 text-orange-800',
-    SALES: 'bg-purple-100 text-purple-800', SALES_RETURN: 'bg-cyan-100 text-cyan-800',
-    PURCHASE_RETURN: 'bg-red-100 text-red-800', OPENING_STOCK: 'bg-slate-100 text-slate-800',
-    CYCLE_COUNT: 'bg-teal-100 text-teal-800', RESERVATION: 'bg-indigo-100 text-indigo-800',
-    ALLOCATION: 'bg-violet-100 text-violet-800', RELEASE: 'bg-pink-100 text-pink-800',
-    SCRAP: 'bg-red-200 text-red-900', DAMAGE: 'bg-orange-200 text-orange-900',
-    EXPIRY: 'bg-gray-200 text-gray-800', STOCK_TAKE: 'bg-teal-100 text-teal-800',
+    STOCK_IN: 'bg-emerald-100 text-emerald-800', STOCK_OUT: 'bg-red-100 text-red-800',
+    ADJUSTMENT_INCREASE: 'bg-amber-100 text-amber-800', ADJUSTMENT_DECREASE: 'bg-orange-100 text-orange-800',
+    ADJUSTMENT_REVALUATION: 'bg-purple-100 text-purple-800',
   }
   const statusColor: Record<string, string> = { POSTED: 'bg-emerald-600 hover:bg-emerald-600', PENDING_APPROVAL: 'bg-amber-500 hover:bg-amber-500', DRAFT: 'bg-slate-500 hover:bg-slate-500', REVERSED: 'bg-red-600 hover:bg-red-600', CANCELLED: 'bg-gray-600 hover:bg-gray-600' }
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div><h3 className="font-semibold">Inventory Transactions</h3>
-        <p className="text-xs text-muted-foreground mt-1">18 transaction types supported. Every transaction posts to the immutable ledger. Negative stock blocked by default. Reversible (except Opening Stock, Scrap, Expiry).</p></div>
-        <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Transaction</Button>
+        <p className="text-xs text-muted-foreground mt-1">Every transaction posts to the immutable ledger. Negative stock blocked by default.</p></div>
+        <div className="flex gap-2">
+          {hasPermission('inventory:export') && <Button size="sm" variant="outline" onClick={handleExport} disabled={exporting}><Download className="mr-1 h-4 w-4" />{exporting ? 'Exporting...' : 'Export'}</Button>}
+          {hasPermission('inventory:stockin') && <Button size="sm"><Plus className="mr-1 h-4 w-4" /> New Transaction</Button>}
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead><tr className="border-b text-left text-xs text-muted-foreground">
-            <th className="py-2 font-medium">Transaction #</th><th className="font-medium">Type</th>
-            <th className="font-medium">Date</th><th className="font-medium">Reference</th>
-            <th className="font-medium">Warehouse</th><th className="font-medium">Partner</th>
-            <th className="font-medium text-right">Qty</th><th className="font-medium text-right">Value</th>
-            <th className="font-medium">Status</th>
-          </tr></thead>
-          <tbody>
-            {transactions.map(t => (
-              <tr key={t.id} className="border-b hover:bg-muted/40">
-                <td className="py-2.5 font-mono text-xs">{t.number}</td>
-                <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[t.type])}>{t.type.replace(/_/g, ' ')}</span></td>
-                <td className="text-xs text-muted-foreground">{t.date}</td>
-                <td className="text-xs"><span className="font-mono">{t.refNumber}</span><br /><span className="text-muted-foreground">{t.refType.replace(/_/g, ' ')}</span></td>
-                <td className="text-xs">{t.warehouse}</td>
-                <td className="text-xs">{t.partner || <span className="text-muted-foreground">—</span>}</td>
-                <td className="text-right font-mono">{t.totalQty}</td>
-                <td className="text-right font-mono">₹{t.totalValue.toLocaleString('en-IN')}</td>
-                <td><Badge className={statusColor[t.status] + ' text-xs'}>{t.status.replace(/_/g, ' ')}</Badge></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by transaction #, movement type, or SKU..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="pl-10" />
+        </div>
       </div>
+      {error && <div className="text-sm text-rose-500 mb-3">{error}</div>}
+      {loading ? (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-muted/50 rounded animate-pulse" />)}</div>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={ArrowLeftRight} title="No transactions found" description="Stock movements will appear here once inventory is updated." />
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-2 font-medium">Transaction #</th><th className="font-medium">Type</th>
+                <th className="font-medium">Product</th><th className="font-medium">Reference</th>
+                <th className="font-medium">Warehouse</th>
+                <th className="font-medium text-right">Qty</th><th className="font-medium text-right">Value</th>
+                <th className="font-medium">Date</th>
+              </tr></thead>
+              <tbody>
+                {filtered.map((t: any) => (
+                  <tr key={t.id} className="border-b hover:bg-muted/40">
+                    <td className="py-2.5 font-mono text-xs">{t.transaction_number}</td>
+                    <td><span className={cn('inline-block px-2 py-0.5 rounded text-xs font-medium', typeColor[t.movement_type] ?? 'bg-slate-100 text-slate-800')}>{String(t.movement_type || '').replace(/_/g, ' ')}</span></td>
+                    <td className="text-xs"><span className="font-mono">{t.product_sku}</span><br /><span className="text-muted-foreground">{t.product_name}</span></td>
+                    <td className="text-xs"><span className="font-mono">{t.reference_number || '—'}</span><br /><span className="text-muted-foreground">{String(t.reference_type || '').replace(/_/g, ' ')}</span></td>
+                    <td className="text-xs">{t.warehouse_name || '—'}</td>
+                    <td className="text-right font-mono">{Number(t.quantity).toLocaleString('en-IN')}</td>
+                    <td className="text-right font-mono">₹{Number(t.total_value || 0).toLocaleString('en-IN')}</td>
+                    <td className="text-xs text-muted-foreground">{t.transaction_date ? new Date(t.transaction_date).toLocaleDateString('en-IN') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-xs text-muted-foreground">{total} transactions · Page {page} of {totalPages}</p>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </Card>
   )
 }
