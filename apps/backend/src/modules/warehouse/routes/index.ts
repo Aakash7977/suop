@@ -27,8 +27,14 @@ warehouseRoutes.post('/zones', requirePermission(Permission.WAREHOUSE_CREATE), z
   return c.json(success(zone, { message: 'Zone created' }), 201)
 })
 
-warehouseRoutes.patch('/zones/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+const zoneUpdateSchema = z.object({
+  zoneName: z.string().min(1).optional(), zoneType: z.string().optional(),
+  capacity: z.number().nonnegative().optional(), isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(), description: z.string().optional(),
+})
+
+warehouseRoutes.patch('/zones/:id', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', zoneUpdateSchema), async (c) => {
+  const body = c.req.valid('json' as never) as z.infer<typeof zoneUpdateSchema>
   const zone = await warehouseService.updateZone(c.req.param('id')!, body)
   return c.json(success(zone, { message: 'Zone updated' }))
 })
@@ -57,8 +63,13 @@ warehouseRoutes.post('/aisles', requirePermission(Permission.WAREHOUSE_CREATE), 
   return c.json(success(aisle, { message: 'Aisle created' }), 201)
 })
 
-warehouseRoutes.patch('/aisles/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+const aisleUpdateSchema = z.object({
+  aisleName: z.string().min(1).optional(), capacity: z.number().nonnegative().optional(),
+  isActive: z.boolean().optional(), sortOrder: z.number().int().optional(), description: z.string().optional(),
+})
+
+warehouseRoutes.patch('/aisles/:id', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', aisleUpdateSchema), async (c) => {
+  const body = c.req.valid('json' as never) as z.infer<typeof aisleUpdateSchema>
   const aisle = await warehouseService.updateAisle(c.req.param('id')!, body)
   return c.json(success(aisle, { message: 'Aisle updated' }))
 })
@@ -88,8 +99,15 @@ warehouseRoutes.post('/racks', requirePermission(Permission.WAREHOUSE_CREATE), z
   return c.json(success(rack, { message: 'Rack created' }), 201)
 })
 
-warehouseRoutes.patch('/racks/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+const rackUpdateSchema = z.object({
+  rackName: z.string().min(1).optional(), rackType: z.string().optional(),
+  levels: z.number().int().positive().optional(), capacityPerLevel: z.number().nonnegative().optional(),
+  capacity: z.number().nonnegative().optional(), isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(), description: z.string().optional(),
+})
+
+warehouseRoutes.patch('/racks/:id', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', rackUpdateSchema), async (c) => {
+  const body = c.req.valid('json' as never) as z.infer<typeof rackUpdateSchema>
   const rack = await warehouseService.updateRack(c.req.param('id')!, body)
   return c.json(success(rack, { message: 'Rack updated' }))
 })
@@ -124,8 +142,14 @@ warehouseRoutes.post('/bins', requirePermission(Permission.WAREHOUSE_CREATE), zV
   return c.json(success(bin, { message: 'Bin created' }), 201)
 })
 
-warehouseRoutes.patch('/bins/:id', requirePermission(Permission.WAREHOUSE_UPDATE), async (c) => {
-  const body = await c.req.json().catch(() => ({}))
+const binUpdateSchema = z.object({
+  binName: z.string().min(1).optional(), binType: z.string().optional(),
+  capacity: z.number().nonnegative().optional(), isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(), description: z.string().optional(),
+})
+
+warehouseRoutes.patch('/bins/:id', requirePermission(Permission.WAREHOUSE_UPDATE), zValidator('json', binUpdateSchema), async (c) => {
+  const body = c.req.valid('json' as never) as z.infer<typeof binUpdateSchema>
   const bin = await warehouseService.updateBin(c.req.param('id')!, body)
   return c.json(success(bin, { message: 'Bin updated' }))
 })

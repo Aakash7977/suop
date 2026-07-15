@@ -14,6 +14,7 @@ import {
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
+import { pgliteTransaction } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, AuthorizationError, ConcurrencyError } from '@/core/errors'
 import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
 
@@ -348,19 +349,23 @@ export const warehouseService = {
       throw new BusinessRuleError(`Cannot complete task in ${existing['status']} status`, { code: 'WH.NOT_COMPLETABLE' })
     }
 
-    const updated = await putawayTaskRepository.update(tenantId, id, {
-      status: 'COMPLETED', completedAt: new Date().toISOString(),
-    }, version, userId)
-    if (!updated) throw new BusinessRuleError('Task was modified by another transaction', { code: 'WH.CONCURRENCY' })
+    // Phase 1.6: Wrap multi-step writes in DB transaction for atomicity
+    const updated = await pgliteTransaction(async () => {
+      const updated = await putawayTaskRepository.update(tenantId, id, {
+        status: 'COMPLETED', completedAt: new Date().toISOString(),
+      }, version, userId)
+      if (!updated) throw new BusinessRuleError('Task was modified by another transaction', { code: 'WH.CONCURRENCY' })
 
-    // Update bin used capacity
-    if (existing['target_bin_id']) {
-      const bin = await binRepository.findById(tenantId, String(existing['target_bin_id']))
-      if (bin) {
-        const newUsed = Number(bin['used_capacity']) + Number(existing['quantity'])
-        await binRepository.updateUsedCapacity(tenantId, String(bin['id']), newUsed)
+      // Update bin used capacity
+      if (existing['target_bin_id']) {
+        const bin = await binRepository.findById(tenantId, String(existing['target_bin_id']))
+        if (bin) {
+          const newUsed = Number(bin['used_capacity']) + Number(existing['quantity'])
+          await binRepository.updateUsedCapacity(tenantId, String(bin['id']), newUsed)
+        }
       }
-    }
+      return updated
+    })
 
     await auditService.log({
       tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
