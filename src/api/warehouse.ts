@@ -54,5 +54,10 @@ export const goodsReceiptApi = {
     apiFetch<PaginatedResponse<GoodsReceipt>>(`/api/v1/warehouse/grns/grns?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   get: (id: string) => apiFetch<{ success: true; data: GoodsReceipt & { lines: unknown[]; attachments: unknown[]; damages: unknown[] } }>(`/api/v1/warehouse/grns/grns/${id}`),
   create: (data: Record<string, unknown>) => apiFetch(`/api/v1/warehouse/grns/grns`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Record<string, unknown>, version: number) => apiFetch(`/api/v1/warehouse/grns/grns/${id}`, { method: 'PATCH', headers: { 'If-Match': String(version) }, body: JSON.stringify(data) }),
+  delete: (id: string, version: number) => apiFetch(`/api/v1/warehouse/grns/grns/${id}`, { method: 'DELETE', headers: { 'If-Match': String(version) } }),
   transition: (id: string, targetStatus: string, version: number) => apiFetch(`/api/v1/warehouse/grns/grns/${id}/transition`, { method: 'POST', body: JSON.stringify({ targetStatus, version }) }),
+  addDamage: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/warehouse/grns/grns/${id}/damage`, { method: 'POST', body: JSON.stringify(data) }),
+  export: (params?: { status?: string; supplierId?: string; poId?: string }) =>
+    apiFetch<{ success: true; data: GoodsReceipt[] }>(`/api/v1/warehouse/grns/grns/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
 }

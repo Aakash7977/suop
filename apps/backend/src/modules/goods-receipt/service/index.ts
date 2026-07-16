@@ -5,9 +5,9 @@ import { workflowRegistry } from '@/core/workflow'
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
-import { query } from '@/core/db/pglite'
+import { query, pgliteTransaction } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
-import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
+import { enforceNotBreakGlass, enforceTenantIsolation, enforceMakerChecker } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -103,34 +103,38 @@ export const goodsReceiptService = {
 
     const grnNumber = await grnRepository.generateGrnNumber(tenantId)
 
-    const grn = await grnRepository.create({
-      tenantId, grnNumber,
-      poId: data.poId, poNumber: data.poNumber,
-      supplierId: data.supplierId, supplierCode: data.supplierCode, supplierName: data.supplierName,
-      supplierInvoiceNumber: data.supplierInvoiceNumber, supplierInvoiceDate: data.supplierInvoiceDate, supplierInvoiceAmount: data.supplierInvoiceAmount,
-      deliveryChallanNumber: data.deliveryChallanNumber, deliveryChallanDate: data.deliveryChallanDate,
-      companyId: data.companyId, companyName: data.companyName, plantId: data.plantId, plantName: data.plantName,
-      warehouseId: data.warehouseId, warehouseName: data.warehouseName,
-      vehicleNumber: data.vehicleNumber, transportName: data.transportName,
-      transportLorryNo: data.transportLorryNo, transportLrNumber: data.transportLrNumber, transportLrDate: data.transportLrDate, transportMode: data.transportMode,
-      ewayBillNumber: data.ewayBillNumber, ewayBillDate: data.ewayBillDate,
-      totalQty, totalAcceptedQty: totalAccepted, totalRejectedQty: totalRejected, totalDamagedQty: totalDamaged, totalShortQty: totalShort, totalOverQty: totalOver,
-      isPartial, isShortReceipt, isOverReceipt,
-      remarks: data.remarks, internalNotes: data.internalNotes,
-      status: 'DRAFT',
-    })
-    if (!grn) throw new Error('Failed to create GRN')
-
-    // Create lines
-    let lineNo = 1
-    for (const line of data.lines) {
-      await grnLineRepository.create({
-        ...line,
-        tenantId, grnId: grn['id'], lineNo,
-        inspectionStatus: 'PENDING',
+    // Phase 1.6: Wrap multi-step writes in DB transaction for atomicity
+    const grn = await pgliteTransaction(async () => {
+      const grn = await grnRepository.create({
+        tenantId, grnNumber,
+        poId: data.poId, poNumber: data.poNumber,
+        supplierId: data.supplierId, supplierCode: data.supplierCode, supplierName: data.supplierName,
+        supplierInvoiceNumber: data.supplierInvoiceNumber, supplierInvoiceDate: data.supplierInvoiceDate, supplierInvoiceAmount: data.supplierInvoiceAmount,
+        deliveryChallanNumber: data.deliveryChallanNumber, deliveryChallanDate: data.deliveryChallanDate,
+        companyId: data.companyId, companyName: data.companyName, plantId: data.plantId, plantName: data.plantName,
+        warehouseId: data.warehouseId, warehouseName: data.warehouseName,
+        vehicleNumber: data.vehicleNumber, transportName: data.transportName,
+        transportLorryNo: data.transportLorryNo, transportLrNumber: data.transportLrNumber, transportLrDate: data.transportLrDate, transportMode: data.transportMode,
+        ewayBillNumber: data.ewayBillNumber, ewayBillDate: data.ewayBillDate,
+        totalQty, totalAcceptedQty: totalAccepted, totalRejectedQty: totalRejected, totalDamagedQty: totalDamaged, totalShortQty: totalShort, totalOverQty: totalOver,
+        isPartial, isShortReceipt, isOverReceipt,
+        remarks: data.remarks, internalNotes: data.internalNotes,
+        status: 'DRAFT',
       })
-      lineNo++
-    }
+      if (!grn) throw new Error('Failed to create GRN')
+
+      // Create lines
+      let lineNo = 1
+      for (const line of data.lines) {
+        await grnLineRepository.create({
+          ...line,
+          tenantId, grnId: grn['id'], lineNo,
+          inspectionStatus: 'PENDING',
+        })
+        lineNo++
+      }
+      return grn
+    })
 
     await auditService.log({
       tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
@@ -203,6 +207,11 @@ export const goodsReceiptService = {
     const existing = await grnRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('GoodsReceipt', id)
 
+    // Maker-checker: creator cannot accept/reject their own GRN
+    if (targetStatus === 'ACCEPTED' || targetStatus === 'REJECTED') {
+      enforceMakerChecker(existing['received_by'] as string | null, targetStatus.toLowerCase(), 'GoodsReceipt')
+    }
+
     const machine = workflowRegistry.get<string, { id: string; status: string; version: number }>('GoodsReceiptLifecycle')
     const check = await machine.canTransition({ id, status: String(existing['status']), version: Number(existing['version']) }, targetStatus, { userId, tenantId, correlationId: ctx.correlationId })
     if (!check.allowed) throw new BusinessRuleError(`Transition denied: ${check.reason}`, { code: 'GRN.TRANSITION_DENIED' })
@@ -217,8 +226,28 @@ export const goodsReceiptService = {
       updateData.rejectionReason = options.rejectionReason
     }
 
-    const updated = await grnRepository.update(tenantId, id, updateData, version, userId)
-    if (!updated) throw new ConcurrencyError('GRN was modified by another transaction')
+    // Phase 1.6: Wrap transition + PO balance update in DB transaction for atomicity
+    const updated = await pgliteTransaction(async () => {
+      const updated = await grnRepository.update(tenantId, id, updateData, version, userId)
+      if (!updated) throw new ConcurrencyError('GRN was modified by another transaction')
+
+      // Business rule: Accepted GRN updates PO balance
+      if (targetStatus === 'ACCEPTED' && existing['po_id']) {
+        await query(
+          `UPDATE purchase_orders SET
+            received_qty = COALESCE(received_qty, 0) + $2,
+            pending_qty = GREATEST(COALESCE(pending_qty, 0) - $2, 0),
+            is_partially_received = (GREATEST(COALESCE(pending_qty, 0) - $2, 0) > 0),
+            is_fully_received = (GREATEST(COALESCE(pending_qty, 0) - $2, 0) <= 0),
+            last_receipt_date = NOW(),
+            version = version + 1,
+            updated_at = NOW()
+           WHERE tenant_id = $1 AND id = $3 AND deleted_at IS NULL`,
+          [tenantId, Number(existing['total_accepted_qty']), String(existing['po_id'])],
+        )
+      }
+      return updated
+    })
 
     await auditService.log({
       tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail,
@@ -236,11 +265,6 @@ export const goodsReceiptService = {
       await eventBus.writeToOutbox({
         eventName: eventMap[targetStatus], payload: { grnId: id, grnNumber: String(existing['grn_number']), status: targetStatus }, tenantId,
       })
-    }
-
-    // Business rule: Partial GRN updates PO balance
-    if (targetStatus === 'ACCEPTED' && existing['po_id']) {
-      await this.updatePoBalance(String(existing['po_id']), Number(existing['total_accepted_qty']))
     }
 
     return updated
@@ -281,5 +305,11 @@ export const goodsReceiptService = {
       after: { damageId, damagedQty: data.damagedQty },
     })
     return { damageId }
+  },
+
+  async exportGrns(params: { status?: string; supplierId?: string; poId?: string } = {}) {
+    const { tenantId } = getContext()
+    const result = await grnRepository.list(tenantId, { ...params, page: 1, pageSize: 10000 })
+    return result.rows
   },
 }

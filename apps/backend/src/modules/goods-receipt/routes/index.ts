@@ -99,9 +99,27 @@ goodsReceiptRoutes.post('/grns', requirePermission(Permission.GRN_CREATE), zVali
   return c.json(success(grn, { message: 'Goods Receipt created' }), 201)
 })
 
-goodsReceiptRoutes.patch('/grns/:id', requirePermission(Permission.GRN_POST), async (c) => {
+const grnUpdateSchema = z.object({
+  supplierInvoiceNumber: z.string().optional(),
+  supplierInvoiceDate: z.string().datetime().optional(),
+  supplierInvoiceAmount: z.number().nonnegative().optional(),
+  deliveryChallanNumber: z.string().optional(),
+  deliveryChallanDate: z.string().datetime().optional(),
+  vehicleNumber: z.string().optional(),
+  transportName: z.string().optional(),
+  transportLorryNo: z.string().optional(),
+  transportLrNumber: z.string().optional(),
+  transportLrDate: z.string().datetime().optional(),
+  transportMode: z.string().optional(),
+  ewayBillNumber: z.string().optional(),
+  ewayBillDate: z.string().datetime().optional(),
+  remarks: z.string().optional(),
+  internalNotes: z.string().optional(),
+}).strict()
+
+goodsReceiptRoutes.patch('/grns/:id', requirePermission(Permission.GRN_POST), zValidator('json', grnUpdateSchema), async (c) => {
   const version = Number(c.req.header('If-Match') ?? '0')
-  const body = await c.req.json()
+  const body = c.req.valid('json' as never) as z.infer<typeof grnUpdateSchema>
   const updated = await goodsReceiptService.update(c.req.param('id')!, body, version)
   return c.json(success(updated, { message: 'Goods Receipt updated' }))
 })
@@ -110,6 +128,15 @@ goodsReceiptRoutes.delete('/grns/:id', requirePermission(Permission.GRN_POST), a
   const version = Number(c.req.header('If-Match') ?? '0')
   await goodsReceiptService.delete(c.req.param('id')!, version)
   return c.json(success({ deleted: true }, { message: 'Goods Receipt deleted' }))
+})
+
+goodsReceiptRoutes.get('/grns/export', requirePermission(Permission.GRN_READ), async (c) => {
+  const rows = await goodsReceiptService.exportGrns({
+    status: c.req.query('status') ?? undefined,
+    supplierId: c.req.query('supplierId') ?? undefined,
+    poId: c.req.query('poId') ?? undefined,
+  })
+  return c.json(success(rows, { message: `${rows.length} GRNs exported` }))
 })
 
 goodsReceiptRoutes.post('/grns/:id/transition', requirePermission(Permission.GRN_POST), zValidator('json', transitionSchema), async (c) => {
