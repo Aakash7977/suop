@@ -19,12 +19,19 @@ export const salesOrderApi = {
 }
 
 export const fulfillmentApi = {
-  listAllocations: (params?: { page?: number }) =>
+  listAllocations: (params?: { page?: number; pageSize?: number; status?: string; search?: string; warehouseId?: string; soId?: string }) =>
     apiFetch<PaginatedResponse<Allocation>>(`/api/v1/sales/fulfillment/allocations?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   createAllocation: (data: Record<string, unknown>) => apiFetch(`/api/v1/sales/fulfillment/allocations`, { method: 'POST', body: JSON.stringify(data) }),
-  listWaves: (params?: { page?: number }) =>
+  cancelAllocation: (id: string, version: number) => apiFetch(`/api/v1/sales/fulfillment/allocations/${id}/cancel`, { method: 'POST', headers: { 'If-Match': String(version) } }),
+  exportAllocations: (params?: { status?: string; warehouseId?: string; soId?: string }) =>
+    apiFetch<{ success: true; data: Allocation[] }>(`/api/v1/sales/fulfillment/allocations/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
+  listWaves: (params?: { page?: number; pageSize?: number; status?: string; search?: string; warehouseId?: string }) =>
     apiFetch<PaginatedResponse<WavePlan>>(`/api/v1/sales/fulfillment/waves?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   createWave: (data: Record<string, unknown>) => apiFetch(`/api/v1/sales/fulfillment/waves`, { method: 'POST', body: JSON.stringify(data) }),
+  releaseWave: (id: string, version: number) => apiFetch(`/api/v1/sales/fulfillment/waves/${id}/release`, { method: 'POST', headers: { 'If-Match': String(version) } }),
+  cancelWave: (id: string, version: number) => apiFetch(`/api/v1/sales/fulfillment/waves/${id}/cancel`, { method: 'POST', headers: { 'If-Match': String(version) } }),
+  exportWaves: (params?: { status?: string; warehouseId?: string }) =>
+    apiFetch<{ success: true; data: WavePlan[] }>(`/api/v1/sales/fulfillment/waves/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
 }
 
 export const pickPackApi = {

@@ -87,16 +87,32 @@ export function FulfillmentModule() {
     { key: 'labels', label: 'Labels', icon: <Tag className="h-4 w-4" /> },
   ]
 
-  const overviewStats = [
-    { label: 'Pending Picking', value: '1', sub: 'Awaiting picker assignment', icon: <ClipboardCheck className="h-5 w-5 text-amber-600" />, color: 'text-amber-600' },
-    { label: 'In Progress', value: '1', sub: 'RETAIL_ORDER · 2/4 lines', icon: <ActivityIcon className="h-5 w-5 text-purple-600" />, color: 'text-purple-600' },
-    { label: 'Packed Today', value: '3', sub: '1 PACKED · 2 READY_TO_SHIP', icon: <PackageCheck className="h-5 w-5 text-emerald-600" />, color: 'text-emerald-600' },
-    { label: 'Ready to Ship', value: '2', sub: 'Awaiting carrier pickup', icon: <Truck className="h-5 w-5 text-teal-600" />, color: 'text-teal-600' },
-    { label: 'Avg Pick Time', value: '26 min', sub: 'SLA: ≤ 30 min', icon: <Clock className="h-5 w-5 text-indigo-600" />, color: 'text-indigo-600' },
-    { label: 'Avg Pack Time', value: '29 min', sub: 'SLA: ≤ 35 min', icon: <Clock className="h-5 w-5 text-blue-600" />, color: 'text-blue-600' },
-    { label: 'Picking Accuracy', value: '99.4%', sub: 'Two-stage verification', icon: <Gauge className="h-5 w-5 text-emerald-600" />, color: 'text-emerald-600' },
-    { label: 'Orders/Hour', value: '18', sub: 'Peak: 24/hr at 14:00', icon: <TrendingUp className="h-5 w-5 text-cyan-600" />, color: 'text-cyan-600' },
-  ]
+  const [stats, setStats] = useState<Array<{ label: string; value: string; sub: string; icon: React.ReactNode }>>([])
+  const [statsLoading, setStatsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadStats() {
+      setStatsLoading(true)
+      try {
+        const { fulfillmentApi } = await import('@/api')
+        const [allocRes, waveRes] = await Promise.all([
+          fulfillmentApi.listAllocations({ page: 1, pageSize: 1 }).catch(() => ({ meta: { total: 0 } })),
+          fulfillmentApi.listWaves({ page: 1, pageSize: 1 }).catch(() => ({ meta: { total: 0 } })),
+        ])
+        if (cancelled) return
+        setStats([
+          { label: 'Total Allocations', value: String(allocRes.meta?.total ?? 0), sub: 'All allocations', icon: <ClipboardCheck className="h-5 w-5 text-amber-600" /> },
+          { label: 'Total Waves', value: String(waveRes.meta?.total ?? 0), sub: 'All wave plans', icon: <Waves className="h-5 w-5 text-purple-600" /> },
+          { label: 'Pick Lists', value: String(data.length), sub: 'From pick-pack API', icon: <PackageCheck className="h-5 w-5 text-emerald-600" /> },
+          { label: 'Search Results', value: String(data.length), sub: search ? `Filter: ${search}` : 'All', icon: <Search className="h-5 w-5 text-cyan-600" /> },
+        ])
+      } catch { if (!cancelled) setStats([]) }
+      finally { if (!cancelled) setStatsLoading(false) }
+    }
+    loadStats()
+    return () => { cancelled = true }
+  }, [data.length, search])
 
   const fulfillmentFlow = [
     { label: 'Sales Order', icon: <FileText className="h-4 w-4" />, color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
@@ -142,13 +158,13 @@ export function FulfillmentModule() {
       {tab === 'overview' && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {overviewStats.map(s => (
+            {(statsLoading ? [...Array(4)].map((_, i) => <Card key={i} className="p-4"><div className="h-16 bg-muted/50 rounded animate-pulse" /></Card>) : stats.map(s => (
               <Card key={s.label} className="p-4">
                 <div className="flex items-center justify-between mb-2"><p className="text-xs text-muted-foreground">{s.label}</p>{s.icon}</div>
                 <p className="text-2xl font-bold">{s.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{s.sub}</p>
               </Card>
-            ))}
+            )))}
           </div>
 
           <Card className="p-6">
@@ -678,36 +694,12 @@ const SEAL_STATUS_COLORS: Record<string, string> = {
   REMOVED: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
 }
 
-const DISPATCH_ORDERS_DATA = [
-  { id: 'do-001', dispatchNumber: 'DSP-2026-0001', dispatchDate: '09 Jul 07:00', dispatchType: 'RETAIL_DISPATCH', warehouseName: 'Finished Goods Warehouse', partnerName: 'Sudhastar Retail Mumbai', vehicleNumber: 'MH-04-AB-1234', driverName: 'Rajesh Patil', carrierName: 'Sudhastar Own Fleet', routeName: 'Mumbai City Retail Route', priority: 'HIGH', status: 'VEHICLE_ASSIGNED', totalOrders: 1, totalCartons: 2, totalQty: 120, totalWeightKg: 18.50, totalVolumeM3: 0.09, loadingDurationMin: null, plannedDispatchAt: '09 Jul 08:00', loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, dispatchedAt: null },
-  { id: 'do-002', dispatchNumber: 'DSP-2026-0002', dispatchDate: '09 Jul 06:00', dispatchType: 'DISTRIBUTOR_DISPATCH', warehouseName: 'Finished Goods Warehouse', partnerName: 'Maharashtra Wholesale Distributors', vehicleNumber: 'MH-04-CD-5678', driverName: 'Suresh Kumar', carrierName: 'VRL Logistics (3PL)', routeName: 'Pune-Nashik Distributor Route', priority: 'NORMAL', status: 'LOADED', totalOrders: 1, totalCartons: 6, totalQty: 360, totalWeightKg: 36.50, totalVolumeM3: 0.18, loadingDurationMin: 30, plannedDispatchAt: '09 Jul 09:00', loadingStartedAt: '09 Jul 06:35', loadingCompletedAt: '09 Jul 07:05', sealedAt: null, dispatchedAt: null },
-  { id: 'do-003', dispatchNumber: 'DSP-2026-0003', dispatchDate: '09 Jul 05:00', dispatchType: 'RESTAURANT_REPLENISHMENT', warehouseName: 'Cold Storage Warehouse', partnerName: 'Mumbai Restaurant Group', vehicleNumber: 'MH-04-EF-9012', driverName: 'Imran Sheikh', carrierName: 'Cold Chain Express', routeName: 'Mumbai City Restaurant Cold Route', priority: 'EMERGENCY', status: 'SEALED', totalOrders: 1, totalCartons: 1, totalQty: 90, totalWeightKg: 12.80, totalVolumeM3: 0.06, loadingDurationMin: 20, plannedDispatchAt: '09 Jul 06:00', loadingStartedAt: '09 Jul 05:10', loadingCompletedAt: '09 Jul 05:30', sealedAt: '09 Jul 05:42', dispatchedAt: null },
-  { id: 'do-004', dispatchNumber: 'DSP-2026-0004', dispatchDate: '09 Jul 04:00', dispatchType: 'BRANCH_TRANSFER', warehouseName: 'Finished Goods Warehouse', partnerName: 'Pune Retail Branch', vehicleNumber: 'MH-12-GH-3456', driverName: 'Vinod Mehta', carrierName: 'Sudhastar Own Fleet', routeName: 'Pune-Nashik Distributor Route', priority: 'NORMAL', status: 'LOADING', totalOrders: 1, totalCartons: 2, totalQty: 240, totalWeightKg: 24.30, totalVolumeM3: 0.14, loadingDurationMin: null, plannedDispatchAt: '09 Jul 10:00', loadingStartedAt: '09 Jul 04:20', loadingCompletedAt: null, sealedAt: null, dispatchedAt: null },
-  { id: 'do-005', dispatchNumber: 'DSP-2026-0005', dispatchDate: '08 Jul 14:00', dispatchType: 'EXPORT_SHIPMENT', warehouseName: 'Finished Goods Warehouse', partnerName: 'Dubai Exports FZE', vehicleNumber: 'CONT-MUM-EXP-001', driverName: 'Javed Akhtar', carrierName: 'DHL Global Forwarding', routeName: 'Mumbai Port → Jebel Ali (Export)', priority: 'HIGH', status: 'DISPATCHED', totalOrders: 1, totalCartons: 4, totalQty: 480, totalWeightKg: 58.40, totalVolumeM3: 0.32, loadingDurationMin: 45, plannedDispatchAt: '08 Jul 16:00', loadingStartedAt: '08 Jul 13:30', loadingCompletedAt: '08 Jul 14:15', sealedAt: '08 Jul 14:30', dispatchedAt: '08 Jul 15:00' },
-  { id: 'do-006', dispatchNumber: 'DSP-2026-0006', dispatchDate: '09 Jul 09:00', dispatchType: 'COURIER_SHIPMENT', warehouseName: 'Finished Goods Warehouse', partnerName: 'Bengaluru E-Commerce Customer', vehicleNumber: 'KA-01-MN-7890', driverName: 'Mohan Das', carrierName: 'Delhivery Express', routeName: 'Mumbai-Bengaluru Air Route', priority: 'NORMAL', status: 'PLANNED', totalOrders: 1, totalCartons: 1, totalQty: 60, totalWeightKg: 8.20, totalVolumeM3: 0.04, loadingDurationMin: null, plannedDispatchAt: '09 Jul 15:00', loadingStartedAt: null, loadingCompletedAt: null, sealedAt: null, dispatchedAt: null },
-]
+// DISPATCH_ORDERS_DATA removed — use live API
 
-const DISPATCH_VEHICLES_DATA = [
-  { id: 'dv-001', vehicleNumber: 'MH-04-AB-1234', vehicleType: 'TRUCK', maxWeightKg: 5000, maxVolumeM3: 25, palletCapacity: 8, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'OWN_FLEET', driverName: 'Rajesh Patil', driverPhone: '+91-98200-12345', driverLicense: 'MH0420190001234', helperName: 'Salim Ansari', hasGPS: true, gpsDeviceId: 'GPS-MUM-TRK-001', status: 'ASSIGNED', totalTrips: 348, avgUtilization: 78.5 },
-  { id: 'dv-002', vehicleNumber: 'MH-04-CD-5678', vehicleType: 'CONTAINER', maxWeightKg: 12000, maxVolumeM3: 45, palletCapacity: 18, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'THIRD_PARTY', driverName: 'Suresh Kumar', driverPhone: '+91-98200-23456', driverLicense: 'MH0420170005678', helperName: 'Bablu Yadav', hasGPS: true, gpsDeviceId: 'GPS-VRL-014', status: 'LOADED', totalTrips: 892, avgUtilization: 84.2 },
-  { id: 'dv-003', vehicleNumber: 'MH-04-EF-9012', vehicleType: 'REFRIGERATED', maxWeightKg: 3500, maxVolumeM3: 18, palletCapacity: 6, isTemperatureControlled: true, minTemp: 2, maxTemp: 8, ownershipType: 'THIRD_PARTY', driverName: 'Imran Sheikh', driverPhone: '+91-98200-34567', driverLicense: 'MH0420180009012', helperName: 'Kamal Singh', hasGPS: true, gpsDeviceId: 'GPS-CCE-007', status: 'LOADED', totalTrips: 521, avgUtilization: 71.8 },
-  { id: 'dv-004', vehicleNumber: 'MH-12-GH-3456', vehicleType: 'TEMPO', maxWeightKg: 1500, maxVolumeM3: 8, palletCapacity: 2, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'OWN_FLEET', driverName: 'Vinod Mehta', driverPhone: '+91-98200-45678', driverLicense: 'MH1220190003456', helperName: null, hasGPS: true, gpsDeviceId: 'GPS-MUM-TMP-002', status: 'LOADING', totalTrips: 612, avgUtilization: 65.3 },
-  { id: 'dv-005', vehicleNumber: 'CONT-MUM-EXP-001', vehicleType: 'FLATBED', maxWeightKg: 20000, maxVolumeM3: 60, palletCapacity: 24, isTemperatureControlled: false, minTemp: null, maxTemp: null, ownershipType: 'RENTAL', driverName: 'Javed Akhtar', driverPhone: '+91-98200-56789', driverLicense: 'MH0420160001111', helperName: 'Ravi Kumar', hasGPS: false, gpsDeviceId: null, status: 'IN_TRANSIT', totalTrips: 78, avgUtilization: 92.1 },
-]
+// DISPATCH_VEHICLES_DATA removed — use live API
 
-const SHIPPING_DOCUMENTS_DATA = [
-  { id: 'sd-001', documentNumber: 'DOC-DC-2026-0001', documentDate: '09 Jul 07:10', documentType: 'DELIVERY_CHALLAN', dispatchNumber: 'DSP-2026-0002', partnerName: 'Maharashtra Wholesale Distributors', shipToAddress: 'Wholesale Hub, APMC Market, Vashi, Navi Mumbai 400703', fileUrl: '/docs/dispatch/DC-2026-0001.pdf', fileSizeBytes: 184320, format: 'PDF', status: 'PRINTED', generatedAt: '09 Jul 07:10', printedAt: '09 Jul 07:15' },
-  { id: 'sd-002', documentNumber: 'DOC-PL-2026-0002', documentDate: '09 Jul 05:25', documentType: 'PACKING_LIST', dispatchNumber: 'DSP-2026-0003', partnerName: 'Mumbai Restaurant Group', shipToAddress: 'Marine Drive Restaurant, 12 Marine Lines, Mumbai 400020', fileUrl: '/docs/dispatch/PL-2026-0002.pdf', fileSizeBytes: 92160, format: 'PDF', status: 'SENT', generatedAt: '09 Jul 05:25', printedAt: '09 Jul 05:28' },
-  { id: 'sd-003', documentNumber: 'DOC-DM-2026-0003', documentDate: '08 Jul 14:25', documentType: 'DELIVERY_MANIFEST', dispatchNumber: 'DSP-2026-0005', partnerName: 'Dubai Exports FZE', shipToAddress: 'Jebel Ali Free Zone, Office 402, Building 7, Dubai', fileUrl: '/docs/dispatch/DM-2026-0003.pdf', fileSizeBytes: 245760, format: 'PDF', status: 'GENERATED', generatedAt: '08 Jul 14:25', printedAt: null },
-  { id: 'sd-004', documentNumber: 'DOC-EB-2026-0004', documentDate: '09 Jul 07:30', documentType: 'E_WAY_BILL_REF', dispatchNumber: 'DSP-2026-0001', partnerName: 'Sudhastar Retail Mumbai', shipToAddress: 'Andheri East Retail Store, Mumbai 400069', fileUrl: null, fileSizeBytes: null, format: 'PDF', status: 'PENDING', generatedAt: null, printedAt: null },
-]
+// SHIPPING_DOCUMENTS_DATA removed — use live API
 
-const VEHICLE_SEALS_DATA = [
-  { id: 'vs-001', dispatchNumber: 'DSP-2026-0003', sealNumber: 'SEAL-BOLT-2026-0042', sealType: 'BOLT', appliedAt: '09 Jul 05:35', appliedByName: 'Loading Supervisor — Prakash Jadhav', verifiedAt: '09 Jul 05:42', verifiedByName: 'Security Officer — Mahesh Tiwari', brokenAt: null, brokenBy: null, status: 'VERIFIED' },
-  { id: 'vs-002', dispatchNumber: 'DSP-2026-0005', sealNumber: 'SEAL-TP-2026-0078', sealType: 'TAMPER_PROOF', appliedAt: '08 Jul 14:30', appliedByName: 'Loading Supervisor — Prakash Jadhav', verifiedAt: null, verifiedByName: null, brokenAt: null, brokenBy: null, status: 'APPLIED' },
-]
+// VEHICLE_SEALS_DATA removed — use live API
 
-const GATE_EXIT_LOGS_DATA = [
-  { id: 'gel-001', exitNumber: 'EXIT-2026-0001', exitDate: '08 Jul 14:55', dispatchNumber: 'DSP-2026-0005', vehicleNumber: 'CONT-MUM-EXP-001', driverName: 'Javed Akhtar', securityOfficerName: 'Security Officer — Mahesh Tiwari', sealVerified: true, documentsVerified: true, vehicleInspected: true, exitTime: '08 Jul 14:55', approvedByName: 'Security Manager — Deepak Nair', status: 'EXITED', remarks: 'Export shipment cleared — customs docs verified, container sealed, GPS offline (rental flatbed).' },
-  { id: 'gel-002', exitNumber: 'EXIT-2026-0002', exitDate: '09 Jul 05:42', dispatchNumber: 'DSP-2026-0003', vehicleNumber: 'MH-04-EF-9012', driverName: 'Imran Sheikh', securityOfficerName: 'Security Officer — Mahesh Tiwari', sealVerified: true, documentsVerified: true, vehicleInspected: false, exitTime: null, approvedByName: null, status: 'PENDING', remarks: 'Cold chain dispatch — awaiting final vehicle inspection before gate exit.' },
-]
+// GATE_EXIT_LOGS_DATA removed — use live API
