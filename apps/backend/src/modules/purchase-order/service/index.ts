@@ -17,9 +17,9 @@ import { workflowRegistry } from '@/core/workflow'
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
-import { query } from '@/core/db/pglite'
+import { query, pgliteTransaction } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
-import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
+import { enforceNotBreakGlass, enforceTenantIsolation, enforceMakerChecker } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -378,80 +378,84 @@ export const purchaseOrderService = {
 
     validateBlanketPo(poType, data.validityDate, totals.grandTotal)
 
-    const po = await poRepository.create({
-      tenantId,
-      poNumber,
-      poType,
-      rfqId: data.rfqId,
-      rfqNumber: data.rfqNumber,
-      quotationId: data.quotationId,
-      quotationNumber: data.quotationNumber,
-      prId: data.prId,
-      prNumber: data.prNumber,
-      supplierId: data.supplierId,
-      supplierCode: data.supplierCode,
-      supplierName: data.supplierName,
-      supplierGstin: data.supplierGstin,
-      companyId: data.companyId,
-      companyName: data.companyName,
-      plantId: data.plantId,
-      plantName: data.plantName,
-      warehouseId: data.warehouseId,
-      warehouseName: data.warehouseName,
-      departmentId: data.departmentId,
-      costCenterId: data.costCenterId,
-      buyerId: data.buyerId,
-      buyerName: data.buyerName,
-      expectedDeliveryDate: data.expectedDeliveryDate,
-      deliveryTerms: data.deliveryTerms,
-      deliveryLocation: data.deliveryLocation,
-      shippingAddress: data.shippingAddress,
-      billingAddress: data.billingAddress,
-      currency,
-      exchangeRate: data.exchangeRate ?? 1,
-      subtotal: totals.subtotal,
-      discountPercent: data.discountPercent,
-      discountAmount: totals.discountAmount,
-      taxAmount: totals.taxAmount,
-      freightAmount: totals.freightAmount,
-      insuranceAmount: totals.insuranceAmount,
-      otherCharges: totals.otherCharges,
-      roundOff: totals.roundOff,
-      grandTotal: totals.grandTotal,
-      paymentTerms: data.paymentTerms ?? 'NET30',
-      paymentTermsDays: data.paymentTermsDays ?? 30,
-      creditPeriodDays: data.creditPeriodDays ?? 30,
-      advancePercent: data.advancePercent,
-      validityDate: data.validityDate,
-      remarks: data.remarks,
-      internalNotes: data.internalNotes,
-      supplierNotes: data.supplierNotes,
-      status: 'DRAFT',
-    })
-    if (!po) throw new Error('Failed to create PO')
-
-    // Create lines
-    let lineNo = 1
-    for (const line of data.lines) {
-      const lineTotals = totals.lines[lineNo - 1]!
-      const moqOk = validateMoq(
-        Number(line['orderedQty']),
-        line['minOrderQty'] as number | undefined,
-      )
-      await poLineRepository.create({
-        ...line,
+    // Phase 1.6: Wrap multi-step writes in DB transaction for atomicity
+    const po = await pgliteTransaction(async () => {
+      const po = await poRepository.create({
         tenantId,
-        poId: po['id'],
-        lineNo,
-        discountAmount: lineTotals.discountAmount,
-        taxAmount: lineTotals.taxAmount,
-        lineTotal: lineTotals.lineTotal,
-        pendingQty: Number(line['orderedQty']),
-        moqViolated: !moqOk,
+        poNumber,
+        poType,
+        rfqId: data.rfqId,
+        rfqNumber: data.rfqNumber,
+        quotationId: data.quotationId,
+        quotationNumber: data.quotationNumber,
+        prId: data.prId,
+        prNumber: data.prNumber,
+        supplierId: data.supplierId,
+        supplierCode: data.supplierCode,
+        supplierName: data.supplierName,
+        supplierGstin: data.supplierGstin,
+        companyId: data.companyId,
+        companyName: data.companyName,
+        plantId: data.plantId,
+        plantName: data.plantName,
+        warehouseId: data.warehouseId,
+        warehouseName: data.warehouseName,
+        departmentId: data.departmentId,
+        costCenterId: data.costCenterId,
+        buyerId: data.buyerId,
+        buyerName: data.buyerName,
+        expectedDeliveryDate: data.expectedDeliveryDate,
+        deliveryTerms: data.deliveryTerms,
+        deliveryLocation: data.deliveryLocation,
+        shippingAddress: data.shippingAddress,
+        billingAddress: data.billingAddress,
         currency,
+        exchangeRate: data.exchangeRate ?? 1,
+        subtotal: totals.subtotal,
+        discountPercent: data.discountPercent,
+        discountAmount: totals.discountAmount,
+        taxAmount: totals.taxAmount,
+        freightAmount: totals.freightAmount,
+        insuranceAmount: totals.insuranceAmount,
+        otherCharges: totals.otherCharges,
+        roundOff: totals.roundOff,
+        grandTotal: totals.grandTotal,
+        paymentTerms: data.paymentTerms ?? 'NET30',
+        paymentTermsDays: data.paymentTermsDays ?? 30,
+        creditPeriodDays: data.creditPeriodDays ?? 30,
+        advancePercent: data.advancePercent,
+        validityDate: data.validityDate,
+        remarks: data.remarks,
+        internalNotes: data.internalNotes,
+        supplierNotes: data.supplierNotes,
+        status: 'DRAFT',
       })
-      lineNo++
-    }
+      if (!po) throw new Error('Failed to create PO')
+
+      // Create lines
+      let lineNo = 1
+      for (const line of data.lines) {
+        const lineTotals = totals.lines[lineNo - 1]!
+        const moqOk = validateMoq(
+          Number(line['orderedQty']),
+          line['minOrderQty'] as number | undefined,
+        )
+        await poLineRepository.create({
+          ...line,
+          tenantId,
+          poId: po['id'],
+          lineNo,
+          discountAmount: lineTotals.discountAmount,
+          taxAmount: lineTotals.taxAmount,
+          lineTotal: lineTotals.lineTotal,
+          pendingQty: Number(line['orderedQty']),
+          moqViolated: !moqOk,
+          currency,
+        })
+        lineNo++
+      }
+      return po
+    })
 
     // Audit + history
     await auditService.log({
@@ -612,6 +616,11 @@ export const purchaseOrderService = {
     const { tenantId, userId, ctx } = getContext()
     const existing = await poRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('PurchaseOrder', id)
+
+    // Maker-checker: creator cannot approve their own PO
+    if (targetStatus === 'DEPT_APPROVAL' || targetStatus === 'FINANCE_APPROVAL' || targetStatus === 'MANAGEMENT_APPROVAL' || targetStatus === 'APPROVED') {
+      enforceMakerChecker(existing['created_by'] as string | null, 'approve', 'PurchaseOrder')
+    }
 
     const machine = workflowRegistry.get<string, { id: string; status: string; version: number }>(
       'PurchaseOrderLifecycle',

@@ -30,6 +30,8 @@ export const purchaseOrderApi = {
   fromQuotation: (data: Record<string, unknown>) => apiFetch(`/api/v1/procurement/purchase-orders/pos/from-quotation`, { method: 'POST', body: JSON.stringify(data) }),
   pdf: (id: string) => apiFetch<{ success: true; data: Record<string, unknown> }>(`/api/v1/procurement/purchase-orders/pos/${id}/pdf`),
   exportPdf: (id: string) => apiFetch<{ success: true; data: Record<string, unknown> }>(`/api/v1/procurement/purchase-orders/pos/${id}/export-pdf`),
+  export: (params?: { search?: string; status?: string; supplierId?: string; poType?: string; plantId?: string }) =>
+    apiFetch<{ success: true; data: Record<string, unknown>[] }>(`/api/v1/procurement/purchase-orders/pos/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   search: (criteria: Record<string, unknown>) => apiFetch(`/api/v1/procurement/purchase-orders/pos/search`, { method: 'POST', body: JSON.stringify(criteria) }),
 }
 

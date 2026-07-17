@@ -1,4 +1,4 @@
-/** Purchase Order API Routes — 17 endpoints */
+/** Purchase Order API Routes — 18 endpoints */
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
@@ -6,6 +6,9 @@ import { success, paginated } from '@/core/response'
 import { requirePermission } from '@/middleware/rbac'
 import { Permission } from '@/core/permissions'
 import { purchaseOrderService } from '../service'
+import { poRepository } from '../repository'
+import { getRequestContext } from '@/core/context'
+import { AuthorizationError } from '@/core/errors'
 
 export const purchaseOrderRoutes = new Hono()
 
@@ -156,10 +159,30 @@ purchaseOrderRoutes.post('/pos', requirePermission(Permission.PO_CREATE), zValid
 })
 
 // 4. Update PO (DRAFT or REVISION_REQUESTED only)
-purchaseOrderRoutes.patch('/pos/:id', requirePermission(Permission.PO_UPDATE), async (c) => {
+const poUpdateSchema = z.object({
+  expectedDeliveryDate: z.string().datetime().optional(),
+  deliveryTerms: z.string().optional(),
+  deliveryLocation: z.string().optional(),
+  shippingAddress: z.string().optional(),
+  billingAddress: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  paymentTermsDays: z.number().int().positive().optional(),
+  creditPeriodDays: z.number().int().positive().optional(),
+  advancePercent: z.number().min(0).max(100).optional(),
+  validityDate: z.string().datetime().optional(),
+  remarks: z.string().optional(),
+  internalNotes: z.string().optional(),
+  supplierNotes: z.string().optional(),
+  discountPercent: z.number().min(0).max(100).optional(),
+  freightAmount: z.number().nonnegative().optional(),
+  insuranceAmount: z.number().nonnegative().optional(),
+  otherCharges: z.number().nonnegative().optional(),
+}).strict()
+
+purchaseOrderRoutes.patch('/pos/:id', requirePermission(Permission.PO_UPDATE), zValidator('json', poUpdateSchema), async (c) => {
   const id = c.req.param('id')!
   const version = Number(c.req.header('If-Match') ?? '0')
-  const body = await c.req.json()
+  const body = c.req.valid('json' as never) as z.infer<typeof poUpdateSchema>
   const updated = await purchaseOrderService.update(id, body, version)
   return c.json(success(updated, { message: 'Purchase Order updated' }))
 })
@@ -169,6 +192,23 @@ purchaseOrderRoutes.delete('/pos/:id', requirePermission(Permission.PO_DELETE), 
   const version = Number(c.req.header('If-Match') ?? '0')
   await purchaseOrderService.delete(c.req.param('id')!, version)
   return c.json(success({ deleted: true }, { message: 'Purchase Order deleted' }))
+})
+
+// 5a. Export POs (CSV-friendly JSON)
+purchaseOrderRoutes.get('/pos/export', requirePermission(Permission.PO_EXPORT), async (c) => {
+  const { tenantId } = getRequestContext()
+  if (!tenantId) throw new AuthorizationError('Authentication required')
+  const result = await poRepository.list(tenantId, {
+    page: 1, pageSize: 10000,
+    search: c.req.query('search') ?? undefined,
+    status: c.req.query('status') ?? undefined,
+    supplierId: c.req.query('supplierId') ?? undefined,
+    poType: c.req.query('poType') ?? undefined,
+    plantId: c.req.query('plantId') ?? undefined,
+    sortBy: c.req.query('sortBy') ?? undefined,
+    sortOrder: c.req.query('sortOrder') ?? undefined,
+  })
+  return c.json(success(result.rows, { message: `${result.rows.length} POs exported` }))
 })
 
 // 6. Transition (submit, approve, reject, issue, cancel, close, etc.)

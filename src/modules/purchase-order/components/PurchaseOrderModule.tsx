@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { purchaseOrderApi, type PurchaseOrder } from '../api/client'
+import { useAuthStore } from '@/stores/auth-store'
 import { Plus, Search, Loader2, AlertCircle, CheckCircle2, FileText, Clock, TrendingUp, Package, ArrowLeft, FileDown } from 'lucide-react'
 
 function LoadingState() { return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /><span className="ml-2 text-sm text-muted-foreground">Loading...</span></div> }
@@ -45,7 +46,7 @@ function formatCurrency(amount: number, currency = 'INR') {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
 }
 
-function PODashboard({ onNavigate }: { onNavigate: () => void }) {
+function PODashboard({ onNavigate, hasPermission }: { onNavigate: () => void; hasPermission: (perm: string) => boolean }) {
   const [stats, setStats] = useState({ total: 0, pending: 0, issued: 0, received: 0 })
   const [loading, setLoading] = useState(true)
 
@@ -92,13 +93,13 @@ function PODashboard({ onNavigate }: { onNavigate: () => void }) {
         ))}
       </div>
       <div className="flex gap-2">
-        <Button onClick={onNavigate}><Plus className="h-4 w-4 mr-1" />View All POs</Button>
+        {hasPermission('po:read') && <Button onClick={onNavigate}><Plus className="h-4 w-4 mr-1" />View All POs</Button>}
       </div>
     </div>
   )
 }
 
-function POList({ onBack }: { onBack: () => void }) {
+function POList({ onBack, hasPermission }: { onBack: () => void; hasPermission: (perm: string) => boolean }) {
   const [pos, setPos] = useState<PurchaseOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -125,7 +126,20 @@ function POList({ onBack }: { onBack: () => void }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">All Purchase Orders</h2>
-        <Button variant="outline" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-1" />Back to Dashboard</Button>
+        <div className="flex gap-2">
+          {hasPermission('po:export') && <Button variant="outline" onClick={async () => {
+            try {
+              const res = await purchaseOrderApi.export({ search: search || undefined, status: statusFilter || undefined, poType: typeFilter || undefined })
+              const rows = res.data || []
+              if (rows.length === 0) return
+              const csv = [Object.keys(rows[0]!).join(','), ...rows.map(r => Object.values(r).join(','))].join('\n')
+              const blob = new Blob([csv], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a'); a.href = url; a.download = `purchase-orders-${new Date().toISOString().split('T')[0]}.csv`; a.click()
+            } catch {}
+          }}><FileDown className="h-4 w-4 mr-1" />Export</Button>}
+          <Button variant="outline" onClick={onBack}><ArrowLeft className="h-4 w-4 mr-1" />Back to Dashboard</Button>
+        </div>
       </div>
       <div className="flex gap-2 flex-wrap">
         <Input placeholder="Search by PO number or supplier..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" />
@@ -191,8 +205,9 @@ function POList({ onBack }: { onBack: () => void }) {
 }
 
 export default function PurchaseOrderModule() {
+  const { hasPermission } = useAuthStore()
   const [view, setView] = useState<'dashboard' | 'list'>('dashboard')
   return view === 'dashboard'
-    ? <PODashboard onNavigate={() => setView('list')} />
-    : <POList onBack={() => setView('dashboard')} />
+    ? <PODashboard onNavigate={() => setView('list')} hasPermission={hasPermission} />
+    : <POList onBack={() => setView('dashboard')} hasPermission={hasPermission} />
 }
