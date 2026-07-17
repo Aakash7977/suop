@@ -5,13 +5,17 @@ import { apiFetch, buildQueryString, type PaginatedResponse } from '@/api/core'
 import type { SalesOrder, Allocation, WavePlan, PickList, PackingList, Shipment, DeliveryOrder, PriceList, Promotion, Coupon, TaxConfig } from '@/types'
 
 export const salesOrderApi = {
-  list: (params?: { page?: number }) =>
+  list: (params?: { page?: number; pageSize?: number; search?: string; status?: string; customerId?: string }) =>
     apiFetch<PaginatedResponse<SalesOrder>>(`/api/v1/sales/orders/orders?${buildQueryString(params as Record<string, string | number | undefined>)}`),
   get: (id: string) => apiFetch<{ success: true; data: SalesOrder }>(`/api/v1/sales/orders/orders/${id}`),
   create: (data: Record<string, unknown>) => apiFetch(`/api/v1/sales/orders/orders`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Record<string, unknown>, version: number) => apiFetch(`/api/v1/sales/orders/orders/${id}`, { method: 'PATCH', headers: { 'If-Match': String(version) }, body: JSON.stringify(data) }),
+  delete: (id: string, version: number) => apiFetch(`/api/v1/sales/orders/orders/${id}`, { method: 'DELETE', headers: { 'If-Match': String(version) } }),
   transition: (id: string, targetStatus: string, version: number) => apiFetch(`/api/v1/sales/orders/orders/${id}/transition`, { method: 'POST', body: JSON.stringify({ targetStatus, version }) }),
-  hold: (id: string) => apiFetch(`/api/v1/sales/orders/orders/${id}/hold`, { method: 'POST' }),
-  releaseHold: (id: string) => apiFetch(`/api/v1/sales/orders/orders/${id}/release-hold`, { method: 'POST' }),
+  hold: (id: string, holdType: string, holdReason: string) => apiFetch(`/api/v1/sales/orders/orders/${id}/hold`, { method: 'POST', body: JSON.stringify({ holdType, holdReason }) }),
+  releaseHold: (id: string, releaseReason: string) => apiFetch(`/api/v1/sales/orders/orders/${id}/release-hold`, { method: 'POST', body: JSON.stringify({ releaseReason }) }),
+  export: (params?: { status?: string; customerId?: string }) =>
+    apiFetch<{ success: true; data: SalesOrder[] }>(`/api/v1/sales/orders/orders/export?${buildQueryString(params as Record<string, string | number | undefined>)}`),
 }
 
 export const fulfillmentApi = {

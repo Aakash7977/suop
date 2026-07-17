@@ -5,9 +5,9 @@ import { workflowRegistry } from '@/core/workflow'
 import { auditService } from '@/core/audit'
 import { eventBus } from '@/core/events'
 import { getRequestContext } from '@/core/context'
-import { query } from '@/core/db/pglite'
+import { query, pgliteTransaction } from '@/core/db/pglite'
 import { BusinessRuleError, NotFoundError, ConcurrencyError, AuthorizationError } from '@/core/errors'
-import { enforceNotBreakGlass, enforceTenantIsolation } from '@/core/security/sod-enforcement'
+import { enforceNotBreakGlass, enforceTenantIsolation, enforceMakerChecker } from '@/core/security/sod-enforcement'
 
 function getContext() {
   const ctx = getRequestContext()
@@ -67,35 +67,39 @@ export const salesOrderService = {
 
     const soNumber = await salesOrderRepository.generateSoNumber(tenantId)
 
-    const so = await salesOrderRepository.create({
-      tenantId, soNumber, soType: data.soType ?? 'STANDARD',
-      customerId: data.customerId, customerCode: data.customerCode, customerName: data.customerName, customerGstin: data.customerGstin,
-      customerPoNumber: data.customerPoNumber, customerPoDate: data.customerPoDate,
-      companyId: data.companyId, companyName: data.companyName, plantId: data.plantId, plantName: data.plantName,
-      warehouseId: data.warehouseId, warehouseName: data.warehouseName,
-      salespersonId: data.salespersonId, salespersonName: data.salespersonName,
-      deliveryAddress: data.deliveryAddress, billingAddress: data.billingAddress,
-      expectedDeliveryDate: data.expectedDeliveryDate, deliveryTerms: data.deliveryTerms,
-      paymentTerms: data.paymentTerms ?? 'NET30', creditDays: data.creditDays ?? 30,
-      currency: data.currency ?? 'INR', exchangeRate: data.exchangeRate ?? 1,
-      subtotal, discountAmount: totalDiscount, taxAmount: totalTax,
-      freightAmount: data.freightAmount, otherCharges: data.otherCharges,
-      grandTotal,
-      creditStatus: 'PENDING',
-      status: 'DRAFT', remarks: data.remarks, internalNotes: data.internalNotes,
-    })
-    if (!so) throw new Error('Failed to create sales order')
-
-    // Create lines
-    let lineNo = 1
-    for (const line of data.lines) {
-      await salesOrderLineRepository.create({
-        ...line, tenantId, soId: so['id'], lineNo,
-        reservedQty: 0, pickedQty: 0, packedQty: 0, dispatchedQty: 0, deliveredQty: 0,
-        allocationStrategy: 'FEFO',
+    // Phase 1.6: Wrap multi-step writes in DB transaction for atomicity
+    const so = await pgliteTransaction(async () => {
+      const so = await salesOrderRepository.create({
+        tenantId, soNumber, soType: data.soType ?? 'STANDARD',
+        customerId: data.customerId, customerCode: data.customerCode, customerName: data.customerName, customerGstin: data.customerGstin,
+        customerPoNumber: data.customerPoNumber, customerPoDate: data.customerPoDate,
+        companyId: data.companyId, companyName: data.companyName, plantId: data.plantId, plantName: data.plantName,
+        warehouseId: data.warehouseId, warehouseName: data.warehouseName,
+        salespersonId: data.salespersonId, salespersonName: data.salespersonName,
+        deliveryAddress: data.deliveryAddress, billingAddress: data.billingAddress,
+        expectedDeliveryDate: data.expectedDeliveryDate, deliveryTerms: data.deliveryTerms,
+        paymentTerms: data.paymentTerms ?? 'NET30', creditDays: data.creditDays ?? 30,
+        currency: data.currency ?? 'INR', exchangeRate: data.exchangeRate ?? 1,
+        subtotal, discountAmount: totalDiscount, taxAmount: totalTax,
+        freightAmount: data.freightAmount, otherCharges: data.otherCharges,
+        grandTotal,
+        creditStatus: 'PENDING',
+        status: 'DRAFT', remarks: data.remarks, internalNotes: data.internalNotes,
       })
-      lineNo++
-    }
+      if (!so) throw new Error('Failed to create sales order')
+
+      // Create lines
+      let lineNo = 1
+      for (const line of data.lines) {
+        await salesOrderLineRepository.create({
+          ...line, tenantId, soId: so['id'], lineNo,
+          reservedQty: 0, pickedQty: 0, packedQty: 0, dispatchedQty: 0, deliveredQty: 0,
+          allocationStrategy: 'FEFO',
+        })
+        lineNo++
+      }
+      return so
+    })
 
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'CREATE', entityType: 'SalesOrder', entityId: String(so['id']), entityCode: soNumber, after: data })
     await salesOrderHistoryRepository.create({ tenantId, soId: String(so['id']), action: 'CREATE', toStatus: 'DRAFT', actionBy: userId, actionByName: ctx.userEmail })
@@ -130,6 +134,11 @@ export const salesOrderService = {
     const { tenantId, userId, ctx } = getContext()
     const existing = await salesOrderRepository.findById(tenantId, id)
     if (!existing) throw new NotFoundError('SalesOrder', id)
+
+    // Maker-checker: creator cannot approve their own SO
+    if (targetStatus === 'APPROVED') {
+      enforceMakerChecker(existing['created_by'] as string | null, 'approve', 'SalesOrder')
+    }
 
     const machine = workflowRegistry.get<string, { id: string; status: string; version: number }>('SalesOrderLifecycle')
     const check = await machine.canTransition({ id, status: String(existing['status']), version: Number(existing['version']) }, targetStatus, { userId, tenantId, correlationId: ctx.correlationId })
@@ -260,5 +269,36 @@ export const salesOrderService = {
     await salesOrderRepository.update(tenantId, id, { isOnHold: false, holdReason: null }, Number(existing['version']), userId)
     await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'SO_HOLD_RELEASED', entityType: 'SalesOrder', entityId: id, entityCode: String(existing['so_number']), after: { releaseReason } })
     return { released: true }
+  },
+
+  async update(id: string, data: Record<string, unknown>, version: number) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await salesOrderRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('SalesOrder', id)
+    if (String(existing['status']) !== 'DRAFT') {
+      throw new BusinessRuleError('Can only modify draft sales orders', { code: 'SO.NOT_DRAFT' })
+    }
+    const updated = await salesOrderRepository.update(tenantId, id, data, version, userId)
+    if (!updated) throw new ConcurrencyError('Sales order was modified by another transaction')
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'UPDATE', entityType: 'SalesOrder', entityId: id, entityCode: String(existing['so_number']), before: existing, after: updated })
+    return updated
+  },
+
+  async delete(id: string, version: number) {
+    const { tenantId, userId, ctx } = getContext()
+    const existing = await salesOrderRepository.findById(tenantId, id)
+    if (!existing) throw new NotFoundError('SalesOrder', id)
+    if (String(existing['status']) !== 'DRAFT') {
+      throw new BusinessRuleError('Can only delete draft sales orders', { code: 'SO.NOT_DRAFT' })
+    }
+    const result = await query(`UPDATE sales_orders SET deleted_at = NOW(), version = version + 1 WHERE tenant_id = $1 AND id = $2 AND version = $3 AND deleted_at IS NULL RETURNING id`, [tenantId, id, version])
+    if (result.rows.length === 0) throw new ConcurrencyError('Sales order was modified by another transaction')
+    await salesOrderLineRepository.deleteForSo(id)
+    await auditService.log({ tenantId, correlationId: ctx.correlationId, actorType: 'USER', actorId: userId, actorName: ctx.userEmail, action: 'DELETE', entityType: 'SalesOrder', entityId: id, entityCode: String(existing['so_number']) })
+  },
+
+  async exportOrders(params: { status?: string; customerId?: string } = {}) {
+    const { tenantId } = getContext()
+    return salesOrderRepository.list(tenantId, { ...params, page: 1, pageSize: 10000 })
   },
 }
